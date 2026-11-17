@@ -88,7 +88,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
         if (comp && (wcomp === comp || wcomp.includes(comp) || comp.includes(wcomp))) return true;
         if (name && (wname === name || wname.includes(name))) return true;
         if (email.includes('zac@otec.ltd') && eid.includes('zac')) return true;
-        if (email.includes('melissa') && eid.includes('melissa')) return true;
+        if ((email.includes('melissa') || uid.includes('melissa') || name.includes('melissa') || comp.includes('mp commodity')) && (eid.includes('melissa') || eid.includes('mpcommodity') || w.id === 'wal-supp-melissa')) return true;
         return false;
       });
       if (matched) return matched;

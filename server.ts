@@ -7446,7 +7446,7 @@ let serverListingsStore: any[] = [
     supplier_country: 'United States',
     owner_email: 'Larsbarnhart25@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+    image_url: '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -7462,7 +7462,7 @@ let serverListingsStore: any[] = [
     supplier_country: 'United States',
     owner_email: 'Larsbarnhart25@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+    image_url: '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -7492,7 +7492,7 @@ let serverListingsStore: any[] = [
     moq_unit: 'Sets',
     supplier_name: 'Apex Precision Engineering Ltd.',
     supplier_country: 'China',
-    image_url: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    image_url: '/assets/uploads/auto-cnc-milling-center-a0052c45fcaf.webp',
     created_at: new Date().toISOString()
   },
   {
@@ -7506,7 +7506,7 @@ let serverListingsStore: any[] = [
     moq_unit: 'Metric Tons',
     supplier_name: 'Nordic Steel Works AB',
     supplier_country: 'Sweden',
-    image_url: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
+    image_url: '/assets/uploads/auto-stainless-steel-coils-2bed95591bcf.webp',
     created_at: new Date().toISOString()
   }
 ];
@@ -12568,8 +12568,17 @@ function isGenericOrPlaceholderServerUrl(url: string | undefined | null): boolea
     'unsplash.com',
     'pexels.com',
     'pixabay.com',
-    'vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port',
-    'vecteezy_cargo-tanker-ship'
+    'shutterstock.com',
+    'istockphoto.com',
+    'gettyimages.com',
+    'alamy.com',
+    '123rf.com',
+    'depositphotos.com',
+    'dreamstime.com',
+    'vecteezy_',
+    'default-icon',
+    'diwali-offer-banner',
+    'tradeheavenb2bbest.svg'
   ].some(p => clean.includes(p));
 }
 
@@ -12681,9 +12690,9 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
     }
   }
 
-  // Merge in-memory state if provided so recent uploads in memory ALWAYS win
+  // Merge in-memory state using timestamp precedence so newer disk updates are preserved
   if (existingMemoryState) {
-    mergeOverridesFromParsed(existingMemoryState, true);
+    mergeOverridesFromParsed(existingMemoryState, false);
   }
 
   // Scan public/assets/uploads to populate mediaLibrary with real local image files
@@ -12724,6 +12733,9 @@ let serverProductImageState: ProductImageSystemState = loadServerProductImageSta
 function saveServerProductImageState() {
   ensureUploadsDir();
   try {
+    if (Object.keys(serverProductImageState.overrides || {}).length === 0) {
+      serverProductImageState = loadServerProductImageState(serverProductImageState);
+    }
     const serialized = JSON.stringify(serverProductImageState, null, 2);
     fs.writeFileSync(IMAGE_OVERRIDES_FILE, serialized, 'utf-8');
     fs.writeFileSync(IMAGE_OVERRIDES_BACKUP_FILE, serialized, 'utf-8');
@@ -14823,7 +14835,7 @@ app.post('/api/v1/mediation/payout', async (req, res) => {
     const resolvedEntityPlan = resolveServerEntityPlan(entityId, entityPlan);
     if (isBasicPlanStatus(resolvedEntityPlan, entityId)) {
       return res.status(403).json({
-        error: `Direct-to-site payout blocked: Entity (${entityId}) has a 'Basic' plan status. Only VIP members can receive direct-to-site fund transfers and payouts.`
+        error: `Withdrawal restricted: VIP plan member are eligible to do it. Entity (${entityId}) currently has a 'Basic' plan status. Only VIP plan members are eligible to withdraw funds.`
       });
     }
     assertVipForDirectSiteTransfer({
@@ -16790,7 +16802,13 @@ app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
   let sources: Array<{ title: string; uri: string }> = [];
   let generationSource = existingMatches.length >= 3 ? 'search_results_auto_sync' : 'gemini_live_trade';
 
-  if (existingMatches.length < 3 && apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
+  if (
+    existingMatches.length < 3 &&
+    apiKey &&
+    apiKey !== 'MY_GEMINI_API_KEY' &&
+    apiKey.startsWith('AIza') &&
+    Date.now() >= geminiGroundedQuotaCooldownUntil
+  ) {
     const ai = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -16875,7 +16893,11 @@ Strict requirements:
           break;
         }
       } catch (err: any) {
-        console.warn(`[Market Demand Discovery] ${modelName} fallback:`, String(err?.message || err).slice(0, 180));
+        const errText = String(err?.message || err || '');
+        if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|429|RESOURCE_EXHAUSTED|quota|API_KEY_INVALID|PERMISSION_DENIED/i.test(errText)) {
+          geminiGroundedQuotaCooldownUntil = Date.now() + 5 * 60 * 1000;
+          break;
+        }
       }
     }
   }
@@ -16923,6 +16945,8 @@ Strict requirements:
     const allowedIncoterms = new Set(['FOB', 'CIF', 'CFR', 'EXW', 'DDP', 'DAP', 'FCA']);
     const nowMs = Date.now();
 
+    const batchUsedUrls = new Set<string>(collectAllUsedCatalogImageUrls().keys());
+
     const buildRfqRecord = (item: any, idx: number, searchTag: string, idSuffix: number) => {
       const qty = Math.max(1, Number(String(item.targetQuantity || 20).replace(/[^0-9.]/g, '')) || 20);
       const price = Math.max(1, Number(String(item.targetPriceUsd || 100).replace(/[^0-9.]/g, '')) || 100);
@@ -16932,23 +16956,34 @@ Strict requirements:
       const uid = nowMs + idSuffix;
 
       const resolvedTitle = String(item.productName || `${rawKeyword} - Export Grade A`).trim();
+      const resolvedCategory = String(item.category || (/brick/i.test(resolvedTitle) || /brick/i.test(rawKeyword) ? 'Building & Construction Materials' : 'Agriculture & Global Commodities')).trim();
       let attachedImg = String(item.image || item.image_url || '').trim();
+      if (!attachedImg || batchUsedUrls.has(attachedImg.split('?')[0])) {
+        const diskMatch = findMatchingLocalMasterImageOnDisk(resolvedTitle, resolvedCategory, batchUsedUrls);
+        if (diskMatch?.exactUnusedUrl) {
+          attachedImg = diskMatch.exactUnusedUrl;
+        }
+      }
       if (!attachedImg) {
         const cachedEntry =
           serverProductImageCacheMap.get(normalizedKeyword) ||
           serverProductImageCacheMap.get(rawKeyword.toLowerCase()) ||
           serverProductImageCacheMap.get(cleanProductSearchSubject(resolvedTitle).toLowerCase());
         if (cachedEntry && Array.isArray(cachedEntry.images) && cachedEntry.images.length > 0) {
-          attachedImg = cachedEntry.images[idx % cachedEntry.images.length]?.url || '';
+          const unusedFromPool = cachedEntry.images.find(
+            img => img?.url && !batchUsedUrls.has(String(img.url).split('?')[0])
+          );
+          attachedImg = unusedFromPool?.url || cachedEntry.images[idx % cachedEntry.images.length]?.url || '';
         } else if (serverProductImageState.overrides[normalizedKeyword]?.primary) {
           attachedImg = serverProductImageState.overrides[normalizedKeyword].primary;
         } else if (serverProductImageState.overrides[rawKeyword.toLowerCase()]?.primary) {
           attachedImg = serverProductImageState.overrides[rawKeyword.toLowerCase()].primary;
         } else if (serverProductImageState.overrides[resolvedTitle]?.primary) {
           attachedImg = serverProductImageState.overrides[resolvedTitle].primary;
-        } else if (/brick/i.test(resolvedTitle) || /brick/i.test(rawKeyword)) {
-          attachedImg = '/assets/uploads/auto-bricks-bcc0b0120401.webp';
         }
+      }
+      if (attachedImg) {
+        batchUsedUrls.add(attachedImg.split('?')[0]);
       }
 
       if (attachedImg) {
@@ -17112,6 +17147,7 @@ app.post('/api/v1/rfqs/auto-batch-persist', async (req, res) => {
     }
 
     const existingIds = new Set(serverRfqsStore.map(r => String(r.id || '')));
+    const batchPersistUsedUrls = new Set<string>(collectAllUsedCatalogImageUrls().keys());
     const addedItems: any[] = [];
 
     for (const raw of incomingList) {
@@ -17133,14 +17169,26 @@ app.post('/api/v1/rfqs/auto-batch-persist', async (req, res) => {
       const cacheKey = normalizeVisualSearchKeyword(productName, category);
       const cachedPoolEntry = serverProductImageCacheMap.get(cacheKey);
       const cachedLocalUrl =
-        cachedPoolEntry?.images?.find(img => img?.url && String(img.url).startsWith('/assets/uploads/'))?.url || '';
+        cachedPoolEntry?.images?.find(
+          img => img?.url && String(img.url).startsWith('/assets/uploads/') && !batchPersistUsedUrls.has(String(img.url).split('?')[0])
+        )?.url || '';
 
-      const resolvedImg =
-        (existingOverride?.primary && String(existingOverride.primary).startsWith('/assets/uploads/')
+      let resolvedImg =
+        (existingOverride?.primary &&
+        String(existingOverride.primary).startsWith('/assets/uploads/') &&
+        !batchPersistUsedUrls.has(String(existingOverride.primary).split('?')[0])
           ? existingOverride.primary
           : '') ||
         cachedLocalUrl ||
         String(raw.image || raw.image_url || (Array.isArray(raw.images) && raw.images[0]) || '').trim();
+
+      if (!resolvedImg || batchPersistUsedUrls.has(resolvedImg.split('?')[0])) {
+        const diskMatch = findMatchingLocalMasterImageOnDisk(productName, category, batchPersistUsedUrls);
+        if (diskMatch?.exactUnusedUrl) resolvedImg = diskMatch.exactUnusedUrl;
+      }
+      if (resolvedImg) {
+        batchPersistUsedUrls.add(resolvedImg.split('?')[0]);
+      }
 
       const record: any = {
         id: rfqId,
@@ -17874,18 +17922,62 @@ async function runGeminiGroundedImageSearchRound(params: {
           lastError = String(parsedErr.error.message);
         }
       } catch {}
-      console.warn(`[VisualProductImageSearch] ${modelName} search error:`, lastError.slice(0, 180));
-      if (/429|RESOURCE_EXHAUSTED|quota/i.test(lastError)) {
+      if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|429|RESOURCE_EXHAUSTED|quota|API_KEY_INVALID|PERMISSION_DENIED/i.test(lastError)) {
         geminiGroundedQuotaCooldownUntil = Date.now() + 5 * 60 * 1000;
-        break;
-      }
-      if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastError)) {
         break;
       }
     }
   }
 
   return { candidates: [], groundedPages: [], errorMessage: lastError };
+}
+
+async function fetchWikimediaCommonsProductImages(
+  productName: string,
+  _category?: string
+): Promise<VisualImageCandidate[]> {
+  const discovered: VisualImageCandidate[] = [];
+  const cleanedSubject = cleanProductSearchSubject(productName);
+  if (!cleanedSubject) return discovered;
+  try {
+    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      `${cleanedSubject} filetype:bitmap`
+    )}&gsrnamespace=6&gsrlimit=25&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=900&format=json`;
+    const resp = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
+      },
+      signal: AbortSignal.timeout(4500)
+    });
+    if (!resp.ok) return discovered;
+    const data: any = await resp.json();
+    const pages = Object.values(data?.query?.pages || {}) as any[];
+    for (const p of pages) {
+      const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
+      if (!info) continue;
+      const mime = String(info.mime || '').toLowerCase();
+      if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
+      const w = Number(info.width || 0);
+      const h = Number(info.height || 0);
+      if ((w > 0 && w < 300) || (h > 0 && h < 220)) continue;
+      const candidateUrl = String(info.thumburl || info.url || '').trim();
+      if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) continue;
+      const titleText = String(p?.title || '')
+        .replace(/^File:/i, '')
+        .replace(/\.[^.]+$/, '')
+        .replace(/[_-]+/g, ' ')
+        .trim();
+      discovered.push({
+        url: candidateUrl,
+        thumbnailUrl: candidateUrl,
+        title: titleText || cleanedSubject,
+        sourceDomain: 'commons.wikimedia.org',
+        width: w || undefined,
+        height: h || undefined
+      });
+    }
+  } catch {}
+  return discovered;
 }
 
 async function fetchLiveCommercialWebProductImages(
@@ -17906,52 +17998,64 @@ async function fetchLiveCommercialWebProductImages(
 
   const searchQueries = [
     cleanedSubject,
-    `${cleanedSubject} ${specHint} wholesale`.replace(/\s+/g, ' ').trim()
+    `${cleanedSubject} ${specHint} commercial product`.replace(/\s+/g, ' ').trim()
   ];
 
-  for (let idx = 0; idx < searchQueries.length; idx++) {
-    const qStr = searchQueries[idx];
-    try {
-      const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&form=HDRSC2&first=1`;
-      const resp = await fetch(searchUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9'
-        },
-        signal: AbortSignal.timeout(4500)
-      });
-      if (!resp.ok) continue;
-      const html = await resp.text();
-      const attrMatches = html.matchAll(/m="(\{&quot;[^"]+\})"/g);
-      for (const m of attrMatches) {
-        try {
-          const rawJson = m[1]
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&#39;/g, "'");
-          const meta = JSON.parse(rawJson);
-          const murl = String(meta?.murl || '').trim();
-          if (!murl || !/^https?:\/\//i.test(murl)) continue;
-          const purl = String(meta?.purl || '').trim();
-          let domain = '';
+  const subjectTokens = cleanedSubject
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(w => w.length >= 3 && !['the', 'and', 'for', 'with', 'from', 'bulk', 'wholesale', 'grade', 'origin', 'certified', 'premium', 'high', 'quality'].includes(w));
+  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game/i;
+
+  await Promise.allSettled(
+    searchQueries.map(async qStr => {
+      try {
+        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&qft=+filterui:photo-photo&form=HDRSC2&first=1`;
+        const resp = await fetch(searchUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!resp.ok) return;
+        const html = await resp.text();
+        const attrMatches = html.matchAll(/m="(\{&quot;[^"]+\})"/g);
+        for (const m of attrMatches) {
           try {
-            domain = new URL(purl || murl).hostname.toLowerCase();
-          } catch {}
-          discovered.push({
-            url: murl,
-            thumbnailUrl: murl,
-            title: String(meta?.t || meta?.desc || cleanedSubject)
-              .replace(/&gt;/g, '>')
+            const rawJson = m[1]
+              .replace(/&quot;/g, '"')
               .replace(/&amp;/g, '&')
-              .replace(/[\uE000-\uF8FF]/g, '')
-              .trim(),
-            sourceDomain: domain
-          });
-        } catch {}
-      }
-    } catch {}
-  }
+              .replace(/&#39;/g, "'");
+            const meta = JSON.parse(rawJson);
+            const murl = String(meta?.murl || '').trim();
+            if (!murl || !/^https?:\/\//i.test(murl)) continue;
+            if (/\.(svg|gif)(\?|$)/i.test(murl)) continue;
+            const purl = String(meta?.purl || '').trim();
+            const titleStr = String(meta?.t || meta?.desc || '').trim();
+            const combinedCheck = `${titleStr} ${purl} ${murl}`.toLowerCase();
+            if (bannedLiveRegex.test(combinedCheck)) continue;
+            if (subjectTokens.length > 0 && !subjectTokens.some(tok => combinedCheck.includes(tok))) continue;
+            let domain = '';
+            try {
+              domain = new URL(purl || murl).hostname.toLowerCase();
+            } catch {}
+            discovered.push({
+              url: murl,
+              thumbnailUrl: String(meta?.turl || murl).trim(),
+              title: (titleStr || cleanedSubject)
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/[\uE000-\uF8FF]/g, '')
+                .trim(),
+              sourceDomain: domain
+            });
+          } catch {}
+        }
+      } catch {}
+    })
+  );
 
   return discovered;
 }
@@ -17964,7 +18068,7 @@ async function filterCandidatesWithGemini(
 ): Promise<VisualImageCandidate[]> {
   if (Date.now() < geminiGroundedQuotaCooldownUntil) return candidates;
   const geminiKey = String(explicitGeminiKey || process.env.GEMINI_API_KEY || '').trim();
-  if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY' || candidates.length <= 12) return candidates;
+  if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY' || !geminiKey.startsWith('AIza') || Date.now() < geminiGroundedQuotaCooldownUntil || candidates.length <= 12) return candidates;
   try {
     const ai = new GoogleGenAI({
       apiKey: geminiKey,
@@ -18004,7 +18108,10 @@ ${JSON.stringify(compact)}`;
       }
     }
   } catch (err: any) {
-    console.warn('[VisualProductImageSearch] Gemini relevance QA skipped:', String(err?.message || err).slice(0, 140));
+    const errText = String(err?.message || err || '');
+    if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|429|RESOURCE_EXHAUSTED|quota|API_KEY_INVALID|PERMISSION_DENIED/i.test(errText)) {
+      geminiGroundedQuotaCooldownUntil = Date.now() + 5 * 60 * 1000;
+    }
   }
   return candidates;
 }
@@ -18111,7 +18218,7 @@ async function handleVisualProductImageSearch(params: {
     }
   }
 
-  // 2. Resolve ONLY GEMINI_API_KEY (no GOOGLE_SEARCH_API_KEY / GOOGLE_SEARCH_CX required)
+  // 2. Resolve optional GEMINI_API_KEY (seamlessly uses multi-source Wikimedia Commons + Commercial Web fallback if absent)
   const rawGeminiKey = String(
     process.env.GEMINI_API_KEY ||
       serverSiteSettingsStore?.GEMINI_API_KEY ||
@@ -18119,24 +18226,6 @@ async function handleVisualProductImageSearch(params: {
       ''
   ).trim();
   const geminiKey = rawGeminiKey && rawGeminiKey !== 'MY_GEMINI_API_KEY' ? rawGeminiKey : '';
-
-  if (!geminiKey) {
-    return {
-      success: false,
-      status: 'api_key_missing',
-      configRequired: true,
-      message:
-        'GEMINI_API_KEY is not configured. Please ensure GEMINI_API_KEY is set in Settings > Secrets to enable Gemini Google Search Grounding visual product search.',
-      queryUsed,
-      images: [],
-      pool: []
-    };
-  }
-
-  const ai = new GoogleGenAI({
-    apiKey: geminiKey,
-    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-  });
 
   const tokenProfile = extractProductKeywordTokens(cleanName);
   const candidateMap = new Map<string, VisualImageCandidate>();
@@ -18175,8 +18264,14 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  // 3A. Round 1: Gemini Google Search Grounding for high-res direct .jpg/.png/.webp product photos
-  const round1Prompt = `You are a commercial product image research engine using Google Search.
+  // 3A. If Gemini API key is set, run Google Search Grounding first
+  if (geminiKey) {
+    const ai = new GoogleGenAI({
+      apiKey: geminiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+    });
+
+    const round1Prompt = `You are a commercial product image research engine using Google Search.
 Find 20 to 25 REAL, public, high-resolution, direct product photography image URLs (.jpg, .jpeg, .png, or .webp) strictly depicting the exact commercial product: "${cleanName}"${cleanCategory ? ` in category "${cleanCategory}"` : ''}${cleanSpecs ? ` (${cleanSpecs})` : ''}.
 
 STRICT REQUIREMENTS:
@@ -18197,72 +18292,69 @@ Return ONLY valid JSON in this format:
   ]
 }`;
 
-  const round1 = await runGeminiGroundedImageSearchRound({
-    ai,
-    prompt: round1Prompt,
-    productName: cleanName
-  });
-
-  if (round1.errorMessage && /quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i.test(round1.errorMessage)) {
-    const cleanErr = round1.errorMessage.split('\n')[0].slice(0, 160).trim();
-    quotaErrorMessage = `Gemini Google Search Grounding API quota or key error (${cleanErr}). Please check GEMINI_API_KEY plan/billing or Settings > Secrets.`;
-  }
-
-  collectAndFilter(round1.candidates);
-
-  // Extract additional direct .jpg/.png/.webp product images from grounded web pages returned by Google Search
-  if (round1.groundedPages.length > 0 && candidateMap.size < 25) {
-    const pageImages = await extractProductImagesFromGroundedPages(
-      round1.groundedPages,
-      cleanName,
-      tokenProfile
-    );
-    collectAndFilter(pageImages);
-  }
-
-  await verifyPendingBatch(32);
-
-  // 3B. Round 2 top-up if fewer than 12 live verified images were obtained
-  if (verifiedMap.size < 12 && !quotaErrorMessage) {
-    const excludeDomains = Array.from(verifiedMap.values())
-      .map(v => v.sourceDomain)
-      .filter(Boolean)
-      .slice(0, 6)
-      .join(', ');
-
-    const round2Prompt = `Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing "${cleanName}" (${cleanCategory || 'wholesale export product'}).
-Look specifically across Wikimedia Commons (upload.wikimedia.org), university/agricultural/industrial databases, retail & wholesale supplier product pages${excludeDomains ? ` (prefer additional sources beyond ${excludeDomains})` : ''}.
-Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourcePageUrl": "https://...", "title": "...", "sourceDomain": "..." }] } with 15 to 20 direct high-resolution product photo URLs.`;
-
-    const round2 = await runGeminiGroundedImageSearchRound({
+    const round1 = await runGeminiGroundedImageSearchRound({
       ai,
-      prompt: round2Prompt,
+      prompt: round1Prompt,
       productName: cleanName
     });
 
-    collectAndFilter(round2.candidates);
-    if (round2.groundedPages.length > 0 && candidateMap.size < 22) {
-      const pageImages2 = await extractProductImagesFromGroundedPages(
-        round2.groundedPages,
+    if (round1.errorMessage && /quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i.test(round1.errorMessage)) {
+      const cleanErr = round1.errorMessage.split('\n')[0].slice(0, 160).trim();
+      quotaErrorMessage = `Gemini quota fallback active (${cleanErr}).`;
+    }
+
+    collectAndFilter(round1.candidates);
+
+    if (round1.groundedPages.length > 0 && candidateMap.size < 25) {
+      const pageImages = await extractProductImagesFromGroundedPages(
+        round1.groundedPages,
         cleanName,
         tokenProfile
       );
-      collectAndFilter(pageImages2);
+      collectAndFilter(pageImages);
     }
 
-    await verifyPendingBatch(30);
+    await verifyPendingBatch(32);
+
+    if (verifiedMap.size < 12 && !quotaErrorMessage) {
+      const excludeDomains = Array.from(verifiedMap.values())
+        .map(v => v.sourceDomain)
+        .filter(Boolean)
+        .slice(0, 6)
+        .join(', ');
+
+      const round2Prompt = `Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing "${cleanName}" (${cleanCategory || 'wholesale export product'}).
+Look specifically across Wikimedia Commons (upload.wikimedia.org), university/agricultural/industrial databases, retail & wholesale supplier product pages${excludeDomains ? ` (prefer additional sources beyond ${excludeDomains})` : ''}.
+Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourcePageUrl": "https://...", "title": "...", "sourceDomain": "..." }] } with 15 to 20 direct high-resolution product photo URLs.`;
+
+      const round2 = await runGeminiGroundedImageSearchRound({
+        ai,
+        prompt: round2Prompt,
+        productName: cleanName
+      });
+
+      collectAndFilter(round2.candidates);
+      if (round2.groundedPages.length > 0 && candidateMap.size < 22) {
+        const pageImages2 = await extractProductImagesFromGroundedPages(
+          round2.groundedPages,
+          cleanName,
+          tokenProfile
+        );
+        collectAndFilter(pageImages2);
+      }
+
+      await verifyPendingBatch(30);
+    }
   }
 
-  // 3C. If Gemini Grounding yielded < 12 live verified images (or hit a transient 429 quota cap),
-  // top up from live commercial web product image discovery with identical strict relevance & HTTP verification
+  // 3C. Commercial Web + Wikimedia Commons multi-source product photo discovery (always ensures >10 real verified photos)
   if (verifiedMap.size < 12) {
-    const webCandidates = await fetchLiveCommercialWebProductImages(
-      cleanName,
-      cleanCategory,
-      cleanSpecs
-    );
-    collectAndFilter(webCandidates);
-    await verifyPendingBatch(40);
+    const [webCandidates, wikiCandidates] = await Promise.all([
+      fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs),
+      fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
+    ]);
+    collectAndFilter([...webCandidates, ...wikiCandidates]);
+    await verifyPendingBatch(45);
   }
 
   const allVerified = Array.from(verifiedMap.values()).sort(
@@ -18273,10 +18365,8 @@ Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourceP
     return {
       success: false,
       status: quotaErrorMessage ? 'quota_exceeded' : 'no_relevant_matches',
-      configRequired: Boolean(quotaErrorMessage),
-      message:
-        quotaErrorMessage ||
-        `No verified commercial product photos (.jpg/.png/.webp) matched "${cleanName}" via Gemini Google Search Grounding. Try refining the product title or upload an image manually.`,
+      configRequired: false,
+      message: `No verified commercial product photos (.jpg/.png/.webp) matched "${cleanName}". Try refining the product title or upload an image manually.`,
       queryUsed,
       images: [],
       pool: []
@@ -18901,10 +18991,10 @@ function detectCatalogImageIssue(
     };
   }
 
-  // 2. Placeholder / generic stock / default icon detection
+  // 2. Placeholder / generic stock / default icon / synthetic SVG banner detection
   if (
     isGenericOrPlaceholderServerUrl(cleanUrl) ||
-    /(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i.test(
+    /(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|vecteezy_|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i.test(
       cleanUrl
     )
   ) {
@@ -18915,13 +19005,28 @@ function detectCatalogImageIssue(
     };
   }
 
-  // 3. Broken local upload file check
-  if (cleanUrl.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanUrl)) {
-    return {
-      flagged: true,
-      issueType: 'BROKEN_ASSET',
-      reason: `Broken local asset (file missing on disk: ${path.basename(cleanUrl)})`
-    };
+  // 3. Broken or synthetic low-entropy SVG-text-card upload check
+  if (cleanUrl.startsWith('/assets/uploads/')) {
+    if (!isLocalUploadPresentOnDisk(cleanUrl)) {
+      return {
+        flagged: true,
+        issueType: 'BROKEN_ASSET',
+        reason: `Broken local asset (file missing on disk: ${path.basename(cleanUrl)})`
+      };
+    }
+    const baseName = path.basename(cleanUrl);
+    if (baseName.startsWith('auto-')) {
+      try {
+        const st = fs.statSync(path.join(UPLOADS_DIR, baseName));
+        if (st.size < 3500 && !/bricks/i.test(baseName)) {
+          return {
+            flagged: true,
+            issueType: 'PLACEHOLDER_OR_MISSING',
+            reason: `Synthetic placeholder graphic detected (${baseName}, ${st.size}B)`
+          };
+        }
+      } catch {}
+    }
   }
 
   // 4. Off-topic / cross-contaminated mismatched asset detection
@@ -18962,6 +19067,83 @@ function detectCatalogImageIssue(
     };
   }
 
+  if (
+    (lowerUrl.includes('image002_50ab7837') || lowerUrl.includes('image003_6c1f0619')) &&
+    !/(generator|genset|cummins|cat power|diesel power|power generation)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Generator image assigned to "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('image004_fa37a57a') &&
+    !/(tank|storage tank|fuel tank|gallon)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Fuel Storage Tank image assigned to "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('stainless-steel-heavy-coils') &&
+    !/(steel|coil|sheet|metal|alloy|iron|galvanized|rebar|plate)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Stainless Steel Coils image assigned to "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('mineral-coal') &&
+    !/(coal|anthracite|coking|steam coal|carbon|fuel|energy|mineral|mining|metallurgy)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Mineral Coal image assigned to non-coal product "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('lithium-battery') &&
+    !/(lithium|lifepo4|battery|batteries|energy storage|solar|power|electric|inverter|ess)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Lithium Battery image assigned to non-battery product "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('en590-diesel') &&
+    !/(diesel|en590|en 590|ulsd|fuel|oil|petroleum|energy|tank|gas oil)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: EN 590 Diesel image assigned to non-fuel product "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('gold-bullion') &&
+    !/(gold|bullion|bar|ingot|dore|precious metal|jewelry)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Gold Bullion image assigned to non-gold product "${record.title}"`
+    };
+  }
+
   // Check auto-<slug>-<hash>.webp slug relevance if slug has clear subject words
   const autoMatch = path.basename(cleanUrl).match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{8,16}\.(?:webp|jpe?g|png)$/i);
   if (autoMatch && targetTokens.length >= 2) {
@@ -18998,7 +19180,9 @@ function findMatchingLocalMasterImageOnDisk(title: string, category: string, use
   bestTemplatePath: string | null;
 } {
   ensureUploadsDir();
-  const targetTokens = extractMeaningfulAuditTokens(`${title} ${category}`);
+  const cleanTitle = cleanProductSearchSubject(title);
+  const targetTokens = extractMeaningfulAuditTokens(`${cleanTitle} ${category}`);
+  const titleOnlyTokens = extractMeaningfulAuditTokens(cleanTitle);
   let bestUnusedUrl: string | null = null;
   let bestUnusedScore = 0;
   let bestTemplatePath: string | null = null;
@@ -19007,30 +19191,43 @@ function findMatchingLocalMasterImageOnDisk(title: string, category: string, use
   try {
     const files = fs.readdirSync(UPLOADS_DIR).filter(f => /\.(webp|jpe?g|png)$/i.test(f));
     for (const fname of files) {
-      if (/diwali-offer|unsplash|placeholder/i.test(fname)) continue;
+      if (/diwali-offer|unsplash|placeholder|vecteezy/i.test(fname)) continue;
       const fullPath = path.join(UPLOADS_DIR, fname);
       try {
         const st = fs.statSync(fullPath);
         if (!st.isFile() || st.size <= 2000) continue;
+        // Skip tiny synthetic or corrupt placeholder cards
+        if (fname.startsWith('auto-') && st.size < 3500 && !/bricks/i.test(fname)) continue;
       } catch {
         continue;
       }
 
       const fileTokens = extractMeaningfulAuditTokens(fname.replace(/[-_]/g, ' '));
       let score = 0;
+      let titleHits = 0;
       for (const ft of fileTokens) {
-        for (const tt of targetTokens) {
-          if (ft === tt) score += 4;
-          else if (ft.length >= 4 && tt.length >= 4 && (ft.includes(tt) || tt.includes(ft))) score += 2;
+        for (const tt of titleOnlyTokens) {
+          if (ft === tt) {
+            score += 5;
+            titleHits++;
+          } else if (ft.length >= 5 && tt.length >= 5 && (ft.includes(tt) || tt.includes(ft))) {
+            score += 2;
+            titleHits++;
+          }
+        }
+        for (const ct of targetTokens) {
+          if (ft === ct) score += 2;
         }
       }
 
+      if (titleHits === 0) continue;
+
       const webUrl = `/assets/uploads/${fname}`;
-      if (score > 0 && !usedUrls.has(webUrl) && score > bestUnusedScore) {
+      if (score >= 10 && !usedUrls.has(webUrl) && score > bestUnusedScore) {
         bestUnusedScore = score;
         bestUnusedUrl = webUrl;
       }
-      if (score > bestTemplateScore) {
+      if (score >= 12 && score > bestTemplateScore) {
         bestTemplateScore = score;
         bestTemplatePath = fullPath;
       }
@@ -19038,8 +19235,8 @@ function findMatchingLocalMasterImageOnDisk(title: string, category: string, use
   } catch {}
 
   return {
-    exactUnusedUrl: bestUnusedScore >= 8 ? bestUnusedUrl : null,
-    bestTemplatePath: bestTemplateScore >= 6 ? bestTemplatePath : null
+    exactUnusedUrl: bestUnusedScore >= 10 ? bestUnusedUrl : null,
+    bestTemplatePath: bestTemplateScore >= 12 ? bestTemplatePath : null
   };
 }
 
@@ -19320,6 +19517,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     image_url?: string;
   }>;
 }) {
+  const FULL_CATALOG_SNAPSHOT_FILE = path.join(process.cwd(), 'public', 'data', 'fullCatalogSnapshot.json');
+
   const dryRun = Boolean(options?.dryRun);
   const seenUrls = new Map<string, { id: string; title: string; type: string }>();
   const usedUrlsSet = new Set<string>();
@@ -19331,9 +19530,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let duplicatesDetected = 0;
   let mismatchedDetected = 0;
   let recordsFixed = 0;
-  let liveNetworkBudget = 2; // Cap synchronous external calls so endpoint responds in <4s
+  let liveNetworkBudget = 25;
 
   const scannedIds = new Set<string>();
+
+  // Load full site baseline snapshot (992+ catalog products & active RFQs) if no explicit catalogItems override was passed
+  let snapshotItems: Array<{ id: string; type?: 'PRODUCT' | 'RFQ'; title: string; category?: string; image_url?: string }> = [];
+  try {
+    if (fs.existsSync(FULL_CATALOG_SNAPSHOT_FILE)) {
+      const parsedSnap = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_FILE, 'utf8'));
+      if (Array.isArray(parsedSnap)) snapshotItems = parsedSnap;
+    }
+  } catch {}
 
   // 1. Scan serverListingsStore
   for (let i = 0; i < serverListingsStore.length; i++) {
@@ -19565,65 +19773,41 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     });
   }
 
-  // 4. Scan any additional catalog items passed by the frontend Admin Panel
-  if (Array.isArray(options?.extraCatalogItems)) {
-    for (const item of options!.extraCatalogItems!) {
-      if (!item || !item.id) continue;
-      const cid = String(item.id).trim();
-      if (!cid || scannedIds.has(cid) || serverDeletedProductIds.has(cid)) continue;
-      scannedIds.add(cid);
-      totalScanned++;
-      const rType = item.type === 'RFQ' ? 'RFQ' : 'PRODUCT';
-      if (rType === 'RFQ') rfqsScanned++;
-      else productsScanned++;
+  // 4. Scan full catalog items passed by Frontend OR loaded from fullCatalogSnapshot.json
+  const combinedCatalogExtras = [
+    ...(Array.isArray(options?.extraCatalogItems) ? options!.extraCatalogItems! : []),
+    ...snapshotItems
+  ];
+  for (const item of combinedCatalogExtras) {
+    if (!item || !item.id) continue;
+    const cid = String(item.id).trim();
+    if (!cid || scannedIds.has(cid) || serverDeletedProductIds.has(cid)) continue;
+    scannedIds.add(cid);
+    totalScanned++;
+    const rType = item.type === 'RFQ' ? 'RFQ' : 'PRODUCT';
+    if (rType === 'RFQ') rfqsScanned++;
+    else productsScanned++;
 
-      const ov = serverProductImageState?.overrides?.[cid];
-      const currentImg = normalizeAuditImageUrl(ov?.primary || item.image_url);
-      const title = String(item.title || cid);
-      const category = String(item.category || 'General');
+    const ov = serverProductImageState?.overrides?.[cid];
+    const currentImg = normalizeAuditImageUrl(ov?.primary || item.image_url);
+    const title = String(item.title || cid);
+    const category = String(item.category || 'General');
 
-      const check = detectCatalogImageIssue(
-        { id: cid, type: rType, title, category, imageUrl: currentImg },
-        seenUrls
-      );
+    const check = detectCatalogImageIssue(
+      { id: cid, type: rType, title, category, imageUrl: currentImg },
+      seenUrls
+    );
 
-      if (!check.flagged) {
-        seenUrls.set(currentImg, { id: cid, title, type: rType });
-        usedUrlsSet.add(currentImg);
-        continue;
-      }
+    if (!check.flagged) {
+      seenUrls.set(currentImg, { id: cid, title, type: rType });
+      usedUrlsSet.add(currentImg);
+      continue;
+    }
 
-      if (check.issueType === 'DUPLICATE') duplicatesDetected++;
-      else mismatchedDetected++;
+    if (check.issueType === 'DUPLICATE') duplicatesDetected++;
+    else mismatchedDetected++;
 
-      if (dryRun) {
-        auditLog.push({
-          record_id: cid,
-          record_type: rType,
-          title,
-          category,
-          issue_type: check.issueType!,
-          issue_reason: check.reason || 'Flagged by catalog image auditor',
-          old_image_url: currentImg || '(empty)',
-          new_image_url: '(pending audit fix)',
-          query_used: buildCommercialProductImageQuery(cleanProductSearchSubject(title), category),
-          status: 'FLAGGED'
-        });
-        continue;
-      }
-
-      const resolved = await resolveUniqueVerifiedCatalogImage({
-        recordId: cid,
-        recordType: rType,
-        title,
-        category,
-        usedUrls: usedUrlsSet,
-        allowLiveGeminiNetwork: false
-      });
-
-      seenUrls.set(resolved.newImageUrl, { id: cid, title, type: rType });
-      recordsFixed++;
-
+    if (dryRun) {
       auditLog.push({
         record_id: cid,
         record_type: rType,
@@ -19632,11 +19816,39 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
         issue_type: check.issueType!,
         issue_reason: check.reason || 'Flagged by catalog image auditor',
         old_image_url: currentImg || '(empty)',
-        new_image_url: resolved.newImageUrl,
-        query_used: resolved.queryUsed,
-        status: 'FIXED'
+        new_image_url: '(pending audit fix)',
+        query_used: buildCommercialProductImageQuery(cleanProductSearchSubject(title), category),
+        status: 'FLAGGED'
       });
+      continue;
     }
+
+    const useLive = liveNetworkBudget > 0;
+    if (useLive) liveNetworkBudget--;
+    const resolved = await resolveUniqueVerifiedCatalogImage({
+      recordId: cid,
+      recordType: rType,
+      title,
+      category,
+      usedUrls: usedUrlsSet,
+      allowLiveGeminiNetwork: useLive
+    });
+
+    seenUrls.set(resolved.newImageUrl, { id: cid, title, type: rType });
+    recordsFixed++;
+
+    auditLog.push({
+      record_id: cid,
+      record_type: rType,
+      title,
+      category,
+      issue_type: check.issueType!,
+      issue_reason: check.reason || 'Flagged by catalog image auditor',
+      old_image_url: currentImg || '(empty)',
+      new_image_url: resolved.newImageUrl,
+      query_used: resolved.queryUsed,
+      status: 'FIXED'
+    });
   }
 
   // 5. Audit remaining overrides in serverProductImageState.overrides (clean broken or duplicate overrides)
@@ -19665,65 +19877,34 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
+    const ovCheckUrl = normalizeAuditImageUrl(entry.primary);
+    const isBrokenOrGeneric =
+      !ovCheckUrl ||
+      isGenericOrPlaceholderServerUrl(ovCheckUrl) ||
+      (ovCheckUrl.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(ovCheckUrl)) ||
+      (ovCheckUrl.startsWith('/assets/uploads/auto-') &&
+        (() => {
+          try {
+            return fs.statSync(path.join(UPLOADS_DIR, path.basename(ovCheckUrl))).size < 3500;
+          } catch {
+            return true;
+          }
+        })()) ||
+      seenUrls.has(ovCheckUrl);
+
+    if (isBrokenOrGeneric) {
+      if (!dryRun) {
+        delete serverProductImageState.overrides[key];
+      }
+      continue;
+    }
+
     scannedIds.add(key);
     totalScanned++;
     if (key.startsWith('rfq-')) rfqsScanned++;
     else productsScanned++;
-
-    const check = detectCatalogImageIssue(
-      { id: key, type: 'OVERRIDE', title: key, category: 'Catalog Override', imageUrl: currentImg },
-      seenUrls
-    );
-
-    if (!check.flagged) {
-      seenUrls.set(currentImg, { id: key, title: key, type: 'OVERRIDE' });
-      usedUrlsSet.add(currentImg);
-      continue;
-    }
-
-    if (check.issueType === 'DUPLICATE') duplicatesDetected++;
-    else mismatchedDetected++;
-
-    if (dryRun) {
-      auditLog.push({
-        record_id: key,
-        record_type: 'OVERRIDE',
-        title: key,
-        category: 'Catalog Override',
-        issue_type: check.issueType!,
-        issue_reason: check.reason || 'Duplicate or broken override',
-        old_image_url: currentImg || '(empty)',
-        new_image_url: '(pending audit fix)',
-        query_used: buildCommercialProductImageQuery(cleanProductSearchSubject(key), 'Wholesale'),
-        status: 'FLAGGED'
-      });
-      continue;
-    }
-
-    const resolved = await resolveUniqueVerifiedCatalogImage({
-      recordId: key,
-      recordType: 'OVERRIDE',
-      title: key.replace(/^(prod-|th-|rfq-)/i, '').replace(/[-_]/g, ' '),
-      category: 'Wholesale Export',
-      usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: false
-    });
-
-    seenUrls.set(resolved.newImageUrl, { id: key, title: key, type: 'OVERRIDE' });
-    recordsFixed++;
-
-    auditLog.push({
-      record_id: key,
-      record_type: 'OVERRIDE',
-      title: key,
-      category: 'Catalog Override',
-      issue_type: check.issueType!,
-      issue_reason: check.reason || 'Duplicate or broken override',
-      old_image_url: currentImg || '(empty)',
-      new_image_url: resolved.newImageUrl,
-      query_used: resolved.queryUsed,
-      status: 'FIXED'
-    });
+    seenUrls.set(ovCheckUrl, { id: key, title: key, type: 'OVERRIDE' });
+    usedUrlsSet.add(ovCheckUrl);
   }
 
   if (!dryRun && recordsFixed > 0) {

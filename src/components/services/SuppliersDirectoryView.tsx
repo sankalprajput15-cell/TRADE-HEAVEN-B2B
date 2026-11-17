@@ -251,8 +251,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
             {paginatedCompanies.map((company, index) => {
               const isMelissaCompany = company.id === 'comp-melissa-mpcommodity' || (company.companyName || '').toLowerCase().includes('mp commodity');
-              const isReverseEnergyOrFirstCard =
-                (currentPage === 1 && index === 0) ||
+              const isReverseEnergy =
                 company.id === 'user-supplier-emmanuel-reverse-energy' ||
                 company.id === 'comp-reverse-energy-sa' ||
                 (company.companyName || '').toLowerCase().includes('reverse energy');
@@ -263,6 +262,64 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
               const categoryLabel = isMelissaCompany
                 ? 'Fuel & Petroleum'
                 : (company.businessType || 'Verified Exporter');
+
+              // Generate a 100% unique, custom-colored Corporate Emblem SVG per supplier card so no two suppliers ever look identical
+              const SUPPLIER_PALETTES: Array<[string, string, string]> = [
+                ['#064E3B', '#047857', '#6EE7B7'],
+                ['#7F1D1D', '#B91C1C', '#FCA5A5'],
+                ['#1E3A8A', '#1D4ED8', '#93C5FD'],
+                ['#4C1D95', '#6D28D9', '#C4B5FD'],
+                ['#78350F', '#B45309', '#FCD34D'],
+                ['#134E4A', '#0F766E', '#5EEAD4'],
+                ['#831843', '#BE185D', '#F9A8D4'],
+                ['#365314', '#4D7C0F', '#BEF264'],
+                ['#312E81', '#4338CA', '#A5B4FC'],
+                ['#7C2D12', '#C2410C', '#FDBA74'],
+                ['#0C4A6E', '#0369A1', '#7DD3FC'],
+                ['#581C87', '#7E22CE', '#D8B4FE'],
+                ['#14532D', '#15803D', '#86EFAC'],
+                ['#881337', '#E11D48', '#FDA4AF'],
+                ['#1E293B', '#334155', '#38BDF8'],
+                ['#451A03', '#92400E', '#FDE047']
+              ];
+              let idHash = 0;
+              const seedText = `${company.id || ''}-${company.companyName || ''}`;
+              for (let cIdx = 0; cIdx < seedText.length; cIdx++) {
+                idHash = (idHash * 31 + seedText.charCodeAt(cIdx)) >>> 0;
+              }
+              const palIdx = ((currentPage - 1) * itemsPerPage + index + (idHash % 5)) % SUPPLIER_PALETTES.length;
+              const [bgStart, bgEnd, accentColor] = SUPPLIER_PALETTES[palIdx];
+              const words = (company.companyName || 'Supplier')
+                .replace(/[^a-zA-Z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(Boolean);
+              const monogram = (
+                words.length >= 2
+                  ? `${words[0][0]}${words[1][0]}`
+                  : (words[0] || 'TH').slice(0, 2)
+              ).toUpperCase();
+              const iso3 = countryDisplay.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'GLB';
+              const shapeIdx = (index + idHash) % 3;
+              const innerShape =
+                shapeIdx === 0
+                  ? `<circle cx="120" cy="106" r="68" fill="none" stroke="${accentColor}" stroke-width="5" opacity="0.55"/>`
+                  : shapeIdx === 1
+                    ? `<rect x="44" y="34" width="152" height="144" rx="28" fill="none" stroke="${accentColor}" stroke-width="5" opacity="0.55"/>`
+                    : `<polygon points="120,28 196,72 196,152 120,192 44,152 44,72" fill="none" stroke="${accentColor}" stroke-width="5" opacity="0.55"/>`;
+              const uniqueCrestSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><defs><linearGradient id="g${index}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${bgStart}"/><stop offset="100%" stop-color="${bgEnd}"/></linearGradient></defs><rect width="240" height="240" rx="42" fill="url(#g${index})"/>${innerShape}<text x="120" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="76" font-weight="900" fill="#FFFFFF" letter-spacing="2">${monogram}</text><rect x="48" y="176" width="144" height="38" rx="12" fill="#090D16" fill-opacity="0.55" stroke="${accentColor}" stroke-width="2"/><text x="120" y="201" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="${accentColor}" letter-spacing="2">${iso3}</text></svg>`;
+              const uniqueCrestUri = `data:image/svg+xml;utf8,${encodeURIComponent(uniqueCrestSvg)}`;
+
+              const rawLogo = (company.logoUrl || company.bannerUrl || '').trim();
+              const hasDedicatedOwnPhoto =
+                rawLogo.startsWith('/assets/') &&
+                !rawLogo.includes('leather_belt_') &&
+                !rawLogo.includes('verified-belt-') &&
+                (!rawLogo.includes('image00') || (company.companyName || '').toLowerCase().includes('atlantic'));
+              const resolvedSupplierSrc = isReverseEnergy
+                ? regeneratedSupplierCoalImg
+                : hasDedicatedOwnPhoto
+                  ? rawLogo
+                  : uniqueCrestUri;
 
               return (
                 <div
@@ -301,11 +358,14 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                       className="flex items-start gap-3.5 cursor-pointer"
                     >
                       <SafeImage
-                        src={isReverseEnergyOrFirstCard ? regeneratedSupplierCoalImg : (company.logoUrl || company.bannerUrl)}
+                        src={resolvedSupplierSrc}
+                        fallbackSrc={uniqueCrestUri}
                         alt={company.companyName}
+                        supplierName={company.companyName}
                         productId={company.id}
                         productTitle={`${company.companyName} ${company.description || ''}`}
                         category={isMelissaCompany ? 'CHEMICALS' : company.businessType}
+                        type="logo"
                         isThumbnail
                         className="w-12 h-12 rounded-xl border border-slate-200/80 shrink-0 bg-slate-100"
                         imgClassName="group-hover:scale-105 transition-transform duration-300"

@@ -1,4 +1,5 @@
 import { DetailedVendorProfile } from '../types';
+import { GLOBAL_LEATHER_BELT_COMPANIES } from './leatherBeltCompanies';
 
 export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
   'comp-apex-motorsport': {
@@ -1724,13 +1725,15 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
   if (DETAILED_VENDOR_PROFILES[companyId]) {
     return DETAILED_VENDOR_PROFILES[companyId];
   }
+  const beltComp = GLOBAL_LEATHER_BELT_COMPANIES.find(c => c.id === companyId);
   // Generate high quality fallback from base company profile
-  const base = fallbackBase || {};
+  const base = fallbackBase || beltComp || {};
+  const resolvedName = base.companyName || `Verified Manufacturer (${companyId || 'OEM'})`;
   return {
     id: companyId || 'comp-default',
-    companyName: base.companyName || 'Global Verified Exporter Corp.',
-    tradeName: base.companyName || 'Global Verified Trading Co.',
-    legalRegistrationNumber: base.legalRegistrationNumber || 'INTL-REG-2025-99201',
+    companyName: resolvedName,
+    tradeName: base.tradeName || resolvedName,
+    legalRegistrationNumber: base.legalRegistrationNumber || `INTL-REG-${(companyId || 'OEM').toUpperCase()}`,
     country: base.country || 'Global',
     city: base.city || 'Export Center',
     address: base.address || 'Export Processing Zone, Port District',
@@ -1750,8 +1753,8 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
     completedOrdersCount: base.completedOrdersCount || 250,
     factorySizeSqM: base.factorySizeSqM || 25000,
     productionLines: base.productionLines || 6,
-    logoUrl: base.logoUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: base.bannerUrl || 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    logoUrl: base.logoUrl || '',
+    bannerUrl: base.bannerUrl || '',
     tagline: 'Certified International Manufacturer & Direct Exporter',
     description: base.description || 'Verified manufacturer offering bulk wholesale manufacturing, OEM/ODM private labeling, and global logistics support with full trade assurance protection.',
     acceptedPaymentTerms: ['Trade Protection Certificate', 'L/C at Sight', '30% T/T + 70% B/L', 'D/P'],

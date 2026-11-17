@@ -380,7 +380,7 @@ export class TradeHeavenMediatorEngine {
 
       if (isBasicPlanStatus(wallet.plan_status, entityId)) {
         throw new Error(
-          `Direct-to-site payout blocked: ${wallet.company_name || entityId} has a 'Basic' plan status. Only VIP members can receive direct-to-site fund transfers and payouts.`
+          `Withdrawal restricted: VIP plan member are eligible to do it. ${wallet.company_name || entityId} currently has a 'Basic' plan status. Only VIP members are eligible to withdraw funds to bank accounts.`
         );
       }
 
@@ -533,12 +533,12 @@ export class TradeHeavenSqlPoolAdapter {
         company_name: 'MP Commodity Brokers Australia Pty Ltd',
         wallet_type: 'SUPPLIER',
         plan_status: 'BASIC',
-        available_balance: '0',
+        available_balance: '424000000', // $50,000.00 USD (at 1 USD = 84.80 INR, 4,240,000 INR = 424,000,000 paise)
         locked_balance: '0',
         currency: 'USD',
-        country: 'Australia',
-        native_currency: 'AUD',
-        native_symbol: 'A$',
+        country: 'United States',
+        native_currency: 'USD',
+        native_symbol: '$',
         updated_at: new Date().toISOString()
       },
       {
@@ -634,6 +634,16 @@ export class TradeHeavenSqlPoolAdapter {
     ];
 
     this.ledgerEntries = [
+      {
+        id: 'led-melissa-topup-50k',
+        reference_id: 'DEP-USD-50000-MELISSA',
+        source_wallet_id: null,
+        destination_wallet_id: 'wal-supp-melissa',
+        amount: '424000000',
+        transaction_type: 'WALLET_TOPUP',
+        notes: 'Account Balance Credit — $50,000.00 USD Credited to Melissa Prezios',
+        created_at: new Date(Date.now() - 3600 * 1000 * 2).toISOString()
+      },
       {
         id: 'led-1001',
         reference_id: 'GW-RZP-9948102',

@@ -43,9 +43,68 @@ const GENERIC_PLACEHOLDER_PATTERNS = [
   'unsplash.com',
   'pexels.com',
   'pixabay.com',
-  'vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port',
-  'vecteezy_cargo-tanker-ship'
+  'shutterstock.com',
+  'istockphoto.com',
+  'gettyimages.com',
+  'alamy.com',
+  '123rf.com',
+  'depositphotos.com',
+  'dreamstime.com',
+  'vecteezy_',
+  'default-icon',
+  'diwali-offer-banner',
+  'tradeheavenb2bbest.svg'
 ];
+
+export function isMismatchedProductImageUrl(
+  imageUrl?: string,
+  productTitle?: string,
+  category?: string
+): boolean {
+  const lowerUrl = String(imageUrl || '').trim().toLowerCase();
+  if (!lowerUrl) return false;
+  const target = `${productTitle || ''} ${category || ''}`.toLowerCase();
+  if (!target.trim()) return false;
+
+  if (
+    lowerUrl.includes('agricultural_rice_husk_powder') &&
+    !/(rice|husk|agri|biomass|briquette|pellet|ash|powder)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('leather_belt') &&
+    !/(leather|belt|apparel|fashion|strap|wallet|accessory|hide)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    (lowerUrl.includes('saree') || lowerUrl.includes('shree')) &&
+    !/(saree|sari|textile|apparel|garment|silk|fabric|cloth)/i.test(target)
+  ) {
+    return true;
+  }
+  // Generator/tank photos on excavators/earthmoving or unrelated items
+  if (
+    (lowerUrl.includes('image002_50ab7837') || lowerUrl.includes('image003_6c1f0619')) &&
+    !/(generator|genset|cummins|cat power|diesel power|power generation)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('image004_fa37a57a') &&
+    !/(tank|storage tank|fuel tank|gallon)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('stainless-steel-heavy-coils') &&
+    !/(steel|coil|sheet|metal|alloy|iron|galvanized|rebar|plate)/i.test(target)
+  ) {
+    return true;
+  }
+  return false;
+}
 
 function hydrateLocalMirrorMap(): void {
   if (typeof window === 'undefined' || mirrorCacheHydrated) return;

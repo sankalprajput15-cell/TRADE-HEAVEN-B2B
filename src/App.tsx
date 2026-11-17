@@ -168,6 +168,7 @@ const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/Pay
 const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
 const CustomShareModal = lazyWithRetry(() => import('./components/modals/CustomShareModal'), 'CustomShareModal');
 const MembershipUpgradeModal = lazyWithRetry(() => import('./components/modals/MembershipUpgradeModal'), 'MembershipUpgradeModal');
+const VipWithdrawalRequiredModal = lazyWithRetry(() => import('./components/modals/VipWithdrawalRequiredModal'), 'VipWithdrawalRequiredModal');
 import { sortRfqsRealFirst, mergeRfqLists, sanitizeSearchKeyword } from './services/rfqMarketDemandService';
 import { 
   CustomLinkTarget, 
@@ -656,6 +657,8 @@ const MainApp: React.FC = () => {
 
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeModalRfq, setUpgradeModalRfq] = useState<RfqRequirement | null>(null);
+  const [isVipWithdrawalModalOpen, setIsVipWithdrawalModalOpen] = useState(false);
+  const [vipModalBalance, setVipModalBalance] = useState('$50,000.00 USD');
 
   const handleOpenMembershipUpgradeModal = (rfq?: RfqRequirement) => {
     setUpgradeModalRfq(rfq || null);
@@ -1223,17 +1226,28 @@ const MainApp: React.FC = () => {
       setAuthModalMode(customEvent?.detail?.mode === 'REGISTER' ? 'REGISTER' : 'LOGIN');
       setIsAuthModalOpen(true);
     };
+    const handleVipWithdrawalEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ balance?: string; balanceFormatted?: string }>;
+      if (customEvent?.detail?.balanceFormatted) {
+        setVipModalBalance(customEvent.detail.balanceFormatted);
+      } else if (customEvent?.detail?.balance) {
+        setVipModalBalance(customEvent.detail.balance);
+      }
+      setIsVipWithdrawalModalOpen(true);
+    };
     window.addEventListener('tradeheaven_open_register', handleRegisterEvent);
     window.addEventListener('tradeheaven_open_login', handleLoginEvent);
     window.addEventListener('tradeheaven_open_auth', handleOpenAuthEvent);
     window.addEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
     window.addEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
+    window.addEventListener('tradeheaven_open_vip_withdrawal_modal', handleVipWithdrawalEvent);
     return () => {
       window.removeEventListener('tradeheaven_open_register', handleRegisterEvent);
       window.removeEventListener('tradeheaven_open_login', handleLoginEvent);
       window.removeEventListener('tradeheaven_open_auth', handleOpenAuthEvent);
       window.removeEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
       window.removeEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
+      window.removeEventListener('tradeheaven_open_vip_withdrawal_modal', handleVipWithdrawalEvent);
     };
   }, [currentUser]);
 
@@ -3398,8 +3412,19 @@ const MainApp: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              handleNavigate('SUPPLIER_WITHDRAWAL');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              const email = (currentUser?.email || '').toLowerCase();
+              const id = (currentUser?.id || '').toLowerCase();
+              const name = (currentUser?.name || '').toLowerCase();
+              const isMelissa = email.includes('melissa') || id.includes('melissa') || name.includes('melissa');
+              const plan = ((currentUser as any)?.plan || (currentUser as any)?.tier || '').toLowerCase();
+              const isBasic = isMelissa || (!plan.includes('vip') && !plan.includes('enterprise'));
+
+              if (isBasic) {
+                setIsVipWithdrawalModalOpen(true);
+              } else {
+                handleNavigate('SUPPLIER_WITHDRAWAL');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
             }}
             className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
               activeView === 'SUPPLIER_WITHDRAWAL' || activeView === 'WALLET_TOPUP'
@@ -3544,6 +3569,18 @@ const MainApp: React.FC = () => {
           onViewAllPlans={() => {
             setIsUpgradeModalOpen(false);
             setActiveView('PREMIUM_MEMBERSHIP');
+          }}
+        />
+
+        <VipWithdrawalRequiredModal
+          isOpen={isVipWithdrawalModalOpen}
+          onClose={() => setIsVipWithdrawalModalOpen(false)}
+          userName={currentUser?.name || 'Melissa Prezios'}
+          companyName={currentUser?.companyName || 'MP Commodity Brokers Australia Pty Ltd'}
+          balanceFormatted={vipModalBalance}
+          onUpgrade={() => {
+            setIsVipWithdrawalModalOpen(false);
+            setIsUpgradeModalOpen(true);
           }}
         />
 

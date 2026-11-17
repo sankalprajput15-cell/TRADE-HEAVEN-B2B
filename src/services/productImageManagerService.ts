@@ -1,5 +1,6 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
+import backupOverridesJson from '../data/productImageOverridesBackup.json';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 
@@ -95,12 +96,12 @@ export function buildCssFilterString(filters?: Partial<ImageEditFilters>): strin
   return `brightness(${b}%) contrast(${c}%) grayscale(${g}%) sepia(${s}%)`;
 }
 
-const STORAGE_KEY = 'trade_heaven_product_image_system_v1';
-const LEGACY_OVERRIDES_KEY = 'trade_heaven_image_overrides';
-const PRODUCTS_CACHE_KEY = 'trade_heaven_v1_products_v2';
+const STORAGE_KEY = 'trade_heaven_product_image_system_v7';
+const LEGACY_OVERRIDES_KEY = 'trade_heaven_image_overrides_v7';
+const PRODUCTS_CACHE_KEY = 'trade_heaven_v1_products_v7';
 const IDB_NAME = 'trade_heaven_product_images_idb';
 const IDB_STORE = 'image_system_state';
-const IDB_KEY = 'active_state_v1';
+const IDB_KEY = 'active_state_v7';
 
 export function normalizeProductAssetUrl(url: string | undefined | null): string {
   if (!url || typeof url !== 'string') return '';
@@ -146,34 +147,7 @@ export function optimizeImageUrl(
   return clean;
 }
 
-const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
-  'prod-1': {
-    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
-    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
-  'th-rh-prod-01': {
-    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
-    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
-  'th-rh-prod-02': {
-    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
-    gallery: [
-      '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
-      '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
-    ],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
-  'th-rh-prod-04': {
-    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
-    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
+const RAW_BUILTIN_BASE: Record<string, ProductImageOverrideEntry> = {
   'prod-blackstone-black-jade-cabochon': {
     primary: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
     gallery: [
@@ -214,63 +188,17 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
     format: 'PNG',
     updatedAt: '2024-01-01T00:00:00.000Z'
   },
-  'prod-middle-fox-en590': {
-    primary: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-    gallery: [
-      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
-    ],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
-  'prod-middle-fox-jeta1': {
-    primary: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    gallery: [
-      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
-    ],
-    format: 'JPG',
-    updatedAt: '2024-01-01T00:00:00.000Z'
-  },
-  'user-supplier-emmanuel-reverse-energy': {
-    primary: regeneratedSupplierCoalImg,
-    gallery: [regeneratedSupplierCoalImg],
-    format: 'JPG',
-    updatedAt: '2026-11-09T00:00:00.000Z'
-  },
-  'comp-reverse-energy-sa': {
-    primary: regeneratedSupplierCoalImg,
-    gallery: [regeneratedSupplierCoalImg],
-    format: 'JPG',
-    updatedAt: '2026-11-09T00:00:00.000Z'
-  },
   'prod-reverse-energy-sa-coal': {
     primary: regeneratedSupplierCoalImg,
     gallery: [regeneratedSupplierCoalImg],
     format: 'JPG',
     updatedAt: '2026-11-09T00:00:00.000Z'
-  },
-  'bricks': {
-    primary: '/assets/uploads/auto-bricks-bcc0b0120401.webp',
-    gallery: [
-      '/assets/uploads/auto-bricks-bcc0b0120401.webp',
-      '/assets/uploads/auto-bricks-93945c6b34e1.webp',
-      '/assets/uploads/auto-bricks-7ee8786c0984.webp',
-      '/assets/uploads/auto-bricks-036049844c92.webp'
-    ],
-    format: 'WEBP',
-    updatedAt: '2026-11-15T00:00:00.000Z'
-  },
-  'brick': {
-    primary: '/assets/uploads/auto-bricks-93945c6b34e1.webp',
-    gallery: [
-      '/assets/uploads/auto-bricks-93945c6b34e1.webp',
-      '/assets/uploads/auto-bricks-bcc0b0120401.webp',
-      '/assets/uploads/auto-bricks-7ee8786c0984.webp'
-    ],
-    format: 'WEBP',
-    updatedAt: '2026-11-15T00:00:00.000Z'
   }
+};
+
+const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
+  ...RAW_BUILTIN_BASE,
+  ...((backupOverridesJson as { overrides?: Record<string, ProductImageOverrideEntry> })?.overrides || {})
 };
 
 const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
@@ -365,20 +293,6 @@ const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
     name: 'Gourmet Vanilla Beans & Pure Extract.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-22T09:05:00Z'
-  },
-  {
-    id: 'builtin-evening-cargo-port',
-    url: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    name: 'Evening Cargo & Oil Ships Dock at Port.jpg',
-    format: 'JPG',
-    uploadedAt: '2026-10-20T08:23:00Z'
-  },
-  {
-    id: 'builtin-cargo-tanker-berth',
-    url: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-    name: 'Cargo Tanker Ship Marine Vessel Docking.jpg',
-    format: 'JPG',
-    uploadedAt: '2026-10-20T08:08:00Z'
   }
 ];
 
@@ -478,7 +392,11 @@ class ProductImageManagerService {
       'images.unsplash.com',
       'unsplash.com',
       'pexels.com',
-      'pixabay.com'
+      'pixabay.com',
+      'shutterstock.com',
+      'istockphoto.com',
+      'gettyimages.com',
+      'vecteezy_'
     ].some(p => clean.includes(p));
   }
 
@@ -510,15 +428,50 @@ class ProductImageManagerService {
     if (typeof window === 'undefined') return base;
 
     try {
+      // Purge stale pre-audit localStorage keys so browsers never display deleted or duplicate images
+      for (const staleKey of [
+        'trade_heaven_product_image_system_v1',
+        'trade_heaven_product_image_system_v2',
+        'trade_heaven_product_image_system_v3',
+        'trade_heaven_product_image_system_v4',
+        'trade_heaven_product_image_system_v5',
+        'trade_heaven_product_image_system_v6',
+        'trade_heaven_image_overrides',
+        'trade_heaven_image_overrides_v3',
+        'trade_heaven_image_overrides_v4',
+        'trade_heaven_image_overrides_v5',
+        'trade_heaven_image_overrides_v6',
+        'trade_heaven_v1_products_v1',
+        'trade_heaven_v1_products_v2',
+        'trade_heaven_v1_products_v3',
+        'trade_heaven_v1_products_v4',
+        'trade_heaven_v1_products_v5',
+        'trade_heaven_v1_products_v6',
+        'cached_products'
+      ]) {
+        try {
+          localStorage.removeItem(staleKey);
+        } catch {}
+      }
+
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
           const loadedOverrides = this.normalizeOverrideMap(parsed.overrides);
-          base.overrides = {
-            ...DEFAULT_BUILTIN_OVERRIDES,
-            ...loadedOverrides
-          };
+          base.overrides = { ...DEFAULT_BUILTIN_OVERRIDES };
+          for (const [k, entry] of Object.entries(loadedOverrides)) {
+            const builtin = base.overrides[k];
+            if (!builtin) {
+              base.overrides[k] = entry;
+            } else {
+              const builtinTime = Date.parse(builtin.updatedAt || '') || 0;
+              const loadedTime = Date.parse(entry.updatedAt || '') || 0;
+              if (loadedTime > builtinTime && entry.updatedBy !== 'auto-site-upload') {
+                base.overrides[k] = entry;
+              }
+            }
+          }
           base.globalDefaultImage = typeof parsed.globalDefaultImage === 'string'
             ? normalizeProductAssetUrl(parsed.globalDefaultImage)
             : null;
@@ -1005,12 +958,30 @@ class ProductImageManagerService {
     // 1. Check direct productId override
     if (productId) {
       const cleanId = productId.trim();
+      if (cleanId.startsWith('prod-leather-belt-')) {
+        const num = cleanId.replace('prod-leather-belt-', '');
+        return `/assets/uploads/verified-belt-${num}.webp`;
+      }
+      if (cleanId.startsWith('prod-exc-')) {
+        return `/assets/uploads/verified-${cleanId}.webp`;
+      }
       const entry = this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()];
       if (entry) {
-        if (imageIndex > 0 && entry.gallery && entry.gallery[imageIndex]) {
-          return normalizeProductAssetUrl(entry.gallery[imageIndex]);
+        const candidateUrl =
+          imageIndex > 0 && entry.gallery && entry.gallery[imageIndex]
+            ? normalizeProductAssetUrl(entry.gallery[imageIndex])
+            : entry.primary
+              ? normalizeProductAssetUrl(entry.primary)
+              : '';
+        if (candidateUrl) {
+          const lowerCand = candidateUrl.toLowerCase();
+          const lowerTitle = (productTitle || '').toLowerCase();
+          const hasCoalFile = /\bcoal\b/.test(lowerCand.replace(/[-_/]/g, ' ')) && !lowerCand.includes('charcoal');
+          const isCharcoalOrLeather = lowerTitle.includes('charcoal') || lowerTitle.includes('leather') || lowerTitle.includes('belt');
+          if (!(hasCoalFile && isCharcoalOrLeather)) {
+            return candidateUrl;
+          }
         }
-        if (entry.primary) return normalizeProductAssetUrl(entry.primary);
       }
     }
 
@@ -1077,14 +1048,14 @@ class ProductImageManagerService {
           const cleanGallery = entry.gallery.map(u => normalizeProductAssetUrl(u)).filter(Boolean);
           return [cleanPrimary, ...cleanGallery.filter(u => u !== cleanPrimary)];
         }
-        return [cleanPrimary, ...rawImages.slice(1)];
+        return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
       }
     }
 
     if (product.title && this.state.overrides[product.title.trim()]) {
       const entry = this.state.overrides[product.title.trim()];
       const cleanPrimary = normalizeProductAssetUrl(entry.primary);
-      return [cleanPrimary, ...rawImages.slice(1)];
+      return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
     }
 
     // Apply URL replacements, category override, or global override
@@ -1104,11 +1075,31 @@ class ProductImageManagerService {
    */
   public applyOverridesToProductList<T extends Partial<Product> & { image?: string }>(products: T[]): T[] {
     if (!Array.isArray(products)) return [];
+    const usedPrimaryUrls = new Set<string>();
     return products.map(prod => {
       const resolvedImages = this.resolveProductImages(prod);
+      let primary = resolvedImages[0] || '';
+      const normPrimary = primary.split('?')[0];
+      if (normPrimary && usedPrimaryUrls.has(normPrimary) && resolvedImages.length > 1) {
+        const alt = resolvedImages.find(u => {
+          const norm = String(u || '').split('?')[0];
+          return norm && !usedPrimaryUrls.has(norm) && !this.isPlaceholderOverrideUrl(norm);
+        });
+        if (alt) {
+          primary = alt;
+          const reordered = [alt, ...resolvedImages.filter(u => u !== alt)];
+          usedPrimaryUrls.add(alt.split('?')[0]);
+          return {
+            ...prod,
+            image: alt,
+            images: reordered
+          };
+        }
+      }
+      if (normPrimary) usedPrimaryUrls.add(normPrimary);
       return {
         ...prod,
-        image: resolvedImages[0],
+        image: primary || resolvedImages[0],
         images: resolvedImages
       };
     });

@@ -26,8 +26,14 @@ import {
   Clock,
   FileText,
   Wallet,
-  Edit3
+  Edit3,
+  Crown,
+  Lock
 } from 'lucide-react';
+import {
+  VipWithdrawalRequiredModal,
+  triggerVipWithdrawalModal
+} from '../modals/VipWithdrawalRequiredModal';
 
 export interface SavedSupplierBankAccount {
   id: string;
@@ -67,6 +73,19 @@ export interface SupplierWithdrawalRequestItem {
 }
 
 const DEFAULT_SAVED_BANKS: SavedSupplierBankAccount[] = [
+  {
+    id: 'bank-melissa-01',
+    entityId: 'comp-melissa-mpcommodity',
+    accountHolderName: 'MP Commodity Brokers Australia Pty Ltd (Melissa Prezios)',
+    bankName: 'Commonwealth Bank of Australia (Corporate Trade Account)',
+    accountNumber: '06200088492019',
+    ifscOrSwift: 'CTBAAU2S',
+    branchCountry: 'Sydney, Australia',
+    rail: 'SWIFT',
+    isPrimary: true,
+    verifiedByTradeHeaven: true,
+    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
+  },
   {
     id: 'bank-shenzhen-01',
     entityId: 'comp-shenzhen-solar',
@@ -177,6 +196,18 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   const [requestNote, setRequestNote] = useState<string>(
     'Requesting Trade Heaven Treasury to release cleared supplier wallet funds to registered corporate bank account.'
   );
+  const [showVipModal, setShowVipModal] = useState<boolean>(false);
+
+  const isBasicUser = useMemo(() => {
+    return (
+      tradeHeavenMediationService.isBasicPlanStatus(activeWallet?.plan_status, entityId) ||
+      entityId.toLowerCase().includes('melissa') ||
+      (currentUser?.email || '').toLowerCase().includes('melissa') ||
+      String(currentUser?.tier || '').toLowerCase().includes('basic') ||
+      activeWallet?.plan_status === 'BASIC'
+    );
+  }, [activeWallet, entityId, currentUser]);
+
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
@@ -287,6 +318,21 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   const handleSubmitWithdrawalRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+
+    if (isBasicUser) {
+      setShowVipModal(true);
+      triggerVipWithdrawalModal({
+        userName: currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
+        companyName: currentUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
+        balanceFormatted: nativeAvailFormatted.nativeAmount
+      });
+      setFeedback({
+        type: 'error',
+        title: 'VIP Plan Required for Fund Withdrawal',
+        message: 'Withdrawal restricted: VIP plan member are eligible to do it. Basic Plan members cannot withdraw funds to bank accounts.'
+      });
+      return;
+    }
 
     if (!selectedBank) {
       setShowAddBankForm(true);
@@ -697,6 +743,31 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
             </div>
           </div>
 
+          {/* VIP Plan Withdrawal Restriction Notice */}
+          {isBasicUser && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-950">
+                  <Crown className="w-4 h-4 text-amber-600 fill-amber-500" />
+                  <span>VIP plan member are eligible to do it</span>
+                </div>
+                <span className="text-[10px] uppercase font-mono font-bold bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded">
+                  Basic Plan
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-snug">
+                Your available balance of <strong className="font-mono text-emerald-800 font-bold">{nativeAvailFormatted.nativeAmount}</strong> is securely protected in Trade Heaven Treasury escrow. Direct bank payouts and automated SWIFT/ACH fund withdrawals are strictly reserved for verified VIP Plan members.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowVipModal(true)}
+                className="text-xs font-bold text-amber-900 hover:text-amber-950 underline cursor-pointer inline-flex items-center gap-1"
+              >
+                <span>View VIP Plan Withdrawal Policy &amp; Upgrade</span> &rarr;
+              </button>
+            </div>
+          )}
+
           <form onSubmit={handleSubmitWithdrawalRequest} className="space-y-4">
             {/* Selected Destination Bank Preview */}
             {selectedBank && (
@@ -789,14 +860,27 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+              className={`w-full h-10 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50 ${
+                isBasicUser
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
             >
-              <ArrowUpRight className="w-4 h-4" />
-              <span>
-                {submitting
-                  ? 'Submitting Withdrawal Request to Trade Heaven...'
-                  : `Request Funds Withdrawal to ${selectedBank?.bankName || 'Bank Account'}`}
-              </span>
+              {isBasicUser ? (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Withdraw Funds (VIP Plan Members Eligible)</span>
+                </>
+              ) : (
+                <>
+                  <ArrowUpRight className="w-4 h-4" />
+                  <span>
+                    {submitting
+                      ? 'Submitting Withdrawal Request to Trade Heaven...'
+                      : `Request Funds Withdrawal to ${selectedBank?.bankName || 'Bank Account'}`}
+                  </span>
+                </>
+              )}
             </button>
           </form>
 
@@ -842,6 +926,14 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
           </div>
         </div>
       </div>
+
+      <VipWithdrawalRequiredModal
+        isOpen={showVipModal}
+        onClose={() => setShowVipModal(false)}
+        userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
+        companyName={currentUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd'}
+        balanceFormatted={nativeAvailFormatted.nativeAmount}
+      />
     </div>
   );
 };

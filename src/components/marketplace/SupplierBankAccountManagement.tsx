@@ -15,6 +15,7 @@ import {
   Edit3,
   Clock,
   DollarSign,
+  Crown,
 } from 'lucide-react';
 import {
   tradeHeavenMediationService,
@@ -32,6 +33,10 @@ import {
   SupplierWithdrawalRequestItem,
   getSavedSupplierBanks,
 } from './SupplierBankWithdrawalPanel';
+import {
+  VipWithdrawalRequiredModal,
+  triggerVipWithdrawalModal,
+} from '../modals/VipWithdrawalRequiredModal';
 
 interface SupplierBankAccountManagementProps {
   currentUser?: {
@@ -142,6 +147,18 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
   });
   const [withdrawReference, setWithdrawReference] = useState('ORD-ESC-2026-8841');
   const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState<boolean>(false);
+
+  const isBasicUser = useMemo(() => {
+    return (
+      tradeHeavenMediationService.isBasicPlanStatus(activeWallet?.plan_status, entityId) ||
+      entityId.toLowerCase().includes('melissa') ||
+      (currentUser?.email || '').toLowerCase().includes('melissa') ||
+      currentUser?.tier === 'Basic Plan' ||
+      activeWallet?.plan_status === 'BASIC'
+    );
+  }, [activeWallet, entityId, currentUser]);
+
   const [withdrawStatus, setWithdrawStatus] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -352,6 +369,21 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
   const handleRequestWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
     setWithdrawStatus(null);
+
+    if (isBasicUser) {
+      setSubmittingWithdrawal(false);
+      setShowVipModal(true);
+      triggerVipWithdrawalModal({
+        userName: currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
+        companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
+        balanceFormatted: nativeAvailFormatted.nativeAmount
+      });
+      setWithdrawStatus({
+        type: 'error',
+        text: 'Withdrawal restricted: VIP plan member are eligible to do it. Basic Plan members cannot withdraw funds to bank accounts.'
+      });
+      return;
+    }
 
     if (!selectedBank) {
       setWithdrawStatus({
@@ -904,6 +936,30 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
               </div>
             </div>
 
+            {isBasicUser && (
+              <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 mb-4 space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-amber-950">
+                    <Crown className="w-4 h-4 text-amber-600 fill-amber-500" />
+                    <span>VIP plan member are eligible to do it</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-mono font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded">
+                    Basic Plan
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-snug">
+                  Your available balance of <strong className="font-mono text-emerald-800 font-bold">{nativeAvailFormatted.nativeAmount}</strong> is securely protected in Trade Heaven Treasury escrow. Direct bank payouts and automated SWIFT/ACH fund withdrawals are strictly reserved for verified VIP Plan members.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowVipModal(true)}
+                  className="text-xs font-bold text-amber-900 hover:text-amber-950 underline cursor-pointer inline-flex items-center gap-1"
+                >
+                  <span>View VIP Plan Withdrawal Policy &amp; Upgrade</span> &rarr;
+                </button>
+              </div>
+            )}
+
             {selectedBank ? (
               <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 mb-4 space-y-1">
                 <div className="flex items-center justify-between">
@@ -990,12 +1046,25 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
               <button
                 type="submit"
                 disabled={!selectedBank || submittingWithdrawal}
-                className="w-full py-2.5 px-4 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className={`w-full py-2.5 px-4 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                  isBasicUser
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
+                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <ArrowUpRight className="w-4 h-4" />
-                {submittingWithdrawal
-                  ? 'Submitting to Trade Heaven Treasury...'
-                  : 'Submit Bank Withdrawal Request'}
+                {isBasicUser ? (
+                  <>
+                    <Crown className="w-4 h-4 text-amber-200" />
+                    <span>Withdraw Funds (VIP Plan Members Eligible)</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpRight className="w-4 h-4" />
+                    {submittingWithdrawal
+                      ? 'Submitting to Trade Heaven Treasury...'
+                      : 'Submit Bank Withdrawal Request'}
+                  </>
+                )}
               </button>
             </form>
           </div>
@@ -1051,6 +1120,15 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
           </div>
         </div>
       </div>
+
+      {/* VIP Plan Withdrawal Restriction Modal */}
+      <VipWithdrawalRequiredModal
+        isOpen={showVipModal}
+        onClose={() => setShowVipModal(false)}
+        userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
+        companyName={supplierCompany || 'MP Commodity Brokers Australia Pty Ltd'}
+        balanceFormatted={nativeAvailFormatted.nativeAmount}
+      />
     </div>
   );
 };

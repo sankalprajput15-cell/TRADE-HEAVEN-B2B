@@ -11,6 +11,7 @@ import {
 import {
   fetchVisualProductImages,
   isGenericOrPlaceholderImageUrl,
+  isMismatchedProductImageUrl,
   markBrokenExternalImageUrl,
   isBrokenExternalImageUrl,
   normalizeVisualQueryKey,
@@ -269,6 +270,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       const hasSpecificProvidedSrc =
         Boolean(hydratedEff) &&
         !isGenericOrPlaceholderImageUrl(hydratedEff) &&
+        !isMismatchedProductImageUrl(hydratedEff, productTitle || alt, category) &&
         !FAILED_IMAGE_URLS.has(hydratedEff) &&
         !isBrokenExternalImageUrl(hydratedEff);
 
@@ -336,30 +338,54 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   const candidates = useMemo(() => {
     const list: string[] = [];
+    const lowerSupplier = (supplierName || '').toLowerCase();
+    const pid = (productId || '').trim();
+
+    const isCrossCompanyAsset = (url: string): boolean => {
+      const u = url.toLowerCase();
+      if (u.includes('leather_belt_')) return true;
+      if (u.includes('image00') && !lowerSupplier.includes('atlantic')) return true;
+      if (u.includes('whatsapp_image_') && !lowerSupplier.includes('blackstone') && !lowerSupplier.includes('yunnan')) return true;
+      return isMismatchedProductImageUrl(url, productTitle || alt, category);
+    };
+
+    if (pid.startsWith('prod-leather-belt-')) {
+      const num = pid.replace('prod-leather-belt-', '');
+      list.push(`/assets/uploads/verified-belt-${num}.webp`);
+    } else if (pid.startsWith('prod-exc-')) {
+      list.push(`/assets/uploads/verified-${pid}.webp`);
+    }
 
     if (
       effectiveSrc &&
       typeof effectiveSrc === 'string' &&
       effectiveSrc.trim() &&
-      !isGenericOrPlaceholderImageUrl(effectiveSrc.trim())
+      !isGenericOrPlaceholderImageUrl(effectiveSrc.trim()) &&
+      !isCrossCompanyAsset(effectiveSrc.trim())
     ) {
       const mirroredEff = resolveLocalMirroredImageUrl(effectiveSrc.trim());
-      list.push(optimizeImageUrl(mirroredEff, { width: optimalWidth, isThumbnail }));
+      const optEff = mirroredEff.startsWith('data:image/')
+        ? mirroredEff
+        : optimizeImageUrl(mirroredEff, { width: optimalWidth, isThumbnail });
+      if (!list.includes(optEff)) list.push(optEff);
     }
 
     if (
       fallbackSrc &&
       typeof fallbackSrc === 'string' &&
       fallbackSrc.trim() &&
-      !isGenericOrPlaceholderImageUrl(fallbackSrc.trim())
+      !isGenericOrPlaceholderImageUrl(fallbackSrc.trim()) &&
+      !isCrossCompanyAsset(fallbackSrc.trim())
     ) {
       const mirroredFb = resolveLocalMirroredImageUrl(fallbackSrc.trim());
-      const optFb = optimizeImageUrl(mirroredFb, { width: optimalWidth, isThumbnail });
+      const optFb = mirroredFb.startsWith('data:image/')
+        ? mirroredFb
+        : optimizeImageUrl(mirroredFb, { width: optimalWidth, isThumbnail });
       if (!list.includes(optFb)) list.push(optFb);
     }
 
     if (!isLogoOrAvatar && visualPool.length > 0) {
-      const seedStr = String(productId || imageIndex || '');
+      const seedStr = String(productId || imageIndex || productTitle || '');
       let offset = 0;
       if (seedStr && visualPool.length > 1) {
         let hash = 0;
@@ -370,7 +396,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
       for (let i = 0; i < visualPool.length; i++) {
         const rawVUrl = visualPool[(i + offset) % visualPool.length];
-        if (!rawVUrl) continue;
+        if (!rawVUrl || isCrossCompanyAsset(rawVUrl)) continue;
         const mirroredVUrl = resolveLocalMirroredImageUrl(rawVUrl);
         const optVUrl = mirroredVUrl.startsWith('/assets/uploads/')
           ? optimizeImageUrl(mirroredVUrl, { width: optimalWidth, isThumbnail })
@@ -380,56 +406,10 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     const contextText = `${productTitle || ''} ${category || ''} ${alt || ''} ${productId || ''}`.toLowerCase();
-    const isConstructionOrBrick = /(brick|bricks|masonry|construction|building|paver|tile|mortar|cement|clinker|concrete)/i.test(contextText);
     const isSareeOrTextile = /(saree|sari|textile|apparel|fabric|garment|silk|clothing|lehenga|kurti|dress)/i.test(contextText);
-    const isAgricultureOrFood = /(apple|mango|banana|fruit|food|grain|rice|wheat|spice|agriculture|produce|vegetable)/i.test(contextText);
-    const isEnergyOrFuel = /(diesel|fuel|petroleum|oil|tanker|en590|jet|gas|bitumen)/i.test(contextText);
-    const isMachineryOrIndustrial = /(machinery|machine|engine|generator|cnc|equipment|turbine|pump|tool)/i.test(contextText);
-    const isGemOrMineral = /(jade|stone|gem|mineral|turquoise|coal|copper|ore)/i.test(contextText);
 
-    let guaranteedLocalFallbacks: string[];
-    if (isConstructionOrBrick) {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/auto-bricks-bcc0b0120401.webp',
-        '/assets/uploads/auto-bricks-93945c6b34e1.webp',
-        '/assets/uploads/auto-bricks-7ee8786c0984.webp',
-        '/assets/uploads/auto-bricks-036049844c92.webp',
-        '/assets/uploads/auto-bricks-d10b47ffddb0.webp'
-      ];
-    } else if (isAgricultureOrFood) {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/auto-fresh-fresh-cavendish-bananas-class--7458f990f354.webp',
-        '/assets/uploads/auto-1121-extra-long-grain-steam-basmati--c9dbe73aeab5.webp',
-        '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'
-      ];
-    } else if (isEnergyOrFuel) {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-        '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
-      ];
-    } else if (isMachineryOrIndustrial) {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/image002_50ab7837.png',
-        '/assets/uploads/image003_6c1f0619.jpg',
-        '/assets/uploads/image005_20fe3db0.png'
-      ];
-    } else if (isGemOrMineral) {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/auto-black-jade-raw-stone-b58e35b77c44.webp',
-        '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
-        '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
-      ];
-    } else {
-      guaranteedLocalFallbacks = [
-        '/assets/uploads/auto-bricks-bcc0b0120401.webp',
-        '/assets/uploads/image002_50ab7837.png',
-        '/assets/uploads/auto-1121-extra-long-grain-steam-basmati--c9dbe73aeab5.webp',
-        '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
-      ];
-    }
-
-    // Strict Anti-Pollution Shield: Never show saree/shree images for non-textile products
-    let sanitizedList = list;
+    // Strict Anti-Pollution Shield: Never show saree/shree or cross-company images
+    let sanitizedList = list.filter(u => !isCrossCompanyAsset(u));
     if (!isSareeOrTextile) {
       sanitizedList = sanitizedList.filter(
         u => !u.toLowerCase().includes('saree') && !u.toLowerCase().includes('shree')
@@ -437,19 +417,48 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     const validList = sanitizedList.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isBrokenExternalImageUrl(u));
-    if (validList.length === 0 && !isLogoOrAvatar) {
-      const seedStr = String(productId || productTitle || alt || 'tradeheaven');
+    if (validList.length === 0) {
+      const PALETTES: Array<[string, string, string]> = [
+        ['#064E3B', '#047857', '#6EE7B7'],
+        ['#7F1D1D', '#B91C1C', '#FCA5A5'],
+        ['#1E3A8A', '#1D4ED8', '#93C5FD'],
+        ['#4C1D95', '#6D28D9', '#C4B5FD'],
+        ['#78350F', '#B45309', '#FCD34D'],
+        ['#134E4A', '#0F766E', '#5EEAD4'],
+        ['#831843', '#BE185D', '#F9A8D4'],
+        ['#365314', '#4D7C0F', '#BEF264'],
+        ['#312E81', '#4338CA', '#A5B4FC'],
+        ['#7C2D12', '#C2410C', '#FDBA74'],
+        ['#0C4A6E', '#0369A1', '#7DD3FC'],
+        ['#581C87', '#7E22CE', '#D8B4FE']
+      ];
+      const seed = `${productId || ''}-${productTitle || ''}-${supplierName || ''}-${alt || ''}-${imageIndex || 0}`;
       let h = 0;
-      for (let i = 0; i < seedStr.length; i++) {
-        h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
+      for (let i = 0; i < seed.length; i++) {
+        h = (h * 33 + seed.charCodeAt(i)) >>> 0;
       }
-      const fallbackChosen = guaranteedLocalFallbacks[h % guaranteedLocalFallbacks.length];
-      validList.push(fallbackChosen);
+      const [c1, c2, acc] = PALETTES[h % PALETTES.length];
+      const cleanSvgStr = (raw: string, maxLen: number) =>
+        Array.from(String(raw || '').replace(/[\uD800-\uDFFF\x00-\x1F\x7F]/g, '').replace(/[&<>"']/g, ' ').trim())
+          .slice(0, maxLen)
+          .join('');
+      const safeTitle = cleanSvgStr(productTitle || alt || 'Verified B2B Specification', 44) || 'Verified B2B Specification';
+      const safeSupplier = cleanSvgStr(supplierName || category || 'Direct OEM', 38) || 'Direct OEM';
+      const asciiWords = safeTitle.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+      const mono = (asciiWords.length >= 2 ? `${asciiWords[0][0]}${asciiWords[1][0]}` : (asciiWords[0] || 'TH').slice(0, 2)).toUpperCase();
+      const svgCard = isThumbnail || isLogoOrAvatar
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><rect width="240" height="240" rx="36" fill="url(#g)"/><circle cx="120" cy="120" r="88" fill="none" stroke="${acc}" stroke-width="5" opacity="0.5"/><text x="120" y="144" text-anchor="middle" font-family="Arial, sans-serif" font-size="82" font-weight="900" fill="#FFFFFF">${mono}</text></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><rect width="960" height="720" fill="url(#g)"/><circle cx="480" cy="290" r="130" fill="#FFFFFF" fill-opacity="0.12" stroke="${acc}" stroke-width="4"/><text x="480" y="322" text-anchor="middle" font-family="Arial, sans-serif" font-size="92" font-weight="900" fill="#FFFFFF">${mono}</text><rect x="68" y="490" width="824" height="156" rx="18" fill="#090D16" fill-opacity="0.65" stroke="${acc}" stroke-width="2"/><text x="96" y="538" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="${acc}" letter-spacing="1.4">${safeSupplier.toUpperCase()}</text><text x="96" y="586" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#FFFFFF">${safeTitle}</text></svg>`;
+      try {
+        validList.push(`data:image/svg+xml;utf8,${encodeURIComponent(svgCard)}`);
+      } catch {
+        const asciiSafeSvg = svgCard.replace(/[^\x20-\x7E]/g, ' ');
+        validList.push(`data:image/svg+xml;utf8,${encodeURIComponent(asciiSafeSvg)}`);
+      }
     }
 
-    // Filter out globally known dead URLs — never loop back to broken external assets
     return validList;
-  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt]);
+  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);

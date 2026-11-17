@@ -1,5 +1,6 @@
 import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
 import { MAPPED_CATALOG_DERIVED_RFQS, MAPPED_CATALOG_DERIVED_PRODUCTS, MAPPED_CATALOG_DATABASE } from './mappedCatalogDatabase';
+import backupOverridesJson from './productImageOverridesBackup.json';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 import { 
   GLOBAL_COPPER_POWDER_COMPANIES, 
@@ -7299,7 +7300,32 @@ const BASE_MOCK_PRODUCTS: Product[] = [
   }
 ];
 
-export const MOCK_PRODUCTS: Product[] = [
+const VERIFIED_BACKUP_OVERRIDES: Record<string, { primary?: string; gallery?: string[] }> =
+  (backupOverridesJson as { overrides?: Record<string, { primary?: string; gallery?: string[] }> })?.overrides || {};
+
+function applyVerifiedOverridesToProductCatalog(list: Product[]): Product[] {
+  const usedPrimary = new Set<string>();
+  return list.map(prod => {
+    const ov =
+      VERIFIED_BACKUP_OVERRIDES[prod.id] ||
+      (prod.title ? VERIFIED_BACKUP_OVERRIDES[prod.title.trim()] : undefined);
+    const primaryUrl = ov?.primary || prod.images?.[0] || '';
+    const cleanGallery = Array.isArray(ov?.gallery) && ov!.gallery!.length > 0
+      ? ov!.gallery!.filter(u => Boolean(u) && !/unsplash\.com|picsum\.photos|vecteezy|placeholder/i.test(u))
+      : [primaryUrl].filter(Boolean);
+    const finalImages = primaryUrl
+      ? [primaryUrl, ...cleanGallery.filter(u => u !== primaryUrl)]
+      : cleanGallery;
+    if (primaryUrl) usedPrimary.add(primaryUrl.split('?')[0]);
+    return {
+      ...prod,
+      ...(primaryUrl ? { image: primaryUrl, image_url: primaryUrl } : {}),
+      images: finalImages
+    } as Product;
+  });
+}
+
+const RAW_MOCK_PRODUCTS_LIST: Product[] = [
   ...GLOBAL_LEATHER_BELT_PRODUCTS,
   {
     id: 'prod-atlantic-cat-generators',
@@ -9888,6 +9914,8 @@ export const MOCK_PRODUCTS: Product[] = [
             certifications: ['CE']
   }
 ,...MAPPED_CATALOG_DERIVED_PRODUCTS, ...BASE_MOCK_PRODUCTS];
+
+export const MOCK_PRODUCTS: Product[] = applyVerifiedOverridesToProductCatalog(RAW_MOCK_PRODUCTS_LIST);
 
 const BASE_MOCK_RFQS: RfqRequirement[] = [
   {
@@ -13099,6 +13127,18 @@ function interleaveRfqsByIndustry(rfqList: RfqRequirement[]): RfqRequirement[] {
       if (!r.buyerPhone || r.buyerPhone === 'undefined' || r.buyerPhone.trim() === '') {
         r.buyerPhone = `+1 800 ${Math.floor(200 + (i * 17) % 700)} ${Math.floor(1000 + (i * 37) % 8999)}`;
       }
+    }
+
+    const ov =
+      VERIFIED_BACKUP_OVERRIDES[r.id] ||
+      (r.title ? VERIFIED_BACKUP_OVERRIDES[r.title.trim()] : undefined) ||
+      (r.productName ? VERIFIED_BACKUP_OVERRIDES[r.productName.trim()] : undefined);
+    if (ov?.primary) {
+      r.images = [ov.primary];
+      (r as any).image = ov.primary;
+      (r as any).image_url = ov.primary;
+    } else if (Array.isArray(r.images)) {
+      r.images = r.images.filter(u => Boolean(u) && !/unsplash\.com|picsum\.photos|vecteezy|placeholder/i.test(u));
     }
     
     const cat = r.category || 'General Commodities';

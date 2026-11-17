@@ -57,6 +57,10 @@ import { getSavedLeads, removeSavedLead, subscribeToSavedLeads } from '../../ser
 import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS } from '../../data/detailedVendorProfiles';
+import {
+  VipWithdrawalRequiredModal,
+  triggerVipWithdrawalModal,
+} from '../modals/VipWithdrawalRequiredModal';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -302,16 +306,52 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
     return () => window.removeEventListener('tradeheaven_mediation_updated', fetchMediation);
   }, []);
 
+  const [showVipModal, setShowVipModal] = useState(false);
+
+  useEffect(() => {
+    const handleOpenVip = () => setShowVipModal(true);
+    window.addEventListener('tradeheaven_open_vip_withdrawal_modal', handleOpenVip);
+    return () => window.removeEventListener('tradeheaven_open_vip_withdrawal_modal', handleOpenVip);
+  }, []);
+
+  const isMelissa = useMemo(() => {
+    if (!currentUser) return false;
+    const email = (currentUser.email || '').toLowerCase();
+    const id = (currentUser.id || '').toLowerCase();
+    const name = (currentUser.name || '').toLowerCase();
+    const comp = (currentUser.companyName || (currentUser as any).company || '').toLowerCase();
+    return (
+      id === 'user-supplier-melissa' ||
+      id.includes('melissa') ||
+      email.includes('melissa') ||
+      name.includes('melissa') ||
+      comp.includes('mp commodity')
+    );
+  }, [currentUser]);
+
+  const isBasicUser = useMemo(() => {
+    if (isMelissa) return true;
+    const plan = ((currentUser as any)?.plan || (currentUser as any)?.tier || (currentUser as any)?.membershipStatus || '').toLowerCase();
+    return !plan.includes('vip') && !plan.includes('enterprise');
+  }, [isMelissa, currentUser]);
+
   const userBalance = useMemo(() => {
-    if (!mediationState || !currentUser) return { avail: '₹0.00', locked: '₹0.00', hasLocked: false };
+    if (!mediationState || !currentUser) return { avail: '$0.00', locked: '$0.00', hasLocked: false };
     
     let totalAvailPaise = 0;
     let totalLockedPaise = 0;
     
     mediationState.wallets.forEach(w => {
-      const isOwnWallet = w.entity_id === currentUser.id || 
+      const isMelissaMatch = isMelissa && (
+        w.id === 'wal-supp-melissa' ||
+        w.entity_id === 'comp-melissa-mpcommodity' ||
+        w.entity_id === 'user-supplier-melissa'
+      );
+
+      const isOwnWallet = isMelissaMatch ||
+                         w.entity_id === currentUser.id || 
                          w.entity_id.includes(currentUser.id) || 
-                         w.company_name === currentUser.companyName;
+                         (currentUser.companyName && (w.company_name === currentUser.companyName || w.company_name.toLowerCase().includes(currentUser.companyName.toLowerCase())));
       
       if (isOwnWallet) {
         totalAvailPaise += Number(w.available_balance || 0);
@@ -319,15 +359,16 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       }
     });
     
-    const formatted = formatBalanceInNativeCurrency(totalAvailPaise, currentUser.id);
-    const lockedFormatted = formatBalanceInNativeCurrency(totalLockedPaise, currentUser.id);
+    const entityKey = isMelissa ? 'comp-melissa-mpcommodity' : currentUser.id;
+    const formatted = formatBalanceInNativeCurrency(totalAvailPaise, entityKey);
+    const lockedFormatted = formatBalanceInNativeCurrency(totalLockedPaise, entityKey);
     
     return {
       avail: formatted.nativeAmount,
       locked: lockedFormatted.nativeAmount,
       hasLocked: totalLockedPaise > 0
     };
-  }, [mediationState, currentUser]);
+  }, [mediationState, currentUser, isMelissa]);
 
   const [liveNotificationToast, setLiveNotificationToast] = useState<{
     show: boolean;
@@ -903,9 +944,17 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 Top Up
               </button>
               <button 
-                onClick={() => setActiveTab('BANK_ACCOUNTS')}
-                className="text-[10px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-0.5 cursor-pointer bg-slate-100 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+                onClick={() => {
+                  if (isBasicUser) {
+                    setShowVipModal(true);
+                  } else {
+                    setActiveTab('BANK_ACCOUNTS');
+                  }
+                }}
+                className="text-[10px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+                title={isBasicUser ? "Withdrawals restricted: VIP plan member are eligible to do it" : "Withdraw funds to saved bank account"}
               >
+                {isBasicUser && <Lock className="w-2.5 h-2.5 text-amber-600" />}
                 Withdraw
               </button>
             </div>
@@ -924,10 +973,22 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               )}
             </div>
             <button 
-              onClick={() => setActiveTab('BANK_ACCOUNTS')}
-              className="text-[10px] text-emerald-700 hover:text-emerald-800 font-medium transition-colors text-left cursor-pointer"
+              onClick={() => {
+                if (isBasicUser) {
+                  setShowVipModal(true);
+                } else {
+                  setActiveTab('BANK_ACCOUNTS');
+                }
+              }}
+              className="text-[10px] text-emerald-700 hover:text-emerald-800 font-medium transition-colors text-left cursor-pointer flex items-center justify-between"
             >
-              Manage saved bank accounts (SWIFT/IFSC) &amp; withdraw funds →
+              <span>Manage saved bank accounts (SWIFT/IFSC) &amp; withdraw funds →</span>
+              {isBasicUser && (
+                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 flex items-center gap-0.5">
+                  <Crown className="w-2.5 h-2.5" />
+                  VIP Only
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -2287,6 +2348,21 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* VIP Plan Withdrawal Restriction Modal */}
+      <VipWithdrawalRequiredModal
+        isOpen={showVipModal}
+        onClose={() => setShowVipModal(false)}
+        userName={currentUser?.name || 'Melissa Prezios'}
+        companyName={currentUser?.companyName || (currentUser as any)?.company || 'MP Commodity Brokers Australia Pty Ltd'}
+        balanceFormatted={userBalance.avail}
+        onUpgradeToVip={() => {
+          setShowVipModal(false);
+          if (onOpenUpgradeModal) {
+            onOpenUpgradeModal();
+          }
+        }}
+      />
     </div>
   );
 };

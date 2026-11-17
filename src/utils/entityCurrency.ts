@@ -247,10 +247,12 @@ export const ENTITY_TO_COUNTRY_MAP: Record<string, string> = {
   'apex agro': 'IN',
 
   // Suppliers
-  'comp-melissa-mpcommodity': 'AU',
-  'wal-supp-melissa': 'AU',
-  'melissa prezios': 'AU',
-  'mp commodity': 'AU',
+  'comp-melissa-mpcommodity': 'US',
+  'wal-supp-melissa': 'US',
+  'melissa prezios': 'US',
+  'mp commodity': 'US',
+  'user-supplier-melissa': 'US',
+  'melissa@mpcommoditybrokers.com': 'US',
 
   'comp-zac-importation-fadetech': 'AU',
   'wal-supp-zac': 'AU',

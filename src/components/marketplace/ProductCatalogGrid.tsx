@@ -3,7 +3,7 @@ import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { useAuth } from '../../context/AuthContext';
-import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon, Share2 } from 'lucide-react';
+import { Building, Lock, ShieldCheck, Award, Image as ImageIcon } from 'lucide-react';
 
 const QuickProductImageModal = React.lazy(() =>
   import('../admin/DedicatedProductImageSystem').then(m => ({ default: m.QuickProductImageModal }))
@@ -58,12 +58,6 @@ export const ProductCardSkeleton: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Action Buttons Skeleton */}
-      <div className="p-3 sm:p-4 pt-0 grid grid-cols-2 gap-2 min-w-0">
-        <div className="h-8 sm:h-9 w-full rounded-lg sm:rounded-xl bg-slate-200/80 animate-pulse" />
-        <div className="h-8 sm:h-9 w-full rounded-lg sm:rounded-xl bg-blue-200/70 animate-pulse" />
-      </div>
     </div>
   );
 };
@@ -106,6 +100,12 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
 
   return (
     <div
+      onClick={() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('product', product.id);
+        window.history.pushState({}, '', url);
+        onSelectProduct(product);
+      }}
       className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs min-w-0 w-full cursor-pointer"
     >
       <div className="min-w-0">
@@ -130,8 +130,12 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
             className="w-full h-full"
             imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          <div className="absolute top-2.5 left-2.5">
+          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
             {getTierBadge(product.supplierTier)}
+          </div>
+          <div className="absolute bottom-2 left-2 right-2 bg-slate-900/75 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-semibold text-white/95 flex items-center justify-between shadow-sm border border-white/15">
+            <span className="truncate max-w-[130px]">{product.supplierName || 'Verified Supplier'}</span>
+            <span className="text-[9px] text-blue-300 font-mono font-bold shrink-0">✓ Verified Exporter</span>
           </div>
           {isAdmin && onEditProductImage && (
             <button
@@ -194,7 +198,10 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
           {/* Supplier Trust Summary */}
           <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] gap-2 min-w-0">
             <button
-              onClick={() => onOpenStorefront(product.supplierId)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenStorefront(product.supplierId);
+              }}
               className="text-slate-700 hover:text-blue-600 font-medium min-w-0 text-left flex items-center gap-1 group/sup transition-colors cursor-pointer"
             >
               <Building className="w-3 h-3 text-slate-400 shrink-0" />
@@ -205,44 +212,6 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Card Action Buttons */}
-      <div className="p-3 sm:p-4 pt-0 flex items-center gap-1.5 min-w-0">
-        <button
-          onClick={() => onContactSupplier(product)}
-          className="flex-1 py-2 px-1.5 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors border border-slate-200 min-h-[38px] cursor-pointer min-w-0"
-        >
-          <MessageCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-          <span className="truncate">Contact</span>
-        </button>
-        <button
-          onClick={() => onSelectProduct(product)}
-          className="flex-1 py-2 px-1.5 rounded-lg sm:rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-bold transition-colors shadow-2xs min-h-[38px] flex items-center justify-center text-center cursor-pointer min-w-0"
-        >
-          <span className="truncate">Get Price</span>
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            window.dispatchEvent(
-              new CustomEvent('tradeheaven_open_share', {
-                detail: {
-                  type: 'PRODUCT',
-                  id: product.id,
-                  title: product.title,
-                  subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${productMoq.toLocaleString()} ${productUnit}`
-                }
-              })
-            );
-          }}
-          className="p-2 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 border border-slate-200 transition-colors min-h-[38px] flex items-center justify-center cursor-pointer shrink-0"
-          title={`Share direct link to ${product.title}`}
-          aria-label="Share product"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-        </button>
       </div>
     </div>
   );
@@ -313,18 +282,38 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
-        {products.map(product => (
-          <ProductCardItem
-            key={product.id}
-            product={product}
-            onSelectProduct={onSelectProduct}
-            onOpenStorefront={onOpenStorefront}
-            onContactSupplier={onContactSupplier}
-            getTierBadge={getTierBadge}
-            isAdmin={isAdmin}
-            onEditProductImage={prod => setEditingImageProduct(prod)}
-          />
-        ))}
+        {(() => {
+          const usedGridUrls = new Set<string>();
+          return products.map(product => {
+            const candidates = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+            let chosenSrc = candidates[0] || '';
+            for (const cand of candidates) {
+              const norm = String(cand).split('?')[0];
+              if (norm && !usedGridUrls.has(norm)) {
+                chosenSrc = cand;
+                usedGridUrls.add(norm);
+                break;
+              }
+            }
+            if (chosenSrc) usedGridUrls.add(chosenSrc.split('?')[0]);
+            const adjustedProduct =
+              chosenSrc && chosenSrc !== candidates[0]
+                ? { ...product, images: [chosenSrc, ...candidates.filter(c => c !== chosenSrc)] }
+                : product;
+            return (
+              <ProductCardItem
+                key={adjustedProduct.id}
+                product={adjustedProduct}
+                onSelectProduct={onSelectProduct}
+                onOpenStorefront={onOpenStorefront}
+                onContactSupplier={onContactSupplier}
+                getTierBadge={getTierBadge}
+                isAdmin={isAdmin}
+                onEditProductImage={prod => setEditingImageProduct(prod)}
+              />
+            );
+          });
+        })()}
       </div>
 
       {editingImageProduct && (

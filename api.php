@@ -5450,13 +5450,17 @@ switch ($action) {
             if ($clean_u === '') {
                 return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Empty or missing image_url'];
             }
-            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
+            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|vecteezy_|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
                 return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Generic placeholder or stock asset detected'];
             }
             if (strpos($clean_u, '/assets/uploads/') === 0) {
-                $fp = $uploads_dir_aud . '/' . basename($clean_u);
+                $bname = basename($clean_u);
+                $fp = $uploads_dir_aud . '/' . $bname;
                 if (!file_exists($fp) || filesize($fp) <= 1500) {
                     return ['flagged' => true, 'type' => 'BROKEN_ASSET', 'reason' => 'Local upload file missing on disk'];
+                }
+                if (strpos($bname, 'auto-') === 0 && filesize($fp) < 3500 && stripos($bname, 'bricks') === false) {
+                    return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Synthetic placeholder graphic detected'];
                 }
             }
             $lower_u = strtolower($clean_u);
@@ -5466,6 +5470,15 @@ switch ($action) {
             }
             if (strpos($lower_u, 'leather_belt') !== false && !preg_match('/(leather|belt|apparel|fashion|strap|wallet)/i', $joined_t)) {
                 return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Leather Belt image on non-leather item)'];
+            }
+            if ((strpos($lower_u, 'image002_50ab7837') !== false || strpos($lower_u, 'image003_6c1f0619') !== false) && !preg_match('/(generator|genset|cummins|cat power|diesel power|power generation)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Generator image assigned to non-generator item)'];
+            }
+            if (strpos($lower_u, 'image004_fa37a57a') !== false && !preg_match('/(tank|storage tank|fuel tank|gallon)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Fuel Tank image assigned to non-tank item)'];
+            }
+            if (strpos($lower_u, 'stainless-steel-heavy-coils') !== false && !preg_match('/(steel|coil|sheet|metal|alloy|iron|galvanized|rebar|plate)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Steel Coils image assigned to non-steel item)'];
             }
             if (isset($seen_urls_aud[$clean_u]) && $seen_urls_aud[$clean_u]['id'] !== $rec_id) {
                 $prev = $seen_urls_aud[$clean_u];

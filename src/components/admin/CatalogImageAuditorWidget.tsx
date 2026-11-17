@@ -41,7 +41,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [showLogTable, setShowLogTable] = useState<boolean>(false);
 
   const buildCompactCatalogPayload = useCallback(() => {
-    return products.slice(0, 80).map(p => ({
+    return products.map(p => ({
       id: String(p.id),
       type: 'PRODUCT' as const,
       title: String(p.title || ''),
@@ -110,7 +110,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         setAlertMessage({
           type: 'success',
           title: `Audit Complete: Cleaned ${dupCount} Duplicate(s) & Fixed ${mismatchCount} Mismatched/Placeholder Photo(s)`,
-          detail: `Scanned ${result.total_scanned} catalog records (Products & RFQs). Assigned ${fixedCount} unique, verified, category-relevant product photos via Gemini Google Search Grounding.`
+          detail: `Scanned ${result.total_scanned} catalog records (Products & RFQs). Assigned ${fixedCount} unique, verified, category-relevant product photos.`
         });
       } else {
         setAlertMessage({

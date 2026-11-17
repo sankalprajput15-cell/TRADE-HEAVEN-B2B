@@ -283,7 +283,13 @@ export const VendorProfilePage: React.FC<Props> = ({
 
   const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
   
-  const companyProducts = (products || []).filter(p => p && (p.supplierId === profile.id || p.supplierName?.toLowerCase().includes(profile.companyName.toLowerCase().slice(0, 8))));
+  const companyProducts = (products || []).filter(p => {
+    if (!p) return false;
+    if (p.supplierId && profile.id && p.supplierId === profile.id) return true;
+    const prodSup = (p.supplierName || '').trim().toLowerCase();
+    const profName = (profile.companyName || '').trim().toLowerCase();
+    return Boolean(prodSup && profName && prodSup === profName);
+  });
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;

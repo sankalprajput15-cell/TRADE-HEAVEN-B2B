@@ -167,9 +167,13 @@ export const ProductCatalog: React.FC<Props> = ({
     }
 
     window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
+    window.addEventListener('tradeheaven_product_image_saved', handleUpdate);
+    window.addEventListener('tradeheaven_products_updated', handleUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
+      window.removeEventListener('tradeheaven_product_image_saved', handleUpdate);
+      window.removeEventListener('tradeheaven_products_updated', handleUpdate);
     };
   }, []);
 

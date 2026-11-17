@@ -167,9 +167,9 @@ export const ProductDetailModal: React.FC<Props> = ({
         <div ref={modalScrollRef} className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Top Section: Media + Pricing & Inquiry Form */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Gallery Left */}
+            {/* Gallery Left — Executive Company-Isolated Showcase Style */}
             <div className="lg:col-span-5 space-y-3">
-              <div className="h-64 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative">
+              <div className="h-72 sm:h-80 w-full rounded-2xl overflow-hidden bg-slate-950 border-2 border-slate-800 shadow-xl relative group">
                 <SafeImage
                   src={product?.images?.[activeImageIdx] || product?.images?.[0] || undefined}
                   alt={product?.title || 'B2B Wholesale Product'}
@@ -180,11 +180,24 @@ export const ProductDetailModal: React.FC<Props> = ({
                   imageIndex={activeImageIdx}
                   totalImages={product?.images?.length}
                   className="w-full h-full"
+                  imgClassName="object-contain bg-slate-950"
                 />
+                {/* Top-Left Company Ownership & Isolation Badge */}
+                <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between gap-2 pointer-events-none">
+                  <div className="px-3 py-1 rounded-lg bg-slate-900/90 backdrop-blur-md border border-amber-400/40 text-white shadow-md flex items-center gap-1.5 min-w-0">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-[11px] font-black tracking-wide truncate text-amber-300">
+                      {product?.supplierName || 'Verified Direct Manufacturer'}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shrink-0">
+                    {product?.supplierCountry || 'Global Origin'}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsImageModalOpen(true)}
-                  className="absolute bottom-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-blue-600/90 hover:bg-blue-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-xs transition-all hover:scale-105"
+                  className="absolute bottom-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-blue-600/95 hover:bg-blue-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-xs transition-all hover:scale-105"
                   title="Admin: View & Upload/Change All Product Images directly"
                 >
                   <ImageIcon className="w-3.5 h-3.5 text-blue-200" />
@@ -198,15 +211,15 @@ export const ProductDetailModal: React.FC<Props> = ({
                 />
               )}
 
-              {/* Thumbnails */}
-              {(product?.images?.length ?? 0) > 1 && (
+              {/* Thumbnails (only shown if multiple distinct company-verified images exist) */}
+              {Array.from(new Set(product?.images || [])).length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {(product?.images || []).map((img, idx) => (
+                  {Array.from(new Set(product?.images || [])).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImageIdx(idx)}
                       className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                        activeImageIdx === idx ? 'border-blue-600 scale-105 shadow-sm' : 'border-slate-200 opacity-70 hover:opacity-100'
+                        activeImageIdx === idx ? 'border-amber-500 scale-105 shadow-sm' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
                       <SafeImage 

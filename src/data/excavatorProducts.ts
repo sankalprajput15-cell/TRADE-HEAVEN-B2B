@@ -13,7 +13,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$20000 - $30000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-0.webp'],
     specifications: [
       { name: 'Operating Weight', value: '10 Tons' }
     ]
@@ -31,7 +31,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$20500 - $30500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-1.webp'],
     specifications: [
       { name: 'Operating Weight', value: '11 Tons' }
     ]
@@ -49,7 +49,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$21000 - $31000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-2.webp'],
     specifications: [
       { name: 'Operating Weight', value: '12 Tons' }
     ]
@@ -67,7 +67,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$21500 - $31500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-3.webp'],
     specifications: [
       { name: 'Operating Weight', value: '13 Tons' }
     ]
@@ -85,7 +85,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$22000 - $32000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-4.webp'],
     specifications: [
       { name: 'Operating Weight', value: '14 Tons' }
     ]
@@ -103,7 +103,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$22500 - $32500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-5.webp'],
     specifications: [
       { name: 'Operating Weight', value: '15 Tons' }
     ]
@@ -121,7 +121,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$23000 - $33000',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-6.webp'],
     specifications: [
       { name: 'Operating Weight', value: '16 Tons' }
     ]
@@ -139,7 +139,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$23500 - $33500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-7.webp'],
     specifications: [
       { name: 'Operating Weight', value: '17 Tons' }
     ]
@@ -157,7 +157,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$24000 - $34000',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-8.webp'],
     specifications: [
       { name: 'Operating Weight', value: '18 Tons' }
     ]
@@ -175,7 +175,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$24500 - $34500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-9.webp'],
     specifications: [
       { name: 'Operating Weight', value: '19 Tons' }
     ]
@@ -193,7 +193,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$25000 - $35000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-10.webp'],
     specifications: [
       { name: 'Operating Weight', value: '20 Tons' }
     ]
@@ -211,7 +211,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$25500 - $35500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-11.webp'],
     specifications: [
       { name: 'Operating Weight', value: '21 Tons' }
     ]
@@ -229,7 +229,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$26000 - $36000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-12.webp'],
     specifications: [
       { name: 'Operating Weight', value: '22 Tons' }
     ]
@@ -247,7 +247,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$26500 - $36500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-13.webp'],
     specifications: [
       { name: 'Operating Weight', value: '23 Tons' }
     ]
@@ -265,7 +265,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$27000 - $37000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-14.webp'],
     specifications: [
       { name: 'Operating Weight', value: '24 Tons' }
     ]
@@ -283,7 +283,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$27500 - $37500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-15.webp'],
     specifications: [
       { name: 'Operating Weight', value: '25 Tons' }
     ]
@@ -301,7 +301,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$28000 - $38000',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-16.webp'],
     specifications: [
       { name: 'Operating Weight', value: '26 Tons' }
     ]
@@ -319,7 +319,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$28500 - $38500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-17.webp'],
     specifications: [
       { name: 'Operating Weight', value: '27 Tons' }
     ]
@@ -337,7 +337,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$29000 - $39000',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-18.webp'],
     specifications: [
       { name: 'Operating Weight', value: '28 Tons' }
     ]
@@ -355,7 +355,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$29500 - $39500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-19.webp'],
     specifications: [
       { name: 'Operating Weight', value: '29 Tons' }
     ]
@@ -373,7 +373,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$30000 - $40000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-20.webp'],
     specifications: [
       { name: 'Operating Weight', value: '10 Tons' }
     ]
@@ -391,7 +391,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$30500 - $40500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-21.webp'],
     specifications: [
       { name: 'Operating Weight', value: '11 Tons' }
     ]
@@ -409,7 +409,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$31000 - $41000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-22.webp'],
     specifications: [
       { name: 'Operating Weight', value: '12 Tons' }
     ]
@@ -427,7 +427,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$31500 - $41500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-23.webp'],
     specifications: [
       { name: 'Operating Weight', value: '13 Tons' }
     ]
@@ -445,7 +445,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$32000 - $42000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-24.webp'],
     specifications: [
       { name: 'Operating Weight', value: '14 Tons' }
     ]
@@ -463,7 +463,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$32500 - $42500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-25.webp'],
     specifications: [
       { name: 'Operating Weight', value: '15 Tons' }
     ]
@@ -481,7 +481,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$33000 - $43000',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-26.webp'],
     specifications: [
       { name: 'Operating Weight', value: '16 Tons' }
     ]
@@ -499,7 +499,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$33500 - $43500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-27.webp'],
     specifications: [
       { name: 'Operating Weight', value: '17 Tons' }
     ]
@@ -517,7 +517,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$34000 - $44000',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-28.webp'],
     specifications: [
       { name: 'Operating Weight', value: '18 Tons' }
     ]
@@ -535,7 +535,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$34500 - $44500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-29.webp'],
     specifications: [
       { name: 'Operating Weight', value: '19 Tons' }
     ]
@@ -553,7 +553,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$35000 - $45000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-30.webp'],
     specifications: [
       { name: 'Operating Weight', value: '20 Tons' }
     ]
@@ -571,7 +571,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$35500 - $45500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-31.webp'],
     specifications: [
       { name: 'Operating Weight', value: '21 Tons' }
     ]
@@ -589,7 +589,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$36000 - $46000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-32.webp'],
     specifications: [
       { name: 'Operating Weight', value: '22 Tons' }
     ]
@@ -607,7 +607,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$36500 - $46500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-33.webp'],
     specifications: [
       { name: 'Operating Weight', value: '23 Tons' }
     ]
@@ -625,7 +625,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$37000 - $47000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-34.webp'],
     specifications: [
       { name: 'Operating Weight', value: '24 Tons' }
     ]
@@ -643,7 +643,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$37500 - $47500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/verified-prod-exc-35.webp'],
     specifications: [
       { name: 'Operating Weight', value: '25 Tons' }
     ]
@@ -661,7 +661,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$38000 - $48000',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['/assets/uploads/image005_20fe3db0.png'],
+    images: ['/assets/uploads/verified-prod-exc-36.webp'],
     specifications: [
       { name: 'Operating Weight', value: '26 Tons' }
     ]
@@ -679,7 +679,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$38500 - $48500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/image002_50ab7837.png'],
+    images: ['/assets/uploads/verified-prod-exc-37.webp'],
     specifications: [
       { name: 'Operating Weight', value: '27 Tons' }
     ]
@@ -697,7 +697,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$39000 - $49000',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['/assets/uploads/image003_6c1f0619.jpg'],
+    images: ['/assets/uploads/verified-prod-exc-38.webp'],
     specifications: [
       { name: 'Operating Weight', value: '28 Tons' }
     ]
@@ -715,7 +715,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$39500 - $49500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['/assets/uploads/image004_fa37a57a.png'],
+    images: ['/assets/uploads/verified-prod-exc-39.webp'],
     specifications: [
       { name: 'Operating Weight', value: '29 Tons' }
     ]

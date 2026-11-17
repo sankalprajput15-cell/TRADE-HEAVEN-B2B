@@ -45,7 +45,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Custom Private-Label Full-Grain Cowhide Leather Belts — Hand-Stitched Dress & Casual Series',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_01, IMG_BELT_05, IMG_BELT_03, IMG_BELT_04],
+    images: ['/assets/uploads/verified-belt-01.webp'],
     description: 'Export-grade full-grain cowhide leather belts manufactured by Dynaw Industry in Sialkot, Punjab, Pakistan (Contact: Abdullah Tauqeer | +92-329-9004120). Available in dark espresso brown, navy blue, cognac tan, matte black, and vintage distressed finishes with solid stainless steel and brushed nickel roller buckles.',
     priceTiers: [
       { minUnits: 100, maxUnits: 499, priceUsd: 7.50 },
@@ -81,7 +81,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Heavy-Duty Leather Scaffolding Belt, Industrial Tool Belt & Reinforced Workman Waist Belt',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Industrial Tool & Scaffolding Belts',
-    images: [IMG_BELT_02, IMG_BELT_04, IMG_BELT_10, IMG_BELT_11],
+    images: ['/assets/uploads/verified-belt-02.webp'],
     description: 'Heavy-duty industrial leather scaffolding belts, carpenter tool belts, and double-prong work belts manufactured by Minha International in Uttar Pradesh, India (Contact: Danish Khan | +91-8840299336 / +91-9336930043). Twin-needle high-tensile perimeter stitching with gunmetal double-loop keeper and heavy-gauge buckle.',
     priceTiers: [
       { minUnits: 200, maxUnits: 999, priceUsd: 9.80 },
@@ -117,7 +117,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Buffalo Split & Buffalo Grain Leather Belt Collection (Charcoal Black, Chocolate Brown, Olive Green, Crimson Red)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Buffalo & Cow Crust Leather Belt',
-    images: [IMG_BELT_03, IMG_BELT_01, IMG_BELT_04, IMG_BELT_05],
+    images: ['/assets/uploads/verified-belt-03.webp'],
     description: 'Supplied by Excellent Leather Agency, Dhaka, Bangladesh (Est. 1990 | Contact: MD. MASZIDUL ISLAM | +880-1805917381 / +880-1738156015). Complete 80–110cm Buffalo Split and Buffalo Grain leather belt line featuring Charcoal Black (shiny nickel pin buckle), Chocolate Brown (smooth grain), Olive Green (perforated tip & matt bronze buckle), and Crimson Red (waxy buffalo grain with perforated center).',
     priceTiers: [
       { minUnits: 500, maxUnits: 1999, priceUsd: 5.40 },
@@ -153,7 +153,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Men’s Two-Tone Contrast-Stitched Genuine Full-Grain Leather Belt with Antique Brass Buckle',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Full Grain Leather Belt',
-    images: [IMG_BELT_04, IMG_BELT_05, IMG_BELT_13, IMG_BELT_01],
+    images: ['/assets/uploads/verified-belt-04.webp'],
     description: 'Supplied by ShivShakti Enterprises, Haryana, India (Contact: Rahul Luthra | +91-72063-44810). Bold men’s full-grain leather belt featuring charcoal suede-textured center inlay, dark brown burnished edges, heavy double contrast stitching, brass-plated keeper badge, and solid antique brass pin buckle.',
     priceTiers: [
       { minUnits: 150, maxUnits: 499, priceUsd: 6.90 },
@@ -189,7 +189,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Handcrafted Pebble-Grain Tan Leather Belt with Twin Stitched Loops & Gunmetal Buckle',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Genuine Leather Belt',
-    images: [IMG_BELT_05, IMG_BELT_01, IMG_BELT_03, IMG_BELT_16],
+    images: ['/assets/uploads/verified-belt-05.webp'],
     description: 'Manufactured by Nisharo Exports, Punjab, Pakistan (Contact: Nisha Amir | +92-3104038997 / +92-3104038996). Handcrafted milled pebble-grain tan cowhide belt with cream saddle-stitched borders, twin stitched leather keeper loops, and polished gunmetal rectangular buckle.',
     priceTiers: [
       { minUnits: 150, maxUnits: 499, priceUsd: 7.40 },
@@ -225,7 +225,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Heritage Luxury Vegetable-Tanned Bridle Leather Dress Belt Collection (Est. 1970)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Fashion & Dress Belts',
-    images: [IMG_BELT_06, IMG_BELT_14, IMG_BELT_01, IMG_BELT_10],
+    images: ['/assets/uploads/verified-belt-06.webp'],
     description: 'Crafted by Salamanca Leathers (Est. 1970, United Kingdom | Contact: Fahed Islam | +44-7448-542946). Luxury heritage leather belts designed for retail boutiques and luxury department stores, featuring hand-burnished edges, drum-dyed full-grain hides, and solid nickel-free buckles.',
     priceTiers: [
       { minUnits: 100, maxUnits: 499, priceUsd: 14.80 },
@@ -261,7 +261,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Wholesale Buffalo Grain & Perforated Casual Leather Belts (80–110 CM Export Assortment)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_07, IMG_BELT_03, IMG_BELT_10, IMG_BELT_04],
+    images: ['/assets/uploads/verified-belt-07.webp'],
     description: 'Manufactured by Atlantic International, Uttar Pradesh, India (Contact: Mohammad Tauseef | +91-8840-713114 | 51–100 Employees). Container-ready assortment of buffalo split and waxy buffalo grain belts in Charcoal Black, Chocolate Brown, Olive Green, and Perforated Crimson Red.',
     priceTiers: [
       { minUnits: 300, maxUnits: 999, priceUsd: 6.50 },
@@ -297,7 +297,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'CITES-Certified Exotic Crocodile, Alligator & Ostrich Skin Executive Leather Belts',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Crocodile & Exotic Leather Belts',
-    images: [IMG_BELT_08, IMG_BELT_06, IMG_BELT_12, IMG_BELT_17],
+    images: ['/assets/uploads/verified-belt-08.webp'],
     description: 'Manufactured by Thai Oriental Leather Co.,Ltd in Bangkok, Thailand (Est. 1998 | Contact: Pitada Charanja | +66-080-4218289). Genuine exotic crocodile, alligator, stingray, python, and ostrich leather belts lined with supple full-grain calfskin and accompanied by official CITES export permits.',
     priceTiers: [
       { minUnits: 50, maxUnits: 199, priceUsd: 45.00 },
@@ -333,7 +333,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Executive Men’s Full-Grain Dress Belts & Matching Leather Wallet Gift Sets',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_09, IMG_BELT_18, IMG_BELT_01, IMG_BELT_06],
+    images: ['/assets/uploads/verified-belt-09.webp'],
     description: 'Manufactured by SIMMCOM Private Limited, Punjab, Pakistan (Est. 2017 | Contact: Muhammad Salman | +92-345-8561718). 5-color executive belt assortment in Espresso Brown, Navy Blue, Cognac Tan, Jet Black, and Distressed Umber with polished silver-tone buckles.',
     priceTiers: [
       { minUnits: 200, maxUnits: 999, priceUsd: 6.80 },
@@ -369,7 +369,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Classic Top-Grain Leather Casual & Formal Jeans Belts for Retail Chains',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Genuine Leather Belt',
-    images: [IMG_BELT_10, IMG_BELT_13, IMG_BELT_04, IMG_BELT_15],
+    images: ['/assets/uploads/verified-belt-10.webp'],
     description: 'Supplied by SN Exports, Delhi, India (Contact: Zaid Zarar | +91-8171909622 / +91-9897400440). Durable top-grain cow and buffalo leather belts engineered for denim and casual trousers with contrast twin stitching and antique brass hardware.',
     priceTiers: [
       { minUnits: 250, maxUnits: 999, priceUsd: 5.90 },
@@ -405,7 +405,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Equestrian Stirrup Leather Belts, Designer Bridle Belts & Finished Belt Leather Strips',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Full Grain Leather Belt',
-    images: [IMG_BELT_11, IMG_BELT_06, IMG_BELT_12, IMG_BELT_02],
+    images: ['/assets/uploads/verified-belt-11.webp'],
     description: 'Manufactured by Staria International, Uttar Pradesh, India (Contact: Naved M. Sharif | +91-639292-3988). Full equestrian leather belt range and designer bridle leather belts crafted from drum-dyed finished hides with stainless steel stirrup and roller buckles.',
     priceTiers: [
       { minUnits: 200, maxUnits: 799, priceUsd: 8.10 },
@@ -441,7 +441,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Factory-Direct In-House Tanned Genuine Leather Belts with Custom Article Development',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_12, IMG_BELT_05, IMG_BELT_16, IMG_BELT_01],
+    images: ['/assets/uploads/verified-belt-12.webp'],
     description: 'Produced in-house by Durel Leather, Punjab, Pakistan (Est. 2018 | 51–100 Employees | Contact: Haseeb Nasir | +92-310-7971756). Complete vertical manufacturing from raw crust hide finishing to precision strap cutting, edge beveling, and custom OEM buckle assembly.',
     priceTiers: [
       { minUnits: 300, maxUnits: 1499, priceUsd: 6.30 },
@@ -477,7 +477,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Denim & Casual Wear Two-Tone Stitched Leather Belt with Custom Metal Loop Emblem',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Genuine Leather Belt',
-    images: [IMG_BELT_13, IMG_BELT_04, IMG_BELT_10, IMG_BELT_16],
+    images: ['/assets/uploads/verified-belt-13.webp'],
     description: 'Manufactured by Nixsha Wears, Sialkot, Punjab, Pakistan (Contact: Nixon Sohail | +92-3234415530 / +92-3416804577). Engineered to pair with premium denim and casual wear, featuring a brushed charcoal center strip, dark brown stitched leather borders, and custom brand emblem on the keeper loop.',
     priceTiers: [
       { minUnits: 150, maxUnits: 599, priceUsd: 6.75 },
@@ -513,7 +513,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'European-Standard Genuine Leather Dress & Reversible Belts (Calcutta Leather Complex)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Fashion & Dress Belts',
-    images: [IMG_BELT_14, IMG_BELT_06, IMG_BELT_20, IMG_BELT_01],
+    images: ['/assets/uploads/verified-belt-14.webp'],
     description: 'Manufactured by Cyntexia International, West Bengal, India (Est. 2010 | Contact: Prosenjit Biswas | +91-974-8574741). Smooth and grained genuine leather dress belts, reversible black/brown office belts, and coordinated leather wallets exported across Germany, France, Italy, and the USA.',
     priceTiers: [
       { minUnits: 250, maxUnits: 999, priceUsd: 6.60 },
@@ -549,7 +549,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Canadian Full-Grain Single-Piece Hide Leather Belts — Lifetime Durability Series (Vaughan, ON)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Full Grain Leather Belt',
-    images: [IMG_BELT_15, IMG_BELT_10, IMG_BELT_04, IMG_BELT_05],
+    images: ['/assets/uploads/verified-belt-15.webp'],
     description: 'Manufactured by Nab Leathers in Vaughan, Ontario, Canada (Est. 2009 | 51–100 Employees | Contact: Nab Leather Team | nableatherca@gmail.com | +1-647-574-1084). Cut from a single solid strap of ethically sourced North American full-grain cowhide that will never crack, peel, or delaminate.',
     priceTiers: [
       { minUnits: 100, maxUnits: 499, priceUsd: 17.50 },
@@ -585,7 +585,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Handpicked Full-Grain & Top-Grain Milled Leather Belt with Double Keeper Loops',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Genuine Leather Belt',
-    images: [IMG_BELT_16, IMG_BELT_05, IMG_BELT_12, IMG_BELT_03],
+    images: ['/assets/uploads/verified-belt-16.webp'],
     description: 'Supplied by Yaco Traders, Punjab, Pakistan (Est. 2019 | Contact: Ayub Sabir | +92-345-6720344). Elegantly handcrafted out of handpicked full-grain and top-grain hides with heavy perimeter saddle stitching and interchangeable snap-off buckles.',
     priceTiers: [
       { minUnits: 150, maxUnits: 499, priceUsd: 6.90 },
@@ -621,7 +621,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Turkish Genuine Buffalo & Calfskin Men’s Dress Belts — Istanbul Luxury Accessories Line',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Fashion & Dress Belts',
-    images: [IMG_BELT_17, IMG_BELT_06, IMG_BELT_14, IMG_BELT_03],
+    images: ['/assets/uploads/verified-belt-17.webp'],
     description: 'Manufactured by Lefather Deri Anonim Sirketi in Istanbul, Turkey (Est. 2019 | 11–50 Employees | Contact: Onur Kaya | +90-532-6733953). Turkish-tanned full-grain calfskin and buffalo grain men’s belts with satin nickel and matte bronze Italian-style buckles for European menswear brands.',
     priceTiers: [
       { minUnits: 200, maxUnits: 799, priceUsd: 10.50 },
@@ -657,7 +657,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Export-Grade Men’s Denim Leather Belt, Card Holder & Genuine Leather Wallet Bundle',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_18, IMG_BELT_09, IMG_BELT_04, IMG_BELT_13],
+    images: ['/assets/uploads/verified-belt-18.webp'],
     description: 'Supplied by Ar Razzaq Corporation, Dhaka, Bangladesh (Contact: Md. Asadujjaman | +880-1712-171630). Heavy-duty genuine leather belts crafted for men’s denim pants and casual retail lines alongside coordinated leather wallets, card holders, and leather shoes.',
     priceTiers: [
       { minUnits: 300, maxUnits: 999, priceUsd: 5.75 },
@@ -693,7 +693,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'High-Volume OEM Genuine Leather Belts & Fashion Clutches (101–500 Staff Vietnam Factory)',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_19, IMG_BELT_14, IMG_BELT_20, IMG_BELT_01],
+    images: ['/assets/uploads/verified-belt-19.webp'],
     description: 'Manufactured by Hadada Fashion Company Limited in Hung Yen, Vietnam (101–500 Employees | Contact: Truong Huy Hiep | +84-9-84904489). High-volume factory production of men’s and women’s genuine leather belts, fashion clutches, and wallets for global department store chains.',
     priceTiers: [
       { minUnits: 500, maxUnits: 1999, priceUsd: 5.60 },
@@ -729,7 +729,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Guangzhou OEM/ODM Genuine Cowhide Dress Belt, Ratchet Buckle & Reversible Leather Belt',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Leather Belt',
-    images: [IMG_BELT_20, IMG_BELT_14, IMG_BELT_06, IMG_BELT_01],
+    images: ['/assets/uploads/verified-belt-20.webp'],
     description: 'Manufactured by Deconn Leather Industry Limited. in Guangzhou, Guangdong, China (Est. 2010 | 51–100 Employees | Contact: Jason Wong | +86-13570946773). Precision OEM/ODM leather belts with zinc-alloy and stainless steel buckles, laser-engraved logos, and custom retail packaging.',
     priceTiers: [
       { minUnits: 300, maxUnits: 999, priceUsd: 5.85 },
