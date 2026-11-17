@@ -1,5 +1,14 @@
 {
   "overrides": {
+    "10": {
+      "primary": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
+      "gallery": [
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg"
+      ],
+      "format": "JPEG",
+      "updatedAt": "2026-11-17T17:27:31.666Z",
+      "updatedBy": "admin-manual"
+    },
     "prod-leather-belt-01": {
       "primary": "/assets/uploads/verified-belt-01.webp",
       "gallery": [
@@ -12934,27 +12943,27 @@
       "updatedBy": "auto-site-upload"
     },
     "Machinery & Industrial Equipment": {
-      "primary": "/assets/uploads/auto-machinery-industrial-equipment-fd5431e9c90b.webp",
+      "primary": "/assets/uploads/auto-machinery-industrial-equipment-bf086d952f35.webp",
       "gallery": [
-        "/assets/uploads/auto-machinery-industrial-equipment-fd5431e9c90b.webp",
-        "/assets/uploads/auto-machinery-industrial-equipment-ab3bb58983e9.webp",
-        "/assets/uploads/auto-machinery-industrial-equipment-0730d685a807.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-bf086d952f35.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-58a75894e2a9.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-f961374a6545.webp",
         "/assets/uploads/auto-machinery-industrial-equipment-4f24a029bf55.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.827Z",
+      "updatedAt": "2026-11-17T17:26:45.059Z",
       "updatedBy": "auto-site-upload"
     },
     "cat-1": {
-      "primary": "/assets/uploads/auto-machinery-industrial-equipment-fd5431e9c90b.webp",
+      "primary": "/assets/uploads/auto-machinery-industrial-equipment-bf086d952f35.webp",
       "gallery": [
-        "/assets/uploads/auto-machinery-industrial-equipment-fd5431e9c90b.webp",
-        "/assets/uploads/auto-machinery-industrial-equipment-ab3bb58983e9.webp",
-        "/assets/uploads/auto-machinery-industrial-equipment-0730d685a807.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-bf086d952f35.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-58a75894e2a9.webp",
+        "/assets/uploads/auto-machinery-industrial-equipment-f961374a6545.webp",
         "/assets/uploads/auto-machinery-industrial-equipment-4f24a029bf55.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.827Z",
+      "updatedAt": "2026-11-17T17:26:45.059Z",
       "updatedBy": "catalog-image-auditor"
     },
     "Electronics & Semiconductors": {
@@ -12976,27 +12985,27 @@
       "updatedBy": "catalog-image-auditor"
     },
     "Chemicals & Raw Polymers": {
-      "primary": "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
+      "primary": "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
       "gallery": [
-        "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-25c533d81ea6.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-ae49de0f783c.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-d8d9575efb15.webp"
+        "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-8bb2cee2c4ba.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-d8d9575efb15.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-08af04acbe12.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.845Z",
+      "updatedAt": "2026-11-17T17:26:45.075Z",
       "updatedBy": "auto-site-upload"
     },
     "cat-4": {
-      "primary": "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
+      "primary": "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
       "gallery": [
-        "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-25c533d81ea6.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-ae49de0f783c.webp",
-        "/assets/uploads/auto-chemicals-raw-polymers-d8d9575efb15.webp"
+        "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-8bb2cee2c4ba.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-d8d9575efb15.webp",
+        "/assets/uploads/auto-chemicals-raw-polymers-08af04acbe12.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.845Z",
+      "updatedAt": "2026-11-17T17:26:45.075Z",
       "updatedBy": "catalog-image-auditor"
     },
     "Renewable Energy & Solar": {
@@ -13057,27 +13066,27 @@
       "updatedBy": "catalog-image-auditor"
     },
     "Building & Construction Materials": {
-      "primary": "/assets/uploads/auto-building-construction-materials-1ba4185a3f78.webp",
+      "primary": "/assets/uploads/auto-building-construction-materials-419bcb6f2ec9.webp",
       "gallery": [
-        "/assets/uploads/auto-building-construction-materials-1ba4185a3f78.webp",
-        "/assets/uploads/auto-building-construction-materials-205aaa4b33fe.webp",
-        "/assets/uploads/auto-building-construction-materials-60e128f6255b.webp",
-        "/assets/uploads/auto-building-construction-materials-c3f3a1415b58.webp"
+        "/assets/uploads/auto-building-construction-materials-419bcb6f2ec9.webp",
+        "/assets/uploads/auto-building-construction-materials-bb4d5ab3c087.webp",
+        "/assets/uploads/auto-building-construction-materials-42b5d65af1f0.webp",
+        "/assets/uploads/auto-building-construction-materials-205aaa4b33fe.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.863Z",
+      "updatedAt": "2026-11-17T17:26:45.089Z",
       "updatedBy": "auto-site-upload"
     },
     "cat-9": {
-      "primary": "/assets/uploads/auto-building-construction-materials-1ba4185a3f78.webp",
+      "primary": "/assets/uploads/auto-building-construction-materials-419bcb6f2ec9.webp",
       "gallery": [
-        "/assets/uploads/auto-building-construction-materials-1ba4185a3f78.webp",
-        "/assets/uploads/auto-building-construction-materials-205aaa4b33fe.webp",
-        "/assets/uploads/auto-building-construction-materials-60e128f6255b.webp",
-        "/assets/uploads/auto-building-construction-materials-c3f3a1415b58.webp"
+        "/assets/uploads/auto-building-construction-materials-419bcb6f2ec9.webp",
+        "/assets/uploads/auto-building-construction-materials-bb4d5ab3c087.webp",
+        "/assets/uploads/auto-building-construction-materials-42b5d65af1f0.webp",
+        "/assets/uploads/auto-building-construction-materials-205aaa4b33fe.webp"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-17T16:10:57.863Z",
+      "updatedAt": "2026-11-17T17:26:45.089Z",
       "updatedBy": "catalog-image-auditor"
     }
   },
@@ -29595,6 +29604,582 @@
       "format": "WEBP",
       "sizeBytes": 95880,
       "uploadedAt": "2026-11-17T13:46:34.987Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-dda6ca7fbec6.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-dda6ca7fbec6.webp",
+      "name": "auto-stainless-steel-coils-dda6ca7fbec6.webp",
+      "format": "WEBP",
+      "sizeBytes": 32202,
+      "uploadedAt": "2026-11-17T17:06:03.419Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-c34d49a87799.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-c34d49a87799.webp",
+      "name": "auto-stainless-steel-coils-c34d49a87799.webp",
+      "format": "WEBP",
+      "sizeBytes": 12178,
+      "uploadedAt": "2026-11-17T17:06:09.629Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-b6a020f01ddd.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-b6a020f01ddd.webp",
+      "name": "auto-stainless-steel-coils-b6a020f01ddd.webp",
+      "format": "WEBP",
+      "sizeBytes": 78680,
+      "uploadedAt": "2026-11-17T17:06:11.783Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-a7c7b1b34f41.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-a7c7b1b34f41.webp",
+      "name": "auto-stainless-steel-coils-a7c7b1b34f41.webp",
+      "format": "WEBP",
+      "sizeBytes": 94836,
+      "uploadedAt": "2026-11-17T17:06:04.178Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-963865d94a8f.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-963865d94a8f.webp",
+      "name": "auto-stainless-steel-coils-963865d94a8f.webp",
+      "format": "WEBP",
+      "sizeBytes": 120430,
+      "uploadedAt": "2026-11-17T17:06:10.682Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-595c7ea29451.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-595c7ea29451.webp",
+      "name": "auto-stainless-steel-coils-595c7ea29451.webp",
+      "format": "WEBP",
+      "sizeBytes": 105506,
+      "uploadedAt": "2026-11-17T17:06:14.011Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-59501836aef0.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-59501836aef0.webp",
+      "name": "auto-stainless-steel-coils-59501836aef0.webp",
+      "format": "WEBP",
+      "sizeBytes": 44226,
+      "uploadedAt": "2026-11-17T17:06:10.602Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-54d51bdba131.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-54d51bdba131.webp",
+      "name": "auto-stainless-steel-coils-54d51bdba131.webp",
+      "format": "WEBP",
+      "sizeBytes": 43956,
+      "uploadedAt": "2026-11-17T17:06:09.568Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-5336daa8d494.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-5336daa8d494.webp",
+      "name": "auto-stainless-steel-coils-5336daa8d494.webp",
+      "format": "WEBP",
+      "sizeBytes": 21602,
+      "uploadedAt": "2026-11-17T17:06:10.489Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-3cfe5f0354ad.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-3cfe5f0354ad.webp",
+      "name": "auto-stainless-steel-coils-3cfe5f0354ad.webp",
+      "format": "WEBP",
+      "sizeBytes": 23670,
+      "uploadedAt": "2026-11-17T17:06:08.987Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-26a1ae17e2e8.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-26a1ae17e2e8.webp",
+      "name": "auto-stainless-steel-coils-26a1ae17e2e8.webp",
+      "format": "WEBP",
+      "sizeBytes": 20910,
+      "uploadedAt": "2026-11-17T17:06:10.199Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-1a8071f91725.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-1a8071f91725.webp",
+      "name": "auto-stainless-steel-coils-1a8071f91725.webp",
+      "format": "WEBP",
+      "sizeBytes": 17378,
+      "uploadedAt": "2026-11-17T17:06:11.084Z"
+    },
+    {
+      "id": "media-auto-stainless-steel-coils-0ee9bf3ba951.webp",
+      "url": "/assets/uploads/auto-stainless-steel-coils-0ee9bf3ba951.webp",
+      "name": "auto-stainless-steel-coils-0ee9bf3ba951.webp",
+      "format": "WEBP",
+      "sizeBytes": 16082,
+      "uploadedAt": "2026-11-17T17:06:01.498Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-f94bd232143f.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-f94bd232143f.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-f94bd232143f.webp",
+      "format": "WEBP",
+      "sizeBytes": 45504,
+      "uploadedAt": "2026-11-17T17:06:10.926Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-ecdfebb06ed8.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-ecdfebb06ed8.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-ecdfebb06ed8.webp",
+      "format": "WEBP",
+      "sizeBytes": 19218,
+      "uploadedAt": "2026-11-17T17:06:13.518Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-cc735f52c963.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-cc735f52c963.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-cc735f52c963.webp",
+      "format": "WEBP",
+      "sizeBytes": 18574,
+      "uploadedAt": "2026-11-17T17:06:09.261Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-c6c6d4d939e3.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-c6c6d4d939e3.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-c6c6d4d939e3.webp",
+      "format": "WEBP",
+      "sizeBytes": 25106,
+      "uploadedAt": "2026-11-17T17:06:09.352Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-b7997307693b.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-b7997307693b.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-b7997307693b.webp",
+      "format": "WEBP",
+      "sizeBytes": 22746,
+      "uploadedAt": "2026-11-17T17:06:07.087Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-9be3db72a321.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-9be3db72a321.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-9be3db72a321.webp",
+      "format": "WEBP",
+      "sizeBytes": 9348,
+      "uploadedAt": "2026-11-17T17:06:06.293Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-7e09df88613b.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-7e09df88613b.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-7e09df88613b.webp",
+      "format": "WEBP",
+      "sizeBytes": 20578,
+      "uploadedAt": "2026-11-17T17:06:09.263Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-6dfd55b670b7.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-6dfd55b670b7.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-6dfd55b670b7.webp",
+      "format": "WEBP",
+      "sizeBytes": 42234,
+      "uploadedAt": "2026-11-17T17:05:53.357Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-4955727c83cf.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-4955727c83cf.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-4955727c83cf.webp",
+      "format": "WEBP",
+      "sizeBytes": 10482,
+      "uploadedAt": "2026-11-17T17:06:09.427Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-4845a4324245.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-4845a4324245.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-4845a4324245.webp",
+      "format": "WEBP",
+      "sizeBytes": 32552,
+      "uploadedAt": "2026-11-17T17:05:53.261Z"
+    },
+    {
+      "id": "media-auto-solar-lithium-ess-battery-packs-3080e72b242a.webp",
+      "url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-3080e72b242a.webp",
+      "name": "auto-solar-lithium-ess-battery-packs-3080e72b242a.webp",
+      "format": "WEBP",
+      "sizeBytes": 59614,
+      "uploadedAt": "2026-11-17T17:06:10.409Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-f129865946cb.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-f129865946cb.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-f129865946cb.webp",
+      "format": "WEBP",
+      "sizeBytes": 114164,
+      "uploadedAt": "2026-11-17T17:06:15.690Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-e47488d04e53.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-e47488d04e53.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-e47488d04e53.webp",
+      "format": "WEBP",
+      "sizeBytes": 101624,
+      "uploadedAt": "2026-11-17T17:06:26.295Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-d36161169fdb.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-d36161169fdb.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-d36161169fdb.webp",
+      "format": "WEBP",
+      "sizeBytes": 153478,
+      "uploadedAt": "2026-11-17T17:06:25.982Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-a11dbaa095d3.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-a11dbaa095d3.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-a11dbaa095d3.webp",
+      "format": "WEBP",
+      "sizeBytes": 67638,
+      "uploadedAt": "2026-11-17T17:06:28.144Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-95ab960a0558.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-95ab960a0558.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-95ab960a0558.webp",
+      "format": "WEBP",
+      "sizeBytes": 128448,
+      "uploadedAt": "2026-11-17T17:06:26.980Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-84b0f4b0e1d1.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-84b0f4b0e1d1.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-84b0f4b0e1d1.webp",
+      "format": "WEBP",
+      "sizeBytes": 56832,
+      "uploadedAt": "2026-11-17T17:06:25.076Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-6c99ed1b8b1a.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-6c99ed1b8b1a.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-6c99ed1b8b1a.webp",
+      "format": "WEBP",
+      "sizeBytes": 81908,
+      "uploadedAt": "2026-11-17T17:06:22.621Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-5fe14e6300a9.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-5fe14e6300a9.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-5fe14e6300a9.webp",
+      "format": "WEBP",
+      "sizeBytes": 61774,
+      "uploadedAt": "2026-11-17T17:06:27.430Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-5a0c70021c77.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-5a0c70021c77.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-5a0c70021c77.webp",
+      "format": "WEBP",
+      "sizeBytes": 51444,
+      "uploadedAt": "2026-11-17T17:06:28.338Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-5349197e6447.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-5349197e6447.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-5349197e6447.webp",
+      "format": "WEBP",
+      "sizeBytes": 39644,
+      "uploadedAt": "2026-11-17T17:06:21.493Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-2891c433d605.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-2891c433d605.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-2891c433d605.webp",
+      "format": "WEBP",
+      "sizeBytes": 90064,
+      "uploadedAt": "2026-11-17T17:06:25.811Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-253833b2f46b.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-253833b2f46b.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-253833b2f46b.webp",
+      "format": "WEBP",
+      "sizeBytes": 103126,
+      "uploadedAt": "2026-11-17T17:06:26.905Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-244979a55d4f.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-244979a55d4f.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-244979a55d4f.webp",
+      "format": "WEBP",
+      "sizeBytes": 30552,
+      "uploadedAt": "2026-11-17T17:06:27.597Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-2256f62a4a27.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-2256f62a4a27.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-2256f62a4a27.webp",
+      "format": "WEBP",
+      "sizeBytes": 49378,
+      "uploadedAt": "2026-11-17T17:06:21.633Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-1ec2a4fb0f65.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-1ec2a4fb0f65.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-1ec2a4fb0f65.webp",
+      "format": "WEBP",
+      "sizeBytes": 96452,
+      "uploadedAt": "2026-11-17T17:06:24.892Z"
+    },
+    {
+      "id": "media-auto-polyester-spiral-press-filter-sludge-1c5f8867e5c3.webp",
+      "url": "/assets/uploads/auto-polyester-spiral-press-filter-sludge-1c5f8867e5c3.webp",
+      "name": "auto-polyester-spiral-press-filter-sludge-1c5f8867e5c3.webp",
+      "format": "WEBP",
+      "sizeBytes": 125398,
+      "uploadedAt": "2026-11-17T17:06:25.951Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-fd88c8d6b03d.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-fd88c8d6b03d.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-fd88c8d6b03d.webp",
+      "format": "WEBP",
+      "sizeBytes": 28118,
+      "uploadedAt": "2026-11-17T17:05:41.666Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-ecf91ff89c6a.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-ecf91ff89c6a.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-ecf91ff89c6a.webp",
+      "format": "WEBP",
+      "sizeBytes": 53472,
+      "uploadedAt": "2026-11-17T17:05:41.147Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-9d5512ccfb01.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-9d5512ccfb01.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-9d5512ccfb01.webp",
+      "format": "WEBP",
+      "sizeBytes": 16804,
+      "uploadedAt": "2026-11-17T17:05:40.702Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-8d1381eea746.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-8d1381eea746.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-8d1381eea746.webp",
+      "format": "WEBP",
+      "sizeBytes": 43868,
+      "uploadedAt": "2026-11-17T17:05:40.865Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-8b0d22ef7e8b.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-8b0d22ef7e8b.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-8b0d22ef7e8b.webp",
+      "format": "WEBP",
+      "sizeBytes": 88144,
+      "uploadedAt": "2026-11-17T17:05:41.967Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-8ad50d0fe1c8.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-8ad50d0fe1c8.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-8ad50d0fe1c8.webp",
+      "format": "WEBP",
+      "sizeBytes": 56158,
+      "uploadedAt": "2026-11-17T17:05:41.170Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-7b813003e4b9.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-7b813003e4b9.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-7b813003e4b9.webp",
+      "format": "WEBP",
+      "sizeBytes": 68700,
+      "uploadedAt": "2026-11-17T17:05:41.701Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-745a199f6d57.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-745a199f6d57.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-745a199f6d57.webp",
+      "format": "WEBP",
+      "sizeBytes": 84754,
+      "uploadedAt": "2026-11-17T17:05:41.952Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-35b591be63e3.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-35b591be63e3.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-35b591be63e3.webp",
+      "format": "WEBP",
+      "sizeBytes": 52308,
+      "uploadedAt": "2026-11-17T17:05:40.575Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-32a3d7963ffe.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-32a3d7963ffe.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-32a3d7963ffe.webp",
+      "format": "WEBP",
+      "sizeBytes": 64540,
+      "uploadedAt": "2026-11-17T17:05:41.258Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-236a41fd9800.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-236a41fd9800.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-236a41fd9800.webp",
+      "format": "WEBP",
+      "sizeBytes": 20528,
+      "uploadedAt": "2026-11-17T17:05:41.188Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-1fe934011924.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-1fe934011924.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-1fe934011924.webp",
+      "format": "WEBP",
+      "sizeBytes": 40280,
+      "uploadedAt": "2026-11-17T17:05:41.698Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp",
+      "format": "WEBP",
+      "sizeBytes": 90060,
+      "uploadedAt": "2026-11-17T17:05:40.616Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp",
+      "name": "auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp",
+      "format": "WEBP",
+      "sizeBytes": 16804,
+      "uploadedAt": "2026-11-17T17:05:41.485Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-f0ee52614b56.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-f0ee52614b56.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-f0ee52614b56.webp",
+      "format": "WEBP",
+      "sizeBytes": 40662,
+      "uploadedAt": "2026-11-17T17:06:37.159Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-e82c69bc9973.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-e82c69bc9973.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-e82c69bc9973.webp",
+      "format": "WEBP",
+      "sizeBytes": 30328,
+      "uploadedAt": "2026-11-17T17:06:36.373Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-de750a385f85.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-de750a385f85.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-de750a385f85.webp",
+      "format": "WEBP",
+      "sizeBytes": 99926,
+      "uploadedAt": "2026-11-17T17:06:39.340Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-9728d2459ca9.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-9728d2459ca9.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-9728d2459ca9.webp",
+      "format": "WEBP",
+      "sizeBytes": 35292,
+      "uploadedAt": "2026-11-17T17:06:39.203Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-95b718b63d34.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-95b718b63d34.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-95b718b63d34.webp",
+      "format": "WEBP",
+      "sizeBytes": 210120,
+      "uploadedAt": "2026-11-17T17:06:38.395Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-7c91d932a134.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-7c91d932a134.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-7c91d932a134.webp",
+      "format": "WEBP",
+      "sizeBytes": 11332,
+      "uploadedAt": "2026-11-17T17:06:25.874Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-7b24938a13ae.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-7b24938a13ae.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-7b24938a13ae.webp",
+      "format": "WEBP",
+      "sizeBytes": 85710,
+      "uploadedAt": "2026-11-17T17:06:39.544Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-4d4046e958cf.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-4d4046e958cf.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-4d4046e958cf.webp",
+      "format": "WEBP",
+      "sizeBytes": 47684,
+      "uploadedAt": "2026-11-17T17:06:20.087Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-2b205484d250.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-2b205484d250.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-2b205484d250.webp",
+      "format": "WEBP",
+      "sizeBytes": 58486,
+      "uploadedAt": "2026-11-17T17:06:25.072Z"
+    },
+    {
+      "id": "media-auto-heat-resistant-rubber-conveyor-belti-0e6c0813978c.webp",
+      "url": "/assets/uploads/auto-heat-resistant-rubber-conveyor-belti-0e6c0813978c.webp",
+      "name": "auto-heat-resistant-rubber-conveyor-belti-0e6c0813978c.webp",
+      "format": "WEBP",
+      "sizeBytes": 56128,
+      "uploadedAt": "2026-11-17T17:06:32.160Z"
+    },
+    {
+      "id": "media-auto-agriculture-agro-commodities-17947d0a9201.webp",
+      "url": "/assets/uploads/auto-agriculture-agro-commodities-17947d0a9201.webp",
+      "name": "auto-agriculture-agro-commodities-17947d0a9201.webp",
+      "format": "WEBP",
+      "sizeBytes": 105348,
+      "uploadedAt": "2026-11-17T16:37:50.250Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-fd720f54fbc2.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-fd720f54fbc2.webp",
+      "name": "auto-5-axis-cnc-milling-centers-fd720f54fbc2.webp",
+      "format": "WEBP",
+      "sizeBytes": 26610,
+      "uploadedAt": "2026-11-17T17:06:20.244Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-f65508c17a6b.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-f65508c17a6b.webp",
+      "name": "auto-5-axis-cnc-milling-centers-f65508c17a6b.webp",
+      "format": "WEBP",
+      "sizeBytes": 96158,
+      "uploadedAt": "2026-11-17T17:06:08.119Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-d734c583183f.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-d734c583183f.webp",
+      "name": "auto-5-axis-cnc-milling-centers-d734c583183f.webp",
+      "format": "WEBP",
+      "sizeBytes": 95486,
+      "uploadedAt": "2026-11-17T17:06:21.047Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-bf086d952f35.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-bf086d952f35.webp",
+      "name": "auto-5-axis-cnc-milling-centers-bf086d952f35.webp",
+      "format": "WEBP",
+      "sizeBytes": 150380,
+      "uploadedAt": "2026-11-17T17:06:17.260Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-2b5fc8104411.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-2b5fc8104411.webp",
+      "name": "auto-5-axis-cnc-milling-centers-2b5fc8104411.webp",
+      "format": "WEBP",
+      "sizeBytes": 14234,
+      "uploadedAt": "2026-11-17T17:06:11.068Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-29a803d19e2d.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-29a803d19e2d.webp",
+      "name": "auto-5-axis-cnc-milling-centers-29a803d19e2d.webp",
+      "format": "WEBP",
+      "sizeBytes": 125042,
+      "uploadedAt": "2026-11-17T17:06:14.721Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+      "name": "auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+      "format": "WEBP",
+      "sizeBytes": 155234,
+      "uploadedAt": "2026-11-17T17:05:54.516Z"
     }
   ]
 }

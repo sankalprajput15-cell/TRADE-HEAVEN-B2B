@@ -13341,15 +13341,52 @@ const EXCLUDED_SCREENSHOT_FILES = new Set([
   'WhatsApp_Image_2026-11-04_at_7.52.01_AM_ab94e787.jpeg'
 ]);
 
-function normalizeServerAssetUrl(url: string | undefined | null): string {
+function normalizeServerAssetUrl(url: string | undefined | null, explicitVersion?: string | number): string {
   if (!url || typeof url !== 'string') return '';
   let out = url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+  let existingQuery = '';
+  const qIdx = out.indexOf('?');
+  if (qIdx !== -1) {
+    existingQuery = out.slice(qIdx + 1);
+    out = out.slice(0, qIdx);
+  }
+
   if (
     out.startsWith('/assets/uploads/') ||
     out.startsWith('/src/assets/') ||
-    out.startsWith('/uploads/')
+    out.startsWith('/uploads/') ||
+    out.startsWith('/assets/tradeheaven/')
   ) {
-    out = out.split('?')[0];
+    const params = new URLSearchParams(existingQuery);
+    if (!params.has('v') && !params.has('cb')) {
+      const cleanPath = out;
+      let versionTag = explicitVersion ? String(explicitVersion) : '';
+      if (!versionTag) {
+        for (const entry of Object.values(serverProductImageState?.overrides || {})) {
+          if (!entry) continue;
+          if ((entry.primary && entry.primary.split('?')[0] === cleanPath) ||
+              (Array.isArray(entry.gallery) && entry.gallery.some(u => u && u.split('?')[0] === cleanPath))) {
+            if (entry.updatedAt) {
+              const t = new Date(entry.updatedAt).getTime();
+              if (!isNaN(t)) {
+                versionTag = String(t);
+                break;
+              }
+            }
+          }
+        }
+      }
+      if (!versionTag) {
+        versionTag = String(Date.now());
+      }
+      params.set('v', versionTag);
+    }
+    const qStr = params.toString();
+    return qStr ? `${out}?${qStr}` : out;
+  }
+
+  if (existingQuery) {
+    return `${out}?${existingQuery}`;
   }
   return out;
 }
