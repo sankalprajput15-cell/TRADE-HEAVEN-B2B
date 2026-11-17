@@ -63,12 +63,13 @@ function saveSupplierOverride(idOrEmail: string, override: { tier: string; membe
   } catch {}
 }
 
-export const getSupplierTierValue = (tier?: string, status?: string): 'paid' | 'verified' | 'basic' | 'free' => {
+export const getSupplierTierValue = (tier?: string, status?: string, membershipStatus?: string): 'paid' | 'verified' | 'basic' | 'free' => {
   const t = String(tier || '').toLowerCase();
   const s = String(status || '').toLowerCase();
-  if (s === 'free' || t.includes('free')) return 'free';
-  if (s === 'paid' || t.includes('vip') || t.includes('gold')) return 'paid';
-  if (s === 'basic' || t.includes('basic')) return 'basic';
+  const m = String(membershipStatus || '').toLowerCase();
+  if (m === 'free' || s === 'free' || t.includes('free')) return 'free';
+  if (m === 'basic' || s === 'basic' || t.includes('basic')) return 'basic';
+  if (m === 'paid' || s === 'paid' || t.includes('vip') || t.includes('gold') || t.includes('platinum')) return 'paid';
   return 'verified';
 };
 
@@ -348,8 +349,44 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         });
     };
 
+    const mergeWithSeedSupplier = (serverRow: any, seed: RegisteredSupplier): RegisteredSupplier => {
+      const serverTier = String(serverRow?.tier || '').trim();
+      const serverMem = String(serverRow?.membershipStatus || serverRow?.membership_status || '').trim();
+      const serverStatus = String(serverRow?.status || '').trim();
+      const hasValidServerTier =
+        Boolean(serverTier) &&
+        serverTier.toUpperCase() !== 'SILVER' &&
+        !(seed.email?.toLowerCase().includes('mpcommoditybroker') && serverTier.toLowerCase().includes('free'));
+      const resolvedTier = hasValidServerTier ? serverTier : seed.tier;
+      const resolvedIsVerified =
+        serverRow?.isVerified !== undefined
+          ? Boolean(serverRow.isVerified)
+          : serverRow?.is_verified !== undefined
+          ? Boolean(serverRow.is_verified)
+          : Boolean(seed.isVerified);
+      return {
+        ...seed,
+        ...serverRow,
+        id: serverRow?.id || seed.id,
+        name: serverRow?.name || seed.name,
+        email: seed.email || serverRow?.email,
+        company_name: serverRow?.companyName || serverRow?.company_name || seed.company_name,
+        companyName: serverRow?.companyName || serverRow?.company_name || seed.companyName,
+        phone: serverRow?.phone || seed.phone,
+        country: serverRow?.country || seed.country,
+        tier: resolvedTier,
+        status: serverStatus || seed.status,
+        membershipStatus: serverMem || (seed as any).membershipStatus,
+        is_verified: resolvedIsVerified ? 1 : 0,
+        isVerified: resolvedIsVerified
+      } as RegisteredSupplier;
+    };
+
     try {
-      const res = await fetch('/api.php?action=get_users');
+      const [res, adminUsersRes] = await Promise.all([
+        fetch('/api.php?action=get_users'),
+        fetch('/api/admin/users').catch(() => null)
+      ]);
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -361,6 +398,37 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         usersList = json;
       }
 
+      // Overlay authoritative /api/admin/users records by id or email so local server updates always reflect
+      if (adminUsersRes && adminUsersRes.ok) {
+        try {
+          const adminJson = await adminUsersRes.json();
+          if (adminJson && Array.isArray(adminJson.data)) {
+            const adminByEmail = new Map<string, any>();
+            const adminById = new Map<string, any>();
+            adminJson.data.forEach((au: any) => {
+              if (au?.email) adminByEmail.set(String(au.email).toLowerCase().trim(), au);
+              if (au?.id) adminById.set(String(au.id).trim(), au);
+            });
+            usersList = usersList.map((u) => {
+              const em = String(u?.email || '').toLowerCase().trim();
+              const uid = String(u?.id || '').trim();
+              const match = (em && adminByEmail.get(em)) || (uid && adminById.get(uid));
+              if (!match) return u;
+              return {
+                ...u,
+                tier: match.tier || u.tier,
+                membershipStatus: match.membershipStatus || u.membershipStatus,
+                membership_status: match.membershipStatus || u.membership_status,
+                status: match.status || u.status,
+                isVerified: match.isVerified !== undefined ? match.isVerified : u.isVerified,
+                is_verified: match.isVerified !== undefined ? (match.isVerified ? 1 : 0) : u.is_verified,
+                isPremium: match.isPremium !== undefined ? match.isPremium : u.isPremium
+              };
+            });
+          }
+        } catch {}
+      }
+
       const supplierList = usersList.filter((u) => {
         const role = String(u.role || '').toLowerCase();
         return role === 'supplier' || role === 'vendors' || role === 'vendor';
@@ -369,46 +437,34 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       const finalSuppliers = (supplierList.length > 0 ? supplierList : usersList).map((s) => {
         const emailLower = String(s.email || '').toLowerCase();
         if (emailLower.includes('afrehgroup')) {
-          return { ...s, ...afrehGroupSupplier };
+          return mergeWithSeedSupplier(s, afrehGroupSupplier);
         }
         if (emailLower.includes('atlanticpowerequip')) {
-          return { ...s, ...markJohnsonSupplier };
+          return mergeWithSeedSupplier(s, markJohnsonSupplier);
         }
         if (emailLower.includes('midforkcap')) {
-          return { ...s, ...randySupplier };
+          return mergeWithSeedSupplier(s, randySupplier);
         }
         if (emailLower.includes('sorkindon')) {
-          return { ...s, ...donaldSupplier };
+          return mergeWithSeedSupplier(s, donaldSupplier);
         }
         if (emailLower.includes('mpcommoditybroker')) {
-          return { ...s, ...melissaSupplier };
+          return mergeWithSeedSupplier(s, melissaSupplier);
         }
         if (emailLower.includes('joybambooforestfarm')) {
-          return { ...s, ...svetlanaSupplier };
+          return mergeWithSeedSupplier(s, svetlanaSupplier);
         }
         if (emailLower.includes('ezekiahali') || emailLower.includes('ace')) {
-          return { ...s, ...aceIntermediarySupplier };
+          return mergeWithSeedSupplier(s, aceIntermediarySupplier);
         }
         if (emailLower.includes('reverseenergy') || emailLower.includes('reverseenergypty')) {
-          return { ...s, ...emmanuelSupplier };
+          return mergeWithSeedSupplier(s, emmanuelSupplier);
         }
         if (emailLower.includes('larsbarnhart') || emailLower.includes('blackstone')) {
-          return { ...s, ...larsBarnhartSupplier };
+          return mergeWithSeedSupplier(s, larsBarnhartSupplier);
         }
         if (emailLower === 'zac@otec.ltd') {
-          const isFreeTier =
-            String(s.membershipStatus || s.membership_status || '').toLowerCase() === 'free' ||
-            String(s.tier || '').toLowerCase().includes('free');
-          return {
-            ...s,
-            company_name: s.companyName || s.company_name || zacSupplier.company_name,
-            companyName: s.companyName || s.company_name || zacSupplier.companyName,
-            phone: s.phone || zacSupplier.phone,
-            tier: isFreeTier ? 'Free Member' : s.tier || zacSupplier.tier,
-            status: isFreeTier ? 'FREE' : s.status,
-            is_verified: isFreeTier ? 0 : s.is_verified,
-            isVerified: isFreeTier ? false : Boolean(s.isVerified)
-          };
+          return mergeWithSeedSupplier(s, zacSupplier);
         }
         return s;
       });
@@ -511,6 +567,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         ? 'Free Member'
         : 'Verified Supplier';
     const newIsVerified = val !== 'free';
+    const newStatus = val === 'free' ? 'FREE' : 'ACTIVE';
 
     saveSupplierOverride(String(sup.id), { tier: newTier, membershipStatus: val, isVerified: newIsVerified });
     if (sup.email) {
@@ -523,10 +580,11 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
           return {
             ...s,
             tier: newTier,
-            status: val === 'free' ? 'FREE' : val === 'paid' ? 'ACTIVE' : s.status,
+            status: newStatus,
+            membershipStatus: val,
             is_verified: newIsVerified ? 1 : 0,
             isVerified: newIsVerified
-          };
+          } as RegisteredSupplier;
         }
         return s;
       })
@@ -535,17 +593,38 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
     setStatusBanner(`✓ Updated status for ${sup.name || sup.email} to: ${newTier}`);
     setTimeout(() => setStatusBanner(null), 3000);
 
+    const payload = {
+      id: sup.id,
+      email: sup.email,
+      name: sup.name,
+      companyName: sup.companyName || sup.company_name,
+      company_name: sup.companyName || sup.company_name,
+      country: sup.country,
+      phone: sup.phone,
+      role: 'SUPPLIER',
+      status: newStatus,
+      tier: newTier,
+      membershipStatus: val,
+      membership_status: val,
+      isPremium: val === 'paid',
+      is_premium: val === 'paid',
+      isVerified: newIsVerified,
+      is_verified: newIsVerified
+    };
+
     try {
-      await fetch(`/api/admin/users/${sup.id}`, {
+      await fetch(`/api/admin/users/${encodeURIComponent(String(sup.id))}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: sup.id,
-          tier: newTier,
-          membershipStatus: val,
-          isPremium: val === 'paid',
-          isVerified: newIsVerified
-        })
+        body: JSON.stringify(payload)
+      });
+    } catch {}
+
+    try {
+      await fetch('/api.php?action=upsert_user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
     } catch {}
 
@@ -553,11 +632,14 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       await api.adminUpdateUserPrivileges(
         String(sup.id),
         {
+          email: sup.email,
+          name: sup.name,
+          companyName: sup.companyName || sup.company_name,
           tier: newTier,
           membershipStatus: val as any,
           isPremium: val === 'paid',
           isVerified: newIsVerified
-        },
+        } as any,
         currentUser
       );
     } catch {}
@@ -907,7 +989,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                               <div className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
                                 <span className="text-[9px] font-bold text-slate-500 uppercase">Tier:</span>
                                 <select
-                                  value={getSupplierTierValue(sup.tier, sup.status)}
+                                  value={getSupplierTierValue(sup.tier, sup.status, (sup as any).membershipStatus || (sup as any).membership_status)}
                                   onChange={(e) => handleSupplierTierChange(sup, e.target.value)}
                                   className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-bold text-[10px] text-slate-800 cursor-pointer focus:outline-none"
                                 >
@@ -957,7 +1039,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>VERIFIED</span>
                               </span>
-                            ) : getSupplierTierValue(sup.tier, sup.status) === 'free' ? (
+                            ) : getSupplierTierValue(sup.tier, sup.status, (sup as any).membershipStatus || (sup as any).membership_status) === 'free' ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-200 text-slate-700 border border-slate-300">
                                 <span>FREE MEMBER</span>
                               </span>

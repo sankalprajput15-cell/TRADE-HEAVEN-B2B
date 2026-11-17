@@ -32,6 +32,11 @@ import { MOCK_COMPANIES } from './src/data/mockData';
 
 dotenv.config();
 
+try {
+  sharp.cache(false);
+  sharp.concurrency(1);
+} catch {}
+
 process.on('uncaughtException', (err) => {
   console.warn('[Server Resilience] Uncaught exception intercepted:', err?.message || err);
 });
@@ -193,8 +198,8 @@ interface CachedOptimizedImage {
   etag: string;
 }
 
-const IMAGE_CACHE_MAX_ENTRIES = 1500;
-const AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS = 60 * 1000; // Every 1 minute automatically, zero permission required
+const IMAGE_CACHE_MAX_ENTRIES = 60;
+const AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes automatically, zero permission required
 const IMAGE_WIDTH_BUCKETS = [160, 320, 480, 720, 960, 1280, 1600];
 const optimizedImageBufferCache = new Map<string, CachedOptimizedImage>();
 const inFlightImageOptimizations = new Map<string, Promise<CachedOptimizedImage>>();
@@ -393,11 +398,10 @@ async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOM
 
       for (const fileName of entries) {
         sourceCount += 1;
-        if (newlyOptimized < 8) {
+        if (newlyOptimized < 2) {
           const targetPath = path.join(dir, fileName);
           const generated = await prewarmSingleImageFile(targetPath);
           newlyOptimized += generated;
-          // Yield cleanly to keep HTTP latency unaffected while running every minute
           if (generated > 0) {
             await new Promise<void>((resolve) => setImmediate(resolve));
           }
@@ -800,7 +804,7 @@ interface ServerUserRecord {
   status: 'ACTIVE' | 'PENDING' | 'SUSPENDED';
   isVerified: boolean;
   isPremium: boolean;
-  membershipStatus: 'free' | 'paid';
+  membershipStatus: 'free' | 'paid' | 'basic' | 'verified' | 'pending';
   tier?: string;
   phone?: string;
   avatarUrl?: string;
@@ -1462,12 +1466,18 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
       ? false
       : existing?.isVerified ?? true;
 
-  const rawMem = String(input.membershipStatus || input.membership_status || existing?.membershipStatus || '').toLowerCase();
-  const resolvedMembershipStatus: 'free' | 'paid' =
+  const rawMem = String(input.membershipStatus || input.membership_status || existing?.membershipStatus || '').toLowerCase().trim();
+  const resolvedMembershipStatus: 'free' | 'paid' | 'basic' | 'verified' | 'pending' =
     isExplicitFreeRequest
       ? 'free'
-      : rawMem === 'paid' || rawMem === 'verified' || rawMem === 'basic' || resolvedIsPremium
+      : rawMem === 'basic' || rawTierInput.includes('basic')
+      ? 'basic'
+      : rawMem === 'paid' || resolvedIsPremium || rawTierInput.includes('vip') || rawTierInput.includes('gold')
       ? 'paid'
+      : rawMem === 'pending'
+      ? 'pending'
+      : rawMem === 'verified' || resolvedIsVerified
+      ? 'verified'
       : 'free';
 
   const record: ServerUserRecord = {
@@ -9291,6 +9301,9 @@ async function forwardApiPhpToLiveUpstream(
       const byEmail = new Map(
         serverUsersStore.map((u) => [normalizeRecipientEmail(String(u.email || '')), u])
       );
+      const byId = new Map(
+        serverUsersStore.map((u) => [String(u.id || '').trim(), u])
+      );
       const presentEmails = new Set<string>();
       const presentIds = new Set<string>();
       const seenNormalizedEmails = new Set<string>();
@@ -9326,7 +9339,7 @@ async function forwardApiPhpToLiveUpstream(
           const id = String(row?.id || '').trim();
           if (em) presentEmails.add(em);
           if (id) presentIds.add(id);
-          const localMatch = em ? byEmail.get(em) : undefined;
+          const localMatch = (em ? byEmail.get(em) : undefined) || (id ? byId.get(id) : undefined);
           if (!localMatch) {
             return em && em !== row?.email ? { ...row, email: em } : row;
           }
@@ -12441,6 +12454,39 @@ app.post('/api/admin/users/create', (req, res) => {
     return res.status(400).json({ success: false, message: 'Email is required to create a user.' });
   }
   const savedRecord = upsertServerUserRecord(input);
+  if (LIVE_UPSTREAM_PROXY_ENABLED) {
+    try {
+      const targetUrl = new URL(LIVE_TRADEHEAVEN_API_URL);
+      targetUrl.searchParams.set('action', 'upsert_user');
+      const payloadBuf = Buffer.from(
+        JSON.stringify({
+          id: savedRecord.id,
+          name: savedRecord.name,
+          email: savedRecord.email,
+          role: savedRecord.role,
+          companyName: savedRecord.companyName,
+          company_name: savedRecord.companyName,
+          country: savedRecord.country,
+          status: savedRecord.status,
+          tier: savedRecord.tier,
+          membershipStatus: savedRecord.membershipStatus,
+          membership_status: savedRecord.membershipStatus,
+          isVerified: savedRecord.isVerified,
+          is_verified: savedRecord.isVerified ? 1 : 0,
+          isPremium: savedRecord.isPremium,
+          is_premium: savedRecord.isPremium ? 1 : 0
+        }),
+        'utf-8'
+      );
+      executeUpstreamHttpRequest(
+        targetUrl.toString(),
+        'POST',
+        { 'Content-Type': 'application/json', 'Content-Length': String(payloadBuf.length) },
+        payloadBuf,
+        8000
+      ).catch(() => {});
+    } catch {}
+  }
   return res.status(201).json({
     success: true,
     data: {
@@ -12467,6 +12513,39 @@ app.post('/api/admin/users/create', (req, res) => {
 
 app.put('/api/admin/users/:id', (req, res) => {
   const savedRecord = upsertServerUserRecord({ ...(req.body || {}), id: req.params.id });
+  if (LIVE_UPSTREAM_PROXY_ENABLED) {
+    try {
+      const targetUrl = new URL(LIVE_TRADEHEAVEN_API_URL);
+      targetUrl.searchParams.set('action', 'upsert_user');
+      const payloadBuf = Buffer.from(
+        JSON.stringify({
+          id: savedRecord.id,
+          name: savedRecord.name,
+          email: savedRecord.email,
+          role: savedRecord.role,
+          companyName: savedRecord.companyName,
+          company_name: savedRecord.companyName,
+          country: savedRecord.country,
+          status: savedRecord.status,
+          tier: savedRecord.tier,
+          membershipStatus: savedRecord.membershipStatus,
+          membership_status: savedRecord.membershipStatus,
+          isVerified: savedRecord.isVerified,
+          is_verified: savedRecord.isVerified ? 1 : 0,
+          isPremium: savedRecord.isPremium,
+          is_premium: savedRecord.isPremium ? 1 : 0
+        }),
+        'utf-8'
+      );
+      executeUpstreamHttpRequest(
+        targetUrl.toString(),
+        'POST',
+        { 'Content-Type': 'application/json', 'Content-Length': String(payloadBuf.length) },
+        payloadBuf,
+        8000
+      ).catch(() => {});
+    } catch {}
+  }
   return res.json({
     success: true,
     data: savedRecord
@@ -14972,15 +15051,59 @@ let serverStripeSyncLogs: any[] = [
   }
 ];
 
+const SAAS_PLANS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'saas-plans.json');
+
+function loadServerSaasPlansFromDisk(seedPlans: any[]): any[] {
+  try {
+    if (fs.existsSync(SAAS_PLANS_FILE)) {
+      const raw = fs.readFileSync(SAAS_PLANS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('[ServerSaasPlans] Failed to load saas-plans.json:', err);
+  }
+  return seedPlans;
+}
+
+function saveServerSaasPlansToDisk() {
+  try {
+    const dir = path.dirname(SAAS_PLANS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(SAAS_PLANS_FILE, JSON.stringify(serverSaasPlans, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[ServerSaasPlans] Failed to save saas-plans.json:', err);
+  }
+}
+
+serverSaasPlans = loadServerSaasPlansFromDisk(serverSaasPlans);
+if (!fs.existsSync(SAAS_PLANS_FILE)) {
+  saveServerSaasPlansToDisk();
+}
+
 // Helper: check admin authorization
 function checkAdminAuth(req: express.Request): boolean {
-  const userRole = req.headers['x-user-role'];
-  const userEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
+  const userRole = String(req.headers['x-user-role'] || '').toUpperCase().trim();
+  const userEmail = String(req.headers['x-user-email'] || '').toLowerCase().trim();
+  const authHeader = String(req.headers['authorization'] || '');
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    const verified = verifyServerJwt(token);
+    if (verified && (verified.role === 'ADMIN' || AUTHORIZED_ROOT_ADMIN_EMAILS.has(String(verified.email || '').toLowerCase()))) {
+      return true;
+    }
+  }
   return (
     userRole === 'ADMIN' ||
     userEmail === ADMIN_EMAIL ||
     userEmail === 'yr943334@gmail.com' ||
+    userEmail === 'sankalprajput15@gmail.com' ||
     userEmail === 'admin@tradeheaven.net' ||
+    AUTHORIZED_ROOT_ADMIN_EMAILS.has(userEmail) ||
     serverAuthorizedUsers.some(u => u.status === 'ACTIVE' && u.email.toLowerCase() === userEmail)
   );
 }
@@ -15095,6 +15218,7 @@ app.post('/api/v1/plans', (req, res) => {
   };
 
   serverSaasPlans.push(newPlan);
+  saveServerSaasPlansToDisk();
 
   // Record Stripe Sync Log
   serverStripeSyncLogs.unshift({
@@ -15203,6 +15327,7 @@ app.put('/api/v1/plans/:id', (req, res) => {
   };
 
   serverSaasPlans[planIndex] = updatedPlan;
+  saveServerSaasPlansToDisk();
 
   res.json({
     success: true,
@@ -15226,6 +15351,7 @@ app.post('/api/v1/plans/:id/archive', (req, res) => {
   const newStatus = plan.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED';
   plan.status = newStatus;
   plan.updatedAt = new Date().toISOString();
+  saveServerSaasPlansToDisk();
 
   serverStripeSyncLogs.unshift({
     id: `event-${Date.now()}`,
@@ -15280,6 +15406,7 @@ app.post('/api/v1/plans/:id/duplicate', (req, res) => {
   };
 
   serverSaasPlans.push(clonedPlan);
+  saveServerSaasPlansToDisk();
 
   res.status(201).json({
     success: true,
@@ -21282,23 +21409,38 @@ async function startServer() {
         contentType.startsWith('image/svg+xml') ||
         contentType.startsWith('application/xml');
 
-      let entry = gzipCache.get(filePath);
-      if (!entry || entry.mtimeMs !== stat.mtimeMs) {
-        const raw = fs.readFileSync(filePath);
-        const gzipped = isCompressible ? zlib.gzipSync(raw, { level: 6 }) : raw;
-        entry = { mtimeMs: stat.mtimeMs, gzipped, raw, contentType };
-        gzipCache.set(filePath, entry);
-      }
-
-      res.setHeader('Content-Type', entry.contentType);
+      res.setHeader('Content-Type', contentType);
       if (isImmutableAsset) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
         res.setHeader('Cache-Control', 'no-cache');
       }
 
+      // For binary files or files > 512KB, stream directly from disk without buffering in gzipCache
+      if (!isCompressible || stat.size > 512 * 1024) {
+        res.setHeader('Content-Length', String(stat.size));
+        const stream = fs.createReadStream(filePath);
+        stream.on('error', () => {
+          if (!res.headersSent) res.status(404).end();
+        });
+        stream.pipe(res);
+        return true;
+      }
+
+      let entry = gzipCache.get(filePath);
+      if (!entry || entry.mtimeMs !== stat.mtimeMs) {
+        const raw = fs.readFileSync(filePath);
+        const gzipped = zlib.gzipSync(raw, { level: 6 });
+        entry = { mtimeMs: stat.mtimeMs, gzipped, raw, contentType };
+        if (gzipCache.size >= 50) {
+          const oldestKey = gzipCache.keys().next().value;
+          if (oldestKey) gzipCache.delete(oldestKey);
+        }
+        gzipCache.set(filePath, entry);
+      }
+
       const acceptEncoding = String(req.headers['accept-encoding'] || '');
-      if (isCompressible && acceptEncoding.includes('gzip')) {
+      if (acceptEncoding.includes('gzip')) {
         res.setHeader('Content-Encoding', 'gzip');
         res.setHeader('Vary', 'Accept-Encoding');
         res.setHeader('Content-Length', String(entry.gzipped.length));
@@ -21400,13 +21542,13 @@ async function startServer() {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
     setTimeout(() => {
       void ensureRealHeaderImagesForCategories(false);
-    }, 1500);
+    }, 25000);
     setTimeout(() => {
       void runAutonomousImageOptimizerCycle('BOOT_INITIALIZATION_EVERY_MINUTE_DAEMON');
-    }, 15000);
+    }, 45000);
     setTimeout(() => {
       executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
-    }, 12000);
+    }, 35000);
     setInterval(() => {
       void processUnseenChatAlerts(60);
     }, 30000);

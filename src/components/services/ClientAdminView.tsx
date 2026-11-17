@@ -262,61 +262,87 @@ export const ClientAdminView: React.FC<Props> = ({
         mergedUsers.push({ ...u, id: uid });
       };
 
-      // 1. Session-created users first
-      sessionCreatedUsersRef.current.forEach(pushUniqueUser);
+      let storedTierOverrides: Record<string, { tier?: string; membershipStatus?: string; isVerified?: boolean }> = {};
+      try {
+        const rawOv = localStorage.getItem('th_supplier_tier_overrides_v2');
+        if (rawOv) storedTierOverrides = JSON.parse(rawOv);
+      } catch {}
 
-      // 2. Custom/newly registered users from dbUsersData (such as themax0098@gmail.com or recently added via API)
-      const builtInEmails = new Set([
-        'yr943334@gmail.com',
-        'admin@tradeheaven.net',
-        'melissa@mpcommoditybrokers.com',
-        'zac@otec.ltd',
-        'info@joybambooforestfarm.com',
-        'sorkindon@gmail.com',
-        'randy@midforkcap.com'
-      ]);
+      const applyTierOverride = (u: AuthUser): AuthUser => {
+        const sid = String(u.id || '').toLowerCase().trim();
+        const sem = String(u.email || '').toLowerCase().trim();
+        const ov = storedTierOverrides[sid] || storedTierOverrides[sem];
+        if (!ov) return u;
+        const ovMem = (ov.membershipStatus || u.membershipStatus || 'verified') as MembershipStatus;
+        const ovTier = ov.tier || u.tier;
+        const ovIsPremium =
+          ovMem === 'paid' ||
+          String(ovTier || '').toLowerCase().includes('vip') ||
+          String(ovTier || '').toLowerCase().includes('gold');
+        return {
+          ...u,
+          tier: ovTier as any,
+          membershipStatus: ovMem,
+          isPremium: ovIsPremium,
+          isVerified: ov.isVerified !== undefined ? Boolean(ov.isVerified) : u.isVerified
+        };
+      };
 
-      (dbUsersData || []).forEach(dbu => {
-        if (!dbu || !dbu.email) return;
-        const emailLower = dbu.email.toLowerCase().trim();
-        if (!builtInEmails.has(emailLower)) {
-          pushUniqueUser({
-            id: String(dbu.id || `user-${emailLower}`),
-            name: dbu.name || dbu.email.split('@')[0],
-            email: dbu.email,
-            role: ((dbu.role || 'BUYER').toUpperCase() as UserRole),
-            companyName: dbu.company_name || dbu.company || 'Enterprise Trading Firm',
-            country: dbu.country || 'Global',
-            status: ((dbu.status || 'ACTIVE').toUpperCase() as AccountStatus),
-            isVerified: dbu.is_verified ?? true,
-            isPremium: Boolean(dbu.is_premium),
-            membershipStatus: (dbu.membership_status as MembershipStatus) || (dbu.is_premium ? 'paid' : 'verified'),
-            tier: (dbu.tier as any) || (dbu.is_premium ? 'VIP' : 'Verified Supplier')
-          });
-        }
-      });
-
-      // 3. All users from api.getAllUsers (which also places custom users before defaults)
-      (usersData || []).forEach(pushUniqueUser);
-
-      // 4. Any remaining dbUsersData records
-      (dbUsersData || []).forEach(dbu => {
-        if (!dbu || !dbu.email) return;
-        const emailLower = dbu.email.toLowerCase().trim();
-        pushUniqueUser({
+      const mapDbUserToAuthUser = (dbu: any): AuthUser => {
+        const emailLower = String(dbu.email || '').toLowerCase().trim();
+        const rawTier = String(dbu.tier || '').trim();
+        const rawMem = String(dbu.membership_status || dbu.membershipStatus || '').toLowerCase().trim();
+        const resolvedIsPremium =
+          dbu.is_premium !== undefined
+            ? Boolean(dbu.is_premium)
+            : dbu.isPremium !== undefined
+            ? Boolean(dbu.isPremium)
+            : rawMem === 'paid' || rawTier.toLowerCase().includes('vip') || rawTier.toLowerCase().includes('gold');
+        const resolvedIsVerified =
+          dbu.is_verified !== undefined
+            ? Boolean(dbu.is_verified)
+            : dbu.isVerified !== undefined
+            ? Boolean(dbu.isVerified)
+            : rawMem !== 'free';
+        const resolvedMem: MembershipStatus =
+          (rawMem as MembershipStatus) ||
+          (rawTier.toLowerCase().includes('basic')
+            ? 'basic'
+            : resolvedIsPremium
+            ? 'paid'
+            : resolvedIsVerified
+            ? 'verified'
+            : 'free');
+        return applyTierOverride({
           id: String(dbu.id || `user-${emailLower}`),
           name: dbu.name || dbu.email.split('@')[0],
           email: dbu.email,
           role: ((dbu.role || 'BUYER').toUpperCase() as UserRole),
-          companyName: dbu.company_name || dbu.company || 'Enterprise Trading Firm',
+          companyName: dbu.companyName || dbu.company_name || dbu.company || 'Enterprise Trading Firm',
           country: dbu.country || 'Global',
           status: ((dbu.status || 'ACTIVE').toUpperCase() as AccountStatus),
-          isVerified: dbu.is_verified ?? true,
-          isPremium: Boolean(dbu.is_premium),
-          membershipStatus: (dbu.membership_status as MembershipStatus) || (dbu.is_premium ? 'paid' : 'verified'),
-          tier: (dbu.tier as any) || (dbu.is_premium ? 'VIP' : 'Verified Supplier')
+          isVerified: resolvedIsVerified,
+          isPremium: resolvedIsPremium,
+          membershipStatus: resolvedMem,
+          tier: (rawTier as any) || (resolvedIsPremium ? 'VIP' : resolvedMem === 'basic' ? 'Basic Plan' : 'Verified Supplier')
         });
+      };
+
+      // 1. Session-created users first
+      sessionCreatedUsersRef.current.forEach(u => pushUniqueUser(applyTierOverride(u)));
+
+      // 2. Authoritative users from api.getAllUsers (synced with /api/admin/users & local admin updates)
+      (usersData || []).forEach(u => pushUniqueUser(applyTierOverride(u)));
+
+      // 3. Any additional database users from dbUsersData
+      (dbUsersData || []).forEach(dbu => {
+        if (!dbu || !dbu.email) return;
+        pushUniqueUser(mapDbUserUser(dbu));
       });
+
+      function mapDbUserUser(dbu: any): AuthUser {
+        return mapDbUserToAuthUser(dbu);
+      }
 
       setInquiries(inquiriesData);
       setUsersList(mergedUsers);
@@ -876,6 +902,7 @@ export const ClientAdminView: React.FC<Props> = ({
       const targetUser = res.data || updatedUserSnapshot;
       if (targetUser?.email) {
         bigrockApi.upsertUser({
+          id: targetUser.id,
           name: targetUser.name,
           email: targetUser.email,
           role: targetUser.role,
@@ -883,9 +910,10 @@ export const ClientAdminView: React.FC<Props> = ({
           country: targetUser.country,
           status: targetUser.status,
           tier: String(targetUser.tier || ''),
+          membership_status: targetUser.membershipStatus,
           is_verified: targetUser.isVerified,
           is_premium: targetUser.isPremium
-        }).catch(() => {});
+        } as any).catch(() => {});
       }
 
       adminActivityBus.logActivity(

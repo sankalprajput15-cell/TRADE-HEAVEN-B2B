@@ -233,9 +233,19 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       ) {
         tierStr = 'Basic Plan (Paid via Bank transfer)';
       }
+      const melissaLower = tierStr.toLowerCase();
+      if (melissaLower.includes('vip') || melissaLower.includes('gold') || melissaLower.includes('platinum')) {
+        return {
+          label: tierStr.toUpperCase() === 'VIP' ? 'VIP Gold Exporter' : tierStr,
+          badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+          iconClass: 'text-amber-700',
+          isFree: false,
+          kycBadge: 'VIP Enterprise Supplier'
+        };
+      }
       return {
         label:
-          tierStr && tierStr.length > 5 && !tierStr.toLowerCase().includes('free')
+          tierStr && !tierStr.toLowerCase().includes('free')
             ? tierStr
             : 'Basic Plan (Paid via Bank transfer)',
         badgeClass: 'bg-blue-100 text-blue-900 border-blue-300',
@@ -272,7 +282,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     }
     if (isBasic) {
       return {
-        label: tierStr && tierStr.length > 5 ? tierStr : 'Basic Plan Exporter',
+        label: tierStr && tierStr.length > 3 ? tierStr : 'Basic Plan Exporter',
         badgeClass: 'bg-blue-100 text-blue-900 border-blue-300',
         iconClass: 'text-blue-700',
         isFree: false,
@@ -281,7 +291,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     }
     if (isPaid) {
       return {
-        label: tierStr && tierStr.length > 5 ? tierStr : 'Gold Verified Exporter',
+        label: tierStr.toUpperCase() === 'VIP' ? 'VIP Gold Exporter' : tierStr && tierStr.length > 2 ? tierStr : 'Gold Verified Exporter',
         badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
         iconClass: 'text-amber-700',
         isFree: false,
@@ -304,6 +314,37 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       setResolvedTier(resolveCurrentSupplierTier());
     };
     handleSync();
+
+    // Also pull authoritative server user tier so admin changes made from any tab/session reflect immediately
+    fetch('/api/admin/users')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json || !Array.isArray(json.data)) return;
+        const em = String(currentUser?.email || '').toLowerCase().trim();
+        const uid = String(currentUser?.id || '').toLowerCase().trim();
+        const match = json.data.find(
+          (u: any) =>
+            (em && String(u.email || '').toLowerCase().trim() === em) ||
+            (uid && String(u.id || '').toLowerCase().trim() === uid)
+        );
+        if (match && (match.tier || match.membershipStatus)) {
+          try {
+            const raw = localStorage.getItem('th_supplier_tier_overrides_v2');
+            const parsed = raw ? JSON.parse(raw) : {};
+            const ov = {
+              tier: String(match.tier || 'Verified Supplier'),
+              membershipStatus: String(match.membershipStatus || 'verified'),
+              isVerified: Boolean(match.isVerified)
+            };
+            if (uid) parsed[uid] = ov;
+            if (em) parsed[em] = ov;
+            localStorage.setItem('th_supplier_tier_overrides_v2', JSON.stringify(parsed));
+            setResolvedTier(resolveCurrentSupplierTier());
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
     window.addEventListener('tradeheaven_users_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {

@@ -116,6 +116,15 @@ export const PremiumServicesView: React.FC<Props> = ({
 
   useEffect(() => {
     fetchPlans();
+    const handlePlansUpdated = () => {
+      void fetchPlans();
+    };
+    window.addEventListener('tradeheaven_plans_updated', handlePlansUpdated);
+    window.addEventListener('storage', handlePlansUpdated);
+    return () => {
+      window.removeEventListener('tradeheaven_plans_updated', handlePlansUpdated);
+      window.removeEventListener('storage', handlePlansUpdated);
+    };
   }, []);
 
   const formatPrice = (usd: number) => {

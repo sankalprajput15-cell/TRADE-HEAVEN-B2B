@@ -349,13 +349,8 @@ const LARS_BARNHART_BLACKSTONE_JADE_USER: AuthUser = {
   avatarUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
 };
 
-// In-memory custom users cache that survives localStorage QuotaExceededError
-const inMemoryCustomUsersMap: Record<string, AuthUser> = {
-  'user-supplier-mark-johnson': MARK_JOHNSON_SUPPLIER_USER,
-  'user-buyer-themax0098': THEMAX_BUYER_USER,
-  'user-supplier-emmanuel-reverse-energy': EMMANUEL_REVERSE_ENERGY_USER,
-  'user-supplier-lars-blackstone-jade': LARS_BARNHART_BLACKSTONE_JADE_USER
-};
+// In-memory custom users cache that survives localStorage QuotaExceededError (only populated on explicit mutations)
+const inMemoryCustomUsersMap: Record<string, AuthUser> = {};
 
 function loadStoredUsers(): Record<string, AuthUser> {
   let base: Record<string, AuthUser> = {
@@ -971,7 +966,10 @@ export const api = {
           const srvUid = String(srvU.id || '').trim();
           if (deletedNow.emails.has(emailLower) || (srvUid && deletedNow.ids.has(srvUid))) continue;
           const existingEntry = Object.entries(activeUsersStore).find(
-            ([, u]) => u && u.email && u.email.toLowerCase().trim() === emailLower
+            ([k, u]) =>
+              u &&
+              ((u.email && u.email.toLowerCase().trim() === emailLower) ||
+                (srvUid && (u.id === srvUid || k === srvUid)))
           );
           if (!existingEntry) {
             const uid = String(srvU.id || `user-${Date.now()}`);
@@ -992,6 +990,35 @@ export const api = {
             activeUsersStore[uid] = mappedUser;
             inMemoryCustomUsersMap[uid] = mappedUser;
             changed = true;
+          } else {
+            const [existKey, existUser] = existingEntry;
+            const srvRole = String(srvU.role || existUser.role || 'BUYER').toUpperCase() as UserRole;
+            const srvStatus = String(srvU.status || existUser.status || 'ACTIVE').toUpperCase() as AccountStatus;
+            const srvVerified = Boolean(srvU.isVerified ?? srvU.is_verified ?? existUser.isVerified);
+            const srvPremium = Boolean(srvU.isPremium ?? srvU.is_premium ?? existUser.isPremium);
+            const srvMem = (srvU.membershipStatus || srvU.membership_status || existUser.membershipStatus || 'verified') as MembershipStatus;
+            const srvTier = (srvU.tier || existUser.tier || 'Verified Supplier') as any;
+            if (
+              existUser.tier !== srvTier ||
+              existUser.membershipStatus !== srvMem ||
+              existUser.isPremium !== srvPremium ||
+              existUser.isVerified !== srvVerified ||
+              existUser.role !== srvRole ||
+              existUser.status !== srvStatus
+            ) {
+              const updatedUser: AuthUser = {
+                ...existUser,
+                role: srvRole,
+                status: srvStatus,
+                isVerified: srvVerified,
+                isPremium: srvPremium,
+                membershipStatus: srvMem,
+                tier: srvTier
+              };
+              activeUsersStore[existKey] = updatedUser;
+              inMemoryCustomUsersMap[existKey] = updatedUser;
+              changed = true;
+            }
           }
         }
         if (changed) {
@@ -1351,12 +1378,20 @@ export const api = {
 
     activeUsersStore = loadStoredUsers();
 
-    // Apply updates across all matching user records in activeUsersStore
+    // Apply updates across all matching user records in activeUsersStore (by id or email)
     let targetRecord: AuthUser | undefined;
+    const cleanTargetEmail = String((updates as any).email || '').toLowerCase().trim();
     for (const roleKey of Object.keys(activeUsersStore)) {
-      if (activeUsersStore[roleKey] && (activeUsersStore[roleKey].id === targetUserId || roleKey === targetUserId)) {
+      const candidate = activeUsersStore[roleKey];
+      if (!candidate) continue;
+      const candEmail = String(candidate.email || '').toLowerCase().trim();
+      if (
+        candidate.id === targetUserId ||
+        roleKey === targetUserId ||
+        (cleanTargetEmail && candEmail === cleanTargetEmail)
+      ) {
         activeUsersStore[roleKey] = {
-          ...activeUsersStore[roleKey],
+          ...candidate,
           ...updates
         };
         targetRecord = activeUsersStore[roleKey];
@@ -1366,10 +1401,10 @@ export const api = {
     if (!targetRecord) {
       targetRecord = {
         id: targetUserId,
-        name: 'Registered Partner',
-        email: `${targetUserId}@tradeheaven.net`,
-        companyName: 'Verified Trading Partner',
-        country: 'Global',
+        name: (updates as any).name || 'Registered Partner',
+        email: cleanTargetEmail || `${targetUserId}@tradeheaven.net`,
+        companyName: (updates as any).companyName || 'Verified Trading Partner',
+        country: (updates as any).country || 'Global',
         role: updates.role || 'SUPPLIER',
         status: updates.status || 'ACTIVE',
         isVerified: updates.isVerified ?? true,
@@ -1382,6 +1417,20 @@ export const api = {
     }
 
     persistStoredUsers(activeUsersStore);
+
+    // Sync to backend /api/admin/users/:id so serverUsersStore & registered-users.json persist the change
+    try {
+      await fetch(`/api/admin/users/${encodeURIComponent(targetRecord.id || targetUserId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          ...targetRecord,
+          ...updates,
+          id: targetRecord.id || targetUserId,
+          email: targetRecord.email
+        })
+      });
+    } catch {}
 
     // Also sync supplier status/tier in activeSuppliersStore if this user owns a supplier profile
     let supplierChanged = false;

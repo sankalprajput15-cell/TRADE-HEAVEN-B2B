@@ -150,6 +150,7 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
     idStr === 'comp-melissa-mpcommodity' ||
     companyLower.includes('mp commodity brokers')
   ) {
+    let melissaOverrideTier: string | undefined;
     try {
       if (typeof window !== 'undefined') {
         const rawOverrides = localStorage.getItem('th_supplier_tier_overrides_v2');
@@ -164,14 +165,14 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
             '8',
             '15'
           ]) {
-            if (
-              parsedOverrides[k] &&
-              String(parsedOverrides[k]?.membershipStatus || parsedOverrides[k]?.tier || '')
-                .toLowerCase()
-                .includes('free')
-            ) {
-              delete parsedOverrides[k];
-              mutated = true;
+            if (parsedOverrides[k]) {
+              const ovStr = String(parsedOverrides[k]?.membershipStatus || parsedOverrides[k]?.tier || '').toLowerCase();
+              if (ovStr.includes('free')) {
+                delete parsedOverrides[k];
+                mutated = true;
+              } else if (parsedOverrides[k]?.tier) {
+                melissaOverrideTier = String(parsedOverrides[k].tier);
+              }
             }
           }
           if (mutated) {
@@ -181,13 +182,13 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
       }
     } catch {}
 
-    const existingTier = String(u.tier || '').trim();
+    const existingTier = String(melissaOverrideTier || u.tier || '').trim();
     const validTier =
       !existingTier ||
       existingTier.toLowerCase().includes('free') ||
       existingTier.toUpperCase() === 'SILVER'
         ? ('Basic Plan' as any)
-        : u.tier;
+        : (existingTier as any);
 
     return {
       ...u,
@@ -204,11 +205,36 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
       tier: validTier,
       plan:
         !u.plan || String(u.plan).toLowerCase().includes('free')
-          ? 'Basic Plan (Paid via Bank transfer)'
+          ? String(validTier).toLowerCase().includes('vip')
+            ? 'VIP Plan'
+            : 'Basic Plan (Paid via Bank transfer)'
           : u.plan,
       avatarUrl: baseAvatar
     };
   }
+
+  try {
+    if (typeof window !== 'undefined') {
+      const rawOverrides = localStorage.getItem('th_supplier_tier_overrides_v2');
+      if (rawOverrides) {
+        const parsedOverrides = JSON.parse(rawOverrides);
+        const ov = parsedOverrides[idStr.toLowerCase()] || parsedOverrides[emailLower];
+        if (ov && (ov.tier || ov.membershipStatus)) {
+          const ovMem = String(ov.membershipStatus || u.membershipStatus || '').toLowerCase();
+          const ovTier = String(ov.tier || u.tier || '');
+          return {
+            ...u,
+            tier: (ovTier || u.tier) as any,
+            membershipStatus: (ovMem || u.membershipStatus) as any,
+            isPremium: ovMem === 'paid' || ovTier.toLowerCase().includes('vip') || ovTier.toLowerCase().includes('gold'),
+            isVerified: ov.isVerified !== undefined ? Boolean(ov.isVerified) : u.isVerified,
+            isVerifiedAdmin: false,
+            avatarUrl: baseAvatar
+          };
+        }
+      }
+    }
+  } catch {}
 
   return {
     ...u,

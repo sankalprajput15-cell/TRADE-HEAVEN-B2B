@@ -543,29 +543,47 @@ export const bigrockApi = {
   },
 
   async upsertUser(user: DbUser): Promise<{ success: boolean; data?: DbUser; error?: string }> {
-    const uid = user.id || `user-${Date.now()}`;
-    const enrichedUser: DbUser = { ...user, id: uid };
+    const cleanEmail = String(user.email || '').toLowerCase().trim();
+    let uid = user.id ? String(user.id) : '';
 
     // Always persist user into th_registered_users_store for immediate & durable availability
     try {
       const USERS_STORAGE_KEY = 'th_registered_users_store';
       const saved = localStorage.getItem(USERS_STORAGE_KEY);
       const store = saved ? JSON.parse(saved) : {};
+      let existingKey = uid && store[uid] ? uid : '';
+      if (!existingKey && cleanEmail) {
+        for (const [k, v] of Object.entries(store)) {
+          if (v && typeof v === 'object' && String((v as any).email || '').toLowerCase().trim() === cleanEmail) {
+            existingKey = k;
+            if (!uid) uid = String((v as any).id || k);
+            break;
+          }
+        }
+      }
+      if (!uid) uid = `user-${Date.now()}`;
+      const targetKey = existingKey || uid;
+      const prevUser = store[targetKey] || {};
       const authUser = {
-        id: uid,
-        name: enrichedUser.name,
-        email: enrichedUser.email,
-        role: enrichedUser.role || 'BUYER',
-        companyName: enrichedUser.company_name || enrichedUser.company || 'Enterprise Trading Firm',
-        country: enrichedUser.country || 'Global',
-        status: enrichedUser.status || 'ACTIVE',
-        isVerified: enrichedUser.is_verified ?? true,
-        isPremium: Boolean(enrichedUser.is_premium),
-        membershipStatus: enrichedUser.membership_status || (enrichedUser.is_premium ? 'paid' : 'verified'),
-        tier: enrichedUser.tier || (enrichedUser.is_premium ? 'VIP' : 'Verified Supplier'),
-        joinedDate: new Date().toISOString().split('T')[0]
+        ...prevUser,
+        id: prevUser.id || uid,
+        name: user.name || prevUser.name,
+        email: user.email || prevUser.email,
+        role: user.role || prevUser.role || 'BUYER',
+        companyName: user.company_name || user.company || prevUser.companyName || 'Enterprise Trading Firm',
+        country: user.country || prevUser.country || 'Global',
+        status: user.status || prevUser.status || 'ACTIVE',
+        isVerified: user.is_verified ?? prevUser.isVerified ?? true,
+        isPremium: user.is_premium !== undefined ? Boolean(user.is_premium) : Boolean(prevUser.isPremium),
+        membershipStatus:
+          user.membership_status ||
+          (user as any).membershipStatus ||
+          prevUser.membershipStatus ||
+          (user.is_premium ? 'paid' : 'verified'),
+        tier: user.tier || prevUser.tier || (user.is_premium ? 'VIP' : 'Verified Supplier'),
+        joinedDate: prevUser.joinedDate || new Date().toISOString().split('T')[0]
       };
-      store[uid] = authUser;
+      store[targetKey] = authUser;
       const serialized = JSON.stringify(store);
       try {
         localStorage.setItem(USERS_STORAGE_KEY, serialized);
@@ -580,6 +598,8 @@ export const bigrockApi = {
     } catch (e) {
       console.warn('[upsertUser local persistence warning]:', e);
     }
+
+    const enrichedUser: DbUser = { ...user, id: uid || `user-${Date.now()}` };
 
     try {
       const response = await fetch(`${BIGROCK_API_URL}?action=upsert_user`, {

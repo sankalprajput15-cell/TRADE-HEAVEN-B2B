@@ -3264,8 +3264,15 @@ switch ($action) {
         $phone = trim($input['phone'] ?? $input['phoneOrWhatsapp'] ?? '');
         $country = trim($input['country'] ?? '');
         $tier = trim($input['tier'] ?? '');
+        $membership_status = strtolower(trim($input['membershipStatus'] ?? $input['membership_status'] ?? ''));
+        $status = strtoupper(trim($input['status'] ?? ''));
+        $role = strtoupper(trim($input['role'] ?? ''));
+        $has_verified = isset($input['isVerified']) || isset($input['is_verified']);
+        $is_verified = $has_verified ? (!empty($input['isVerified']) || !empty($input['is_verified']) ? 1 : 0) : null;
+        $has_premium = isset($input['isPremium']) || isset($input['is_premium']);
+        $is_premium = $has_premium ? (!empty($input['isPremium']) || !empty($input['is_premium']) ? 1 : 0) : null;
 
-        if ($db_connected && $pdo && $user_id) {
+        if ($db_connected && $pdo && ($user_id || $email)) {
             try {
                 $stmt = $pdo->prepare("UPDATE users SET 
                     name = COALESCE(NULLIF(?, ''), name),
@@ -3274,8 +3281,66 @@ switch ($action) {
                     country = COALESCE(NULLIF(?, ''), country),
                     tier = COALESCE(NULLIF(?, ''), tier)
                     WHERE id = ? OR LOWER(TRIM(email)) = ?");
-                $stmt->execute([$name, $company, $phone, $country, $tier, $user_id, $email]);
+                $stmt->execute([$name, $company, $phone, $country, $tier, $user_id ?: '', $email ?: '']);
             } catch (Exception $e) {}
+            if ($is_verified !== null) {
+                try {
+                    $stmtV = $pdo->prepare("UPDATE users SET is_verified = ? WHERE id = ? OR LOWER(TRIM(email)) = ?");
+                    $stmtV->execute([$is_verified, $user_id ?: '', $email ?: '']);
+                } catch (Exception $e) {}
+            }
+            if ($membership_status !== '') {
+                try {
+                    $stmtM = $pdo->prepare("UPDATE users SET membership_status = ? WHERE id = ? OR LOWER(TRIM(email)) = ?");
+                    $stmtM->execute([$membership_status, $user_id ?: '', $email ?: '']);
+                } catch (Exception $e) {}
+            }
+            if ($is_premium !== null) {
+                try {
+                    $stmtP = $pdo->prepare("UPDATE users SET is_premium = ? WHERE id = ? OR LOWER(TRIM(email)) = ?");
+                    $stmtP->execute([$is_premium, $user_id ?: '', $email ?: '']);
+                } catch (Exception $e) {}
+            }
+        }
+
+        // Also persist to users_store.json so non-MySQL or hybrid reads stay in sync
+        $users_store_file = __DIR__ . '/users_store.json';
+        $stored_users = file_exists($users_store_file) ? (json_decode(file_get_contents($users_store_file), true) ?: []) : [];
+        if (is_array($stored_users)) {
+            $updated_in_json = false;
+            foreach ($stored_users as &$su) {
+                $su_email = strtolower(trim($su['email'] ?? ''));
+                $su_id = (string)($su['id'] ?? '');
+                if (($email !== '' && $su_email === $email) || ($user_id && $su_id === (string)$user_id)) {
+                    if ($name !== '') $su['name'] = $name;
+                    if ($company !== '') {
+                        $su['companyName'] = $company;
+                        $su['company_name'] = $company;
+                    }
+                    if ($phone !== '') $su['phone'] = $phone;
+                    if ($country !== '') $su['country'] = $country;
+                    if ($tier !== '') $su['tier'] = $tier;
+                    if ($membership_status !== '') {
+                        $su['membershipStatus'] = $membership_status;
+                        $su['membership_status'] = $membership_status;
+                    }
+                    if ($status !== '') $su['status'] = $status;
+                    if ($role !== '') $su['role'] = $role;
+                    if ($is_verified !== null) {
+                        $su['isVerified'] = (bool)$is_verified;
+                        $su['is_verified'] = $is_verified;
+                    }
+                    if ($is_premium !== null) {
+                        $su['isPremium'] = (bool)$is_premium;
+                        $su['is_premium'] = $is_premium;
+                    }
+                    $updated_in_json = true;
+                }
+            }
+            unset($su);
+            if ($updated_in_json) {
+                @file_put_contents($users_store_file, json_encode($stored_users, JSON_PRETTY_PRINT));
+            }
         }
 
         // Trigger Instant Email Notification on Profile Edit
@@ -3296,6 +3361,7 @@ switch ($action) {
 
         echo json_encode([
             "status" => "success",
+            "success" => true,
             "message" => "Profile updated successfully!",
             "user" => [
                 "id" => (string)$user_id,
@@ -3304,7 +3370,10 @@ switch ($action) {
                 "companyName" => $company,
                 "phone" => $phone,
                 "country" => $country,
-                "tier" => $tier
+                "tier" => $tier,
+                "membershipStatus" => $membership_status,
+                "isVerified" => $is_verified !== null ? (bool)$is_verified : true,
+                "isPremium" => $is_premium !== null ? (bool)$is_premium : false
             ]
         ]);
         break;

@@ -63,11 +63,15 @@ class PlanPricingService {
     let token = '';
     try {
       token = localStorage.getItem('th_session_jwt_token') || '';
-      const userJson = localStorage.getItem('th_session_user') || localStorage.getItem('tradeheaven_user');
+      const userJson =
+        localStorage.getItem('th_verified_otp_session_v5_strict_admin') ||
+        localStorage.getItem('th_session_user') ||
+        localStorage.getItem('tradeheaven_user');
       if (userJson) {
         const u = JSON.parse(userJson);
         if (u.email) email = u.email;
         if (u.role) role = u.role;
+        if (u.token && !token) token = u.token;
       }
     } catch {}
 
@@ -206,6 +210,9 @@ class PlanPricingService {
 
     this.plans.push(resultPlan);
     this.persist(PLANS_STORAGE_KEY, this.plans);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tradeheaven_plans_updated'));
+    }
 
     return {
       success: true,
@@ -305,6 +312,9 @@ class PlanPricingService {
 
     this.plans[planIndex] = updatedResultPlan;
     this.persist(PLANS_STORAGE_KEY, this.plans);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tradeheaven_plans_updated'));
+    }
 
     return {
       success: true,
@@ -333,6 +343,9 @@ class PlanPricingService {
     currentPlan.status = newStatus;
     currentPlan.updatedAt = new Date().toISOString();
     this.persist(PLANS_STORAGE_KEY, this.plans);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tradeheaven_plans_updated'));
+    }
 
     this.stripeLogs.unshift({
       id: `event-${Date.now()}`,
@@ -398,6 +411,9 @@ class PlanPricingService {
 
     this.plans.push(clonedPlan);
     this.persist(PLANS_STORAGE_KEY, this.plans);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tradeheaven_plans_updated'));
+    }
 
     return {
       success: true,
