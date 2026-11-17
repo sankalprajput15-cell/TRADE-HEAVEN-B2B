@@ -100,6 +100,17 @@ export const isPaidMemberUser = (user: any): boolean => {
   if (!user) return false;
   if (user.role === 'ADMIN' || user.isVerifiedAdmin === true) return true;
 
+  const idStr = String(user.id || user.supplierId || '').trim();
+  const emailStr = String(user.email || user.supplierEmail || '').toLowerCase().trim();
+  const compStr = String(user.companyName || user.company_name || '').toLowerCase().trim();
+  if (
+    PAID_ENTITY_IDS.has(idStr) ||
+    emailStr.includes('mpcommoditybroker') ||
+    compStr.includes('mp commodity brokers')
+  ) {
+    return true;
+  }
+
   const statusStr = String(user.membershipStatus || '').toLowerCase();
   const planStr = String(user.plan || '').toLowerCase();
   const tierStr = String(user.tier || '').toLowerCase();

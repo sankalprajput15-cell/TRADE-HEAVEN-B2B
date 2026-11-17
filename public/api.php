@@ -741,7 +741,7 @@ function getBuiltInSeedAuthUsers() {
             'companyName' => 'MP Commodity Brokers Australia Pty Ltd',
             'country' => 'Australia',
             'phone' => '+61411510887',
-            'tier' => 'PLATINUM',
+            'tier' => 'Basic Plan',
             'isPremium' => true,
             'membershipStatus' => 'paid',
             'status' => 'ACTIVE',
@@ -893,7 +893,8 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
         return null;
     }
 
-    $rawRole = strtoupper((string)($dbRow['role'] ?? $localRow['role'] ?? $seedRow['role'] ?? 'BUYER'));
+    $isPaidSeed = !empty($seedRow) && strtolower((string)($seedRow['membershipStatus'] ?? '')) === 'paid';
+    $rawRole = strtoupper((string)($isPaidSeed ? ($seedRow['role'] ?? 'SUPPLIER') : ($dbRow['role'] ?? $localRow['role'] ?? $seedRow['role'] ?? 'BUYER')));
     if ($isRootAdmin) {
         $resolvedRole = 'ADMIN';
     } elseif ($rawRole === 'ADMIN') {
@@ -902,21 +903,32 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
         $resolvedRole = $rawRole;
     }
 
+    $resolvedTier = (string)($dbRow['tier'] ?? $localRow['tier'] ?? $seedRow['tier'] ?? ($isRootAdmin ? 'VIP' : ($resolvedRole === 'SUPPLIER' ? 'SILVER' : 'FREE')));
+    if ($isPaidSeed && (empty($resolvedTier) || stripos($resolvedTier, 'free') !== false || strtoupper($resolvedTier) === 'SILVER')) {
+        $resolvedTier = (string)($seedRow['tier'] ?? 'Basic Plan');
+    }
+    $resolvedMemStatus = $isPaidSeed
+        ? 'paid'
+        : (string)($dbRow['membership_status'] ?? $seedRow['membershipStatus'] ?? ($isRootAdmin ? 'paid' : 'free'));
+    $resolvedIsPremium = $isPaidSeed
+        ? (bool)($seedRow['isPremium'] ?? true)
+        : (isset($dbRow['is_premium']) ? (bool)$dbRow['is_premium'] : (!empty($seedRow['isPremium']) || $isRootAdmin));
+
     return [
-        'id' => (string)($dbRow['id'] ?? $localRow['id'] ?? $seedRow['id'] ?? ('user-' . md5($cleanEmail))),
+        'id' => (string)($isPaidSeed ? ($seedRow['id'] ?? $dbRow['id']) : ($dbRow['id'] ?? $localRow['id'] ?? $seedRow['id'] ?? ('user-' . md5($cleanEmail)))),
         'email' => $cleanEmail,
-        'name' => (string)($dbRow['name'] ?? $localRow['name'] ?? $seedRow['name'] ?? 'Registered Partner'),
+        'name' => (string)($isPaidSeed ? ($seedRow['name'] ?? $dbRow['name']) : ($dbRow['name'] ?? $localRow['name'] ?? $seedRow['name'] ?? 'Registered Partner')),
         'role' => $resolvedRole,
         'isRootAdmin' => $isRootAdmin,
         'password' => $dbRow['password'] ?? ($localRow['password_hash'] ?? ''),
         'seedPassword' => $seedRow['password_plain'] ?? '',
         'altPasswords' => $seedRow['alt_passwords'] ?? [],
-        'companyName' => (string)($dbRow['company_name'] ?? $localRow['company_name'] ?? $seedRow['companyName'] ?? 'Enterprise Trading Firm'),
-        'country' => (string)($dbRow['country'] ?? $localRow['country'] ?? $seedRow['country'] ?? 'United States'),
-        'phone' => (string)($dbRow['phone'] ?? $localRow['phone'] ?? $seedRow['phone'] ?? ''),
-        'tier' => (string)($dbRow['tier'] ?? $localRow['tier'] ?? $seedRow['tier'] ?? ($isRootAdmin ? 'VIP' : ($resolvedRole === 'SUPPLIER' ? 'SILVER' : 'FREE'))),
-        'isPremium' => isset($dbRow['is_premium']) ? (bool)$dbRow['is_premium'] : (!empty($seedRow['isPremium']) || $isRootAdmin),
-        'membershipStatus' => (string)($dbRow['membership_status'] ?? $seedRow['membershipStatus'] ?? ($isRootAdmin ? 'paid' : 'free')),
+        'companyName' => (string)($isPaidSeed ? ($seedRow['companyName'] ?? $dbRow['company_name']) : ($dbRow['company_name'] ?? $localRow['company_name'] ?? $seedRow['companyName'] ?? 'Enterprise Trading Firm')),
+        'country' => (string)($isPaidSeed ? ($seedRow['country'] ?? $dbRow['country']) : ($dbRow['country'] ?? $localRow['country'] ?? $seedRow['country'] ?? 'United States')),
+        'phone' => (string)($seedRow['phone'] ?? $dbRow['phone'] ?? $localRow['phone'] ?? ''),
+        'tier' => $resolvedTier,
+        'isPremium' => $resolvedIsPremium,
+        'membershipStatus' => $resolvedMemStatus,
         'status' => (string)($dbRow['status'] ?? 'ACTIVE'),
         'isVerified' => true,
         'isVerifiedAdmin' => $isRootAdmin,
@@ -2849,23 +2861,32 @@ switch ($action) {
             ]);
             exit();
         }
+        $cleanClaimEmail = normalizeAuthEmail($claims['email'] ?? '');
+        $seedAuthMap = getBuiltInSeedAuthUsers();
+        $seedAuthRow = $seedAuthMap[$cleanClaimEmail] ?? null;
+        $isPaidSeedClaim = !empty($seedAuthRow) && strtolower((string)($seedAuthRow['membershipStatus'] ?? '')) === 'paid';
+        $claimRole = $isPaidSeedClaim ? ($seedAuthRow['role'] ?? $claims['role']) : $claims['role'];
+        $claimTier = $claims['tier'] ?? 'FREE';
+        if ($isPaidSeedClaim && (empty($claimTier) || stripos($claimTier, 'free') !== false || strtoupper($claimTier) === 'SILVER')) {
+            $claimTier = $seedAuthRow['tier'] ?? 'Basic Plan';
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
             "user" => [
-                "id" => $claims['uid'],
-                "email" => $claims['email'],
-                "name" => $claims['name'],
-                "role" => $claims['role'],
-                "isPremium" => !empty($claims['isPremium']),
-                "membershipStatus" => $claims['membershipStatus'] ?? 'free',
+                "id" => $isPaidSeedClaim ? ($seedAuthRow['id'] ?? $claims['uid']) : $claims['uid'],
+                "email" => $cleanClaimEmail ?: $claims['email'],
+                "name" => $isPaidSeedClaim ? ($seedAuthRow['name'] ?? $claims['name']) : $claims['name'],
+                "role" => $claimRole,
+                "isPremium" => $isPaidSeedClaim ? (bool)($seedAuthRow['isPremium'] ?? true) : !empty($claims['isPremium']),
+                "membershipStatus" => $isPaidSeedClaim ? 'paid' : ($claims['membershipStatus'] ?? 'free'),
                 "status" => $claims['status'] ?? 'ACTIVE',
                 "isVerified" => true,
-                "isVerifiedAdmin" => ($claims['role'] ?? '') === 'ADMIN',
+                "isVerifiedAdmin" => ($claimRole ?? '') === 'ADMIN',
                 "otpVerified" => true,
-                "tier" => $claims['tier'] ?? 'FREE',
-                "companyName" => $claims['companyName'] ?? 'Enterprise Trading Firm',
-                "country" => $claims['country'] ?? 'United States',
+                "tier" => $claimTier,
+                "companyName" => $isPaidSeedClaim ? ($seedAuthRow['companyName'] ?? $claims['companyName']) : ($claims['companyName'] ?? 'Enterprise Trading Firm'),
+                "country" => $isPaidSeedClaim ? ($seedAuthRow['country'] ?? $claims['country']) : ($claims['country'] ?? 'United States'),
                 "avatarUrl" => $claims['avatarUrl'] ?? '',
                 "token" => $bearer
             ]

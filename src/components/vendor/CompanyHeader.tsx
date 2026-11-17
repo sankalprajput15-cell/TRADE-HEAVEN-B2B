@@ -21,16 +21,33 @@ export const CompanyHeader: React.FC<Props> = ({
   activeTab = 'OVERVIEW'
 }) => {
   const effectiveTier = (() => {
+    const sid = String(profile.id || '').toLowerCase().trim();
+    const semail = String(profile.contactEmail || '').toLowerCase().trim();
+    const scomp = String(profile.companyName || '').toLowerCase().trim();
+    const isMelissa =
+      sid === 'comp-melissa-mpcommodity' ||
+      sid === 'user-supplier-melissa' ||
+      semail.includes('mpcommoditybroker') ||
+      scomp.includes('mp commodity brokers');
+
     try {
       const raw = localStorage.getItem('th_supplier_tier_overrides_v2');
       if (raw) {
         const parsed = JSON.parse(raw);
-        const sid = String(profile.id || '').toLowerCase().trim();
-        const semail = String(profile.contactEmail || '').toLowerCase().trim();
         const override = parsed[sid] || parsed[semail];
-        if (override) return override.tier;
+        if (override && override.tier) {
+          if (!(isMelissa && String(override.tier).toLowerCase().includes('free'))) {
+            return override.tier;
+          }
+        }
       }
     } catch {}
+    if (isMelissa) {
+      const baseLabel = profile.memberTierLabel || `${profile.tier} Verified Exporter`;
+      return String(baseLabel).toLowerCase().includes('free')
+        ? 'Basic Plan Verified Exporter'
+        : baseLabel;
+    }
     return profile.memberTierLabel || `${profile.tier} Verified Exporter`;
   })();
 

@@ -182,6 +182,12 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     let tierStr = String(currentUser?.tier || currentUser?.plan || '').trim();
     let memStatus = String(currentUser?.membershipStatus || '').toLowerCase().trim();
 
+    const isMelissaAccount =
+      supplierId === 'comp-melissa-mpcommodity' ||
+      supplierEmail.includes('mpcommoditybroker') ||
+      String(currentUser?.id || '').trim() === 'user-supplier-melissa' ||
+      companyName.toLowerCase().includes('mp commodity brokers');
+
     // 1. Check local supplier tier overrides
     try {
       const rawOverrides = localStorage.getItem('th_supplier_tier_overrides_v2');
@@ -189,10 +195,15 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
         const parsed = JSON.parse(rawOverrides);
         const sid = String(currentUser?.id || '').toLowerCase().trim();
         const semail = String(currentUser?.email || '').toLowerCase().trim();
-        const override = parsed[sid] || parsed[semail];
+        const override = parsed[sid] || parsed[semail] || parsed[supplierId.toLowerCase()];
         if (override) {
-          tierStr = override.tier || tierStr;
-          memStatus = override.membershipStatus || memStatus;
+          const ovTier = String(override.tier || '').trim();
+          const ovMem = String(override.membershipStatus || '').toLowerCase().trim();
+          // Never allow a stale 'free' override to downgrade Melissa's paid Basic Plan account
+          if (!(isMelissaAccount && (ovMem === 'free' || ovTier.toLowerCase().includes('free')))) {
+            tierStr = ovTier || tierStr;
+            memStatus = ovMem || memStatus;
+          }
         }
       }
     } catch {}
@@ -203,16 +214,52 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       if (sessionRaw) {
         const parsed = JSON.parse(sessionRaw);
         if (parsed && (parsed.tier || parsed.membershipStatus)) {
-          tierStr = parsed.tier || tierStr;
-          memStatus = parsed.membershipStatus || memStatus;
+          const sessTier = String(parsed.tier || '').trim();
+          const sessMem = String(parsed.membershipStatus || '').toLowerCase().trim();
+          if (!(isMelissaAccount && (sessMem === 'free' || sessTier.toLowerCase().includes('free')))) {
+            tierStr = sessTier || tierStr;
+            memStatus = sessMem || memStatus;
+          }
         }
       }
     } catch {}
 
+    if (isMelissaAccount) {
+      memStatus = 'paid';
+      if (
+        !tierStr ||
+        tierStr.toLowerCase().includes('free') ||
+        tierStr.toUpperCase() === 'SILVER'
+      ) {
+        tierStr = 'Basic Plan (Paid via Bank transfer)';
+      }
+      return {
+        label:
+          tierStr && tierStr.length > 5 && !tierStr.toLowerCase().includes('free')
+            ? tierStr
+            : 'Basic Plan (Paid via Bank transfer)',
+        badgeClass: 'bg-blue-100 text-blue-900 border-blue-300',
+        iconClass: 'text-blue-700',
+        isFree: false,
+        kycBadge: 'Basic Plan Verified'
+      };
+    }
+
     const tLower = tierStr.toLowerCase();
-    const isFree = memStatus === 'free' || tLower.includes('free');
+    const isExplicitPaidTier =
+      tLower.includes('basic') ||
+      tLower.includes('vip') ||
+      tLower.includes('gold') ||
+      tLower.includes('platinum') ||
+      tLower.includes('paid');
+    const isFree = !isExplicitPaidTier && (memStatus === 'free' || tLower.includes('free'));
     const isBasic = memStatus === 'basic' || tLower.includes('basic');
-    const isPaid = memStatus === 'paid' || tLower.includes('vip') || tLower.includes('gold') || Boolean(currentUser?.isPremium);
+    const isPaid =
+      memStatus === 'paid' ||
+      tLower.includes('vip') ||
+      tLower.includes('gold') ||
+      tLower.includes('platinum') ||
+      Boolean(currentUser?.isPremium);
 
     if (isFree) {
       return {

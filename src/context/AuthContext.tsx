@@ -140,6 +140,76 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
     };
   }
 
+  const companyLower = (u.companyName || '').trim().toLowerCase();
+  const idStr = String(u.id || '').trim();
+
+  // Guaranteed paid Basic Plan enforcement for Melissa Prezios (MP Commodity Brokers Australia Pty Ltd)
+  if (
+    emailLower.includes('mpcommoditybroker') ||
+    idStr === 'user-supplier-melissa' ||
+    idStr === 'comp-melissa-mpcommodity' ||
+    companyLower.includes('mp commodity brokers')
+  ) {
+    try {
+      if (typeof window !== 'undefined') {
+        const rawOverrides = localStorage.getItem('th_supplier_tier_overrides_v2');
+        if (rawOverrides) {
+          const parsedOverrides = JSON.parse(rawOverrides);
+          let mutated = false;
+          for (const k of [
+            'user-supplier-melissa',
+            'comp-melissa-mpcommodity',
+            'melissa@mpcommoditybrokers.com',
+            'melissa@mpcommoditybroker.com',
+            '8',
+            '15'
+          ]) {
+            if (
+              parsedOverrides[k] &&
+              String(parsedOverrides[k]?.membershipStatus || parsedOverrides[k]?.tier || '')
+                .toLowerCase()
+                .includes('free')
+            ) {
+              delete parsedOverrides[k];
+              mutated = true;
+            }
+          }
+          if (mutated) {
+            localStorage.setItem('th_supplier_tier_overrides_v2', JSON.stringify(parsedOverrides));
+          }
+        }
+      }
+    } catch {}
+
+    const existingTier = String(u.tier || '').trim();
+    const validTier =
+      !existingTier ||
+      existingTier.toLowerCase().includes('free') ||
+      existingTier.toUpperCase() === 'SILVER'
+        ? ('Basic Plan' as any)
+        : u.tier;
+
+    return {
+      ...u,
+      id: 'user-supplier-melissa',
+      name: u.name && !u.name.toLowerCase().includes('registered') ? u.name : 'Melissa Prezios',
+      email: 'melissa@mpcommoditybrokers.com',
+      companyName: 'MP Commodity Brokers Australia Pty Ltd',
+      country: u.country || 'Australia',
+      role: 'SUPPLIER',
+      isVerified: true,
+      isVerifiedAdmin: false,
+      isPremium: true,
+      membershipStatus: 'paid',
+      tier: validTier,
+      plan:
+        !u.plan || String(u.plan).toLowerCase().includes('free')
+          ? 'Basic Plan (Paid via Bank transfer)'
+          : u.plan,
+      avatarUrl: baseAvatar
+    };
+  }
+
   return {
     ...u,
     isVerifiedAdmin: false,
@@ -204,6 +274,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!isStrictVerifiedRootAdmin(sanitized)) {
               localStorage.removeItem('th_live_edit_mode');
             }
+            try {
+              localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(sanitized));
+            } catch {}
             return sanitized;
           } else {
             localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
@@ -252,6 +325,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.removeItem('th_verified_otp_session_v3');
           } catch {}
           window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: null } }));
+          return;
+        }
+        if (result.valid && result.user && isMounted) {
+          const merged = sanitizeUserRole({
+            ...user,
+            ...result.user,
+            token: user.token || result.user.token,
+            otpVerified: true
+          });
+          if (
+            merged.tier !== user.tier ||
+            merged.membershipStatus !== user.membershipStatus ||
+            merged.role !== user.role ||
+            merged.isPremium !== user.isPremium ||
+            merged.email !== user.email ||
+            merged.id !== user.id
+          ) {
+            try {
+              localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(merged));
+            } catch {}
+            setUser(merged);
+            window.dispatchEvent(new Event('tradeheaven_users_updated'));
+          }
         }
       } catch {
         // Ignore transient network offline states

@@ -1235,7 +1235,20 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
             email: emailKey
           };
           if (emailKey === 'melissa@mpcommoditybrokers.com') {
+            normalizedItem.id = 'user-supplier-melissa';
             normalizedItem.role = 'SUPPLIER';
+            normalizedItem.companyName = 'MP Commodity Brokers Australia Pty Ltd';
+            normalizedItem.country = normalizedItem.country || 'Australia';
+            normalizedItem.isVerified = true;
+            normalizedItem.isPremium = true;
+            normalizedItem.membershipStatus = 'paid';
+            if (
+              !normalizedItem.tier ||
+              String(normalizedItem.tier).toLowerCase().includes('free') ||
+              String(normalizedItem.tier).toUpperCase() === 'SILVER'
+            ) {
+              normalizedItem.tier = 'Basic Plan';
+            }
           }
           combined.push(normalizedItem);
         }
@@ -6913,22 +6926,32 @@ app.get('/api/v1/auth/me', (req, res) => {
   const viewParam = typeof req.query.view === 'string' ? req.query.view : undefined;
   touchActivePlatformSession(req, payload, viewParam, undefined, true);
 
+  const cleanMeEmail = normalizeRecipientEmail(String(payload.email || ''));
+  const liveUserRecord = serverUsersStore.find(
+    u => normalizeRecipientEmail(u.email) === cleanMeEmail || u.id === payload.uid
+  );
+  const resolvedRole = liveUserRecord?.role || payload.role;
+  const resolvedTier = liveUserRecord?.tier || payload.tier;
+  const resolvedMemStatus = liveUserRecord?.membershipStatus || payload.membershipStatus;
+  const resolvedIsPremium = liveUserRecord ? liveUserRecord.isPremium : payload.isPremium;
+
   return res.json({
     success: true,
     adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
     user: {
-      id: payload.uid,
-      email: payload.email,
-      name: payload.name,
-      role: payload.role,
-      isPremium: payload.isPremium,
-      membershipStatus: payload.membershipStatus,
-      status: payload.status,
-      isVerified: payload.isVerified,
-      isVerifiedAdmin: payload.role === 'ADMIN',
+      id: liveUserRecord?.id || payload.uid,
+      email: liveUserRecord?.email || cleanMeEmail || payload.email,
+      name: liveUserRecord?.name || payload.name,
+      role: resolvedRole,
+      isPremium: resolvedIsPremium,
+      membershipStatus: resolvedMemStatus,
+      status: liveUserRecord?.status || payload.status,
+      isVerified: liveUserRecord ? liveUserRecord.isVerified : payload.isVerified,
+      isVerifiedAdmin: resolvedRole === 'ADMIN',
       otpVerified: true,
-      tier: payload.tier,
-      companyName: payload.companyName,
+      tier: resolvedTier,
+      companyName: liveUserRecord?.companyName || payload.companyName,
+      country: liveUserRecord?.country,
       token
     }
   });
@@ -8801,6 +8824,15 @@ function isUserRecordFreeTierMember(user: Partial<ServerUserRecord> & { role?: s
   if (!user) return false;
   const role = String(user.role || '').toUpperCase();
   if (role === 'ADMIN') return false;
+  const emailLower = normalizeRecipientEmail(String(user.email || ''));
+  const idStr = String(user.id || '').trim();
+  if (
+    emailLower === 'melissa@mpcommoditybrokers.com' ||
+    idStr === 'user-supplier-melissa' ||
+    idStr === 'comp-melissa-mpcommodity'
+  ) {
+    return false;
+  }
   const mem = String(user.membershipStatus || user.membership_status || '').trim().toLowerCase();
   const tier = String(user.tier || '').trim().toLowerCase();
   const isPrem = user.isPremium === true || user.is_premium === true;
@@ -9423,17 +9455,38 @@ async function forwardApiPhpToLiveUpstream(
 
     // Track genuine supplier login alerts & verified read receipts
     if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
-      if ((action === 'login' || action === 'verify_login_otp') && parsed?.success && parsed?.user?.email) {
-        const u = parsed.user;
-        const rawRole = String(u.role || 'SUPPLIER').toUpperCase();
-        const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST' =
-          rawRole === 'ADMIN' || rawRole === 'BUYER' || rawRole === 'SUPPLIER' || rawRole === 'VERIFIER' || rawRole === 'SYSTEM' || rawRole === 'GUEST'
-            ? rawRole
-            : 'SUPPLIER';
-        touchActivePlatformSession(req, { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
-        recordPlatformAuthEvent(req, 'LOGIN', { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
-        sendLoginAlert(u.email, u.name || u.email, resolvedRole, u.companyName || '', u.country || '');
-        logServerActivity(req, 'SECURITY_LOGIN_EVENT', u.email, resolvedRole, `/api.php?action=${action}`, `User ${u.name || u.email} (${resolvedRole}) signed in.`, 'SUCCESS', String(u.id || ''));
+      if ((action === 'login' || action === 'verify_login_otp' || action === 'auth_me' || action === 'me') && parsed?.success && parsed?.user?.email) {
+        const cleanAuthEmail = normalizeRecipientEmail(String(parsed.user.email || ''));
+        const localAuthMatch = serverUsersStore.find(
+          u => normalizeRecipientEmail(u.email) === cleanAuthEmail || u.id === String(parsed.user.id || '')
+        );
+        if (localAuthMatch) {
+          parsed.user = {
+            ...parsed.user,
+            id: localAuthMatch.id || parsed.user.id,
+            email: localAuthMatch.email || cleanAuthEmail,
+            name: localAuthMatch.name || parsed.user.name,
+            role: localAuthMatch.role || parsed.user.role,
+            companyName: localAuthMatch.companyName || parsed.user.companyName,
+            country: localAuthMatch.country || parsed.user.country,
+            isVerified: localAuthMatch.isVerified,
+            isPremium: localAuthMatch.isPremium,
+            membershipStatus: localAuthMatch.membershipStatus || parsed.user.membershipStatus,
+            tier: localAuthMatch.tier || parsed.user.tier
+          };
+        }
+        if (action === 'login' || action === 'verify_login_otp') {
+          const u = parsed.user;
+          const rawRole = String(u.role || 'SUPPLIER').toUpperCase();
+          const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST' =
+            rawRole === 'ADMIN' || rawRole === 'BUYER' || rawRole === 'SUPPLIER' || rawRole === 'VERIFIER' || rawRole === 'SYSTEM' || rawRole === 'GUEST'
+              ? rawRole
+              : 'SUPPLIER';
+          touchActivePlatformSession(req, { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+          recordPlatformAuthEvent(req, 'LOGIN', { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+          sendLoginAlert(u.email, u.name || u.email, resolvedRole, u.companyName || '', u.country || '');
+          logServerActivity(req, 'SECURITY_LOGIN_EVENT', u.email, resolvedRole, `/api.php?action=${action}`, `User ${u.name || u.email} (${resolvedRole}) signed in.`, 'SUCCESS', String(u.id || ''));
+        }
       }
 
       if (verifiedSupplierActor && action === 'get_chat_messages' && Array.isArray(parsed?.data)) {
@@ -9751,22 +9804,28 @@ app.get('/api.php', async (req, res) => {
         message: 'Session expired or invalid. Please sign in again via Email OTP.'
       });
     }
+    const cleanMeEmail = normalizeRecipientEmail(String(payload.email || ''));
+    const liveUserRecord = serverUsersStore.find(
+      u => normalizeRecipientEmail(u.email) === cleanMeEmail || u.id === payload.uid
+    );
+    const resolvedRole = liveUserRecord?.role || payload.role;
     return res.json({
       success: true,
       adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
       user: {
-        id: payload.uid,
-        email: payload.email,
-        name: payload.name,
-        role: payload.role,
-        isPremium: payload.isPremium,
-        membershipStatus: payload.membershipStatus,
-        status: payload.status,
-        isVerified: payload.isVerified,
-        isVerifiedAdmin: payload.role === 'ADMIN',
+        id: liveUserRecord?.id || payload.uid,
+        email: liveUserRecord?.email || cleanMeEmail || payload.email,
+        name: liveUserRecord?.name || payload.name,
+        role: resolvedRole,
+        isPremium: liveUserRecord ? liveUserRecord.isPremium : payload.isPremium,
+        membershipStatus: liveUserRecord?.membershipStatus || payload.membershipStatus,
+        status: liveUserRecord?.status || payload.status,
+        isVerified: liveUserRecord ? liveUserRecord.isVerified : payload.isVerified,
+        isVerifiedAdmin: resolvedRole === 'ADMIN',
         otpVerified: true,
-        tier: payload.tier,
-        companyName: payload.companyName,
+        tier: liveUserRecord?.tier || payload.tier,
+        companyName: liveUserRecord?.companyName || payload.companyName,
+        country: liveUserRecord?.country,
         token
       }
     });

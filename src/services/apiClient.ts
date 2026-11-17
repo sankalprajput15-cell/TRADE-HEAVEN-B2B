@@ -576,7 +576,7 @@ export const apiClient = {
   /**
    * Verify active Bearer session token against backend (/api/v1/auth/me with api.php?action=auth_me fallback)
    */
-  async verifySessionMe(token: string): Promise<{ valid: boolean; revoked?: boolean }> {
+  async verifySessionMe(token: string): Promise<{ valid: boolean; revoked?: boolean; user?: any }> {
     if (!token) return { valid: false, revoked: true };
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
@@ -597,12 +597,12 @@ export const apiClient = {
         return { valid: true };
       }
       if (res.ok && (json.success || json.status === 'success')) {
-        return { valid: true };
+        return { valid: true, user: json.user };
       }
       if (res.status === 401 || res.status === 403 || json.revoked === true) {
         return { valid: false, revoked: true };
       }
-      return { valid: true };
+      return { valid: true, user: json.user };
     } catch {
       return { valid: true };
     }
