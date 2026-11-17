@@ -10000,6 +10000,135 @@ Email: info@tradeheaven.net | Web: www.tradeheaven.net`;
       adminReceipt
     };
   }
+
+  async sendVipUpgradeInvoiceAndProposalEmail(
+    options: {
+      recipientEmail: string;
+      recipientName?: string;
+      companyName?: string;
+      currentTier?: string;
+      balanceFormatted?: string;
+      adminEmail?: string;
+      sendAdminCopy?: boolean;
+    },
+    transporter?: any
+  ): Promise<{ success: boolean; receipt: any; adminReceipt?: any }> {
+    const escapeHtml = (val: string) => String(val || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const recipientEmail = (options.recipientEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const recipientName = options.recipientName || 'Melissa Prezios';
+    const companyName = options.companyName || 'MP Commodity Brokers Australia Pty Ltd';
+    const currentTier = options.currentTier || 'Basic Plan';
+    const balanceFormatted = options.balanceFormatted || '$50,000.00 USD';
+    const adminEmail = options.adminEmail || 'yr943334@gmail.com';
+
+    const subject = `💎 Proforma Invoice #INV-VIP-6100-2026 & VIP Plan Upgrade Proposal (Action Required for Withdrawal)`;
+    const text = `Dear ${recipientName} (${companyName}),\n\nYour recent bank withdrawal request of ${balanceFormatted} has been paused under Treasury Compliance Rule: "VIP plan member are eligible to do it".\n\nProforma Invoice #INV-VIP-6100-2026\nPlan: VIP Business Plan (Annual)\nAmount: $6,100.00 USD\n\nProcedure to Upgrade & Unlock Withdrawals:\n1. Review the attached Proforma Invoice for the VIP Business Plan ($6,100/yr).\n2. Complete secure payment via Credit Card, Wire Transfer, or Escrow Wallet on Trade Heaven.\n3. Upon payment verification, your account tier is instantly upgraded to VIP.\n4. Resubmit your bank withdrawal request to receive funds immediately via SWIFT, RTGS, NEFT, or IMPS.\n\nThank you,\nTrade Heaven Treasury & Compliance Desk`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; color: #0f172a;">
+        <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); padding: 24px; text-align: center; color: #ffffff;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">TRADE HEAVEN TREASURY &amp; ESCROW DESK</h2>
+          <p style="margin: 6px 0 0 0; font-size: 12px; opacity: 0.9;">Official Proforma Invoice #INV-VIP-6100-2026 &amp; VIP Plan Upgrade Proposal</p>
+        </div>
+        <div style="padding: 24px; line-height: 1.6; font-size: 13px;">
+          <p style="margin: 0 0 12px 0; font-weight: bold;">Dear ${escapeHtml(recipientName)} (${escapeHtml(companyName)}),</p>
+          <p style="margin: 0 0 16px 0;">
+            Your recent treasury bank withdrawal request for <strong style="color: #059669;">${escapeHtml(balanceFormatted)}</strong> has been paused under platform compliance rule: <strong style="color: #b45309;">"VIP plan member are eligible to do it"</strong>. Direct bank wire payouts are exclusively enabled for verified VIP and Enterprise tier members.
+          </p>
+
+          <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: #92400e;">📋 Proforma Invoice Summary</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <tr>
+                <td style="padding: 4px 0; color: #78350f;"><strong>Invoice Number:</strong></td>
+                <td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold;">INV-VIP-6100-2026</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #78350f;"><strong>Subscription Plan:</strong></td>
+                <td style="padding: 4px 0; text-align: right; font-weight: bold;">VIP Business Plan (Annual)</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #78350f;"><strong>Current Tier:</strong></td>
+                <td style="padding: 4px 0; text-align: right; color: #dc2626; font-weight: bold;">${escapeHtml(currentTier)} (Upgrade Required)</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0 4px 0; color: #78350f; border-top: 1px solid #fcd34d;"><strong>Total Investment:</strong></td>
+                <td style="padding: 8px 0 4px 0; text-align: right; font-size: 16px; font-weight: 900; color: #92400e; border-top: 1px solid #fcd34d;">$6,100.00 USD</td>
+              </tr>
+            </table>
+          </div>
+
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: #0f172a;">🛠️ Full Procedure to Upgrade &amp; Unlock Withdrawals</h3>
+          <ol style="margin: 0 0 20px 0; padding-left: 20px; color: #334155;">
+            <li style="margin-bottom: 6px;"><strong>Review Proforma Invoice:</strong> Verify the VIP Business Plan ($6,100/yr) details above covering unlimited wire releases and SWIFT receipts.</li>
+            <li style="margin-bottom: 6px;"><strong>Complete Secure Payment:</strong> Click the secure upgrade button below or wire funds directly to Trade Heaven Treasury corporate bank account.</li>
+            <li style="margin-bottom: 6px;"><strong>Instant Account Upgrades:</strong> Upon payment verification, your supplier tier is automatically elevated to VIP status.</li>
+            <li style="margin-bottom: 6px;"><strong>Resubmit Bank Withdrawal:</strong> Return to your dashboard and resubmit your bank payout request to receive funds immediately via SWIFT, RTGS, NEFT, or IMPS.</li>
+          </ol>
+
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="https://www.tradeheaven.net/?view=DASHBOARD&action=upgrade_vip_6100" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 28px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);">
+              Proceed to Secure VIP Checkout ($6,100) &rarr;
+            </a>
+          </div>
+
+          <p style="margin: 0; color: #64748b; font-size: 11.5px; text-align: center;">
+            Need assistance or wire instructions? Contact our VIP Desk via WhatsApp or reply directly to help@tradeheaven.net.
+          </p>
+        </div>
+        <div style="background: #f8fafc; padding: 14px; text-align: center; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0;">
+          Trade Heaven Global Treasury &amp; Escrow Settlement • www.tradeheaven.net
+        </div>
+      </div>
+    `;
+
+    const receipt = await serverDeliveryQueueManager.enqueueSingle(
+      recipientEmail,
+      {
+        from: '"Trade Heaven Treasury Desk" <noreply@tradeheaven.net>',
+        replyTo: this.replyToAddress,
+        subject,
+        text,
+        html,
+        rawHtmlPreview: html,
+        dispatchType: 'AUTOMATED',
+        category: 'CUSTOM_ADMIN',
+        companyName,
+        recipientName,
+        trackingId: `ms-trk-vip-upgrade-invoice-${Date.now().toString(36)}`,
+        summaryText: `Proforma Invoice #INV-VIP-6100-2026 & VIP Plan Upgrade Proposal emailed to ${recipientName} (${recipientEmail}) with full upgrade procedure.`
+      },
+      transporter || undefined
+    );
+
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    if (options.sendAdminCopy !== false && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: '"Trade Heaven Treasury Desk" <noreply@tradeheaven.net>',
+          replyTo: this.replyToAddress,
+          subject: `[ADMIN COPY] ${subject}`,
+          text,
+          html,
+          rawHtmlPreview: html,
+          dispatchType: 'AUTOMATED',
+          category: 'CUSTOM_ADMIN',
+          companyName,
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-vip-upgrade-invoice-admin-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] Proforma Invoice #INV-VIP-6100-2026 & VIP upgrade proposal sent to ${recipientName} (${recipientEmail}).`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: receipt.success,
+      receipt,
+      adminReceipt
+    };
+  }
 }
 
 export const automatedSmtpService = new AutomatedSmtpService();

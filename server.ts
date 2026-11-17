@@ -14863,6 +14863,26 @@ app.post('/api/v1/mediation/payout', async (req, res) => {
   }
 });
 
+// POST /api/v1/email/vip-upgrade-invoice - Send VIP plan upgrade invoice & proposal email with full procedure
+app.post('/api/v1/email/vip-upgrade-invoice', async (req, res) => {
+  try {
+    const { recipientEmail, recipientName, companyName, currentTier, balanceFormatted } = req.body;
+    if (!recipientEmail) {
+      return res.status(400).json({ error: 'recipientEmail is required.' });
+    }
+    const result = await automatedSmtpService.sendVipUpgradeInvoiceAndProposalEmail({
+      recipientEmail,
+      recipientName,
+      companyName,
+      currentTier,
+      balanceFormatted
+    });
+    res.json({ success: true, result });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to dispatch VIP upgrade invoice email.' });
+  }
+});
+
 // GET /api/v1/trade-assurance/certificates - Fetch current Trade Assurance Certificate records for Brochure & Verification Registry
 app.get('/api/v1/trade-assurance/certificates', (_req, res) => {
   try {

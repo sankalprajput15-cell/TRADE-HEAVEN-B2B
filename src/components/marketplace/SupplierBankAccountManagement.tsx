@@ -433,9 +433,23 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
         companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
         balanceFormatted: nativeAvailFormatted.nativeAmount
       });
+
+      // Dispatch Proforma Invoice & VIP Plan Upgrade Proposal email with full procedure
+      fetch('/api/v1/email/vip-upgrade-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: effectiveUser?.email || 'melissa@mpcommoditybrokers.com',
+          recipientName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
+          companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
+          currentTier,
+          balanceFormatted: nativeAvailFormatted.nativeAmount
+        })
+      }).catch(() => {});
+
       setWithdrawStatus({
         type: 'error',
-        text: `Withdrawal restricted: VIP plan member are eligible to do it. Your current tier (${currentTier}) requires upgrading to VIP or Enterprise to withdraw funds.`
+        text: `Withdrawal restricted: VIP plan member are eligible to do it. Proforma Invoice #INV-VIP-6100-2026 & VIP Plan Upgrade Proposal have been emailed to ${effectiveUser?.email || 'your registered email'} with full upgrade instructions.`
       });
       return;
     }
