@@ -555,7 +555,77 @@ let activeRfqsStore = loadStoredRfqs();
 let activeQuotesStore = loadStoredQuotes();
 
 export function getAllSuppliersWithUsers(): CompanyProfile[] {
-  const baseSuppliers = [...(activeSuppliersStore || MOCK_COMPANIES)];
+  const storedUsersMap = loadStoredUsers() || {};
+  const users = Object.values(storedUsersMap);
+  let tierOverrides: Record<string, string> = {};
+  try {
+    const rawOverrides = localStorage.getItem('th_supplier_tier_overrides_v2');
+    if (rawOverrides) {
+      tierOverrides = JSON.parse(rawOverrides) || {};
+    }
+  } catch {}
+
+  const mapOverrideToCompanyTier = (rawTier: string | undefined, fallbackTier: any): any => {
+    if (!rawTier) return fallbackTier;
+    const upper = String(rawTier).toUpperCase().trim();
+    if (upper === 'PAID' || upper === 'VIP' || upper.includes('GOLD') || upper.includes('DIAMOND') || upper.includes('PLATINUM')) {
+      return 'GOLD';
+    }
+    if (upper === 'BASIC' || upper.includes('BASIC')) {
+      return 'SILVER';
+    }
+    if (upper === 'VERIFIED' || upper.includes('VERIFIED')) {
+      return 'VERIFIED';
+    }
+    if (upper === 'FREE' || upper === 'PENDING' || upper.includes('FREE')) {
+      return 'STANDARD';
+    }
+    return fallbackTier;
+  };
+
+  const baseSuppliers = (activeSuppliersStore || MOCK_COMPANIES).map(s => {
+    const emailLower = (s.contactEmail || '').toLowerCase().trim();
+    const companyLower = (s.companyName || '').toLowerCase().trim();
+    const matchedUser = users.find(u => {
+      if (!u) return false;
+      const uEmail = (u.email || '').toLowerCase().trim();
+      const uComp = (u.companyName || '').toLowerCase().trim();
+      return (
+        u.id === s.id ||
+        u.id === s.ownerUid ||
+        (emailLower && uEmail === emailLower) ||
+        (emailLower.includes('mpcommoditybroker') && uEmail.includes('mpcommoditybroker')) ||
+        (companyLower && uComp === companyLower)
+      );
+    });
+
+    const overrideVal =
+      tierOverrides[s.id] ||
+      (s.ownerUid ? tierOverrides[s.ownerUid] : undefined) ||
+      (matchedUser?.id ? tierOverrides[matchedUser.id] : undefined) ||
+      (emailLower ? tierOverrides[emailLower] : undefined);
+
+    const effectiveTier = overrideVal
+      ? mapOverrideToCompanyTier(overrideVal, s.tier)
+      : matchedUser?.tier
+        ? mapOverrideToCompanyTier(matchedUser.tier, s.tier)
+        : s.tier;
+
+    const effectiveVerified =
+      overrideVal
+        ? overrideVal !== 'free' && overrideVal !== 'pending'
+        : matchedUser?.isVerified !== undefined
+          ? Boolean(matchedUser.isVerified)
+          : s.isVerifiedKYC;
+
+    return {
+      ...s,
+      tier: effectiveTier,
+      isVerifiedKYC: effectiveVerified,
+      status: matchedUser?.status === 'SUSPENDED' ? 'SUSPENDED' : s.status
+    };
+  });
+
   const existingEmails = new Set(
     baseSuppliers.map(s => (s.contactEmail || '').toLowerCase()).filter(Boolean)
   );
@@ -567,7 +637,6 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
     baseSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean)
   );
 
-  const users = Object.values(loadStoredUsers() || {});
   const dynamicUserSuppliers: CompanyProfile[] = [];
 
   users.forEach(u => {
@@ -589,6 +658,9 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
     if (emailLower) existingEmails.add(emailLower);
     if (companyLower) existingCompanies.add(companyLower);
 
+    const overrideVal = tierOverrides[u.id] || (emailLower ? tierOverrides[emailLower] : undefined);
+    const resolvedTier = mapOverrideToCompanyTier(overrideVal || (u.tier as string), 'SILVER');
+
     dynamicUserSuppliers.push({
       id: u.id || `comp-user-${Date.now()}`,
       ownerUid: u.id,
@@ -599,9 +671,9 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
       address: `${u.country || 'International'} Commercial Trade Zone`,
       establishedYear: 2018,
       businessType: 'Trading Company',
-      tier: (u.tier as any) || 'SILVER',
+      tier: resolvedTier,
       status: u.status === 'SUSPENDED' ? 'SUSPENDED' : (u.status === 'PENDING' || (u.status as string) === 'PENDING_REVIEW') ? 'PENDING_REVIEW' : 'ACTIVE',
-      isVerifiedKYC: u.isVerified ?? true,
+      isVerifiedKYC: overrideVal ? (overrideVal !== 'free' && overrideVal !== 'pending') : (u.isVerified ?? true),
       trustScore: 95,
       responseRate: '98%',
       avgResponseTime: '< 2 hours',

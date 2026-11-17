@@ -233,6 +233,16 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
     e.preventDefault();
     if (!validate()) return;
 
+    const pendingNewBullet = newFeatureItem.trim();
+    const mergedFeaturesList = [
+      ...featuresList.map(f => f.trim()).filter(f => f.length > 0),
+      ...(pendingNewBullet && !featuresList.some(f => f.trim() === pendingNewBullet) ? [pendingNewBullet] : [])
+    ];
+    if (pendingNewBullet) {
+      setFeaturesList(mergedFeaturesList);
+      setNewFeatureItem('');
+    }
+
     setIsSubmitting(true);
     try {
       await onSave({
@@ -241,7 +251,7 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
         description: description.trim(),
         category,
         targetAudience: targetAudience.trim(),
-        featuresList: featuresList.filter(f => f.trim().length > 0),
+        featuresList: mergedFeaturesList,
         tierBadge,
         status,
         isPopular,
@@ -274,6 +284,10 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
     if (!newFeatureItem.trim()) return;
     setFeaturesList([...featuresList, newFeatureItem.trim()]);
     setNewFeatureItem('');
+  };
+
+  const handleUpdateFeatureItem = (index: number, value: string) => {
+    setFeaturesList(prev => prev.map((item, i) => (i === index ? value : item)));
   };
 
   const handleRemoveFeatureItem = (index: number) => {
@@ -672,13 +686,19 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
                     {featuresList.map((item, index) => (
                       <div
                         key={index}
-                        className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-between gap-3 group hover:border-slate-300 transition-all"
+                        className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-between gap-2.5 group hover:border-slate-300 transition-all"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-xs font-black">
                             ✓
                           </span>
-                          <span className="text-xs font-semibold text-slate-800 break-words">{item}</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={e => handleUpdateFeatureItem(index, e.target.value)}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 focus:border-blue-500 focus:bg-slate-50/60 text-xs font-semibold text-slate-800 focus:outline-none transition-all"
+                            placeholder="Enter plan feature bullet..."
+                          />
                         </div>
                         <button
                           type="button"

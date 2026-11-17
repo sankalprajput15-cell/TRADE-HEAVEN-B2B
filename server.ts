@@ -7613,6 +7613,64 @@ let serverSiteSettingsStore: Record<string, string> = {
   trade_protection_limit: '$1,000,000 USD'
 };
 
+let serverDeletedFaqIds = new Set<number>();
+let serverInquiryStatusOverrides: Record<string, string> = {};
+
+const ADMIN_SITE_STATE_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'admin-site-state.json');
+
+function loadAdminSiteStateFromDisk() {
+  try {
+    if (fs.existsSync(ADMIN_SITE_STATE_FILE)) {
+      const raw = fs.readFileSync(ADMIN_SITE_STATE_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.siteSettings && typeof parsed.siteSettings === 'object') {
+          serverSiteSettingsStore = { ...serverSiteSettingsStore, ...parsed.siteSettings };
+        }
+        if (Array.isArray(parsed.faqs) && parsed.faqs.length > 0) {
+          serverFaqsStore = parsed.faqs;
+        }
+        if (Array.isArray(parsed.deletedFaqIds)) {
+          serverDeletedFaqIds = new Set(parsed.deletedFaqIds.map((id: any) => Number(id)).filter((n: number) => !isNaN(n)));
+        }
+        if (parsed.inquiryStatusOverrides && typeof parsed.inquiryStatusOverrides === 'object') {
+          serverInquiryStatusOverrides = { ...parsed.inquiryStatusOverrides };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[AdminSiteState] Failed to load admin-site-state.json:', err);
+  }
+}
+
+function saveAdminSiteStateToDisk() {
+  try {
+    const dir = path.dirname(ADMIN_SITE_STATE_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(
+      ADMIN_SITE_STATE_FILE,
+      JSON.stringify(
+        {
+          siteSettings: serverSiteSettingsStore,
+          faqs: serverFaqsStore,
+          deletedFaqIds: Array.from(serverDeletedFaqIds),
+          inquiryStatusOverrides: serverInquiryStatusOverrides,
+          updatedAt: new Date().toISOString()
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+  } catch (err) {
+    console.warn('[AdminSiteState] Failed to save admin-site-state.json:', err);
+  }
+}
+
+loadAdminSiteStateFromDisk();
+
 // =============================================================
 // MULTI-IDENTITY ADMIN BUYER CHAT & RICH MEDIA STORE + WEBSOCKET
 // =============================================================
@@ -9464,6 +9522,79 @@ async function forwardApiPhpToLiveUpstream(
       try {
         upsertServerUserRecord(req.body);
       } catch {}
+    }
+
+    // Sync local Admin site settings, FAQs, and inquiry statuses when upstream mutations are invoked
+    if (req.body && typeof req.body === 'object') {
+      if ((action === 'update_setting' || action === 'site_settings') && req.body.key) {
+        serverSiteSettingsStore[String(req.body.key)] = String(req.body.value ?? '');
+        saveAdminSiteStateToDisk();
+      } else if (action === 'create_faq' && req.body.question) {
+        const createdId = Number(parsed?.data?.id || parsed?.id || Date.now());
+        const newFaqItem = {
+          id: createdId,
+          question: String(req.body.question || ''),
+          answer: String(req.body.answer || ''),
+          category: String(req.body.category || 'General'),
+          display_order: Number(req.body.display_order || 0),
+          created_at: new Date().toISOString()
+        };
+        if (!serverFaqsStore.some(f => Number(f.id) === createdId || f.question === newFaqItem.question)) {
+          serverFaqsStore.push(newFaqItem);
+        }
+        saveAdminSiteStateToDisk();
+      } else if (action === 'delete_faq' && req.body.id !== undefined) {
+        const delFaqId = Number(req.body.id);
+        if (!isNaN(delFaqId)) {
+          serverDeletedFaqIds.add(delFaqId);
+          serverFaqsStore = serverFaqsStore.filter(f => Number(f.id) !== delFaqId);
+          saveAdminSiteStateToDisk();
+        }
+      } else if (action === 'update_inquiry_status' && req.body.id !== undefined && req.body.status) {
+        const inqId = String(req.body.id).trim();
+        const newStatus = String(req.body.status).trim();
+        serverInquiryStatusOverrides[inqId] = newStatus;
+        serverRfqsStore = serverRfqsStore.map(r =>
+          String(r.id) === inqId ? { ...r, status: newStatus } : r
+        );
+        saveAdminSiteStateToDisk();
+      }
+    }
+
+    // Overlay authoritative local Admin settings, FAQs, and inquiry statuses onto upstream GET responses
+    if ((action === 'get_settings' || action === 'site_settings') && parsed && typeof parsed === 'object') {
+      if (parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)) {
+        parsed.data = { ...parsed.data, ...serverSiteSettingsStore };
+      } else {
+        parsed = { ...parsed, ...serverSiteSettingsStore };
+      }
+    }
+
+    if ((action === 'get_faqs' || action === 'faqs') && Array.isArray(parsed?.data)) {
+      const filteredUpstreamFaqs = parsed.data.filter(
+        (f: any) => !serverDeletedFaqIds.has(Number(f?.id))
+      );
+      const seenQuestions = new Set(
+        filteredUpstreamFaqs.map((f: any) => String(f?.question || '').trim().toLowerCase())
+      );
+      const seenFaqIds = new Set(
+        filteredUpstreamFaqs.map((f: any) => Number(f?.id))
+      );
+      const extraLocalFaqs = serverFaqsStore.filter(
+        f =>
+          !serverDeletedFaqIds.has(Number(f.id)) &&
+          !seenFaqIds.has(Number(f.id)) &&
+          !seenQuestions.has(String(f.question || '').trim().toLowerCase())
+      );
+      parsed.data = [...filteredUpstreamFaqs, ...extraLocalFaqs];
+    }
+
+    if ((action === 'get_inquiries' || action === 'inquiries') && Array.isArray(parsed?.data)) {
+      parsed.data = parsed.data.map((inq: any) => {
+        const sid = String(inq?.id || '').trim();
+        const ovStatus = sid ? serverInquiryStatusOverrides[sid] : undefined;
+        return ovStatus ? { ...inq, status: ovStatus } : inq;
+      });
     }
 
     // Track genuine supplier login alerts & verified read receipts
@@ -11377,6 +11508,7 @@ Message: ${formattedInquiry.message}`
       created_at: new Date().toISOString()
     };
     serverFaqsStore.push(newFaq);
+    saveAdminSiteStateToDisk();
 
     sendActivityAlert('FAQ_CREATED', 'Admin Console', `A new FAQ item was published: "${newFaq.question}"`, {
       faqId: newFaq.id,
@@ -11391,7 +11523,11 @@ Message: ${formattedInquiry.message}`
   if (action === 'delete_faq') {
     const delId = Number(input.id);
     const targetFaq = serverFaqsStore.find(f => f.id === delId);
+    if (!isNaN(delId)) {
+      serverDeletedFaqIds.add(delId);
+    }
     serverFaqsStore = serverFaqsStore.filter(f => f.id !== delId);
+    saveAdminSiteStateToDisk();
 
     sendActivityAlert('FAQ_DELETED', 'Admin Console', `An FAQ item was deleted: "${targetFaq?.question || delId}"`, {
       faqId: delId,
@@ -11401,9 +11537,23 @@ Message: ${formattedInquiry.message}`
     return res.json({ success: true });
   }
 
+  if (action === 'update_inquiry_status') {
+    const inqId = String(input.id || '').trim();
+    const newStatus = String(input.status || 'pending').trim();
+    if (inqId) {
+      serverInquiryStatusOverrides[inqId] = newStatus;
+      serverRfqsStore = serverRfqsStore.map(r =>
+        String(r.id) === inqId ? { ...r, status: newStatus } : r
+      );
+      saveAdminSiteStateToDisk();
+    }
+    return res.json({ success: true, id: inqId, status: newStatus });
+  }
+
   if (action === 'update_setting' || action === 'site_settings') {
     if (input.key) {
       serverSiteSettingsStore[input.key] = input.value || '';
+      saveAdminSiteStateToDisk();
 
       sendActivityAlert('SITE_SETTING_UPDATED', 'Admin Console', `A site setting was modified: "${input.key}"`, {
         settingKey: input.key,
@@ -15188,6 +15338,9 @@ app.post('/api/v1/plans', (req, res) => {
     name: data.name.trim(),
     slug,
     description: data.description || '',
+    category: data.category || 'SUPPLIER_MEMBERSHIP',
+    targetAudience: data.targetAudience || '',
+    featuresList: Array.isArray(data.featuresList) ? data.featuresList : [],
     status: data.status || 'ACTIVE',
     tierBadge: data.tierBadge || 'STARTER',
     isPopular: Boolean(data.isPopular),
@@ -15248,7 +15401,7 @@ app.put('/api/v1/plans/:id', (req, res) => {
   }
 
   const { id } = req.params;
-  const planIndex = serverSaasPlans.findIndex(p => p.id === id);
+  const planIndex = serverSaasPlans.findIndex(p => p.id === id || p.slug === id);
   if (planIndex === -1) {
     return res.status(404).json({ success: false, message: `Plan ${id} not found.` });
   }
@@ -15343,7 +15496,7 @@ app.post('/api/v1/plans/:id/archive', (req, res) => {
   }
 
   const { id } = req.params;
-  const plan = serverSaasPlans.find(p => p.id === id);
+  const plan = serverSaasPlans.find(p => p.id === id || p.slug === id);
   if (!plan) {
     return res.status(404).json({ success: false, message: `Plan ${id} not found.` });
   }
@@ -15378,7 +15531,7 @@ app.post('/api/v1/plans/:id/duplicate', (req, res) => {
   }
 
   const { id } = req.params;
-  const source = serverSaasPlans.find(p => p.id === id);
+  const source = serverSaasPlans.find(p => p.id === id || p.slug === id);
   if (!source) {
     return res.status(404).json({ success: false, message: `Plan ${id} not found.` });
   }
