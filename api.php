@@ -874,7 +874,7 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
     $dbRow = null;
     if ($db_connected && $pdo) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY CASE WHEN UPPER(role) = 'SUPPLIER' THEN 0 ELSE 1 END, id DESC LIMIT 1");
             $stmt->execute([$cleanEmail]);
             $fetched = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($fetched) $dbRow = $fetched;
@@ -896,7 +896,7 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
         return null;
     }
 
-    $rawRole = strtoupper((string)($dbRow['role'] ?? $localRow['role'] ?? $seedRow['role'] ?? 'BUYER'));
+    $rawRole = strtoupper((string)($seedRow['role'] ?? $dbRow['role'] ?? $localRow['role'] ?? 'BUYER'));
     if ($isRootAdmin) {
         $resolvedRole = 'ADMIN';
     } elseif ($rawRole === 'ADMIN') {
@@ -906,17 +906,17 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
     }
 
     return [
-        'id' => (string)($dbRow['id'] ?? $localRow['id'] ?? $seedRow['id'] ?? ('user-' . md5($cleanEmail))),
+        'id' => (string)($seedRow['id'] ?? $dbRow['id'] ?? $localRow['id'] ?? ('user-' . md5($cleanEmail))),
         'email' => $cleanEmail,
-        'name' => (string)($dbRow['name'] ?? $localRow['name'] ?? $seedRow['name'] ?? 'Registered Partner'),
+        'name' => (string)($seedRow['name'] ?? $dbRow['name'] ?? $localRow['name'] ?? 'Registered Partner'),
         'role' => $resolvedRole,
         'isRootAdmin' => $isRootAdmin,
         'password' => $dbRow['password'] ?? ($localRow['password_hash'] ?? ''),
         'seedPassword' => $seedRow['password_plain'] ?? '',
         'altPasswords' => $seedRow['alt_passwords'] ?? [],
-        'companyName' => (string)($dbRow['company_name'] ?? $localRow['company_name'] ?? $seedRow['companyName'] ?? 'Enterprise Trading Firm'),
-        'country' => (string)($dbRow['country'] ?? $localRow['country'] ?? $seedRow['country'] ?? 'United States'),
-        'phone' => (string)($dbRow['phone'] ?? $localRow['phone'] ?? $seedRow['phone'] ?? ''),
+        'companyName' => (string)($seedRow['companyName'] ?? $dbRow['company_name'] ?? $localRow['company_name'] ?? 'Enterprise Trading Firm'),
+        'country' => (string)($seedRow['country'] ?? $dbRow['country'] ?? $localRow['country'] ?? 'United States'),
+        'phone' => (string)($seedRow['phone'] ?? $dbRow['phone'] ?? $localRow['phone'] ?? ''),
         'tier' => (string)($dbRow['tier'] ?? $localRow['tier'] ?? $seedRow['tier'] ?? ($isRootAdmin ? 'VIP' : ($resolvedRole === 'SUPPLIER' ? 'SILVER' : 'FREE'))),
         'isPremium' => isset($dbRow['is_premium']) ? (bool)$dbRow['is_premium'] : (!empty($seedRow['isPremium']) || $isRootAdmin),
         'membershipStatus' => (string)($dbRow['membership_status'] ?? $seedRow['membershipStatus'] ?? ($isRootAdmin ? 'paid' : 'free')),
@@ -1344,42 +1344,47 @@ switch ($action) {
     case 'get_users':
     case 'users':
         $users_list = [];
+        $seedUsers = getBuiltInSeedAuthUsers();
+        $seen_emails = [];
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
+                $stmt = $pdo->query("SELECT * FROM users ORDER BY CASE WHEN UPPER(role) = 'SUPPLIER' THEN 0 ELSE 1 END, id DESC");
                 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($rows as $r) {
+                    $em = normalizeAuthEmail($r['email'] ?? '');
+                    if ($em !== '' && isset($seen_emails[$em])) continue;
+                    if ($em !== '') $seen_emails[$em] = true;
+                    $seedOverride = $em ? ($seedUsers[$em] ?? null) : null;
                     $users_list[] = [
-                        'id' => (string)$r['id'],
-                        'name' => $r['name'],
-                        'email' => $r['email'],
-                        'role' => $r['role'],
-                        'companyName' => $r['company_name'] ?? '',
-                        'country' => $r['country'] ?? 'United States',
-                        'phone' => $r['phone'] ?? '',
+                        'id' => (string)($seedOverride['id'] ?? $r['id']),
+                        'name' => $seedOverride['name'] ?? $r['name'],
+                        'email' => $em ?: $r['email'],
+                        'role' => $seedOverride['role'] ?? $r['role'],
+                        'companyName' => $seedOverride['companyName'] ?? ($r['company_name'] ?? ''),
+                        'country' => $seedOverride['country'] ?? ($r['country'] ?? 'United States'),
+                        'phone' => $seedOverride['phone'] ?? ($r['phone'] ?? ''),
                         'status' => $r['status'] ?? 'ACTIVE',
-                        'isVerified' => !empty($r['is_verified']),
-                        'isPremium' => !empty($r['is_premium']),
-                        'membershipStatus' => $r['membership_status'] ?? 'free',
-                        'tier' => $r['tier'] ?? 'FREE',
-                        'avatarUrl' => $r['avatar_url'] ?? ''
+                        'isVerified' => !empty($r['is_verified']) || !empty($seedOverride['isVerified']),
+                        'isPremium' => !empty($r['is_premium']) || !empty($seedOverride['isPremium']),
+                        'membershipStatus' => $seedOverride['membershipStatus'] ?? ($r['membership_status'] ?? 'free'),
+                        'tier' => $seedOverride['tier'] ?? ($r['tier'] ?? 'FREE'),
+                        'avatarUrl' => $r['avatar_url'] ?? ($seedOverride['avatarUrl'] ?? '')
                     ];
                 }
             } catch (Exception $e) {}
         }
         $existing_emails = [];
         foreach ($users_list as $existing_u) {
-            $em = strtolower(trim((string)($existing_u['email'] ?? '')));
+            $em = normalizeAuthEmail($existing_u['email'] ?? '');
             if ($em !== '') $existing_emails[$em] = true;
         }
-        $seedUsers = getBuiltInSeedAuthUsers();
         foreach ($seedUsers as $u) {
-            $em = strtolower(trim((string)($u['email'] ?? '')));
+            $em = normalizeAuthEmail($u['email'] ?? '');
             if ($em !== '' && isset($existing_emails[$em])) continue;
             $users_list[] = [
                 'id' => $u['id'],
                 'name' => $u['name'],
-                'email' => $u['email'],
+                'email' => $em ?: $u['email'],
                 'role' => $u['role'],
                 'companyName' => $u['companyName'] ?? '',
                 'country' => $u['country'] ?? 'United States',
@@ -2357,10 +2362,7 @@ switch ($action) {
     // Forgot Password (Automatic OTP dispatch from noreply@tradeheaven.net)
     // -------------------------------------------------------------
     case 'forgot_password':
-        $email = strtolower(trim($input['email'] ?? ''));
-        if (strpos($email, 'mail-') === 0 && strpos($email, '@') !== false) {
-            $email = substr($email, 5);
-        }
+        $email = normalizeAuthEmail($input['email'] ?? '');
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(["status" => "error", "success" => false, "message" => "Valid corporate email address is required."]);
             exit();
@@ -2436,10 +2438,7 @@ switch ($action) {
     // Reset Password
     // -------------------------------------------------------------
     case 'reset_password':
-        $email = strtolower(trim($input['email'] ?? ''));
-        if (strpos($email, 'mail-') === 0 && strpos($email, '@') !== false) {
-            $email = substr($email, 5);
-        }
+        $email = normalizeAuthEmail($input['email'] ?? '');
         $code = trim($input['code'] ?? $input['token'] ?? '');
         $new_password = $input['new_password'] ?? $input['newPassword'] ?? '';
 
@@ -3241,7 +3240,7 @@ switch ($action) {
     case 'edit_profile':
         $user_id = $input['id'] ?? $input['userId'] ?? null;
         $name = trim($input['name'] ?? '');
-        $email = strtolower(trim($input['email'] ?? ''));
+        $email = normalizeAuthEmail($input['email'] ?? '');
         $company = trim($input['companyName'] ?? $input['company_name'] ?? $input['company'] ?? '');
         $phone = trim($input['phone'] ?? $input['phoneOrWhatsapp'] ?? '');
         $country = trim($input['country'] ?? '');

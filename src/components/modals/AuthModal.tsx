@@ -195,7 +195,8 @@ export const AuthModal: React.FC<Props> = ({
       setPassword(domPassword);
     }
     const rawClean = (effectiveEmailRaw || '').trim().toLowerCase();
-    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const withoutPrefix = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const cleanEmail = withoutPrefix.replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
     const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
     return { cleanEmail, effectivePassword, isRootAdmin };
   };
@@ -248,7 +249,8 @@ export const AuthModal: React.FC<Props> = ({
       setRegEmail(domRegEmail);
     }
     const rawClean = effectiveRegEmail.trim().toLowerCase();
-    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const withoutPrefix = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const cleanEmail = withoutPrefix.replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter a valid corporate email address before clicking Send OTP.');
       return;

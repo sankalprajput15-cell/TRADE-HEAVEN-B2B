@@ -341,7 +341,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const verifyLoginOtp = async (email: string, otp: string): Promise<LoginResult> => {
     setIsLoading(true);
     try {
-      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanEmail = (email || '').trim().toLowerCase().replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
       const res = await apiClient.verifyLoginOtp(cleanEmail, otp);
 
       if (res.success && res.user) {
@@ -467,7 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isImpersonating = Boolean(originalAdminUser);
   const otpService: OtpService = {
     requestLoginOtp: async (email: string, password?: string) => {
-      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanEmail = (email || '').trim().toLowerCase().replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
       const isRootAdmin = AUTHORIZED_ADMIN_EMAILS.has(cleanEmail);
       return await apiClient.sendAuthOtp({
         email: cleanEmail,
@@ -483,7 +483,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     requestRegistrationOtp: async (email: string, name?: string, accountType: 'BUYER' | 'SUPPLIER' = 'BUYER') => {
       return await apiClient.sendAuthOtp({
-        email: (email || '').trim().toLowerCase(),
+        email: (email || '').trim().toLowerCase().replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com'),
         name: (name || '').trim() || undefined,
         mode: 'REGISTER',
         accountType

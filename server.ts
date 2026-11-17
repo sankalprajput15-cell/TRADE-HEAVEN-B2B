@@ -844,7 +844,7 @@ function getCorrectRoleForEmail(
   email: string,
   defaultRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST'
 ): 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST' {
-  const clean = (email || '').trim().toLowerCase();
+  const clean = normalizeRecipientEmail(email || '');
   if (
     clean === 'zac@otec.ltd' ||
     clean === 'zac@fadetech.com' ||
@@ -1224,13 +1224,20 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
           if (!item || !item.email) continue;
-          const emailKey = String(item.email).toLowerCase().trim();
+          const emailKey = normalizeRecipientEmail(String(item.email));
           const idKey = String(item.id || `user-${emailKey}`);
           if (deleted.emails.has(emailKey) || deleted.ids.has(idKey)) continue;
           if (seenEmails.has(emailKey) || seenIds.has(idKey)) continue;
           seenEmails.add(emailKey);
           seenIds.add(idKey);
-          combined.push(item);
+          const normalizedItem: ServerUserRecord = {
+            ...item,
+            email: emailKey
+          };
+          if (emailKey === 'melissa@mpcommoditybrokers.com') {
+            normalizedItem.role = 'SUPPLIER';
+          }
+          combined.push(normalizedItem);
         }
       }
     }
@@ -1239,21 +1246,21 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
   }
 
   for (const def of DEFAULT_SERVER_USERS) {
-    const emailKey = def.email.toLowerCase().trim();
+    const emailKey = normalizeRecipientEmail(def.email);
     if (deleted.emails.has(emailKey) || deleted.ids.has(def.id)) continue;
     if (!seenEmails.has(emailKey) && !seenIds.has(def.id)) {
       seenEmails.add(emailKey);
       seenIds.add(def.id);
       if (emailKey === 'mjohnson@atlanticpowerequip.com' || emailKey === 'themax0098@gmail.com') {
-        combined.unshift(def);
+        combined.unshift({ ...def, email: emailKey });
       } else {
-        combined.push(def);
+        combined.push({ ...def, email: emailKey });
       }
     }
   }
 
   // Ensure Mark Johnson is positioned right at the very top of the users list (unless deleted)
-  const markIdx = combined.findIndex(u => u.email.toLowerCase().trim() === 'mjohnson@atlanticpowerequip.com');
+  const markIdx = combined.findIndex(u => normalizeRecipientEmail(u.email) === 'mjohnson@atlanticpowerequip.com');
   if (markIdx > 0) {
     const [markRecord] = combined.splice(markIdx, 1);
     combined.unshift(markRecord);
@@ -1386,7 +1393,7 @@ function permanentlyDeleteServerUser(
 
 function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
   const rawEmail = String(input.email || '').trim();
-  const cleanEmail = rawEmail.toLowerCase();
+  const cleanEmail = normalizeRecipientEmail(rawEmail);
   if (cleanEmail && serverDeletedUsersRegistry.emails.has(cleanEmail)) {
     serverDeletedUsersRegistry.emails.delete(cleanEmail);
     saveDeletedUsersRegistry();
@@ -1402,15 +1409,17 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
   const existingIndex = serverUsersStore.findIndex(
     u =>
       (input.id && u.id === String(input.id)) ||
-      (cleanEmail && u.email.toLowerCase().trim() === cleanEmail)
+      (cleanEmail && normalizeRecipientEmail(u.email) === cleanEmail)
   );
 
   const existing = existingIndex !== -1 ? serverUsersStore[existingIndex] : undefined;
   const resolvedRoleRaw = String(input.role || existing?.role || 'BUYER').toUpperCase();
-  const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' =
+  const initialRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' =
     resolvedRoleRaw === 'ADMIN' || resolvedRoleRaw === 'SUPPLIER' || resolvedRoleRaw === 'VERIFIER'
       ? (resolvedRoleRaw as any)
       : 'BUYER';
+  const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' =
+    cleanEmail === 'melissa@mpcommoditybrokers.com' ? 'SUPPLIER' : initialRole;
 
   const resolvedStatusRaw = String(input.status || existing?.status || 'ACTIVE').toUpperCase();
   const resolvedStatus: 'ACTIVE' | 'PENDING' | 'SUSPENDED' =
@@ -1450,7 +1459,7 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
 
   const record: ServerUserRecord = {
     id: existing?.id || String(input.id || `user-${Date.now()}`),
-    email: rawEmail || existing?.email || `user-${Date.now()}@tradeheaven.net`,
+    email: cleanEmail || (existing?.email ? normalizeRecipientEmail(existing.email) : `user-${Date.now()}@tradeheaven.net`),
     passwordHash: String(input.password || input.passwordHash || existing?.passwordHash || 'TradeHeaven@2026'),
     name: derivedName,
     role: resolvedRole,
@@ -2075,6 +2084,10 @@ function verifyRegisteredUserPassword(user: ServerUserRecord, password?: string)
 async function issueAndDispatchLoginOtp(
   user: ServerUserRecord
 ): Promise<{ emailSent: boolean; deliveryMode: string; messageId?: string; error?: string }> {
+  const cleanRecipientEmail = normalizeRecipientEmail(user.email);
+  if (cleanRecipientEmail && user.email !== cleanRecipientEmail) {
+    user.email = cleanRecipientEmail;
+  }
   const otpCode = crypto.randomInt(100000, 999999).toString();
   user.login_otp_code = otpCode;
   user.login_otp_expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -2082,7 +2095,7 @@ async function issueAndDispatchLoginOtp(
   saveServerUsersToDisk();
 
   const dispatchResult = await automatedSmtpService.sendLoginVerificationOtp({
-    recipientEmail: user.email,
+    recipientEmail: cleanRecipientEmail || user.email,
     recipientName: user.name,
     otpCode,
     expiryMinutes: 10,
@@ -9212,11 +9225,22 @@ async function forwardApiPhpToLiveUpstream(
         headers['Content-Type'] = 'application/json';
         const forwardPayload =
           req.body && typeof req.body === 'object' ? { ...req.body } : {};
-        if (forwardPayload.supplierEmail) {
-          forwardPayload.supplierEmail = normalizeRecipientEmail(String(forwardPayload.supplierEmail));
-        }
-        if (forwardPayload.supplier_email) {
-          forwardPayload.supplier_email = normalizeRecipientEmail(String(forwardPayload.supplier_email));
+        for (const key of [
+          'email',
+          'recipientEmail',
+          'recipient_email',
+          'userEmail',
+          'user_email',
+          'applicantEmail',
+          'applicant_email',
+          'buyerEmail',
+          'buyer_email',
+          'supplierEmail',
+          'supplier_email'
+        ]) {
+          if (typeof forwardPayload[key] === 'string' && forwardPayload[key].trim()) {
+            forwardPayload[key] = normalizeRecipientEmail(forwardPayload[key]);
+          }
         }
         bodyBuffer = Buffer.from(JSON.stringify(forwardPayload), 'utf8');
       }
@@ -9255,6 +9279,22 @@ async function forwardApiPhpToLiveUpstream(
       );
       const presentEmails = new Set<string>();
       const presentIds = new Set<string>();
+      const seenNormalizedEmails = new Set<string>();
+
+      // Deduplicate upstream rows sharing the same normalized email (e.g. id=15 BUYER vs id=8 supplier for Melissa),
+      // deterministically preferring the SUPPLIER / user-supplier-* record.
+      const rowPriorityScore = (r: any) =>
+        (String(r?.role || '').toUpperCase() === 'SUPPLIER' ? 2 : 0) +
+        (String(r?.id || '').startsWith('user-supplier-') ? 2 : 0);
+      const bestUpstreamByEmail = new Map<string, any>();
+      for (const row of parsed.data) {
+        const em = normalizeRecipientEmail(String(row?.email || ''));
+        if (!em) continue;
+        const existingRow = bestUpstreamByEmail.get(em);
+        if (!existingRow || rowPriorityScore(row) > rowPriorityScore(existingRow)) {
+          bestUpstreamByEmail.set(em, row);
+        }
+      }
 
       parsed.data = parsed.data
         .filter((row: any) => {
@@ -9262,6 +9302,9 @@ async function forwardApiPhpToLiveUpstream(
           const id = String(row?.id || '').trim();
           if (em && serverDeletedUsersRegistry.emails.has(em)) return false;
           if (id && serverDeletedUsersRegistry.ids.has(id)) return false;
+          if (em && bestUpstreamByEmail.get(em) !== row) return false;
+          if (em && seenNormalizedEmails.has(em)) return false;
+          if (em) seenNormalizedEmails.add(em);
           return true;
         })
         .map((row: any) => {
@@ -9276,6 +9319,7 @@ async function forwardApiPhpToLiveUpstream(
           return {
             ...row,
             email: em || row.email,
+            role: localMatch.role || row.role,
             name: localMatch.name || row.name,
             companyName: localMatch.companyName || row.companyName || row.company_name,
             company_name: localMatch.companyName || row.company_name || row.companyName,
@@ -9293,7 +9337,7 @@ async function forwardApiPhpToLiveUpstream(
 
       const missingLocalUsers = serverUsersStore
         .filter((u) => {
-          const em = String(u.email || '').toLowerCase().trim();
+          const em = normalizeRecipientEmail(String(u.email || ''));
           const id = String(u.id || '').trim();
           if (!em || presentEmails.has(em) || (id && presentIds.has(id))) return false;
           if (serverDeletedUsersRegistry.emails.has(em)) return false;
@@ -10102,6 +10146,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
       user.reset_token = null;
       user.reset_token_expiry = null;
     }
+    saveServerUsersToDisk();
 
     return res.status(200).json({
       success: true,
@@ -10747,16 +10792,21 @@ app.post('/api.php', async (req, res) => {
   // Update Profile
   if (action === 'update_profile') {
     const { id, name, companyName, company, country, avatarUrl } = input;
-    const matched = serverUsersStore.find(u => u.id === id || u.email === input.email);
+    const cleanInputEmail = input.email ? normalizeRecipientEmail(String(input.email)) : '';
+    const matched = serverUsersStore.find(
+      u => (id && u.id === id) || (cleanInputEmail && normalizeRecipientEmail(u.email) === cleanInputEmail)
+    );
     if (matched) {
+      if (cleanInputEmail && matched.email !== cleanInputEmail) matched.email = cleanInputEmail;
       if (name) matched.name = name;
       if (companyName || company) matched.companyName = companyName || company;
       if (country) matched.country = country;
       if (avatarUrl) matched.avatarUrl = avatarUrl;
-      
+      saveServerUsersToDisk();
+
       logServerActivity(req, 'PROFILE_UPDATED', matched.email, matched.role, `/api.php?action=update_profile`, `User ${matched.name} updated corporate profile details.`, 'SUCCESS', matched.id);
     } else {
-      logServerActivity(req, 'PROFILE_UPDATED', input.email || 'unknown', 'GUEST', `/api.php?action=update_profile`, `Profile update failed: user ${id || input.email} not found.`, 'DENIED');
+      logServerActivity(req, 'PROFILE_UPDATED', cleanInputEmail || 'unknown', 'GUEST', `/api.php?action=update_profile`, `Profile update failed: user ${id || cleanInputEmail} not found.`, 'DENIED');
     }
     return res.json({ success: true, message: 'Profile updated in MySQL' });
   }

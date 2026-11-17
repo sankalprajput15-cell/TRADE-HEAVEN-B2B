@@ -118,6 +118,15 @@ function isPhpGatewayDefaultBanner(json: any): boolean {
   return Boolean(json && typeof json === 'object' && json.service === 'Trade4Deals MySQL PDO API Gateway');
 }
 
+function normalizeClientEmail(rawEmail?: string): string {
+  const rawClean = (rawEmail || '').trim().toLowerCase();
+  const withoutPrefix = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+  if (withoutPrefix.endsWith('@mpcommoditybroker.com')) {
+    return withoutPrefix.replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
+  }
+  return withoutPrefix;
+}
+
 async function postAuthEndpoint(
   expressPath: string,
   phpAction: string,
@@ -555,8 +564,7 @@ export const apiClient = {
     message: string;
   }> {
     try {
-      const rawClean = (payload.email || '').trim().toLowerCase();
-      const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+      const cleanEmail = normalizeClientEmail(payload.email);
       if (!cleanEmail || !cleanEmail.includes('@')) {
         return {
           success: false,
@@ -650,8 +658,7 @@ export const apiClient = {
     message?: string;
   }> {
     try {
-      const rawClean = (email || '').trim().toLowerCase();
-      const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+      const cleanEmail = normalizeClientEmail(email);
       const isRootAdminEmail =
         cleanEmail === 'yr943334@gmail.com' ||
         cleanEmail === 'sankalprajput15@gmail.com';
@@ -733,7 +740,7 @@ export const apiClient = {
     message?: string;
   }> {
     try {
-      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanEmail = normalizeClientEmail(email);
       const cleanOtp = (otp || '').trim();
       if (!cleanEmail || !cleanOtp) {
         return {
@@ -781,7 +788,7 @@ export const apiClient = {
     message: string;
   }> {
     try {
-      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanEmail = normalizeClientEmail(email);
       const { res, json } = await postAuthEndpoint('/api/v1/auth/resend-login-otp', 'resend_login_otp', {
         email: cleanEmail
       });
@@ -822,7 +829,7 @@ export const apiClient = {
     accountType?: 'BUYER' | 'SUPPLIER';
   }): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
     try {
-      const cleanEmail = (payload.email || '').trim().toLowerCase();
+      const cleanEmail = normalizeClientEmail(payload.email);
       if (!cleanEmail) {
         return { success: false, error: 'Email address is required.', message: 'Email address is required.' };
       }
@@ -926,8 +933,7 @@ export const apiClient = {
     sender?: string;
     emailSent?: boolean;
   }> {
-    const rawClean = (email || '').trim().toLowerCase();
-    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const cleanEmail = normalizeClientEmail(email);
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { success: false, message: 'Please enter a valid registered email address.' };
     }
@@ -984,8 +990,7 @@ export const apiClient = {
    * Reset password with the 6-digit code
    */
   async resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const rawClean = (email || '').trim().toLowerCase();
-    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const cleanEmail = normalizeClientEmail(email);
     const cleanCode = (code || '').trim();
 
     if (!cleanEmail || !cleanCode || !newPassword) {
