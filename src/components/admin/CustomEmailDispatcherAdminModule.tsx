@@ -69,6 +69,34 @@ const PRESET_TEMPLATES: Array<{
   data: CustomAdminEmailPayload;
 }> = [
   {
+    id: 'MELISSA_VIP_UPGRADE_AGREEMENT',
+    name: '💳 Melissa Prezios (melissa@mpcommoditybrokers.com) — VIP Upgrade, Escrow Release & 30-Day Agreement',
+    description: 'Clarification on VIP Upgrade ($5,000 discounted from $6,100), $50,000 USD escrow commission release, and 30-day service judgement agreement.',
+    data: {
+      recipientName: 'Melissa',
+      decisionMakerName: 'Melissa',
+      recipientEmail: 'melissa@mpcommoditybrokers.com',
+      companyName: 'MP Commodity Brokers Australia Pty Ltd',
+      address: 'Sydney, Australia',
+      contactPhone: '+61411510887',
+      paymentMethod: 'Trade Heaven Escrow Vault (TH-VAULT-AU-61648)',
+      portalUrl: 'https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=upgrade_vip',
+      subject: 'Clarification on VIP Upgrade, Escrow Release, and 30-Day Service Agreement – Trade Heaven',
+      badgeLabel: '💳 VIP UPGRADE & 30-DAY SERVICE AGREEMENT • $50K ESCROW',
+      headline: 'Clarification on VIP Upgrade, Escrow Release & 30-Day Service Agreement',
+      subheadline: 'Official Support Clarification for Melissa Prezios (MP Commodity Brokers Australia Pty Ltd)',
+      introMessage: 'Dear Melissa,\n\nThank you for connecting with the Trade Heaven support desk. We are writing to formally summarize the current status of your account, your pending $50,000 USD commission transaction, and the necessary steps required to unlock full liquidity withdrawals.\n\n1. Account Tier & Withdrawal Status\nAs indicated on your dashboard, your current account is under the Standard / Basic Plan, which maintains locked fund withdrawals for high-volume transactions. To process SWIFT wire releases and escrow liquidity withdrawals, platform compliance strictly requires active VIP Plan status ($6,100/yr standard rate).\n\n2. Special VIP Upgrade & Reduced Fee Structure\nTo assist you with your current deal, we have arranged a special adjusted rate:\n\nInstead of the full standard fee, your upgrade to the VIP Plan is available at a discounted rate of $5,000 USD.\n\nPlease note that per platform escrow security regulations, platform fees cannot be deducted directly from pending escrow funds before account tier verification; the upgrade fee must be settled through standard checkout to transition the profile.\n\n3. The 30-Day Service Judgement Agreement\nTo ensure complete confidence and risk-free transparency, your VIP upgrade will be backed by our 30-Day Service Judgement Period:\n\nEvaluation Window: You will have full, unrestricted access to VIP priority matching, dedicated account management, and instant withdrawal routing for 30 days.\n\nFlexibility Guarantee: If you determine that the VIP service does not align with your trading volume or expectations during this 30-day window, you retain full evaluation flexibility under Trade Heaven’s partnership terms.\n\nPlease let us know when you are ready to proceed with the secure checkout so we can immediately reactivate your VIP status and ensure your $50,000 USD funds are successfully released to your bank account.',
+      includeCredentialsBox: false,
+      includeLoginGuide: false,
+      includeEscrowBadge: true,
+      isMembershipRenewal: true,
+      inquiriesTitle: 'VIP Upgrade & Escrow Release Summary ($5,000 USD • $50,000 USD Escrow)',
+      customClosingNote: 'Please review and proceed with secure checkout to unlock your $50,000 USD escrow release.',
+      ctaText: 'Proceed with Secure VIP Checkout ($5,000 USD) →',
+      ctaUrl: 'https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=upgrade_vip'
+    }
+  },
+  {
     id: 'MELISSA_UNCLAIMED_FUNDS_48H_ALERT',
     name: '⏳ Melissa Prezios (melissa@mpcommoditybrokers.com) — Funds >12h in Account (Auto-Reverse in 48h if Unclaimed)',
     description: 'Urgent Treasury Alert to Melissa Prezios (MP Commodity Brokers Australia Pty Ltd): $50,000 USD in account for >12 hours; if unclaimed for 48 hours, clearing gateway will automatically reverse and send funds back.',
@@ -1499,6 +1527,47 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
   };
 
+  const [isSendingMelissaVip, setIsSendingMelissaVip] = useState(false);
+  const [melissaVipResult, setMelissaVipResult] = useState<{ success: boolean; message: string; trackingId?: string } | null>(null);
+
+  const handleSendMelissaVipAgreement = async () => {
+    setIsSendingMelissaVip(true);
+    setMelissaVipResult(null);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-vip-upgrade-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          melissaEmail: 'melissa@mpcommoditybrokers.com',
+          adminEmail: 'sankalprajput15@gmail.com',
+          secondaryAdminEmail: 'yr943334@gmail.com',
+          sendAdminCopy: true
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setMelissaVipResult({
+          success: true,
+          message: '✅ VIP Upgrade & 30-Day Service Agreement successfully dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com) and admin audit copies!',
+          trackingId: data?.melissaReceipt?.trackingId
+        });
+        await fetchMailSuiteTelemetry();
+      } else {
+        setMelissaVipResult({
+          success: false,
+          message: data?.message || 'Failed to dispatch VIP agreement email to Melissa'
+        });
+      }
+    } catch (err: any) {
+      setMelissaVipResult({
+        success: false,
+        message: err?.message || 'Network error dispatching VIP agreement email'
+      });
+    } finally {
+      setIsSendingMelissaVip(false);
+    }
+  };
+
   return (
     <div id="custom-email-dispatcher-admin" className="space-y-6">
 
@@ -1699,6 +1768,72 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
             {melissaAlertResult.trackingId && (
               <span className="font-mono text-[10px] text-slate-400">
                 MailSuite ID: {melissaAlertResult.trackingId}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MELISSA VIP UPGRADE & 30-DAY SERVICE AGREEMENT WORKFLOW BANNER */}
+      <div className="bg-gradient-to-r from-sky-950 via-slate-900 to-indigo-950 rounded-2xl border-2 border-sky-500/80 p-5 text-white shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-600 text-white shadow-xs">
+                💳 VIP UPGRADE &amp; 30-DAY SERVICE AGREEMENT
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                $5,000 USD Discounted Rate &bull; $50K Escrow Release
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/40">
+                30-Day Risk-Free Judgement Guarantee
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+              Melissa Prezios (MP Commodity Brokers Australia Pty Ltd &bull; <span className="font-mono text-sky-300">melissa@mpcommoditybrokers.com</span>)
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+              Clarification on VIP Upgrade (<strong className="text-emerald-300">$5,000 USD</strong> discounted from standard $6,100/yr), pending <strong className="text-emerald-300">$50,000 USD</strong> escrow commission release, and the <strong className="text-white">30-Day Service Judgement Period</strong> providing full evaluation flexibility and risk-free transparency.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              disabled={isSendingMelissaVip}
+              onClick={handleSendMelissaVipAgreement}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSendingMelissaVip ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Dispatching Agreement...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Email Melissa VIP Agreement &amp; Escrow Release</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {melissaVipResult && (
+          <div
+            className={`mt-3.5 p-3 rounded-xl text-xs flex items-center justify-between gap-3 border ${
+              melissaVipResult.success
+                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                : 'bg-red-950/80 border-red-500/50 text-red-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{melissaVipResult.message}</span>
+            </div>
+            {melissaVipResult.trackingId && (
+              <span className="font-mono text-[10px] text-slate-400">
+                MailSuite ID: {melissaVipResult.trackingId}
               </span>
             )}
           </div>

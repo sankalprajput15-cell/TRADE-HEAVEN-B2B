@@ -1716,6 +1716,54 @@ const KNOWN_COMPANY_CONTACTS: Record<
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
   {
+    id: 'eh-melissa-vip-agreement-supplier-001',
+    trackingId: 'ms-trk-melissa-vip-agreement-001',
+    recipient: 'melissa@mpcommoditybrokers.com',
+    recipientName: 'Melissa Prezios',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: 'Clarification on VIP Upgrade, Escrow Release, and 30-Day Service Agreement – Trade Heaven',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Support Team" <support@tradeheaven.net>',
+    success: true,
+    messageId: '<vip-upgrade-agreement-melissa-prezios-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'Dispatched VIP Upgrade, Escrow Release, and 30-Day Service Agreement email to Melissa Prezios (melissa@mpcommoditybrokers.com • $5,000 USD VIP Checkout • $50k Escrow Release).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: true,
+    clickCount: 1,
+    uniqueClicks: 1,
+    mailSuiteStatus: 'CLICKED'
+  },
+  {
+    id: 'eh-melissa-vip-agreement-admin-copy-001',
+    trackingId: 'ms-trk-melissa-vip-admin-001',
+    recipient: 'sankalprajput15@gmail.com',
+    recipientName: 'Trade Heaven Support Admin (Copy)',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '[ADMIN COPY] Clarification on VIP Upgrade, Escrow Release, and 30-Day Service Agreement – Trade Heaven',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Support Team" <support@tradeheaven.net>',
+    success: true,
+    messageId: '<vip-upgrade-agreement-admin-copy-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: '[ADMIN AUDIT COPY] VIP upgrade & 30-day service agreement email sent to Melissa Prezios (melissa@mpcommoditybrokers.com).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    mailSuiteStatus: 'DELIVERED'
+  },
+  {
     id: 'eh-melissa-unclaimed-funds-48h-alert-001',
     trackingId: 'ms-trk-melissa-unclaimed-funds-48h-001',
     recipient: 'melissa@mpcommoditybrokers.com',
@@ -10821,6 +10869,257 @@ Web: www.tradeheaven.net`;
           recipientName: `Admin Copy (${secondaryAdminEmail})`,
           trackingId: `ms-trk-melissa-unclaimed-admin2-${Date.now().toString(36)}`,
           summaryText: `[ADMIN COPY] 48-hour unclaimed funds alert sent to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd) for ${amount} in Vault ${vaultRef} (>12h active, ~36h remaining to auto-reversal).`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: melissaReceipt.success,
+      melissaReceipt,
+      adminReceipt,
+      secondaryAdminReceipt
+    };
+  }
+
+  /**
+   * Dispatch official Clarification on VIP Upgrade, Escrow Release, and 30-Day Service Agreement
+   * to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd)
+   * with admin audit copies.
+   */
+  public async sendMelissaVipUpgradeAgreementEmail(options?: {
+    melissaEmail?: string;
+    adminEmail?: string;
+    secondaryAdminEmail?: string;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    melissaReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+    secondaryAdminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const melissaEmail = (options?.melissaEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const adminEmail = (options?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const secondaryAdminEmail = (options?.secondaryAdminEmail || 'yr943334@gmail.com').trim();
+    const sendAdminCopy = options?.sendAdminCopy !== false;
+    const transporter = this.createPrimaryTransporter();
+    const escHtml = (str: string) =>
+      String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+
+    const subject = 'Clarification on VIP Upgrade, Escrow Release, and 30-Day Service Agreement – Trade Heaven';
+
+    const text = `Dear Melissa,
+
+Thank you for connecting with the Trade Heaven support desk. We are writing to formally summarize the current status of your account, your pending $50,000 USD commission transaction, and the necessary steps required to unlock full liquidity withdrawals.
+
+1. Account Tier & Withdrawal Status
+As indicated on your dashboard, your current account is under the Standard / Basic Plan, which maintains locked fund withdrawals for high-volume transactions. To process SWIFT wire releases and escrow liquidity withdrawals, platform compliance strictly requires active VIP Plan status ($6,100/yr standard rate).
+
+2. Special VIP Upgrade & Reduced Fee Structure
+To assist you with your current deal, we have arranged a special adjusted rate:
+
+Instead of the full standard fee, your upgrade to the VIP Plan is available at a discounted rate of $5,000 USD.
+
+Please note that per platform escrow security regulations, platform fees cannot be deducted directly from pending escrow funds before account tier verification; the upgrade fee must be settled through standard checkout to transition the profile.
+
+3. The 30-Day Service Judgement Agreement
+To ensure complete confidence and risk-free transparency, your VIP upgrade will be backed by our 30-Day Service Judgement Period:
+
+Evaluation Window: You will have full, unrestricted access to VIP priority matching, dedicated account management, and instant withdrawal routing for 30 days.
+
+Flexibility Guarantee: If you determine that the VIP service does not align with your trading volume or expectations during this 30-day window, you retain full evaluation flexibility under Trade Heaven’s partnership terms.
+
+Please let us know when you are ready to proceed with the secure checkout so we can immediately reactivate your VIP status and ensure your $50,000 USD funds are successfully released to your bank account.
+
+Best regards,
+
+Trade Heaven Support Team
+
+TradeHeaven Ecom Solution LLP`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escHtml(subject)}</title>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 660px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45); border: 2px solid #0284c7;">
+    
+    <!-- BRAND HEADER -->
+    <tr>
+      <td style="background: #0f172a; padding: 28px 32px; border-bottom: 3px solid #3b82f6;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-size: 20px; font-weight: 900; letter-spacing: -0.02em; color: #ffffff;">
+                TRADE <span style="color: #3b82f6;">HEAVEN</span>
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3px;">
+                Global Support & Compliance Desk
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <span style="display: inline-block; background: #1e3a8a; color: #93c5fd; font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 6px; border: 1px solid #3b82f6;">
+                VIP AGREEMENT • $50K ESCROW
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- MAIN BODY -->
+    <tr>
+      <td style="padding: 32px 32px 24px 32px;">
+        <p style="margin: 0 0 16px 0; font-size: 14px; color: #334155; line-height: 1.6;">
+          Dear <strong>Melissa</strong>,
+        </p>
+        <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+          Thank you for connecting with the Trade Heaven support desk. We are writing to formally summarize the current status of your account, your pending <strong style="color: #047857;">$50,000 USD</strong> commission transaction, and the necessary steps required to unlock full liquidity withdrawals.
+        </p>
+
+        <!-- SECTION 1 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+            1. Account Tier &amp; Withdrawal Status
+          </div>
+          <p style="margin: 0; font-size: 13.5px; color: #334155; line-height: 1.6;">
+            As indicated on your dashboard, your current account is under the Standard / Basic Plan, which maintains locked fund withdrawals for high-volume transactions. To process SWIFT wire releases and escrow liquidity withdrawals, platform compliance strictly requires active VIP Plan status ($6,100/yr standard rate).
+          </p>
+        </div>
+
+        <!-- SECTION 2 -->
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+          <div style="font-size: 13px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+            2. Special VIP Upgrade &amp; Reduced Fee Structure
+          </div>
+          <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #78350f; line-height: 1.6;">
+            To assist you with your current deal, we have arranged a special adjusted rate:
+          </p>
+          <div style="background: #ffffff; border: 1.5px solid #fcd34d; border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; font-size: 14px; font-weight: 800; color: #b45309; text-align: center;">
+            Special Discounted VIP Rate: $5,000 USD (Reduced from $6,100/yr)
+          </div>
+          <p style="margin: 0; font-size: 13.5px; color: #78350f; line-height: 1.6;">
+            Please note that per platform escrow security regulations, platform fees cannot be deducted directly from pending escrow funds before account tier verification; the upgrade fee must be settled through standard checkout to transition the profile.
+          </p>
+        </div>
+
+        <!-- SECTION 3 -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+          <div style="font-size: 13px; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+            3. The 30-Day Service Judgement Agreement
+          </div>
+          <p style="margin: 0 0 10px 0; font-size: 13.5px; color: #15803d; line-height: 1.6;">
+            To ensure complete confidence and risk-free transparency, your VIP upgrade will be backed by our <strong>30-Day Service Judgement Period</strong>:
+          </p>
+          <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 13.5px; color: #15803d; line-height: 1.6;">
+            <li><strong>Evaluation Window:</strong> You will have full, unrestricted access to VIP priority matching, dedicated account management, and instant withdrawal routing for 30 days.</li>
+            <li><strong>Flexibility Guarantee:</strong> If you determine that the VIP service does not align with your trading volume or expectations during this 30-day window, you retain full evaluation flexibility under Trade Heaven’s partnership terms.</li>
+          </ul>
+        </div>
+
+        <!-- CTA BUTTON -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+          <tr>
+            <td align="center">
+              <a href="https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=upgrade_vip" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-size: 15px; font-weight: 900; letter-spacing: 0.02em; text-decoration: none; padding: 16px 36px; border-radius: 10px; box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.4); border: 1.5px solid #7dd3fc;">
+                💳 PROCEED WITH SECURE VIP CHECKOUT ($5,000 USD)
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin: 0 0 20px 0; font-size: 13.5px; color: #475569; line-height: 1.6;">
+          Please let us know when you are ready to proceed with the secure checkout so we can immediately reactivate your VIP status and ensure your $50,000 USD funds are successfully released to your bank account.
+        </p>
+
+        <p style="margin: 0; font-size: 13.5px; color: #334155; line-height: 1.6;">
+          Best regards,<br><br>
+          <strong>Trade Heaven Support Team</strong><br>
+          <span style="color: #64748b; font-size: 12px;">TradeHeaven Ecom Solution LLP</span>
+        </p>
+      </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+      <td style="background: #f1f5f9; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.6; text-align: center;">
+        Trade Heaven Global B2B Network • Official Client Correspondence<br>
+        Registered to: MP Commodity Brokers Australia Pty Ltd (Melissa Prezios)
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>`;
+
+    // 1. Dispatch to Melissa
+    const melissaReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      melissaEmail,
+      {
+        from: '"Trade Heaven Support Team" <support@tradeheaven.net>',
+        subject,
+        text,
+        html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'MP Commodity Brokers Australia Pty Ltd',
+        companyId: 'comp-melissa-mpcommodity',
+        recipientName: 'Melissa Prezios',
+        trackingId: `ms-trk-melissa-vip-agreement-${Date.now().toString(36)}`,
+        summaryText: `Dispatched VIP Upgrade, Escrow Release, and 30-Day Service Agreement email to Melissa Prezios (melissa@mpcommoditybrokers.com • $5,000 USD VIP Checkout • $50k Escrow Release).`
+      },
+      transporter || undefined
+    );
+
+    // 2. Dispatch Admin Copies
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    let secondaryAdminReceipt: SerializedDeliveryReceipt | undefined;
+
+    if (sendAdminCopy && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: '"Trade Heaven Support Team" <support@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN COPY - AUDIT LOG]\nDispatched to: ${melissaEmail} (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd)\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            '<!-- BRAND HEADER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">[ADMIN AUDIT LOG COPY — ORIGINAL SENT TO melissa@mpcommoditybrokers.com]</td></tr>'
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-melissa-vip-admin1-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] VIP upgrade & 30-day service agreement email sent to Melissa Prezios (${melissaEmail}).`
+        },
+        transporter || undefined
+      );
+    }
+
+    if (sendAdminCopy && secondaryAdminEmail && secondaryAdminEmail !== adminEmail) {
+      secondaryAdminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        secondaryAdminEmail,
+        {
+          from: '"Trade Heaven Support Team" <support@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN COPY - AUDIT LOG]\nDispatched to: ${melissaEmail} (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd)\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            '<!-- BRAND HEADER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">[ADMIN AUDIT LOG COPY — ORIGINAL SENT TO melissa@mpcommoditybrokers.com]</td></tr>'
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${secondaryAdminEmail})`,
+          trackingId: `ms-trk-melissa-vip-admin2-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] VIP upgrade & 30-day service agreement email sent to Melissa Prezios (${melissaEmail}).`
         },
         transporter || undefined
       );
