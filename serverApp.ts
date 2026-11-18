@@ -17136,6 +17136,65 @@ app.post('/api/v1/admin/send-melissa-deal-timeline-alert', async (req, res) => {
   }
 });
 
+// POST /api/v1/admin/send-melissa-vip-claim-or-return-alert - Dispatch final notice to Melissa Prezios: Upgrade to VIP and claim $50,000 USD within remaining time or funds will be sent back
+app.post('/api/v1/admin/send-melissa-vip-claim-or-return-alert', async (req, res) => {
+  try {
+    const melissaEmail = req.body?.melissaEmail || 'melissa@mpcommoditybrokers.com';
+    const adminEmail = req.body?.adminEmail || 'sankalprajput15@gmail.com';
+    const secondaryAdminEmail = req.body?.secondaryAdminEmail || 'yr943334@gmail.com';
+    const dealReference = req.body?.dealReference || 'DEAL-TH-AU-61648-FUEL';
+    const vaultReference = req.body?.vaultReference || 'TH-VAULT-AU-61648';
+    const amountFormatted = req.body?.amountFormatted || '$50,000.00 USD';
+    const vipPriceFormatted = req.body?.vipPriceFormatted || '$5,000.00 USD';
+    const hoursInAccount = req.body?.hoursInAccount ?? 12;
+    const hoursDeadline = req.body?.hoursDeadline ?? 48;
+    const hoursRemaining = req.body?.hoursRemaining ?? 36;
+    const sendAdminCopy = req.body?.sendAdminCopy !== false;
+
+    const result = await automatedSmtpService.sendMelissaVipUpgradeAndClaimOrReturnAlertEmail({
+      melissaEmail,
+      adminEmail,
+      secondaryAdminEmail,
+      dealReference,
+      vaultReference,
+      amountFormatted,
+      vipPriceFormatted,
+      hoursInAccount,
+      hoursDeadline,
+      hoursRemaining,
+      sendAdminCopy,
+      dispatchType: 'MANUAL'
+    });
+
+    logServerActivity(
+      req,
+      'ADMIN_EMAIL_DISPATCH',
+      melissaEmail,
+      'ADMIN',
+      '/api/v1/admin/send-melissa-vip-claim-or-return-alert',
+      `Dispatched Final VIP Upgrade & Claim Deadline Alert to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd): Upgrade to VIP (${vipPriceFormatted}) & claim ${amountFormatted} within ~${hoursRemaining}h (48h window) or funds will be sent back to originating remitter.`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      message: `⏳ Final VIP Upgrade & Claim-or-Return Alert dispatched to Melissa Prezios (${melissaEmail}) with admin copies!`,
+      recipient: melissaEmail,
+      dealReference,
+      vaultReference,
+      hoursRemaining,
+      melissaReceipt: result.melissaReceipt,
+      adminReceipt: result.adminReceipt,
+      secondaryAdminReceipt: result.secondaryAdminReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to dispatch Melissa Prezios VIP upgrade & claim-or-return alert email'
+    });
+  }
+});
+
 // POST /api/v1/admin/send-afreh-copper-powder-offers-email - Notify AFREH GROUP LIMITED (yaw.afreh@afrehgroup.com) of 50 buyers offering Advance Payment (24h expiry)
 app.post('/api/v1/admin/send-afreh-copper-powder-offers-email', async (req, res) => {
   try {

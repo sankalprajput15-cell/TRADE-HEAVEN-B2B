@@ -715,6 +715,30 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
     }
   };
 
+  const handleDispatchMelissaVipClaimOrReturnAlert = async () => {
+    setSendingMelissaDealAlert(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-vip-claim-or-return-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendAdminCopy: true })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        const trk = data?.melissaReceipt?.trackingId ? ` (MailSuite ID: ${data.melissaReceipt.trackingId})` : '';
+        setMelissaDealAlertBanner(
+          (data.message ||
+            '⏳ Final VIP Upgrade & Claim-or-Return Alert dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com)!') +
+            trk
+        );
+      }
+    } catch {
+      // ignore offline error
+    } finally {
+      setSendingMelissaDealAlert(false);
+    }
+  };
+
   return (
     <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-4 sm:space-y-6">
       {/* MELISSA PREZIOS (MP COMMODITY BROKERS AUSTRALIA PTY LTD) — DEAL SUMMARY & 6-STAGE EXECUTION TIMELINE ALERT */}
@@ -751,15 +775,26 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 <span>Open Melissa&apos;s Profile</span>
               </button>
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={handleDispatchMelissaDealTimelineAlert}
-                  disabled={sendingMelissaDealAlert}
-                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{sendingMelissaDealAlert ? 'Sending...' : 'Re-Send Deal & Timeline Alert to Melissa'}</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDispatchMelissaVipClaimOrReturnAlert}
+                    disabled={sendingMelissaDealAlert}
+                    className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{sendingMelissaDealAlert ? 'Sending...' : 'Send VIP & Claim-or-Return Alert'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDispatchMelissaDealTimelineAlert}
+                    disabled={sendingMelissaDealAlert}
+                    className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{sendingMelissaDealAlert ? 'Sending...' : 'Re-Send Deal & Timeline Alert'}</span>
+                  </button>
+                </>
               )}
             </div>
           </div>

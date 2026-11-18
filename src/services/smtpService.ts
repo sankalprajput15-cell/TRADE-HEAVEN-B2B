@@ -11537,6 +11537,271 @@ Support: escrow-desk@tradeheaven.net | support@tradeheaven.net`;
   }
 
   /**
+   * Dispatch Final Action Notice to Melissa Prezios (melissa@mpcommoditybrokers.com):
+   * Upgrade to VIP ($5,000 USD discounted) and claim the $50,000.00 USD within the remaining clearing time
+   * (~36 hours left of the 48-hour window), or funds will be automatically sent back to the originating remitter.
+   */
+  public async sendMelissaVipUpgradeAndClaimOrReturnAlertEmail(options?: {
+    melissaEmail?: string;
+    adminEmail?: string;
+    secondaryAdminEmail?: string;
+    dealReference?: string;
+    vaultReference?: string;
+    amountFormatted?: string;
+    vipPriceFormatted?: string;
+    hoursInAccount?: number;
+    hoursDeadline?: number;
+    hoursRemaining?: number;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    melissaReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+    secondaryAdminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const melissaEmail = (options?.melissaEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const adminEmail = (options?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const secondaryAdminEmail = (options?.secondaryAdminEmail || 'yr943334@gmail.com').trim();
+    const dealRef = options?.dealReference || 'DEAL-TH-AU-61648-FUEL';
+    const vaultRef = options?.vaultReference || 'TH-VAULT-AU-61648';
+    const amount = options?.amountFormatted || '$50,000.00 USD';
+    const vipPrice = options?.vipPriceFormatted || '$5,000.00 USD';
+    const hoursInAccount = options?.hoursInAccount ?? 12;
+    const hoursDeadline = options?.hoursDeadline ?? 48;
+    const hoursRemaining = options?.hoursRemaining ?? 36;
+    const sendAdminCopy = options?.sendAdminCopy !== false;
+    const transporter = this.createPrimaryTransporter();
+    const escapeHtml = (str: string) =>
+      String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+
+    const subject = `⏳ FINAL ACTION REQUIRED: Upgrade to VIP & Claim Your ${amount} Within Remaining Time or Funds Will Be Sent Back (MP Commodity Brokers Australia Pty Ltd)`;
+
+    const text = `FINAL ACTION REQUIRED: UPGRADE TO VIP & CLAIM YOUR ${amount} WITHIN REMAINING TIME OR FUNDS WILL BE SENT BACK
+Trade Heaven Custodial Treasury & Deal Clearing Desk
+Beneficiary: Melissa Prezios — MP Commodity Brokers Australia Pty Ltd (Sydney, Australia)
+Official Account Email: ${melissaEmail}
+Vault Reference: ${vaultRef} | Deal Reference: ${dealRef}
+
+Dear Melissa Prezios,
+
+This is an urgent final notice from the Trade Heaven Custodial Treasury & Deal Clearing Desk regarding the ${amount} currently allocated to your account for MP Commodity Brokers Australia Pty Ltd (Vault Reference: ${vaultRef} | Deal Reference: ${dealRef}).
+
+1. WHY ACTION IS REQUIRED IMMEDIATELY (BASIC PLAN RESTRICTION & ${hoursDeadline}-HOUR TIMER)
+• Your funds (${amount}) have now been held in your Trade Heaven account for more than ${hoursInAccount} hours.
+• Your account is currently on the Basic Plan, which keeps high-volume escrow withdrawals locked until the account is verified on an active VIP Plan.
+• Per platform custodial clearing regulations, allocated escrow funds have a strict ${hoursDeadline}-hour claim window — you currently have approximately ${hoursRemaining} hours remaining.
+
+2. MANDATORY STEPS TO CLAIM YOUR ${amount}
+To unlock your withdrawal access and receive your funds, please complete BOTH steps before the remaining deadline expires:
+1) Upgrade Your Account to VIP: Complete the special discounted VIP Plan upgrade checkout (${vipPrice}, reduced from the standard $6,100/yr rate), backed by our 30-Day Service Judgement Agreement. (Per escrow security rules, upgrade fees cannot be deducted directly from held escrow funds prior to tier verification.)
+2) Claim & Confirm Payout Details: Once upgraded, open your Escrow & Settlements Desk (Vault ${vaultRef}) and confirm your bank wire / SWIFT withdrawal instructions immediately.
+
+3. CONSEQUENCE IF NOT COMPLETED WITHIN THE RESPECTED TIME
+• If you do not upgrade to VIP and do not claim your ${amount} within the remaining clearing window (~${hoursRemaining} hours left of the ${hoursDeadline}-hour deadline), the clearing gateway will automatically cancel the escrow release authorization and send the entire ${amount} back to the originating remitter / sending bank account.
+
+PORTAL ACTION LINKS:
+• Upgrade to VIP (${vipPrice}): https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=upgrade_vip
+• Claim Funds & Open Dashboard: https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com
+
+If you need immediate assistance completing your VIP upgrade or bank claim before the cutoff, please reply directly to this email or contact our Treasury Operations Desk at escrow-desk@tradeheaven.net.
+
+Sincerely,
+Trade Heaven Custodial Treasury & Deal Clearing Desk
+TradeHeaven Ecom Solution LLP | www.tradeheaven.net`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 660px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45); border: 2px solid #dc2626;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 55%, #b45309 100%); padding: 12px 24px; text-align: center; border-bottom: 2px solid #ef4444;">
+        <span style="display: inline-block; background: rgba(0,0,0,0.35); color: #fef3c7; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(254,243,199,0.4);">
+          ⏳ FINAL NOTICE • UPGRADE TO VIP &amp; CLAIM WITHIN ~${hoursRemaining}H OR FUNDS SENT BACK
+        </span>
+      </td>
+    </tr>
+
+    <!-- BRAND HEADER -->
+    <tr>
+      <td style="background: #0f172a; padding: 26px 32px; border-bottom: 3px solid #f59e0b;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">
+                TRADE <span style="color: #f59e0b;">HEAVEN</span>
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3px;">
+                Custodial Treasury &amp; Deal Clearing Desk
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <span style="display: inline-block; background: #451a03; color: #fef3c7; font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 6px; border: 1px solid #b45309;">
+                VAULT: ${escapeHtml(vaultRef)}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding: 30px 32px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 21px; font-weight: 800; color: #991b1b; line-height: 1.3;">
+          Final Action Required: Upgrade to VIP &amp; Claim ${escapeHtml(amount)} Before Auto-Return
+        </h1>
+        <p style="margin: 0 0 18px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+          Dear <strong>Melissa Prezios</strong> (<span style="color: #0284c7;">${escapeHtml(melissaEmail)}</span> • <strong>MP Commodity Brokers Australia Pty Ltd</strong>),<br>
+          This is an urgent final notice regarding the <strong style="color: #059669;">${escapeHtml(amount)}</strong> currently allocated in Vault <strong>${escapeHtml(vaultRef)}</strong> (Deal Reference: <strong>${escapeHtml(dealRef)}</strong>).
+        </p>
+
+        <!-- SECTION 1 -->
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 5px solid #d97706; border-radius: 8px; padding: 15px 18px; margin-bottom: 18px;">
+          <div style="font-size: 12.5px; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 6px;">
+            1. Why Action Is Required Immediately (Basic Plan Restriction &amp; ${hoursDeadline}-Hour Timer)
+          </div>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #78350f; line-height: 1.6;">
+            <li>Your funds (<strong>${escapeHtml(amount)}</strong>) have now been held in your account for <strong>more than ${hoursInAccount} hours</strong>.</li>
+            <li>Your account is currently on the <strong>Basic Plan</strong>, which keeps high-volume escrow withdrawals locked until verified on an active <strong>VIP Plan</strong>.</li>
+            <li>Under platform clearing regulations, allocated funds have a strict <strong>${hoursDeadline}-hour claim window</strong> — you have <strong>approximately ${hoursRemaining} hours remaining</strong>.</li>
+          </ul>
+        </div>
+
+        <!-- SECTION 2 -->
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-left: 5px solid #0284c7; border-radius: 8px; padding: 15px 18px; margin-bottom: 18px;">
+          <div style="font-size: 12.5px; font-weight: 800; color: #075985; text-transform: uppercase; margin-bottom: 6px;">
+            2. Mandatory Steps to Claim Your ${escapeHtml(amount)}
+          </div>
+          <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #0c4a6e; line-height: 1.6;">
+            <li><strong>Upgrade Your Account to VIP:</strong> Complete the discounted <strong>VIP Plan upgrade checkout (${escapeHtml(vipPrice)}</strong>, reduced from $6,100/yr), backed by our <strong>30-Day Service Judgement Agreement</strong>. <em>(Per escrow security rules, upgrade fees cannot be deducted directly from held escrow funds prior to tier verification.)</em></li>
+            <li><strong>Claim &amp; Confirm Payout Details:</strong> Once upgraded, open your <strong>Escrow &amp; Settlements Desk (Vault ${escapeHtml(vaultRef)})</strong> and confirm your bank wire / SWIFT withdrawal instructions immediately.</li>
+          </ol>
+        </div>
+
+        <!-- SECTION 3 -->
+        <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-left: 5px solid #dc2626; border-radius: 8px; padding: 15px 18px; margin-bottom: 24px;">
+          <div style="font-size: 12.5px; font-weight: 800; color: #991b1b; text-transform: uppercase; margin-bottom: 6px;">
+            3. Consequence If Not Completed Within the Respected Time
+          </div>
+          <p style="margin: 0; font-size: 13.5px; color: #7f1d1d; line-height: 1.6; font-weight: 600;">
+            If you do not upgrade to VIP and do not claim your ${escapeHtml(amount)} within the remaining clearing window (~${hoursRemaining} hours left of the ${hoursDeadline}-hour deadline), the clearing gateway will <strong>automatically cancel the escrow release authorization and send the entire ${escapeHtml(amount)} back to the originating remitter / sending bank account</strong>.
+          </p>
+        </div>
+
+        <!-- CTA BUTTONS -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 18px;">
+          <tr>
+            <td align="center" style="padding-bottom: 10px;">
+              <a href="https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=upgrade_vip" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-size: 14px; font-weight: 900; text-decoration: none; padding: 14px 30px; border-radius: 10px;">
+                💳 UPGRADE TO VIP NOW (${escapeHtml(vipPrice)}) →
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff; font-size: 13.5px; font-weight: 900; text-decoration: none; padding: 12px 26px; border-radius: 10px;">
+                ⚡ CLAIM YOUR FUNDS &amp; OPEN DASHBOARD →
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin: 0; font-size: 12px; color: #64748b; text-align: center; line-height: 1.6;">
+          Need immediate help before the cutoff? Reply directly to this email or contact <a href="mailto:escrow-desk@tradeheaven.net" style="color: #0284c7; font-weight: 700; text-decoration: none;">escrow-desk@tradeheaven.net</a>.
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="background: #f1f5f9; padding: 18px 32px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center;">
+        Trade Heaven Custodial Treasury &amp; Deal Clearing Desk • TradeHeaven Ecom Solution LLP • MP Commodity Brokers Australia Pty Ltd (Melissa Prezios)
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const melissaReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      melissaEmail,
+      {
+        from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+        subject,
+        text,
+        html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'MP Commodity Brokers Australia Pty Ltd',
+        companyId: 'comp-melissa-mpcommodity',
+        recipientName: 'Melissa Prezios',
+        trackingId: `ms-trk-melissa-vip-return-${Date.now().toString(36)}`,
+        summaryText: `FINAL VIP UPGRADE & CLAIM DEADLINE ALERT SENT TO ${melissaEmail}: Notified Melissa Prezios that she must upgrade to VIP (${vipPrice}) and claim ${amount} in Vault ${vaultRef} within the remaining ~${hoursRemaining} hours (48h window) or the funds will automatically be sent back to the originating remitter.`
+      },
+      transporter || undefined
+    );
+
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    let secondaryAdminReceipt: SerializedDeliveryReceipt | undefined;
+
+    if (sendAdminCopy && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN AUDIT COPY — ORIGINAL SENT TO ${melissaEmail}]\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            `<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700;">[ADMIN AUDIT COPY — ORIGINAL SENT TO ${escapeHtml(melissaEmail)}]</td></tr>`
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-melissa-vip-return-admin1-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] Final VIP Upgrade & Claim Deadline alert dispatched to Melissa Prezios (${melissaEmail}) for ${amount} in Vault ${vaultRef}.`
+        },
+        transporter || undefined
+      );
+    }
+
+    if (sendAdminCopy && secondaryAdminEmail && secondaryAdminEmail !== adminEmail) {
+      secondaryAdminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        secondaryAdminEmail,
+        {
+          from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN AUDIT COPY — ORIGINAL SENT TO ${melissaEmail}]\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            `<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700;">[ADMIN AUDIT COPY — ORIGINAL SENT TO ${escapeHtml(melissaEmail)}]</td></tr>`
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${secondaryAdminEmail})`,
+          trackingId: `ms-trk-melissa-vip-return-admin2-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] Final VIP Upgrade & Claim Deadline alert dispatched to Melissa Prezios (${melissaEmail}) for ${amount} in Vault ${vaultRef}.`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: melissaReceipt.success,
+      melissaReceipt,
+      adminReceipt,
+      secondaryAdminReceipt
+    };
+  }
+
+  /**
    * Dispatches an admin-created Offer, Banner, or Announcement email to a single recipient
    * via ServerDeliveryQueueManager with full responsive border framing and optional inline banner.
    */
