@@ -16757,6 +16757,60 @@ app.post('/api/v1/admin/send-melissa-profile-update-email', async (req, res) => 
   }
 });
 
+// POST /api/v1/admin/send-melissa-unclaimed-funds-alert - Urgent Treasury alert: Funds >12h in account, auto-reversed in 48h if unclaimed
+app.post('/api/v1/admin/send-melissa-unclaimed-funds-alert', async (req, res) => {
+  try {
+    const melissaEmail = req.body?.melissaEmail || 'melissa@mpcommoditybrokers.com';
+    const adminEmail = req.body?.adminEmail || 'sankalprajput15@gmail.com';
+    const secondaryAdminEmail = req.body?.secondaryAdminEmail || 'yr943334@gmail.com';
+    const amountFormatted = req.body?.amountFormatted || '$50,000.00 USD';
+    const vaultReference = req.body?.vaultReference || 'TH-VAULT-AU-61648';
+    const hoursInAccount = req.body?.hoursInAccount ?? 12;
+    const hoursDeadline = req.body?.hoursDeadline ?? 48;
+    const hoursRemaining = req.body?.hoursRemaining ?? 36;
+    const sendAdminCopy = req.body?.sendAdminCopy !== false;
+
+    const result = await automatedSmtpService.sendMelissaUnclaimedFundsAlertEmail({
+      melissaEmail,
+      adminEmail,
+      secondaryAdminEmail,
+      amountFormatted,
+      vaultReference,
+      hoursInAccount,
+      hoursDeadline,
+      hoursRemaining,
+      sendAdminCopy,
+      dispatchType: 'MANUAL'
+    });
+
+    logServerActivity(
+      req,
+      'ADMIN_EMAIL_DISPATCH',
+      melissaEmail,
+      'ADMIN',
+      '/api/v1/admin/send-melissa-unclaimed-funds-alert',
+      `Dispatched 48-Hour Unclaimed Funds Alert to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd): $50,000.00 USD in account for >12 hours; automated reversal and return to remitter after 48 hours (~36h remaining).`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      recipient: melissaEmail,
+      amountFormatted,
+      vaultReference,
+      hoursRemaining,
+      melissaReceipt: result.melissaReceipt,
+      adminReceipt: result.adminReceipt,
+      secondaryAdminReceipt: result.secondaryAdminReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to dispatch Melissa Prezios unclaimed funds alert email'
+    });
+  }
+});
+
 // POST /api/v1/admin/send-afreh-copper-powder-offers-email - Notify AFREH GROUP LIMITED (yaw.afreh@afrehgroup.com) of 50 buyers offering Advance Payment (24h expiry)
 app.post('/api/v1/admin/send-afreh-copper-powder-offers-email', async (req, res) => {
   try {

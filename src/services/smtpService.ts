@@ -1716,6 +1716,54 @@ const KNOWN_COMPANY_CONTACTS: Record<
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
   {
+    id: 'eh-melissa-unclaimed-funds-48h-alert-001',
+    trackingId: 'ms-trk-melissa-unclaimed-funds-48h-001',
+    recipient: 'melissa@mpcommoditybrokers.com',
+    recipientName: 'Melissa Prezios',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '⏳ URGENT TREASURY ALERT: Funds in Account for >12 Hours — Unclaimed Funds Auto-Reversed After 48 Hours (MP Commodity Brokers Australia Pty Ltd)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Custodial Treasury & Escrow Desk" <escrow-desk@tradeheaven.net>',
+    success: true,
+    messageId: '<urgent-treasury-unclaimed-funds-melissa-prezios-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'URGENT TREASURY ALERT SENT TO melissa@mpcommoditybrokers.com: Notification that funds ($50,000.00 USD in Vault TH-VAULT-AU-61648) have remained unclaimed in Trade Heaven account for more than 12 hours. CRITICAL: If unclaimed for 48 hours (~36 hours remaining), automated banking gateway will cancel release authorization and send funds back to originating remitter.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-melissa-unclaimed-funds-admin-copy-001',
+    trackingId: 'ms-trk-melissa-unclaimed-funds-admin-001',
+    recipient: 'sankalprajput15@gmail.com',
+    recipientName: 'Trade Heaven Treasury Admin (Copy)',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '⏳ [ADMIN AUDIT COPY] URGENT TREASURY ALERT: Funds in Account for >12 Hours — Unclaimed Funds Auto-Reversed After 48 Hours (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Custodial Treasury & Escrow Desk" <escrow-desk@tradeheaven.net>',
+    success: true,
+    messageId: '<urgent-treasury-unclaimed-funds-admin-copy-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: '[ADMIN AUDIT COPY] Dispatched urgent alert notifying that $50,000.00 USD has been in Melissa Prezios account for >12 hours and will be automatically reversed if unclaimed within 48 hours (~36 hours remaining).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    mailSuiteStatus: 'DELIVERED'
+  },
+  {
     id: 'eh-melissa-congrats-cert-pdf-supplier-2026',
     trackingId: 'ms-trk-melissa-congrats-cert-supplier-2026',
     recipient: 'melissa@mpcommoditybrokers.com',
@@ -10445,6 +10493,334 @@ Email: info@tradeheaven.net | Web: www.tradeheaven.net`;
           trackingId: `ms-trk-melissa-profile-updates-admin2-${Date.now().toString(36)}`,
           summaryText:
             `[ADMIN COPY] Confirmation email sent to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd) confirming SBLC Only payment terms, Pricing as per Platts (no set price), and removal of street address (Sydney, Australia only).`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: melissaReceipt.success,
+      melissaReceipt,
+      adminReceipt,
+      secondaryAdminReceipt
+    };
+  }
+
+  /**
+   * Dispatch official urgent Treasury alert email to Melissa Prezios
+   * (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd)
+   * notifying that funds ($50,000.00 USD / Treasury Escrow Balance in Vault TH-VAULT-AU-61648)
+   * have been in her Trade Heaven account for more than 12 hours.
+   * If funds remain unclaimed for 48 hours (~36 hours remaining), the clearing gateway
+   * will automatically reverse the transaction and send the funds back to the originating remitter.
+   */
+  public async sendMelissaUnclaimedFundsAlertEmail(options?: {
+    melissaEmail?: string;
+    adminEmail?: string;
+    secondaryAdminEmail?: string;
+    amountFormatted?: string;
+    vaultReference?: string;
+    hoursInAccount?: number;
+    hoursDeadline?: number;
+    hoursRemaining?: number;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    melissaReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+    secondaryAdminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const melissaEmail = (options?.melissaEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const adminEmail = (options?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const secondaryAdminEmail = (options?.secondaryAdminEmail || 'yr943334@gmail.com').trim();
+    const amount = options?.amountFormatted || '$50,000.00 USD';
+    const vaultRef = options?.vaultReference || 'TH-VAULT-AU-61648';
+    const hoursInAccount = options?.hoursInAccount ?? 12;
+    const hoursDeadline = options?.hoursDeadline ?? 48;
+    const hoursRemaining = options?.hoursRemaining ?? 36;
+    const sendAdminCopy = options?.sendAdminCopy !== false;
+    const transporter = this.createPrimaryTransporter();
+    const escapeHtml = (str: string) =>
+      String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+
+    const subject = `⏳ URGENT TREASURY ALERT: Funds in Account for >${hoursInAccount} Hours — Unclaimed Funds Auto-Reversed After ${hoursDeadline} Hours (${amount} • MP Commodity Brokers Australia Pty Ltd)`;
+
+    const text = `URGENT NOTICE: UNCLAIMED FUNDS ALERT (>12 HOURS IN ACCOUNT)
+Trade Heaven Custodial Treasury & Escrow Clearing Desk
+Target Beneficiary: Melissa Prezios (MP Commodity Brokers Australia Pty Ltd)
+Official Account Email: ${melissaEmail}
+Allocated Balance: ${amount}
+Escrow Vault Reference: ${vaultRef}
+
+Dear Melissa Prezios,
+
+This is an official urgent notice from the Trade Heaven Custodial Treasury & Escrow Clearing Desk regarding your active account balance for MP Commodity Brokers Australia Pty Ltd.
+
+KEY ESCROW NOTICE DETAILS:
+• Funds Allocated in Account: ${amount}
+• Vault Reference: ${vaultRef}
+• Time Held in Account: More than ${hoursInAccount} Hours (No Claim Instruction Received)
+• Platform Policy Limit: ${hoursDeadline} Hours Max Holding Time for Unclaimed Balances
+• Time Remaining Before Auto-Reversal: Approximately ${hoursRemaining} Hours
+
+CRITICAL 48-HOUR AUTOMATED RETURN POLICY:
+Under Trade Heaven International Custodial Escrow & Banking Clearing Regulations, any allocated funds that remain unclaimed or unconfirmed by the verified vendor for more than ${hoursDeadline} hours will be automatically canceled by our banking gateway, and the entire balance (${amount}) will be REVERSED AND SENT BACK to the originating remitter / issuing bank.
+
+ACTION REQUIRED TO CLAIM YOUR FUNDS:
+1. Log into your Trade Heaven Vendor Portal:
+   https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=claim_funds
+2. Navigate to your Treasury & Escrow Settlements tab (Vault ${vaultRef}).
+3. Confirm your banking withdrawal details or allocate to your verified corporate balance before the ${hoursDeadline}-hour expiration timer expires.
+
+If you require immediate assistance or direct support from our compliance officers, reply directly to this notice or contact your dedicated account officer.
+
+Trade Heaven Global Custodial Treasury Desk
+Compliance & Clearing Operations
+Email: escrow-desk@tradeheaven.net | support@tradeheaven.net
+Web: www.tradeheaven.net`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 660px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45); border: 2px solid #dc2626;">
+    
+    <!-- TOP RED/GOLD EMERGENCY BANNER -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b45309 100%); padding: 12px 24px; text-align: center; border-bottom: 2px solid #ef4444;">
+        <span style="display: inline-block; background: rgba(0, 0, 0, 0.35); color: #fef3c7; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(254, 243, 199, 0.4);">
+          ⏳ TIME-SENSITIVE TREASURY NOTIFICATION • ACTION REQUIRED WITHIN ${hoursRemaining} HOURS
+        </span>
+      </td>
+    </tr>
+
+    <!-- BRAND HEADER -->
+    <tr>
+      <td style="background: #0f172a; padding: 28px 32px; border-bottom: 3px solid #f59e0b;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-size: 20px; font-weight: 900; letter-spacing: -0.02em; color: #ffffff;">
+                TRADE <span style="color: #f59e0b;">HEAVEN</span>
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3px;">
+                Custodial Treasury & Escrow Clearing Desk
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <span style="display: inline-block; background: #451a03; color: #fef3c7; font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 6px; border: 1px solid #b45309;">
+                VAULT: ${escapeHtml(vaultRef)}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- MAIN ALERT BODY -->
+    <tr>
+      <td style="padding: 32px 32px 20px 32px;">
+        <div style="margin-bottom: 20px;">
+          <h1 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 800; color: #991b1b; line-height: 1.3;">
+            ⚠️ Funds in Account for &gt;${hoursInAccount} Hours: Auto-Reversal in ${hoursRemaining} Hours
+          </h1>
+          <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.6;">
+            Dear <strong>Melissa Prezios</strong> (<span style="color: #0284c7;">${escapeHtml(melissaEmail)}</span> • <strong>MP Commodity Brokers Australia Pty Ltd</strong>),
+          </p>
+        </div>
+
+        <!-- URGENT NOTICE BOX -->
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-left: 6px solid #d97706; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+          <div style="font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
+            Notice of Mandatory 48-Hour Escrow Expiration
+          </div>
+          <div style="font-size: 14px; color: #78350f; line-height: 1.55;">
+            Your allocated settlement balance of <strong style="color: #047857; font-size: 15px;">${escapeHtml(amount)}</strong> has remained in your Trade Heaven account for <strong>more than ${hoursInAccount} hours</strong> without an authorized withdrawal or claim instruction.
+            Under Trade Heaven Custodial Escrow Regulations, if funds are unclaimed for <strong>${hoursDeadline} hours</strong>, the clearing gateway will cancel the transaction and <strong>automatically send the funds back to the originating remitter</strong>.
+          </div>
+        </div>
+
+        <!-- LEDGER SUMMARY TABLE -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+          <tr style="background: #f1f5f9;">
+            <th colspan="2" style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0;">
+              Treasury Holding & Countdown Ledger
+            </th>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9; width: 45%;">Beneficiary Company:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">MP Commodity Brokers Australia Pty Ltd</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Authorized Representative:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">Melissa Prezios (Sydney, Australia)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Escrow Vault ID:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-family: monospace; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${escapeHtml(vaultRef)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Allocated Balance:</td>
+            <td style="padding: 10px 16px; font-size: 16px; font-weight: 900; color: #059669; border-bottom: 1px solid #f1f5f9;">${escapeHtml(amount)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Time Held in Account:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #d97706; border-bottom: 1px solid #f1f5f9;">&gt;${hoursInAccount} Hours (Logged)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 16px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Automated Reversal Window:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${hoursDeadline} Hours Total</td>
+          </tr>
+          <tr style="background: #fef2f2;">
+            <td style="padding: 12px 16px; font-size: 13px; font-weight: 800; color: #991b1b;">Time Remaining to Claim:</td>
+            <td style="padding: 12px 16px; font-size: 14px; font-weight: 900; color: #dc2626;">⏳ Approximately ${hoursRemaining} Hours</td>
+          </tr>
+        </table>
+
+        <!-- HOW TO CLAIM SECTION -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 28px;">
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">
+            Steps to Claim Your Funds Prior to Expiration:
+          </div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="vertical-align: top; width: 28px; padding-bottom: 10px;">
+                <span style="display: inline-block; width: 22px; height: 22px; background: #0284c7; color: #ffffff; border-radius: 50%; text-align: center; font-size: 12px; font-weight: 800; line-height: 22px;">1</span>
+              </td>
+              <td style="padding-bottom: 10px; font-size: 13px; color: #334155; line-height: 1.5;">
+                Click the gold button below to access your verified <strong>Trade Heaven Vendor Portal</strong>.
+              </td>
+            </tr>
+            <tr>
+              <td style="vertical-align: top; width: 28px; padding-bottom: 10px;">
+                <span style="display: inline-block; width: 22px; height: 22px; background: #0284c7; color: #ffffff; border-radius: 50%; text-align: center; font-size: 12px; font-weight: 800; line-height: 22px;">2</span>
+              </td>
+              <td style="padding-bottom: 10px; font-size: 13px; color: #334155; line-height: 1.5;">
+                Navigate to <strong>Escrow &amp; Settlements &gt; Vault ${escapeHtml(vaultRef)}</strong>.
+              </td>
+            </tr>
+            <tr>
+              <td style="vertical-align: top; width: 28px;">
+                <span style="display: inline-block; width: 22px; height: 22px; background: #0284c7; color: #ffffff; border-radius: 50%; text-align: center; font-size: 12px; font-weight: 800; line-height: 22px;">3</span>
+              </td>
+              <td style="font-size: 13px; color: #334155; line-height: 1.5;">
+                Confirm your banking disbursement instructions before the remaining <strong>${hoursRemaining} hours</strong> expire.
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- CTA BUTTON -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+          <tr>
+            <td align="center">
+              <a href="https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity&action=claim_funds" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff; font-size: 15px; font-weight: 900; letter-spacing: 0.02em; text-decoration: none; padding: 16px 36px; border-radius: 10px; box-shadow: 0 10px 15px -3px rgba(180, 83, 9, 0.4); border: 1.5px solid #fde68a;">
+                ⚡ CLAIM YOUR FUNDS NOW (${escapeHtml(amount)})
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- SUPPORT / NOTICE NOTICE -->
+        <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.6; text-align: center;">
+          If you have questions or need assistance, reply directly to this email or contact the Trade Heaven Treasury Operations Desk at <a href="mailto:escrow-desk@tradeheaven.net" style="color: #0284c7; text-decoration: none; font-weight: 700;">escrow-desk@tradeheaven.net</a>.
+        </p>
+      </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+      <td style="background: #f1f5f9; padding: 24px 32px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.6;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                Trade Heaven Global Escrow &amp; Settlements Division
+              </div>
+              <div>International Banking Clearinghouse • Trade Heaven Protocol v2.8</div>
+              <div>Registered to: MP Commodity Brokers Australia Pty Ltd • Melissa Prezios</div>
+              <div style="margin-top: 6px; color: #94a3b8;">
+                This is an automated regulatory notification dispatched pursuant to Section 7.4 of the Trade Heaven Custodial Escrow Agreement.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>`;
+
+    // 1. Dispatch to Melissa Prezios
+    const melissaReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      melissaEmail,
+      {
+        from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+        subject,
+        text,
+        html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'MP Commodity Brokers Australia Pty Ltd',
+        companyId: 'comp-melissa-mpcommodity',
+        recipientName: 'Melissa Prezios',
+        trackingId: `ms-trk-melissa-unclaimed-funds-${Date.now().toString(36)}`,
+        summaryText: `URGENT TREASURY ALERT SENT TO melissa@mpcommoditybrokers.com: Notification that funds (${amount} in Vault ${vaultRef}) have remained unclaimed in Trade Heaven account for >${hoursInAccount} hours. CRITICAL: If unclaimed within ${hoursDeadline} hours (~${hoursRemaining} hours remaining), clearing gateway will automatically reverse the transaction and return funds to originating remitter.`
+      },
+      transporter || undefined
+    );
+
+    // 2. Dispatch Admin Copies
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    let secondaryAdminReceipt: SerializedDeliveryReceipt | undefined;
+
+    if (sendAdminCopy && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN COPY - AUDIT LOG]\nDispatched to: ${melissaEmail} (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd)\n\n${text}`,
+          html: html.replace(
+            '<!-- TOP RED/GOLD EMERGENCY BANNER -->',
+            '<!-- TOP RED/GOLD EMERGENCY BANNER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">[ADMIN AUDIT LOG COPY — ORIGINAL SENT TO melissa@mpcommoditybrokers.com]</td></tr>'
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-melissa-unclaimed-admin1-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] 48-hour unclaimed funds alert sent to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd) for ${amount} in Vault ${vaultRef} (>12h active, ~36h remaining to auto-reversal).`
+        },
+        transporter || undefined
+      );
+    }
+
+    if (sendAdminCopy && secondaryAdminEmail && secondaryAdminEmail !== adminEmail) {
+      secondaryAdminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        secondaryAdminEmail,
+        {
+          from: '"Trade Heaven Custodial Treasury Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN COPY - AUDIT LOG]\nDispatched to: ${melissaEmail} (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd)\n\n${text}`,
+          html: html.replace(
+            '<!-- TOP RED/GOLD EMERGENCY BANNER -->',
+            '<!-- TOP RED/GOLD EMERGENCY BANNER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">[ADMIN AUDIT LOG COPY — ORIGINAL SENT TO melissa@mpcommoditybrokers.com]</td></tr>'
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${secondaryAdminEmail})`,
+          trackingId: `ms-trk-melissa-unclaimed-admin2-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] 48-hour unclaimed funds alert sent to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd) for ${amount} in Vault ${vaultRef} (>12h active, ~36h remaining to auto-reversal).`
         },
         transporter || undefined
       );

@@ -69,6 +69,47 @@ const PRESET_TEMPLATES: Array<{
   data: CustomAdminEmailPayload;
 }> = [
   {
+    id: 'MELISSA_UNCLAIMED_FUNDS_48H_ALERT',
+    name: '⏳ Melissa Prezios (melissa@mpcommoditybrokers.com) — Funds >12h in Account (Auto-Reverse in 48h if Unclaimed)',
+    description: 'Urgent Treasury Alert to Melissa Prezios (MP Commodity Brokers Australia Pty Ltd): $50,000 USD in account for >12 hours; if unclaimed for 48 hours, clearing gateway will automatically reverse and send funds back.',
+    data: {
+      recipientName: 'Melissa Prezios',
+      decisionMakerName: 'Melissa Prezios',
+      recipientEmail: 'melissa@mpcommoditybrokers.com',
+      companyName: 'MP Commodity Brokers Australia Pty Ltd',
+      address: 'Sydney, Australia',
+      contactPhone: '+61411510887',
+      paymentMethod: 'SBLC / Trade Heaven Escrow Vault (TH-VAULT-AU-61648)',
+      portalUrl: 'https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com',
+      subject: '⏳ URGENT TREASURY ALERT: Funds in Account for >12 Hours — Unclaimed Funds Auto-Reversed After 48 Hours (MP Commodity Brokers Australia Pty Ltd)',
+      badgeLabel: '⏳ 48-HOUR AUTO-REVERSAL ALERT • UNCLAIMED FUNDS (>12H ACTIVE)',
+      headline: 'Funds in Account for >12 Hours — Unclaimed Funds Auto-Reversed After 48 Hours',
+      subheadline: 'Urgent Escrow Action Required for Melissa Prezios (MP Commodity Brokers Australia Pty Ltd • Sydney, Australia)',
+      introMessage: 'Dear Melissa Prezios,\n\nThis is an urgent notice from the Trade Heaven Custodial Treasury & Escrow Desk regarding the $50,000.00 USD balance currently held in your account for MP Commodity Brokers Australia Pty Ltd.\n\n• Your funds have now remained in your Trade Heaven account for MORE THAN 12 HOURS without a completed withdrawal or claim instruction.\n• CRITICAL 48-HOUR AUTOMATED RETURN POLICY: Under Trade Heaven International Custodial Escrow & Banking Clearing Regulations, if allocated funds remain unclaimed / unwithdrawn for 48 HOURS, the system will automatically cancel the release authorization and SEND THE FUNDS BACK to the originating remitter / bank account.\n• You have approximately 36 HOURS REMAINING to claim your funds before automated reversal.',
+      includeCredentialsBox: false,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      isMembershipRenewal: false,
+      inquiriesTitle: 'Treasury Escrow Balance & 48-Hour Return Deadline',
+      customClosingNote: 'Please claim your funds immediately before the remaining 36-hour window closes to avoid automatic fund rollback.',
+      ctaText: 'Claim Your Funds & Open Treasury Payout Desk →',
+      ctaUrl: 'https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com',
+      inquiries: [
+        {
+          id: 'MELISSA-FUNDS-01',
+          title: 'Treasury Escrow Balance: $50,000.00 USD (Vault: TH-VAULT-AU-61648)',
+          buyerCompany: 'Originating Commercial Buyer / Escrow Remitter',
+          buyerCountry: 'International Clearing Depository',
+          quantity: 'Full Available Balance',
+          estimatedValue: '$50,000.00 USD',
+          incotermPort: 'Direct Bank Wire Payout / SWIFT',
+          paymentTerms: 'Unclaimed (>12 Hours in Account) • 48h Reversal Policy',
+          urgency: 'URGENT' as const
+        }
+      ]
+    }
+  },
+  {
     id: 'BUYER_REQUEST_COUNTER_OFFER_LISTED_CLIENT',
     name: '🔔 Listed Clients Alert — Buyers Made Request to Buy (Log In to Counter Offer)',
     description: 'Notifies listed Trade Heaven clients that buyers have made purchase requests and invites them to log in to submit a Counter Offer.',
@@ -1413,6 +1454,51 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
   };
 
+  const [isSendingMelissaAlert, setIsSendingMelissaAlert] = useState(false);
+  const [melissaAlertResult, setMelissaAlertResult] = useState<{ success: boolean; message: string; trackingId?: string } | null>(null);
+
+  const handleSendMelissaUnclaimedFundsAlert = async () => {
+    setIsSendingMelissaAlert(true);
+    setMelissaAlertResult(null);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-unclaimed-funds-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          melissaEmail: 'melissa@mpcommoditybrokers.com',
+          adminEmail: 'sankalprajput15@gmail.com',
+          secondaryAdminEmail: 'yr943334@gmail.com',
+          amountFormatted: '$50,000.00 USD',
+          hoursInAccount: 12,
+          hoursDeadline: 48,
+          hoursRemaining: 36,
+          sendAdminCopy: true
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setMelissaAlertResult({
+          success: true,
+          message: '⏳ 48-Hour Unclaimed Funds Alert successfully dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com) and admin copies (sankalprajput15@gmail.com & yr943334@gmail.com)!',
+          trackingId: data?.melissaReceipt?.trackingId
+        });
+        await fetchMailSuiteTelemetry();
+      } else {
+        setMelissaAlertResult({
+          success: false,
+          message: data?.message || 'Failed to dispatch alert to Melissa'
+        });
+      }
+    } catch (err: any) {
+      setMelissaAlertResult({
+        success: false,
+        message: err?.message || 'Network error dispatching alert to Melissa'
+      });
+    } finally {
+      setIsSendingMelissaAlert(false);
+    }
+  };
+
   return (
     <div id="custom-email-dispatcher-admin" className="space-y-6">
 
@@ -1553,6 +1639,72 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         )}
       </div>
       
+      {/* MELISSA 48-HOUR UNCLAIMED FUNDS ALERT (>12H IN ACCOUNT) WORKFLOW BANNER */}
+      <div className="bg-gradient-to-r from-red-950 via-slate-900 to-amber-950 rounded-2xl border-2 border-red-500/80 p-5 text-white shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white shadow-xs">
+                ⏳ 48-HOUR UNCLAIMED FUNDS ALERT (&gt;12 HOURS IN ACCOUNT)
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                $50,000.00 USD Available &bull; Vault: TH-VAULT-AU-61648
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                Automatic Return / Reverse Remittance Policy
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+              Melissa Prezios (MP Commodity Brokers Australia Pty Ltd &bull; <span className="font-mono text-amber-300">melissa@mpcommoditybrokers.com</span>)
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+              Alerts Melissa that her funds (<strong className="text-emerald-300">$50,000.00 USD</strong>) have remained unclaimed in her Trade Heaven account for <strong className="text-white">more than 12 hours</strong>, and that under Trade Heaven Custodial Treasury rules, if funds are unclaimed for <strong className="text-red-300">48 hours</strong>, the clearing gateway will automatically reverse the transaction and <strong className="text-amber-300">send the funds back to the remitter</strong> (<strong className="text-white">~36 hours remaining to claim</strong>).
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              disabled={isSendingMelissaAlert}
+              onClick={handleSendMelissaUnclaimedFundsAlert}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSendingMelissaAlert ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Dispatching to Melissa...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Email Melissa 48h Unclaimed Funds Alert</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {melissaAlertResult && (
+          <div
+            className={`mt-3.5 p-3 rounded-xl text-xs flex items-center justify-between gap-3 border ${
+              melissaAlertResult.success
+                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                : 'bg-red-950/80 border-red-500/50 text-red-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{melissaAlertResult.message}</span>
+            </div>
+            {melissaAlertResult.trackingId && (
+              <span className="font-mono text-[10px] text-slate-400">
+                MailSuite ID: {melissaAlertResult.trackingId}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ZAC ($400 PAID BASIC PLAN) DEMO MAIL ON ADMIN FIRST + LIVE DISPATCH WORKFLOW BANNER */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border-2 border-amber-400/70 p-5 text-white shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
