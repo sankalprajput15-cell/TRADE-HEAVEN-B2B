@@ -13623,6 +13623,90 @@ function isManualOverrideEntry(entry?: ProductImageOverrideEntry | null): boolea
   return false;
 }
 
+function isAuditVerifiedOverrideEntry(entry?: ProductImageOverrideEntry | null): boolean {
+  if (!entry || !entry.primary) return false;
+  if (isManualOverrideEntry(entry)) return true;
+  const updater = String(entry.updatedBy || '').toLowerCase();
+  return updater === 'catalog-image-auditor';
+}
+
+const FULL_CATALOG_SNAPSHOT_PATH = path.join(process.cwd(), 'public', 'data', 'fullCatalogSnapshot.json');
+
+function ensureUploadedUrlInMediaLibrary(localUrl: string, sizeBytesHint?: number): void {
+  const cleanBase = normalizeServerAssetUrl(localUrl).split('?')[0];
+  if (!cleanBase || !cleanBase.startsWith('/assets/uploads/')) return;
+  const fname = path.basename(cleanBase);
+  const fpath = path.join(UPLOADS_DIR, fname);
+  if (!fs.existsSync(fpath)) return;
+  let actualSize = sizeBytesHint;
+  try {
+    actualSize = fs.statSync(fpath).size;
+  } catch {}
+  const existingIdx = serverProductImageState.mediaLibrary.findIndex(
+    m => m && m.url && String(m.url).split('?')[0] === cleanBase
+  );
+  if (existingIdx !== -1) {
+    if (actualSize && !serverProductImageState.mediaLibrary[existingIdx].sizeBytes) {
+      serverProductImageState.mediaLibrary[existingIdx].sizeBytes = actualSize;
+    }
+    return;
+  }
+  serverProductImageState.mediaLibrary.unshift({
+    id: `media-${fname}`,
+    url: cleanBase,
+    name: fname,
+    format: (path.extname(fname).replace('.', '') || 'WEBP').toUpperCase(),
+    sizeBytes: actualSize,
+    uploadedAt: new Date().toISOString()
+  });
+}
+
+function updateFullCatalogSnapshotRecords(
+  updates: Array<{ id: string; imageUrl: string; gallery?: string[] }>
+): void {
+  if (!Array.isArray(updates) || updates.length === 0) return;
+  try {
+    if (!fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) return;
+    const raw = fs.readFileSync(FULL_CATALOG_SNAPSHOT_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return;
+
+    const updateById = new Map<string, { imageUrl: string; gallery?: string[] }>();
+    for (const u of updates) {
+      if (!u?.id || !u?.imageUrl) continue;
+      const cid = String(u.id).trim();
+      updateById.set(cid, { imageUrl: u.imageUrl, gallery: u.gallery });
+    }
+    if (updateById.size === 0) return;
+
+    let changed = false;
+    const nextSnap = parsed.map((item: any) => {
+      if (!item || !item.id) return item;
+      const cid = String(item.id).trim();
+      const hit = updateById.get(cid);
+      if (!hit) return item;
+      const cleanImg = hit.imageUrl;
+      const cleanGallery = Array.isArray(hit.gallery) && hit.gallery.length > 0 ? hit.gallery : [cleanImg];
+      if (item.image_url !== cleanImg || item.image !== cleanImg) {
+        changed = true;
+        return {
+          ...item,
+          image_url: cleanImg,
+          image: cleanImg,
+          images: cleanGallery
+        };
+      }
+      return item;
+    });
+
+    if (changed) {
+      fs.writeFileSync(FULL_CATALOG_SNAPSHOT_PATH, JSON.stringify(nextSnap), 'utf8');
+    }
+  } catch (err) {
+    console.warn('[ProductImageSystem] Snapshot sync warning:', err);
+  }
+}
+
 function clearConflictingTitleOverridesForProductId(productId: string, keepPrimaryUrl: string) {
   if (!productId || !serverProductImageState?.overrides) return;
   const cleanKeep = normalizeServerAssetUrl(keepPrimaryUrl);
@@ -13969,8 +14053,12 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
 
     serverProductImageState.mediaLibrary = [
       mediaEntry,
-      ...serverProductImageState.mediaLibrary.filter(m => m.url !== uploadedUrl)
+      ...serverProductImageState.mediaLibrary.filter(
+        m => m && m.url && String(m.url).split('?')[0] !== uploadedUrl
+      )
     ];
+
+    const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
 
     if (applyToAll) {
       serverProductImageState.globalDefaultImage = uploadedUrl;
@@ -13988,15 +14076,17 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
         if (!ovVal?.primary) continue;
         const normOv = normalizeServerAssetUrl(ovVal.primary);
         if (normOv === normOld || ovVal.primary === oldUrlToReplace) {
+          const nextGallery = [uploadedUrl, ...(ovVal.gallery || []).filter(u => u && normalizeServerAssetUrl(u) !== normOld && u !== uploadedUrl)];
           serverProductImageState.overrides[ovKey] = {
             ...ovVal,
             previousPrimary: ovVal.primary,
             primary: uploadedUrl,
-            gallery: [uploadedUrl, ...(ovVal.gallery || []).filter(u => u && normalizeServerAssetUrl(u) !== normOld && u !== uploadedUrl)],
+            gallery: nextGallery,
             format: ext.toUpperCase(),
             updatedAt: nowIso,
             updatedBy: 'admin-manual'
           };
+          snapshotUpdates.push({ id: ovKey, imageUrl: uploadedUrl, gallery: nextGallery });
         }
       }
       serverProductsStore = serverProductsStore.map(p => {
@@ -14013,6 +14103,13 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
         }
         return l;
       });
+      serverRfqsStore = serverRfqsStore.map(r => {
+        const curImg = normalizeServerAssetUrl(r.image_url || r.image || r.images?.[0]);
+        if (curImg === normOld || r.image_url === oldUrlToReplace || r.images?.[0] === oldUrlToReplace) {
+          return { ...r, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl, ...(r.images || []).slice(1)] };
+        }
+        return r;
+      });
     }
     if (productId) {
       const cleanId = String(productId).trim();
@@ -14024,7 +14121,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
           : existingProd?.images?.[0] && existingProd.images[0] !== uploadedUrl
             ? normalizeServerAssetUrl(existingProd.images[0])
             : existing?.previousPrimary;
-      const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u !== uploadedUrl)] : [uploadedUrl];
+      const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u && String(u).split('?')[0] !== uploadedUrl)] : [uploadedUrl];
       (serverProductImageState.overrides as any)[cleanId] = {
         primary: uploadedUrl,
         previousPrimary: prevPrimary,
@@ -14035,6 +14132,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       };
       clearConflictingTitleOverridesForProductId(cleanId, uploadedUrl);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', uploadedUrl);
+      snapshotUpdates.push({ id: cleanId, imageUrl: uploadedUrl, gallery });
       serverProductsStore = serverProductsStore.map(p =>
         p.id === cleanId ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: gallery } : p
       );
@@ -14043,6 +14141,12 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
           ? { ...l, image_url: uploadedUrl, images: gallery }
           : l
       );
+      serverRfqsStore = serverRfqsStore.map(r => {
+        const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+        return String(r.id) === cleanId || rid === cleanId
+          ? { ...r, image: uploadedUrl, image_url: uploadedUrl, images: gallery }
+          : r;
+      });
     }
     if (Array.isArray(productIds)) {
       const pidSet = new Set(productIds.filter(Boolean));
@@ -14050,7 +14154,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
         if (!pid) continue;
         const cleanPid = String(pid).trim();
         const existing = serverProductImageState.overrides[cleanPid];
-        const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u !== uploadedUrl)] : [uploadedUrl];
+        const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u && String(u).split('?')[0] !== uploadedUrl)] : [uploadedUrl];
         serverProductImageState.overrides[cleanPid] = {
           primary: uploadedUrl,
           gallery,
@@ -14060,6 +14164,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
         };
         clearConflictingTitleOverridesForProductId(cleanPid, uploadedUrl);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', uploadedUrl);
+        snapshotUpdates.push({ id: cleanPid, imageUrl: uploadedUrl, gallery });
       }
       serverProductsStore = serverProductsStore.map(p =>
         pidSet.has(p.id) ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl] } : p
@@ -14069,9 +14174,19 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
           ? { ...l, image_url: uploadedUrl, images: [uploadedUrl] }
           : l
       );
+      serverRfqsStore = serverRfqsStore.map(r => {
+        const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+        return pidSet.has(String(r.id)) || pidSet.has(rid)
+          ? { ...r, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl] }
+          : r;
+      });
     }
 
+    if (snapshotUpdates.length > 0) {
+      updateFullCatalogSnapshotRecords(snapshotUpdates);
+    }
     saveServerProductsToDisk();
+    saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
     return res.json({
@@ -14851,9 +14966,12 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
       });
     }
 
+    const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
+
     if (productId && primaryUrl) {
       const cleanId = String(productId).trim();
       const cleanPrim = normalizeServerAssetUrl(primaryUrl);
+      ensureUploadedUrlInMediaLibrary(cleanPrim);
       const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
         ? galleryUrls.map((u: string) => normalizeServerAssetUrl(u)).filter(Boolean)
         : [cleanPrim];
@@ -14875,6 +14993,7 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
       };
       clearConflictingTitleOverridesForProductId(cleanId, cleanPrim);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', cleanPrim);
+      snapshotUpdates.push({ id: cleanId, imageUrl: cleanPrim, gallery: resolvedGallery });
       serverProductsStore = serverProductsStore.map(p =>
         p.id === cleanId
           ? { ...p, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery }
@@ -14885,10 +15004,17 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
           ? { ...l, image_url: cleanPrim, images: resolvedGallery }
           : l
       );
+      serverRfqsStore = serverRfqsStore.map(r => {
+        const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+        return String(r.id) === cleanId || rid === cleanId
+          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery }
+          : r;
+      });
     }
 
     if (Array.isArray(productIds) && primaryUrl) {
       const cleanPrim = normalizeServerAssetUrl(primaryUrl);
+      ensureUploadedUrlInMediaLibrary(cleanPrim);
       const idSet = new Set(productIds.filter(Boolean).map(String));
       for (const pid of productIds) {
         if (!pid) continue;
@@ -14905,6 +15031,7 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
         };
         clearConflictingTitleOverridesForProductId(cleanPid, cleanPrim);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', cleanPrim);
+        snapshotUpdates.push({ id: cleanPid, imageUrl: cleanPrim, gallery: resolvedGallery });
       }
       serverProductsStore = serverProductsStore.map(p =>
         idSet.has(p.id)
@@ -14916,9 +15043,19 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
           ? { ...l, image_url: cleanPrim, images: [cleanPrim, ...(l.images || []).filter((u: string) => u !== cleanPrim)] }
           : l
       );
+      serverRfqsStore = serverRfqsStore.map(r => {
+        const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+        return idSet.has(String(r.id)) || idSet.has(rid)
+          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: [cleanPrim, ...(r.images || []).filter((u: string) => u !== cleanPrim)] }
+          : r;
+      });
     }
 
+    if (snapshotUpdates.length > 0) {
+      updateFullCatalogSnapshotRecords(snapshotUpdates);
+    }
     saveServerProductsToDisk();
+    saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
     return res.json({
@@ -20322,25 +20459,9 @@ function bindAutoSavedImageOverride(params: {
     serverProductImageState.urlReplacements[params.rawExternalUrl] = cleanLocal;
   }
 
-  // Ensure mediaLibrary records the local upload once
-  if (
-    cleanLocal.startsWith('/assets/uploads/') &&
-    !serverProductImageState.mediaLibrary.some(m => m.url === cleanLocal)
-  ) {
-    const fname = path.basename(cleanLocal);
-    const fpath = path.join(UPLOADS_DIR, fname);
-    let sizeBytes: number | undefined;
-    try {
-      if (fs.existsSync(fpath)) sizeBytes = fs.statSync(fpath).size;
-    } catch {}
-    serverProductImageState.mediaLibrary.unshift({
-      id: `media-${fname}`,
-      url: cleanLocal,
-      name: fname,
-      format: (path.extname(fname).replace('.', '') || 'WEBP').toUpperCase(),
-      sizeBytes,
-      uploadedAt: nowIso
-    });
+  // Ensure mediaLibrary records the local upload once (comparing base path without query string)
+  if (cleanLocal.startsWith('/assets/uploads/')) {
+    ensureUploadedUrlInMediaLibrary(cleanLocal);
   }
 
   let stateUpdated = false;
@@ -20392,7 +20513,19 @@ function bindAutoSavedImageOverride(params: {
         }
         return p;
       });
-      if (prodUpdated) saveServerProductsToDisk();
+      if (prodUpdated && params.flushNow !== false) saveServerProductsToDisk();
+
+      let listingUpdated = false;
+      serverListingsStore = serverListingsStore.map(l => {
+        if (String(l.id) !== pid && `prod-db-${l.id}` !== pid) return l;
+        const curListingImg = String(l.image_url || l.images?.[0] || '').trim();
+        if (params.isManual || params.forceOverwrite || !curListingImg || isGenericOrPlaceholderServerUrl(curListingImg) || /^https?:\/\//i.test(curListingImg)) {
+          listingUpdated = true;
+          return { ...l, image_url: cleanLocal, images: resolvedGallery };
+        }
+        return l;
+      });
+      if (listingUpdated && params.flushNow !== false) saveServerProductsToDisk();
 
       let rfqUpdated = false;
       serverRfqsStore = serverRfqsStore.map(r => {
@@ -20404,7 +20537,11 @@ function bindAutoSavedImageOverride(params: {
         }
         return r;
       });
-      if (rfqUpdated) saveRfqMarketStoreToDisk();
+      if (rfqUpdated && params.flushNow !== false) saveRfqMarketStoreToDisk();
+
+      if (params.flushNow && (params.isManual || params.forceOverwrite) && cleanLocal.startsWith('/assets/uploads/')) {
+        updateFullCatalogSnapshotRecords([{ id: pid, imageUrl: cleanLocal, gallery: resolvedGallery }]);
+      }
     }
   }
 
@@ -21234,19 +21371,16 @@ function detectCatalogImageIssue(
   return { flagged: false };
 }
 
-function findMatchingLocalMasterImageOnDisk(title: string, category: string, usedUrls: Set<string>): {
-  exactUnusedUrl: string | null;
-  bestTemplatePath: string | null;
-} {
-  ensureUploadsDir();
-  const cleanTitle = cleanProductSearchSubject(title);
-  const targetTokens = extractMeaningfulAuditTokens(`${cleanTitle} ${category}`);
-  const titleOnlyTokens = extractMeaningfulAuditTokens(cleanTitle);
-  let bestUnusedUrl: string | null = null;
-  let bestUnusedScore = 0;
-  let bestTemplatePath: string | null = null;
-  let bestTemplateScore = -1;
+type IndexedUploadFileEntry = {
+  fname: string;
+  fullPath: string;
+  webUrl: string;
+  tokens: string[];
+};
 
+function buildPreindexedLocalUploadFiles(): IndexedUploadFileEntry[] {
+  ensureUploadsDir();
+  const indexed: IndexedUploadFileEntry[] = [];
   try {
     const files = fs.readdirSync(UPLOADS_DIR).filter(f => /\.(webp|jpe?g|png)$/i.test(f));
     for (const fname of files) {
@@ -21255,43 +21389,68 @@ function findMatchingLocalMasterImageOnDisk(title: string, category: string, use
       try {
         const st = fs.statSync(fullPath);
         if (!st.isFile() || st.size <= 2000) continue;
-        // Skip tiny synthetic or corrupt placeholder cards
         if (fname.startsWith('auto-') && st.size < 3500 && !/bricks/i.test(fname)) continue;
       } catch {
         continue;
       }
-
-      const fileTokens = extractMeaningfulAuditTokens(fname.replace(/[-_]/g, ' '));
-      let score = 0;
-      let titleHits = 0;
-      for (const ft of fileTokens) {
-        for (const tt of titleOnlyTokens) {
-          if (ft === tt) {
-            score += 5;
-            titleHits++;
-          } else if (ft.length >= 5 && tt.length >= 5 && (ft.includes(tt) || tt.includes(ft))) {
-            score += 2;
-            titleHits++;
-          }
-        }
-        for (const ct of targetTokens) {
-          if (ft === ct) score += 2;
-        }
-      }
-
-      if (titleHits === 0) continue;
-
-      const webUrl = `/assets/uploads/${fname}`;
-      if (score >= 10 && !usedUrls.has(webUrl) && score > bestUnusedScore) {
-        bestUnusedScore = score;
-        bestUnusedUrl = webUrl;
-      }
-      if (score >= 12 && score > bestTemplateScore) {
-        bestTemplateScore = score;
-        bestTemplatePath = fullPath;
-      }
+      indexed.push({
+        fname,
+        fullPath,
+        webUrl: `/assets/uploads/${fname}`,
+        tokens: extractMeaningfulAuditTokens(fname.replace(/[-_]/g, ' '))
+      });
     }
   } catch {}
+  return indexed;
+}
+
+function findMatchingLocalMasterImageOnDisk(
+  title: string,
+  category: string,
+  usedUrls: Set<string>,
+  preindexedFiles?: IndexedUploadFileEntry[]
+): {
+  exactUnusedUrl: string | null;
+  bestTemplatePath: string | null;
+} {
+  const cleanTitle = cleanProductSearchSubject(title);
+  const targetTokens = extractMeaningfulAuditTokens(`${cleanTitle} ${category}`);
+  const titleOnlyTokens = extractMeaningfulAuditTokens(cleanTitle);
+  let bestUnusedUrl: string | null = null;
+  let bestUnusedScore = 0;
+  let bestTemplatePath: string | null = null;
+  let bestTemplateScore = -1;
+
+  const entries = preindexedFiles || buildPreindexedLocalUploadFiles();
+  for (const item of entries) {
+    let score = 0;
+    let titleHits = 0;
+    for (const ft of item.tokens) {
+      for (const tt of titleOnlyTokens) {
+        if (ft === tt) {
+          score += 5;
+          titleHits++;
+        } else if (ft.length >= 5 && tt.length >= 5 && (ft.includes(tt) || tt.includes(ft))) {
+          score += 2;
+          titleHits++;
+        }
+      }
+      for (const ct of targetTokens) {
+        if (ft === ct) score += 2;
+      }
+    }
+
+    if (titleHits === 0) continue;
+
+    if (score >= 10 && !usedUrls.has(item.webUrl) && score > bestUnusedScore) {
+      bestUnusedScore = score;
+      bestUnusedUrl = item.webUrl;
+    }
+    if (score >= 12 && score > bestTemplateScore) {
+      bestTemplateScore = score;
+      bestTemplatePath = item.fullPath;
+    }
+  }
 
   return {
     exactUnusedUrl: bestUnusedScore >= 10 ? bestUnusedUrl : null,
@@ -21304,6 +21463,7 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
   title: string;
   category: string;
   templatePath?: string | null;
+  usedUrls?: Set<string>;
 }): Promise<string> {
   ensureUploadsDir();
   const cleanSubject = cleanProductSearchSubject(params.title || 'Commercial Product');
@@ -21313,13 +21473,23 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 34) || 'catalog-product';
-  const uniqueSeed = `${params.recordId}::${params.title}::${params.category}`;
-  const hash = crypto.createHash('sha1').update(uniqueSeed).digest('hex').slice(0, 12);
-  const fileName = `auto-${slug}-${hash}.webp`;
-  const filePath = path.join(UPLOADS_DIR, fileName);
-  const localUrl = `/assets/uploads/${fileName}`;
+  const baseSeed = `${params.recordId}::${params.title}::${params.category}`;
+  let hash = '';
+  let fileName = '';
+  let filePath = '';
+  let localUrl = '';
+  for (let attempt = 0; attempt < 25; attempt++) {
+    const uniqueSeed = attempt === 0 ? baseSeed : `${baseSeed}::uniq-${attempt}::${Date.now()}`;
+    hash = crypto.createHash('sha1').update(uniqueSeed).digest('hex').slice(0, 12);
+    fileName = `auto-${slug}-${hash}.webp`;
+    filePath = path.join(UPLOADS_DIR, fileName);
+    localUrl = `/assets/uploads/${fileName}`;
+    if (!params.usedUrls || !params.usedUrls.has(localUrl)) {
+      break;
+    }
+  }
 
-  if (fs.existsSync(filePath)) {
+  if (fs.existsSync(filePath) && (!params.usedUrls || !params.usedUrls.has(localUrl))) {
     try {
       if (fs.statSync(filePath).size > 2000) return localUrl;
     } catch {}
@@ -21422,6 +21592,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   specifications?: string;
   usedUrls: Set<string>;
   allowLiveGeminiNetwork?: boolean;
+  geminiTimeoutMs?: number;
+  preindexedFiles?: IndexedUploadFileEntry[];
 }): Promise<{
   newImageUrl: string;
   queryUsed: string;
@@ -21431,6 +21603,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const cleanCategory = String(params.category || 'General Wholesale').trim();
   const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, params.specifications);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
+  const timeoutMs = typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0 ? params.geminiTimeoutMs : 9500;
 
   // 1. Check cached >10 Gemini Google Search Grounding pool first
   if (!serverProductImageCacheMap.has(normalizedKey)) {
@@ -21452,7 +21625,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
       const timeoutSentinel = Symbol('gemini_timeout');
       const searchResult = await Promise.race([
         searchPromise,
-        new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), 9500))
+        new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), timeoutMs))
       ]);
       if (searchResult !== timeoutSentinel && searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
         poolCandidates = fisherYatesShuffle([...searchResult.pool]);
@@ -21461,14 +21634,6 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         searchPromise.catch(() => {});
       }
     } catch {}
-  } else {
-    // Trigger background Gemini Grounding pool enrichment so subsequent requests are cached
-    void handleVisualProductImageSearch({
-      productName: cleanName,
-      category: cleanCategory,
-      specifications: params.specifications,
-      count: 15
-    }).catch(() => {});
   }
 
   // Try to pick a unique, unused image from the Gemini Grounded pool
@@ -21515,7 +21680,12 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   }
 
   // 2. Check existing local /assets/uploads/ files matching product/category tokens
-  const localMatch = findMatchingLocalMasterImageOnDisk(cleanName, cleanCategory, params.usedUrls);
+  const localMatch = findMatchingLocalMasterImageOnDisk(
+    cleanName,
+    cleanCategory,
+    params.usedUrls,
+    params.preindexedFiles
+  );
   if (localMatch.exactUnusedUrl && !params.usedUrls.has(localMatch.exactUnusedUrl)) {
     params.usedUrls.add(localMatch.exactUnusedUrl);
     bindAutoSavedImageOverride({
@@ -21539,7 +21709,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     recordId: params.recordId,
     title: cleanName,
     category: cleanCategory,
-    templatePath: localMatch.bestTemplatePath
+    templatePath: localMatch.bestTemplatePath,
+    usedUrls: params.usedUrls
   });
   params.usedUrls.add(generatedLocalUrl);
   bindAutoSavedImageOverride({
@@ -21589,9 +21760,14 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
 
   const dryRun = Boolean(options?.dryRun);
   const includeCatalog = Boolean(options?.includeCatalog);
+  const auditStartedAt = Date.now();
+  const LIVE_NETWORK_WALL_DEADLINE_MS = 12000;
   const seenUrls = new Map<string, { id: string; title: string; type: string }>();
-  const usedUrlsSet = new Set<string>();
+  const usedUrlsSet = new Set<string>(
+    dryRun ? [] : Array.from(collectAllUsedCatalogImageUrls().keys())
+  );
   const auditLog: CatalogAuditLogEntry[] = [];
+  const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const catalogRecords: Array<{
     record_id: string;
     record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
@@ -21609,7 +21785,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let duplicatesDetected = 0;
   let mismatchedDetected = 0;
   let recordsFixed = 0;
-  let liveNetworkBudget = 25;
+  let liveNetworkBudget = dryRun ? 0 : 4;
+  const preindexedFiles = dryRun ? undefined : buildPreindexedLocalUploadFiles();
 
   const scannedIds = new Set<string>();
 
@@ -21621,6 +21798,33 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       if (Array.isArray(parsedSnap)) snapshotItems = parsedSnap;
     }
   } catch {}
+  if (!dryRun) {
+    for (const s of snapshotItems) {
+      const u = normalizeAuditImageUrl(s?.image_url);
+      if (u) usedUrlsSet.add(u);
+    }
+    for (const ov of Object.values(serverProductImageState?.overrides || {})) {
+      const u = normalizeAuditImageUrl(ov?.primary);
+      if (u) usedUrlsSet.add(u);
+    }
+  }
+
+  const isVerifiedCleanOverride = (
+    ov: ProductImageOverrideEntry | undefined | null,
+    currentImg: string
+  ): boolean => {
+    if (!ov || !currentImg) return false;
+    if (isGenericOrPlaceholderServerUrl(currentImg)) return false;
+    if (currentImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(currentImg)) {
+      return false;
+    }
+    if (isManualOverrideEntry(ov)) return true;
+    if (isAuditVerifiedOverrideEntry(ov)) {
+      // Already fixed/verified by the Catalog Image Auditor: only flag if a duplicate claims it first
+      return !seenUrls.has(currentImg);
+    }
+    return false;
+  };
 
   // 1. Scan serverListingsStore
   for (let i = 0; i < serverListingsStore.length; i++) {
@@ -21637,7 +21841,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(listing.title || 'Wholesale Listing');
     const category = String(listing.category || 'General');
 
-    if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
+    if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: lid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
       if (includeCatalog) {
@@ -21697,7 +21901,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0;
+    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: lid,
@@ -21706,11 +21910,15 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       category,
       specifications: String(listing.description || ''),
       usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: useLive
+      allowLiveGeminiNetwork: useLive,
+      geminiTimeoutMs: 2500,
+      preindexedFiles
     });
 
     listing.image_url = resolved.newImageUrl;
     listing.images = [resolved.newImageUrl];
+    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
+    snapshotUpdates.push({ id: lid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
     seenUrls.set(resolved.newImageUrl, { id: lid, title, type: 'PRODUCT' });
     recordsFixed++;
 
@@ -21743,7 +21951,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(prod.title || 'Catalog Product');
     const category = String(prod.category || 'General');
 
-    if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
+    if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: pid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
       if (includeCatalog) {
@@ -21803,7 +22011,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0;
+    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: pid,
@@ -21812,12 +22020,16 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       category,
       specifications: String(prod.description || ''),
       usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: useLive
+      allowLiveGeminiNetwork: useLive,
+      geminiTimeoutMs: 2500,
+      preindexedFiles
     });
 
     prod.image = resolved.newImageUrl;
     prod.image_url = resolved.newImageUrl;
     prod.images = [resolved.newImageUrl];
+    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
+    snapshotUpdates.push({ id: pid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
     seenUrls.set(resolved.newImageUrl, { id: pid, title, type: 'PRODUCT' });
     recordsFixed++;
 
@@ -21850,7 +22062,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(rfq.productName || rfq.product_name || rfq.title || rfq.subject || 'Sourcing Requirement');
     const category = String(rfq.category || 'Global Sourcing');
 
-    if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
+    if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: rid, title, type: 'RFQ' });
       usedUrlsSet.add(currentImg);
       if (includeCatalog) {
@@ -21910,7 +22122,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0;
+    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: rid,
@@ -21919,12 +22131,16 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       category,
       specifications: String(rfq.specifications || rfq.message || ''),
       usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: useLive
+      allowLiveGeminiNetwork: useLive,
+      geminiTimeoutMs: 2500,
+      preindexedFiles
     });
 
     rfq.image = resolved.newImageUrl;
     rfq.image_url = resolved.newImageUrl;
     rfq.images = [resolved.newImageUrl];
+    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
+    snapshotUpdates.push({ id: rid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
     seenUrls.set(resolved.newImageUrl, { id: rid, title, type: 'RFQ' });
     recordsFixed++;
 
@@ -21962,7 +22178,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(item.title || cid);
     const category = String(item.category || 'General');
 
-    if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
+    if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: cid, title, type: rType });
       usedUrlsSet.add(currentImg);
       if (includeCatalog) {
@@ -22022,7 +22238,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0;
+    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: cid,
@@ -22030,9 +22246,16 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       title,
       category,
       usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: useLive
+      allowLiveGeminiNetwork: useLive,
+      geminiTimeoutMs: 2500,
+      preindexedFiles
     });
+    if (recordsFixed % 25 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
 
+    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
+    snapshotUpdates.push({ id: cid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
     seenUrls.set(resolved.newImageUrl, { id: cid, title, type: rType });
     recordsFixed++;
 
@@ -22061,7 +22284,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const isIdLikeKey = /^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(key);
     const currentImg = normalizeAuditImageUrl(entry.primary);
 
-    if (isManualOverrideEntry(entry) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
+    if (isVerifiedCleanOverride(entry, currentImg)) {
       scannedIds.add(key);
       totalScanned++;
       if (key.startsWith('rfq-')) rfqsScanned++;
@@ -22116,11 +22339,14 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     usedUrlsSet.add(ovCheckUrl);
   }
 
-  if (!dryRun && recordsFixed > 0) {
-    saveServerProductsToDisk();
-    saveRfqMarketStoreToDisk();
-    scheduleSaveOverridesState(true);
-  } else if (!dryRun) {
+  if (!dryRun) {
+    if (snapshotUpdates.length > 0) {
+      updateFullCatalogSnapshotRecords(snapshotUpdates);
+    }
+    if (recordsFixed > 0) {
+      saveServerProductsToDisk();
+      saveRfqMarketStoreToDisk();
+    }
     scheduleSaveOverridesState(true);
   }
 
@@ -22250,22 +22476,54 @@ async function fixSingleCatalogImageRecord(params: {
       });
     }
   } else if (requestedCustomUrl && requestedCustomUrl !== '(empty)') {
-    let resolvedCustom = requestedCustomUrl.startsWith('data:image/')
-      ? requestedCustomUrl
-      : normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
-    if (/^https?:\/\//i.test(resolvedCustom)) {
-      const mirrored = await mirrorExternalProductImageToLocalUploads({
-        externalUrl: resolvedCustom,
-        productId: cleanId,
-        productName: resolvedTitle,
-        category: resolvedCategory,
-        flushNow: true
-      });
-      if (mirrored) {
+    let resolvedCustom = '';
+    if (requestedCustomUrl.startsWith('data:image/')) {
+      // Materialize inline base64 images directly to disk as real .webp assets so they enter mediaLibrary and never bloat state
+      const parsed = parseBase64DataUrl(requestedCustomUrl, 'image/webp');
+      if (!parsed || !parsed.buffer || parsed.buffer.length === 0) {
+        throw new Error('Invalid uploaded image data. Please select a valid PNG, JPG, or WebP file.');
+      }
+      ensureUploadsDir();
+      const slug =
+        cleanProductSearchSubject(resolvedTitle || cleanId)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 36) || 'manual-upload';
+      const outFileName = `manual-${slug}-${Date.now()}.webp`;
+      const outFilePath = path.join(UPLOADS_DIR, outFileName);
+      let outBuf: Buffer;
+      try {
+        outBuf = await sharp(parsed.buffer, { failOn: 'none' }).rotate().webp({ quality: 90 }).toBuffer();
+      } catch {
+        outBuf = parsed.buffer;
+      }
+      fs.writeFileSync(outFilePath, outBuf);
+      void prewarmSingleImageFile(outFilePath);
+      resolvedCustom = `/assets/uploads/${outFileName}`;
+      ensureUploadedUrlInMediaLibrary(resolvedCustom, outBuf.length);
+    } else {
+      resolvedCustom = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+      if (/^https?:\/\//i.test(resolvedCustom)) {
+        const mirrored = await mirrorExternalProductImageToLocalUploads({
+          externalUrl: resolvedCustom,
+          productId: cleanId,
+          productName: resolvedTitle,
+          category: resolvedCategory,
+          flushNow: true,
+          isManual: true
+        });
+        if (!mirrored) {
+          throw new Error(
+            'Could not download and import that external image URL into the server media library. Please upload the image file manually instead.'
+          );
+        }
         resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
       }
     }
+
     finalImageUrl = resolvedCustom;
+    ensureUploadedUrlInMediaLibrary(finalImageUrl);
     bindAutoSavedImageOverride({
       localUrl: finalImageUrl,
       rawExternalUrl: /^https?:\/\//i.test(requestedCustomUrl) ? requestedCustomUrl : undefined,
@@ -22292,7 +22550,13 @@ async function fixSingleCatalogImageRecord(params: {
     queryUsed = resolved.queryUsed;
   }
 
-  if (finalImageUrl && existingOverride) {
+  if (finalImageUrl) {
+    ensureUploadedUrlInMediaLibrary(finalImageUrl);
+    clearConflictingTitleOverridesForProductId(cleanId, finalImageUrl);
+    updateFullCatalogSnapshotRecords([{ id: cleanId, imageUrl: finalImageUrl, gallery: [finalImageUrl] }]);
+  }
+
+  if (finalImageUrl && existingOverride && serverProductImageState.overrides[cleanId]) {
     (serverProductImageState.overrides[cleanId] as any) = {
       ...serverProductImageState.overrides[cleanId],
       previousPrimary: oldImageUrl && oldImageUrl !== finalImageUrl ? oldImageUrl : existingOverride.previousPrimary

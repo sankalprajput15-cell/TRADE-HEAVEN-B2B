@@ -436,7 +436,14 @@ class ProductImageManagerService {
       .map(k => `${k}->${normalizeProductAssetUrl(st.urlReplacements[k])}`)
       .join(';');
     const globalDef = st.globalDefaultImage ? normalizeProductAssetUrl(st.globalDefaultImage) : '';
-    return `O=[${sortedOverrides}]|G=[${globalDef}]|C=[${sortedCats}]|U=[${sortedUrls}]`;
+    const mediaSig = Array.isArray(st.mediaLibrary)
+      ? `${st.mediaLibrary.length}:${st.mediaLibrary
+          .slice(0, 30)
+          .map(m => normalizeProductAssetUrl(m?.url || ''))
+          .filter(Boolean)
+          .join(',')}`
+      : '0:';
+    return `O=[${sortedOverrides}]|G=[${globalDef}]|C=[${sortedCats}]|U=[${sortedUrls}]|M=[${mediaSig}]`;
   }
 
   public getVersionTagForUrl(url: string): string {
@@ -989,8 +996,8 @@ class ProductImageManagerService {
           const srvIsUploaded = srvPrimary.startsWith('/assets/uploads/');
           const srvIsStaleExternal = !srvPrimary || /^https?:\/\//i.test(srvPrimary) || this.isPlaceholderOverrideUrl(srvPrimary);
           if (
-            isRecentTabMutation ||
-            (localIsManual && !srvIsManual) ||
+            (isRecentTabMutation && localTime >= srvTime) ||
+            (localIsManual && !srvIsManual && localTime >= srvTime) ||
             (localIsManual && localTime > srvTime) ||
             (localIsUploaded && !srvIsUploaded && srvIsStaleExternal)
           ) {
@@ -1014,7 +1021,7 @@ class ProductImageManagerService {
         if (Array.isArray(srv.mediaLibrary)) {
           const seen = new Set<string>();
           const mergedMedia: MediaLibraryItem[] = [];
-          for (const item of [...this.state.mediaLibrary, ...srv.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
+          for (const item of [...srv.mediaLibrary, ...this.state.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
             if (!item || !item.url) continue;
             if (String(item.url).includes('WhatsApp_Image_2026-11-02_at_5.43.28_PM_f16b3ccd')) continue;
             const cleanUrl = normalizeProductAssetUrl(item.url);
@@ -1040,6 +1047,85 @@ class ProductImageManagerService {
       this.isHydratedFromServer = true;
     }
     return this.state;
+  }
+
+  /**
+   * Immediately apply authoritative server fix/audit results into local state, mediaLibrary, and listeners
+   * so newer server URLs are never overwritten by stale local mutations.
+   */
+  public applyServerOverrideSnapshot(
+    entries: Array<{
+      id: string;
+      url: string;
+      previousUrl?: string;
+      updatedAt?: string;
+      updatedBy?: string;
+      revert?: boolean;
+    }>
+  ): void {
+    if (!Array.isArray(entries) || entries.length === 0) return;
+    let changed = false;
+    const nowIso = new Date().toISOString();
+
+    for (const item of entries) {
+      const cleanId = String(item?.id || '').trim();
+      const rawUrl = String(item?.url || '').trim();
+      if (!cleanId) continue;
+
+      if (item.revert) {
+        if (!rawUrl || rawUrl === '(empty)') {
+          if (this.state.overrides[cleanId]) {
+            delete this.state.overrides[cleanId];
+            this.localMutationTimes.set(cleanId, Date.now());
+            changed = true;
+          }
+          continue;
+        }
+      }
+
+      const cleanUrl = normalizeProductAssetUrl(rawUrl);
+      if (!cleanUrl || cleanUrl === '(pending audit fix)' || cleanUrl === '(empty)') continue;
+
+      this.locallyDeletedIds.delete(cleanId);
+      this.localMutationTimes.set(cleanId, Date.now());
+      const existing = this.state.overrides[cleanId];
+      const existingGallery = Array.isArray(existing?.gallery) ? existing!.gallery : [];
+      this.state.overrides[cleanId] = {
+        primary: cleanUrl,
+        ...(item.previousUrl ? { previousPrimary: normalizeProductAssetUrl(item.previousUrl) } : {}),
+        gallery: [cleanUrl, ...existingGallery.filter(u => u && normalizeProductAssetUrl(u) !== cleanUrl)],
+        format: this.detectFormatFromUrl(cleanUrl),
+        updatedAt: item.updatedAt || nowIso,
+        updatedBy: item.updatedBy || (item.revert ? 'auto-site-upload' : 'catalog-image-auditor')
+      };
+
+      if (cleanUrl.startsWith('/assets/uploads/')) {
+        const cleanBase = cleanUrl.split('?')[0];
+        const existsInMedia = this.state.mediaLibrary.some(m => m?.url && m.url.split('?')[0] === cleanBase);
+        if (!existsInMedia) {
+          const fname = cleanBase.split('/').pop() || 'catalog-image.webp';
+          this.state.mediaLibrary = [
+            {
+              id: `media-${fname}`,
+              url: cleanBase,
+              name: fname,
+              format: this.detectFormatFromUrl(cleanBase),
+              sizeBytes: 0,
+              uploadedAt: item.updatedAt || nowIso
+            },
+            ...this.state.mediaLibrary
+          ];
+        }
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      this.stateWriteVersion++;
+      this.saveToLocalStorage({ action: 'apply_server_override_snapshot' });
+      this.notifyListeners();
+    }
   }
 
   /**
@@ -1655,6 +1741,7 @@ class ProductImageManagerService {
       };
 
       let explicitServerError = '';
+      let shouldTryPhpFallback = false;
       try {
         const response = await fetch('/api/v1/admin/upload-product-image', {
           method: 'POST',
@@ -1673,15 +1760,22 @@ class ProductImageManagerService {
               finalSizeBytes = data.mediaEntry.sizeBytes;
             }
           }
-        } else if (response.status >= 400 && response.status < 500 && response.status !== 404 && data?.message) {
-          explicitServerError = String(data.message);
+        } else if (response.status === 404) {
+          shouldTryPhpFallback = true;
+        } else {
+          explicitServerError =
+            (data?.message ? String(data.message) : '') ||
+            (response.status === 413
+              ? 'Selected image file is too large for server upload. Please choose a smaller image.'
+              : `Server upload failed (HTTP ${response.status}).`);
         }
-      } catch (err) {
+      } catch (err: any) {
+        shouldTryPhpFallback = true;
         console.warn('[ProductImageManagerService] Primary upload endpoint fallback:', err);
       }
 
-      // Fallback to PHP endpoint for cPanel / BigRock deployment
-      if (!uploadedToServer) {
+      // Fallback to PHP endpoint only on 404 / network error (cPanel / BigRock deployment)
+      if (!uploadedToServer && shouldTryPhpFallback) {
         try {
           const phpRes = await fetch('/api.php?action=upload_product_image', {
             method: 'POST',
@@ -1699,33 +1793,22 @@ class ProductImageManagerService {
                 finalSizeBytes = phpData.mediaEntry.sizeBytes;
               }
             }
-          } else if (phpRes.status >= 400 && phpRes.status < 500 && phpRes.status !== 404 && phpData?.message && !explicitServerError) {
-            explicitServerError = String(phpData.message);
+          } else if (!explicitServerError) {
+            explicitServerError =
+              (phpData?.message ? String(phpData.message) : '') ||
+              `Upload failed (HTTP ${phpRes.status}).`;
           }
-        } catch {}
+        } catch (phpErr: any) {
+          if (!explicitServerError) {
+            explicitServerError = phpErr?.message || 'Network error while uploading image to server.';
+          }
+        }
       }
 
-      if (!uploadedToServer && explicitServerError) {
-        throw new Error(explicitServerError);
-      }
-
-      // If still using local DataURL (offline/static fallback) and it is > 300KB, create a compact DataURL so localStorage never overflows
-      if (!uploadedToServer && finalUrl.startsWith('data:image/') && finalUrl.length > 300000) {
-        try {
-          const compact = await this.convertImageFile(
-            file,
-            'jpg',
-            0.82,
-            900,
-            false,
-            rotationDegrees,
-            options?.filters
-          );
-          if (compact.dataUrl && compact.dataUrl.length < finalUrl.length) {
-            finalUrl = compact.dataUrl;
-            finalSizeBytes = compact.sizeBytes;
-          }
-        } catch {}
+      if (!uploadedToServer) {
+        throw new Error(
+          explicitServerError || 'Image could not be uploaded to the server media library. Please try again.'
+        );
       }
 
       // Record in local media library
@@ -1995,35 +2078,63 @@ class ProductImageManagerService {
         updatedBy: 'admin-manual'
       });
 
+      let uploadedMediaEntry: MediaLibraryItem | null = null;
+      let uploadErr = '';
+      let shouldTryPhpFallback = false;
+
       try {
         const response = await fetch('/api/v1/admin/upload-product-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: payload
         });
-        if (response.ok) {
-          const resJson = await response.json();
-          if (resJson?.success && resJson?.url) {
-            finalUrl = normalizeProductAssetUrl(resJson.url);
-          }
+        const resJson = await response.json().catch(() => null);
+        if (response.ok && resJson?.success && resJson?.url) {
+          finalUrl = normalizeProductAssetUrl(resJson.url);
+          if (resJson.mediaEntry) uploadedMediaEntry = resJson.mediaEntry;
+        } else if (response.status === 404) {
+          shouldTryPhpFallback = true;
+        } else {
+          uploadErr = resJson?.message || `Server upload failed (HTTP ${response.status}).`;
         }
-      } catch {}
+      } catch (err: any) {
+        shouldTryPhpFallback = true;
+        uploadErr = err?.message || 'Network error uploading edited image.';
+      }
 
-      if (finalUrl === dataUrl) {
+      if (finalUrl === dataUrl && shouldTryPhpFallback) {
         try {
           const phpRes = await fetch('/api.php?action=upload_product_image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: payload
           });
-          if (phpRes.ok) {
-            const phpJson = await phpRes.json();
-            if (phpJson?.success && phpJson?.url) {
-              finalUrl = normalizeProductAssetUrl(phpJson.url);
-            }
+          const phpJson = await phpRes.json().catch(() => null);
+          if (phpRes.ok && phpJson?.success && phpJson?.url) {
+            finalUrl = normalizeProductAssetUrl(phpJson.url);
+            if (phpJson.mediaEntry) uploadedMediaEntry = phpJson.mediaEntry;
+          } else {
+            uploadErr = phpJson?.message || `Upload failed (HTTP ${phpRes.status}).`;
           }
         } catch {}
       }
+
+      if (finalUrl === dataUrl || finalUrl.startsWith('data:')) {
+        throw new Error(uploadErr || 'Failed to persist edited image onto server storage.');
+      }
+
+      const mediaItem: MediaLibraryItem = uploadedMediaEntry || {
+        id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        url: finalUrl,
+        name: fileName,
+        format: this.detectFormatFromUrl(finalUrl),
+        sizeBytes: 0,
+        uploadedAt: new Date().toISOString()
+      };
+      this.state.mediaLibrary = [
+        mediaItem,
+        ...this.state.mediaLibrary.filter(m => m?.url && m.url.split('?')[0] !== finalUrl.split('?')[0])
+      ];
 
       if (options?.productId) {
         await this.setProductImage(options.productId, finalUrl);

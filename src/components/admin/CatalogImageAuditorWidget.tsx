@@ -156,6 +156,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       if (includeCat) setIsLoadingCatalog(true);
       setIsScanningPreview(true);
       try {
+        if (opts?.clearSessionTouched) {
+          await syncMarketplaceImageListeners();
+        }
         const res = await runCatalogImageAuditAndCleanup({
           dryRun: true,
           includeCatalog: includeCat,
@@ -184,6 +187,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         }
 
         setAuditRows(prevRows => {
+          if (opts?.clearSessionTouched) {
+            return incomingRows;
+          }
           const sessionFixedMap = new Map<string, UnifiedAuditRow>();
           for (const r of prevRows) {
             if (r.status === 'FIXED') {
@@ -225,7 +231,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         setIsLoadingCatalog(false);
       }
     },
-    [buildCompactCatalogPayload, mapLogToUnifiedRows]
+    [buildCompactCatalogPayload, mapLogToUnifiedRows, syncMarketplaceImageListeners]
   );
 
   useEffect(() => {
@@ -487,6 +493,20 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       });
 
       applySingleRecordMutationResult(row, result);
+      productImageManagerService.applyServerOverrideSnapshot([
+        {
+          id: rid,
+          url: result.new_image_url,
+          previousUrl: result.old_image_url && result.old_image_url !== '(empty)' ? result.old_image_url : undefined,
+          updatedAt: result.updatedAt,
+          updatedBy: options?.revert
+            ? 'auto-site-upload'
+            : options?.customImageUrl
+              ? 'admin-manual'
+              : 'catalog-image-auditor',
+          revert: Boolean(options?.revert)
+        }
+      ]);
       await syncMarketplaceImageListeners();
 
       if (!options?.customImageUrl && !options?.revert && !candidatesByRecord[rid]?.length) {
@@ -561,9 +581,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         oldUrlToReplace: undefined
       });
 
-      const cleanUploadedUrl = uploaded.url.startsWith('data:')
-        ? uploaded.url
-        : uploaded.url.split('?')[0];
+      if (!uploaded?.url || uploaded.url.startsWith('data:')) {
+        throw new Error('Uploaded file was not saved to the server media library. Please try again.');
+      }
+
+      const cleanUploadedUrl = uploaded.url.split('?')[0];
 
       const result = await fixSingleCatalogImage({
         recordId: rid,
@@ -579,6 +601,15 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         old_image_url: preservedOldUrl || result.old_image_url,
         is_fallback_card: false
       });
+      productImageManagerService.applyServerOverrideSnapshot([
+        {
+          id: rid,
+          url: result.new_image_url,
+          previousUrl: preservedOldUrl || result.old_image_url,
+          updatedAt: result.updatedAt,
+          updatedBy: 'admin-manual'
+        }
+      ]);
       await syncMarketplaceImageListeners();
 
       setAlertMessage({
@@ -619,6 +650,18 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         setSelectedRecordId(nextRows[0].record_id);
         setActiveFilter('FIXED');
         setCurrentPage(1);
+        const fixedSnapshotEntries = nextRows
+          .filter(r => r.status === 'FIXED' && r.new_image_url && r.new_image_url !== '(pending audit fix)')
+          .map(r => ({
+            id: r.record_id,
+            url: r.new_image_url,
+            previousUrl: r.old_image_url !== '(empty)' ? r.old_image_url : undefined,
+            updatedAt: result.timestamp,
+            updatedBy: 'catalog-image-auditor'
+          }));
+        if (fixedSnapshotEntries.length > 0) {
+          productImageManagerService.applyServerOverrideSnapshot(fixedSnapshotEntries);
+        }
       }
 
       await syncMarketplaceImageListeners();
