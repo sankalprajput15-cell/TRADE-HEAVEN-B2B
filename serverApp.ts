@@ -118,6 +118,51 @@ The user has successfully authenticated and accessed the platform.`;
   }
 }
 
+function recordSuccessfulLogin(
+  req: express.Request | null,
+  u: {
+    id?: string;
+    uid?: string;
+    email?: string;
+    name?: string;
+    role?: string;
+    companyName?: string;
+    country?: string;
+  },
+  currentView?: string
+) {
+  const cleanEmail = normalizeRecipientEmail(String(u.email || ''));
+  if (!cleanEmail) return;
+  const storedUser = serverUsersStore.find(su => normalizeRecipientEmail(su.email) === cleanEmail);
+  const resolvedName = String(u.name || storedUser?.name || cleanEmail);
+  const resolvedRole = String(u.role || storedUser?.role || 'BUYER');
+  const resolvedCompany = String(u.companyName || storedUser?.companyName || 'Global Trade Member');
+  const resolvedCountry = String(u.country || storedUser?.country || 'Global');
+
+  // 1. Record platform auth event
+  recordPlatformAuthEvent(req, 'LOGIN', {
+    email: cleanEmail,
+    name: resolvedName,
+    role: resolvedRole,
+    companyName: resolvedCompany,
+    country: resolvedCountry
+  }, currentView);
+
+  // 2. Touch active platform session
+  touchActivePlatformSession(req, {
+    id: u.id || u.uid,
+    email: cleanEmail,
+    name: resolvedName,
+    role: resolvedRole,
+    tier: storedUser?.tier,
+    companyName: resolvedCompany,
+    country: resolvedCountry
+  }, currentView);
+
+  // 3. Dispatch live SMTP login alert email to admin recipients for EVERY user
+  void sendLoginAlert(cleanEmail, resolvedName, resolvedRole, resolvedCompany, resolvedCountry);
+}
+
 // Helper to log system activity cleanly without sending extra non-client emails to admin inbox
 async function sendActivityAlert(activityType: string, actorEmail: string, description: string, _metadata: Record<string, any> = {}) {
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
@@ -1798,6 +1843,32 @@ function touchActivePlatformSession(
     }
   }
   const existing = activePlatformSessions.get(cleanEmail);
+  const isNewSession = !existing;
+
+  if (isNewSession && !isPassivePing) {
+    const lastLoginRecord = serverVerifiedLoginsByEmail[cleanEmail];
+    const lastLoginTime = lastLoginRecord?.lastLoginAt ? new Date(lastLoginRecord.lastLoginAt).getTime() : 0;
+    const twoHoursAgo = now - 2 * 60 * 60 * 1000;
+    if (!lastLoginTime || lastLoginTime < twoHoursAgo) {
+      const storedUser = serverUsersStore.find(su => normalizeRecipientEmail(su.email) === cleanEmail);
+      const resolvedName = String(u.name || storedUser?.name || cleanEmail);
+      const resolvedRole = String(u.role || storedUser?.role || 'BUYER');
+      const resolvedCompany = String(u.companyName || storedUser?.companyName || 'Global Trade Member');
+      const resolvedCountry = String(u.country || storedUser?.country || 'Global');
+      const resolvedView = String(currentView || 'HOMEPAGE');
+
+      recordPlatformAuthEvent(req, 'LOGIN', {
+        email: cleanEmail,
+        name: resolvedName,
+        role: resolvedRole,
+        companyName: resolvedCompany,
+        country: resolvedCountry
+      }, resolvedView);
+
+      void sendLoginAlert(cleanEmail, resolvedName, resolvedRole, resolvedCompany, resolvedCountry);
+    }
+  }
+
   const ua = req ? String(req.headers['user-agent'] || '').slice(0, 140) : existing?.userAgent || 'Browser';
   const ip = req
     ? String((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '').trim()
