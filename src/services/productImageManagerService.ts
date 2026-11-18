@@ -130,8 +130,12 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
   ) {
     const params = new URLSearchParams(existingQuery);
     if (!params.has('v') && !params.has('cb')) {
-      const versionTag = productImageManagerService.getVersionTagForUrl(clean) || String(Date.now());
-      params.set('v', versionTag);
+      const versionTag =
+        typeof productImageManagerService !== 'undefined' &&
+        typeof productImageManagerService?.getVersionTagForUrl === 'function'
+          ? productImageManagerService.getVersionTagForUrl(clean)
+          : String(Date.now());
+      params.set('v', versionTag || String(Date.now()));
     }
     const qStr = params.toString();
     return qStr ? `${clean}?${qStr}` : clean;

@@ -461,15 +461,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     const contextText = `${productTitle || ''} ${category || ''} ${alt || ''} ${productId || ''}`.toLowerCase();
     const isSareeOrTextile = /(saree|sari|textile|apparel|fabric|garment|silk|clothing|lehenga|kurti|dress)/i.test(contextText);
 
-    // Strict Anti-Pollution Shield: Never show saree/shree or cross-company images (unless explicitly overridden by admin manual upload)
-    let sanitizedList = list.filter(u => (optManualEff && u === optManualEff) || !isCrossCompanyAsset(u));
-    if (!isSareeOrTextile) {
-      sanitizedList = sanitizedList.filter(
-        u => (optManualEff && u === optManualEff) || (!u.toLowerCase().includes('saree') && !u.toLowerCase().includes('shree'))
-      );
-    }
-
-    const validList = sanitizedList.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isBrokenExternalImageUrl(u));
+    const validList = list.filter(u => u && !FAILED_IMAGE_URLS.has(u));
     if (validList.length === 0) {
       const PALETTES: Array<[string, string, string]> = [
         ['#064E3B', '#047857', '#6EE7B7'],
