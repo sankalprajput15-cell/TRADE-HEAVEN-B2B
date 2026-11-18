@@ -3661,6 +3661,8 @@ export class ServerDeliveryQueueManager {
   private lastFailureAlertId: string | null = null;
   private lastFailureAlertTriggeredAt: string | null = null;
   private recentDeliveries: SerializedDeliveryReceipt[] = [];
+  private cachedDefaultTransporter: nodemailer.Transporter | null = null;
+  private cachedGmailTransporter: nodemailer.Transporter | null = null;
   private emailHistoryLog: CompanyEmailHistoryEntry[] = [...INITIAL_SEEDED_EMAIL_HISTORY];
   private smtpWebhookLogs: SmtpWebhookEventLog[] = [
     {
@@ -3871,7 +3873,7 @@ export class ServerDeliveryQueueManager {
   }
 
   private getDefaultTransporter(): nodemailer.Transporter | null {
-    const host = (process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net').trim();
+    const host = (process.env.NOREPLY_SMTP_HOST || 'mail.tradeheaven.net').trim();
     const port = Number(process.env.NOREPLY_SMTP_PORT || 465);
     const user = (process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net').trim();
     const pass = (process.env.NOREPLY_SMTP_PASS || '').trim();
@@ -3880,20 +3882,28 @@ export class ServerDeliveryQueueManager {
       return this.getGmailBackupTransporter();
     }
 
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      name: 'tradeheaven.net',
-      connectionTimeout: 12000,
-      greetingTimeout: 12000,
-      socketTimeout: 20000,
-      auth: { user, pass }
-    });
+    if (!this.cachedDefaultTransporter) {
+      this.cachedDefaultTransporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        host,
+        port,
+        secure: port === 465,
+        name: 'tradeheaven.net',
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 8000,
+        tls: { rejectUnauthorized: false },
+        auth: { user, pass }
+      });
+    }
+
+    return this.cachedDefaultTransporter;
   }
 
   private getGmailBackupTransporter(): nodemailer.Transporter | null {
-    const host = (process.env.SMTP_HOST || '').trim();
+    const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
     const port = Number(process.env.SMTP_PORT || 587);
     const user = (process.env.SMTP_USER || '').trim();
     const pass = (process.env.SMTP_PASS || '').trim();
@@ -3902,15 +3912,24 @@ export class ServerDeliveryQueueManager {
       return null;
     }
 
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      connectionTimeout: 12000,
-      greetingTimeout: 12000,
-      socketTimeout: 20000,
-      auth: { user, pass }
-    });
+    if (!this.cachedGmailTransporter) {
+      this.cachedGmailTransporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        host,
+        port,
+        secure: port === 465,
+        requireTLS: port === 587,
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 8000,
+        tls: { rejectUnauthorized: false },
+        auth: { user, pass }
+      });
+    }
+
+    return this.cachedGmailTransporter;
   }
 
   /**
@@ -4154,11 +4173,10 @@ export class ServerDeliveryQueueManager {
               throw new Error(`SMTP rejected recipient(s): ${rejectedList.join(', ')}`);
             }
             primaryInfo = candidateInfo;
-          } catch (e) {
+          } catch (e: any) {
             primaryErr = e;
-            console.warn(
-              `[ServerDeliveryQueueManager] Primary SMTP error for ${task.recipient}:`,
-              (e as any)?.message || e
+            console.log(
+              `[ServerDeliveryQueueManager] Primary SMTP notice for ${task.recipient}: ${e?.message || e}. Engaging backup relay...`
             );
           }
 
@@ -4178,9 +4196,9 @@ export class ServerDeliveryQueueManager {
               if (!primaryInfo) {
                 primaryInfo = backupInfo;
               }
-            } catch (gErr) {
+            } catch (gErr: any) {
               backupErr = gErr;
-              console.warn('[ServerDeliveryQueueManager] Backup SMTP relay warning:', (gErr as any)?.message || gErr);
+              console.log('[ServerDeliveryQueueManager] Backup SMTP notice:', gErr?.message || gErr);
             }
           }
 
@@ -4209,10 +4227,11 @@ export class ServerDeliveryQueueManager {
         } catch (err: any) {
           this.lastDispatchedAt = Date.now();
           const errMsg = err?.message || String(err);
-          console.warn(
-            `[ServerDeliveryQueueManager] Primary SMTP transport error for ${task.recipient}: ${errMsg}.`
+          const isTimeoutOrNetErr = /timeout|econnrefused|ehostunreach|enetunreach|etimedout/i.test(errMsg);
+          console.log(
+            `[ServerDeliveryQueueManager] Transport fallback activated for ${task.recipient}: ${errMsg}.`
           );
-          if (taskMeta.skipLegacyInquiryRelay) {
+          if (taskMeta.skipLegacyInquiryRelay && !isTimeoutOrNetErr) {
             const failReceipt: SerializedDeliveryReceipt = {
               recipient: task.recipient,
               success: false,
@@ -4381,10 +4400,10 @@ export class ServerDeliveryQueueManager {
           `${getPublicTrackingBaseUrl()}/api/v1/track/open/${trackingId}.gif`
       };
 
-      // Deduplicate automatic startup or repeated dispatches with identical trackingId or subject+recipient
+      // Deduplicate automatic startup or repeated dispatches with identical trackingId+recipient or subject+recipient
       const existingMatchIdx = this.emailHistoryLog.findIndex(
         (e) =>
-          (trackingId && e.trackingId === trackingId) ||
+          (trackingId && e.trackingId === trackingId && e.recipient === cleanEmail) ||
           (e.recipient === cleanEmail &&
             e.subject === subject &&
             Math.abs(new Date(e.dispatchedAt).getTime() - new Date(receipt.dispatchedAt).getTime()) < 180000)
@@ -5372,12 +5391,14 @@ export class AutomatedSmtpService {
 
   // Deduplication cache to prevent accidental double-dispatches within a 5-second window
   private recentDispatches = new Map<string, { timestamp: number; result: SmtpDispatchResult }>();
+  private cachedPrimaryTransporter: nodemailer.Transporter | null = null;
+  private cachedBackupTransporter: nodemailer.Transporter | null = null;
 
   /**
-   * Use verified corporate SMTP (tradeheaven.net:465 • noreply@tradeheaven.net) with DKIM signing.
+   * Use verified corporate SMTP (mail.tradeheaven.net:465 • noreply@tradeheaven.net) with DKIM signing.
    */
   private getPrimarySmtpCredentials() {
-    const host = (process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net').trim();
+    const host = (process.env.NOREPLY_SMTP_HOST || 'mail.tradeheaven.net').trim();
     const port = Number(process.env.NOREPLY_SMTP_PORT || 465);
     const user = (process.env.NOREPLY_SMTP_USER || this.senderAddress).trim();
     const pass = (process.env.NOREPLY_SMTP_PASS || '').trim();
@@ -5385,7 +5406,7 @@ export class AutomatedSmtpService {
   }
 
   private getBackupSmtpCredentials() {
-    const host = (process.env.SMTP_HOST || '').trim();
+    const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
     const port = Number(process.env.SMTP_PORT || 587);
     const user = (process.env.SMTP_USER || '').trim();
     const pass = (process.env.SMTP_PASS || '').trim();
@@ -5403,19 +5424,27 @@ export class AutomatedSmtpService {
       return null;
     }
 
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      name: 'tradeheaven.net',
-      connectionTimeout: 12000,
-      greetingTimeout: 12000,
-      socketTimeout: 20000,
-      auth: {
-        user,
-        pass
-      }
-    });
+    if (!this.cachedPrimaryTransporter) {
+      this.cachedPrimaryTransporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        host,
+        port,
+        secure: port === 465,
+        name: 'tradeheaven.net',
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 8000,
+        tls: { rejectUnauthorized: false },
+        auth: {
+          user,
+          pass
+        }
+      });
+    }
+
+    return this.cachedPrimaryTransporter;
   }
 
   private createBackupTransporter() {
@@ -5423,15 +5452,23 @@ export class AutomatedSmtpService {
     if (!host || !user || !pass) {
       return null;
     }
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      connectionTimeout: 12000,
-      greetingTimeout: 12000,
-      socketTimeout: 20000,
-      auth: { user, pass }
-    });
+    if (!this.cachedBackupTransporter) {
+      this.cachedBackupTransporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 50,
+        host,
+        port,
+        secure: port === 465,
+        requireTLS: port === 587,
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 8000,
+        tls: { rejectUnauthorized: false },
+        auth: { user, pass }
+      });
+    }
+    return this.cachedBackupTransporter;
   }
 
   private getEffectiveTransporter(): { transporter: nodemailer.Transporter | null; fromAddress: string } {

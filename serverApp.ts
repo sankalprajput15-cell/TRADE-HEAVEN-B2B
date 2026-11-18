@@ -101,14 +101,14 @@ The user has successfully authenticated and accessed the platform.`;
       await serverDeliveryQueueManager.enqueueSingle(
         rcpt,
         {
-          from: '"Trade Heaven Security Audit" <security@tradeheaven.net>',
+          from: '"Trade Heaven Security Audit" <noreply@tradeheaven.net>',
           subject,
           text,
           html,
           dispatchType: 'AUTOMATED',
           category: 'CUSTOM_ADMIN',
           recipientName: 'Trade Heaven Admin',
-          trackingId: `ms-trk-login-alert-${cleanEmail.replace(/[^a-z0-9]/g, '-')}-${Date.now().toString(36)}`,
+          trackingId: `ms-trk-login-alert-${cleanEmail.replace(/[^a-z0-9]/g, '-')}-${rcpt.replace(/[^a-z0-9]/g, '-')}-${Date.now().toString(36)}`,
           summaryText: `[LOGIN ALERT] User ${cleanEmail} (${userName} • ${userRole}) signed in at ${timestamp} EST.`
         }
       );
