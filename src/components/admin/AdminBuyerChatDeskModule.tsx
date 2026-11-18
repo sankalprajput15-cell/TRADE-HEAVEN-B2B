@@ -515,7 +515,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
         void refreshDeskData(true);
       }
     };
-    const intervalId = window.setInterval(syncNow, 3000);
+    const intervalId = window.setInterval(syncNow, 10000);
     window.addEventListener('focus', syncNow);
     document.addEventListener('visibilitychange', syncNow);
     return () => {

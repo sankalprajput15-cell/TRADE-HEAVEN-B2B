@@ -349,7 +349,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         void loadConversations(true);
       }
     };
-    const intervalId = window.setInterval(syncNow, 3000);
+    const intervalId = window.setInterval(syncNow, 10000);
     window.addEventListener('focus', syncNow);
     document.addEventListener('visibilitychange', syncNow);
     return () => {
