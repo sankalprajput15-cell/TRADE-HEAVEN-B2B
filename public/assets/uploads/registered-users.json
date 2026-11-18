@@ -64,9 +64,9 @@
     "membershipStatus": "paid",
     "tier": "Basic Plan",
     "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-    "login_otp_code": null,
-    "login_otp_expiry": null,
-    "login_otp_attempts": 0
+    "login_otp_code": "545272",
+    "login_otp_expiry": 1794980930754,
+    "login_otp_attempts": 1
   },
   {
     "id": "user-supplier-zac",

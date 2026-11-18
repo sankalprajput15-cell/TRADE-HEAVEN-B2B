@@ -58,10 +58,64 @@ function getAlertRecipients(): string[] {
   return defaults;
 }
 
-// Helper to log login alerts cleanly without sending extra non-client emails to admin inbox
+// Helper to dispatch live SMTP login alerts to admin recipients
 async function sendLoginAlert(userEmail: string, userName: string, userRole: string, companyName: string, country: string) {
+  const cleanEmail = normalizeRecipientEmail(userEmail);
+  const recipients = Array.from(new Set([...getAlertRecipients(), authAlertEmailConfig.recipientEmail].filter(Boolean)));
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-  console.log(`[LOGIN AUDIT] User ${userEmail} (${userName}, ${userRole}, ${companyName}, ${country}) logged in at ${timestamp} EST.`);
+  const escHtml = (str: string) => String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+  const subject = `🚨 USER LOGIN ALERT: ${userName} (${userRole} • ${companyName || 'Global Trade Member'}) signed in to Trade Heaven`;
+  const text = `User Login Alert - Trade Heaven Platform
+User Email: ${cleanEmail}
+User Name: ${userName}
+Role: ${userRole}
+Company: ${companyName || 'Global Trade Member'}
+Country: ${country || 'Global'}
+Timestamp: ${timestamp} EST
+
+The user has successfully authenticated and accessed the platform.`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>${escHtml(subject)}</title></head>
+<body style="margin: 0; padding: 24px; background: #0b1120; font-family: sans-serif; color: #1e293b;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 24px; border: 2px solid #3b82f6; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+    <h2 style="color: #1e3a8a; margin-top: 0;">🚨 User Login Alert</h2>
+    <p style="font-size: 14px; color: #475569;">A registered user has successfully signed in to Trade Heaven:</p>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold; width: 35%;">User Name:</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${escHtml(userName)}</td></tr>
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold;">Email:</td><td style="padding: 8px; border: 1px solid #cbd5e1; color: #0284c7; font-weight: bold;">${escHtml(cleanEmail)}</td></tr>
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold;">Role / Type:</td><td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #059669;">${escHtml(userRole)}</td></tr>
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold;">Company:</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${escHtml(companyName || 'N/A')}</td></tr>
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold;">Country:</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${escHtml(country || 'Global')}</td></tr>
+      <tr><td style="padding: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold;">Timestamp:</td><td style="padding: 8px; border: 1px solid #cbd5e1;">${escHtml(timestamp)} EST</td></tr>
+    </table>
+    <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Trade Heaven Security Audit Dispatcher • Automated Live Notification</p>
+  </div>
+</body>
+</html>`;
+
+  for (const rcpt of recipients) {
+    if (!rcpt || !rcpt.includes('@')) continue;
+    try {
+      await serverDeliveryQueueManager.enqueueSingle(
+        rcpt,
+        {
+          from: '"Trade Heaven Security Audit" <security@tradeheaven.net>',
+          subject,
+          text,
+          html,
+          dispatchType: 'AUTOMATED',
+          category: 'CUSTOM_ADMIN',
+          recipientName: 'Trade Heaven Admin',
+          trackingId: `ms-trk-login-alert-${cleanEmail.replace(/[^a-z0-9]/g, '-')}-${Date.now().toString(36)}`,
+          summaryText: `[LOGIN ALERT] User ${cleanEmail} (${userName} • ${userRole}) signed in at ${timestamp} EST.`
+        }
+      );
+    } catch (err) {
+      console.error(`Failed to send login alert email to ${rcpt}:`, err);
+    }
+  }
 }
 
 // Helper to log system activity cleanly without sending extra non-client emails to admin inbox
