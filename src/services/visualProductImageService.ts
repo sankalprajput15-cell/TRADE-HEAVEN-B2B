@@ -802,6 +802,17 @@ export interface CatalogImageAuditLogItem {
   status: 'FIXED' | 'FLAGGED';
 }
 
+export interface CatalogScannedCleanRecord {
+  record_id: string;
+  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  title: string;
+  category: string;
+  current_image_url: string;
+  previous_image_url?: string;
+  updated_at?: string;
+  status: 'CLEAN' | 'FLAGGED' | 'FIXED';
+}
+
 export interface CatalogImageAuditSummary {
   status: string;
   success: boolean;
@@ -815,10 +826,28 @@ export interface CatalogImageAuditSummary {
   healthy_records?: number;
   timestamp?: string;
   audit_log: CatalogImageAuditLogItem[];
+  catalog_records?: CatalogScannedCleanRecord[];
+}
+
+export interface SingleCatalogImageFixResult {
+  success: boolean;
+  record_id: string;
+  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  title: string;
+  category: string;
+  old_image_url: string;
+  new_image_url: string;
+  query_used?: string;
+  source?: string;
+  is_fallback_card?: boolean;
+  status: 'FIXED' | 'FLAGGED';
+  updatedAt?: string;
+  message?: string;
 }
 
 export async function runCatalogImageAuditAndCleanup(options?: {
   dryRun?: boolean;
+  includeCatalog?: boolean;
   catalogItems?: Array<{
     id: string;
     type?: 'PRODUCT' | 'RFQ';
@@ -828,9 +857,14 @@ export async function runCatalogImageAuditAndCleanup(options?: {
   }>;
 }): Promise<CatalogImageAuditSummary> {
   const dryRun = Boolean(options?.dryRun);
-  const querySuffix = dryRun ? '&dry_run=1' : '';
+  const includeCatalog = Boolean(options?.includeCatalog);
+  const queryParts: string[] = [];
+  if (dryRun) queryParts.push('dry_run=1');
+  if (includeCatalog) queryParts.push('include_catalog=1');
+  const querySuffix = queryParts.length > 0 ? `&${queryParts.join('&')}` : '';
   const bodyPayload = {
     dry_run: dryRun,
+    include_catalog: includeCatalog,
     catalog_items: options?.catalogItems || []
   };
 
@@ -848,7 +882,8 @@ export async function runCatalogImageAuditAndCleanup(options?: {
     }
   } catch {}
 
-  const fallbackRes = await fetch(`/api/v1/admin/audit-and-fix-catalog-images${dryRun ? '?dry_run=1' : ''}`, {
+  const fallbackQuery = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+  const fallbackRes = await fetch(`/api/v1/admin/audit-and-fix-catalog-images${fallbackQuery}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(bodyPayload)
@@ -857,5 +892,56 @@ export async function runCatalogImageAuditAndCleanup(options?: {
     throw new Error(`Catalog image audit failed with HTTP ${fallbackRes.status}`);
   }
   return (await fallbackRes.json()) as CatalogImageAuditSummary;
+}
+
+export async function fixSingleCatalogImage(params: {
+  recordId: string;
+  recordType?: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  title?: string;
+  category?: string;
+  customImageUrl?: string;
+  previousImageUrl?: string;
+  revert?: boolean;
+}): Promise<SingleCatalogImageFixResult> {
+  const payload = {
+    record_id: params.recordId,
+    record_type: params.recordType,
+    title: params.title,
+    category: params.category,
+    custom_image_url: params.customImageUrl,
+    previous_image_url: params.previousImageUrl,
+    revert: Boolean(params.revert)
+  };
+
+  let primaryError = '';
+  try {
+    const res = await fetch('/api/v1/admin/fix-single-catalog-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json().catch(() => null);
+    if (res.ok && json?.success) {
+      return json as SingleCatalogImageFixResult;
+    }
+    primaryError = json?.message || `HTTP ${res.status}`;
+  } catch (err: any) {
+    primaryError = err?.message || 'Network error';
+  }
+
+  try {
+    const fallbackRes = await fetch('/api.php?action=fix_single_catalog_image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await fallbackRes.json().catch(() => null);
+    if (fallbackRes.ok && json?.success) {
+      return json as SingleCatalogImageFixResult;
+    }
+    throw new Error(json?.message || primaryError || `Failed to update catalog image for ${params.recordId}`);
+  } catch (fallbackErr: any) {
+    throw new Error(fallbackErr?.message || primaryError || `Failed to update catalog image for ${params.recordId}`);
+  }
 }
 

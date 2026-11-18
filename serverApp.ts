@@ -12093,14 +12093,36 @@ Message: ${formattedInquiry.message}`
 
   if (action === 'audit_and_fix_catalog_images') {
     const dryRun = Boolean(input.dry_run || input.dryRun || req.query.dry_run === '1' || req.query.mode === 'preview');
+    const includeCatalog = Boolean(input.include_catalog || input.includeCatalog || req.query.include_catalog === '1');
     const extraCatalogItems = Array.isArray(input.catalog_items || input.catalogItems)
       ? (input.catalog_items || input.catalogItems)
       : undefined;
     const summary = await runFullCatalogImageAuditAndCleanup({
       dryRun,
+      includeCatalog,
       extraCatalogItems
     });
     return res.json(summary);
+  }
+
+  if (action === 'fix_single_catalog_image') {
+    try {
+      const result = await fixSingleCatalogImageRecord({
+        recordId: String(input.record_id || input.recordId || '').trim(),
+        recordType: input.record_type || input.recordType,
+        title: input.title,
+        category: input.category,
+        customImageUrl: input.custom_image_url || input.customImageUrl,
+        previousImageUrl: input.previous_image_url || input.previousImageUrl,
+        revert: Boolean(input.revert)
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        message: err?.message || 'Failed to fix catalog image'
+      });
+    }
   }
 
   if (action === 'upload_product_image') {
@@ -21419,16 +21441,24 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   if (cached && Array.isArray(cached.images) && cached.images.length > 0) {
     poolCandidates = fisherYatesShuffle([...cached.images]);
   } else if (params.allowLiveGeminiNetwork !== false) {
-    // Run live Gemini Google Search Grounding visual product search
+    // Run live Gemini Google Search Grounding visual product search with a bounded timeout so interactive Fix Now never stalls
     try {
-      const searchResult = await handleVisualProductImageSearch({
+      const searchPromise = handleVisualProductImageSearch({
         productName: cleanName,
         category: cleanCategory,
         specifications: params.specifications,
         count: 15
       });
-      if (searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
+      const timeoutSentinel = Symbol('gemini_timeout');
+      const searchResult = await Promise.race([
+        searchPromise,
+        new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), 9500))
+      ]);
+      if (searchResult !== timeoutSentinel && searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
         poolCandidates = fisherYatesShuffle([...searchResult.pool]);
+      } else if (searchResult === timeoutSentinel) {
+        // Keep background search alive so its results populate cache for subsequent clicks
+        searchPromise.catch(() => {});
       }
     } catch {}
   } else {
@@ -21546,6 +21576,7 @@ function extractMeaningfulAuditTokens(text: string): string[] {
 
 async function runFullCatalogImageAuditAndCleanup(options?: {
   dryRun?: boolean;
+  includeCatalog?: boolean;
   extraCatalogItems?: Array<{
     id: string;
     type?: 'PRODUCT' | 'RFQ';
@@ -21557,9 +21588,20 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   const FULL_CATALOG_SNAPSHOT_FILE = path.join(process.cwd(), 'public', 'data', 'fullCatalogSnapshot.json');
 
   const dryRun = Boolean(options?.dryRun);
+  const includeCatalog = Boolean(options?.includeCatalog);
   const seenUrls = new Map<string, { id: string; title: string; type: string }>();
   const usedUrlsSet = new Set<string>();
   const auditLog: CatalogAuditLogEntry[] = [];
+  const catalogRecords: Array<{
+    record_id: string;
+    record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+    title: string;
+    category: string;
+    current_image_url: string;
+    previous_image_url?: string;
+    updated_at?: string;
+    status: 'CLEAN' | 'FLAGGED' | 'FIXED';
+  }> = [];
 
   let totalScanned = 0;
   let productsScanned = 0;
@@ -21598,6 +21640,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
       seenUrls.set(currentImg, { id: lid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: lid,
+          record_type: 'PRODUCT',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21609,6 +21663,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (!check.flagged) {
       seenUrls.set(currentImg, { id: lid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: lid,
+          record_type: 'PRODUCT',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21680,6 +21746,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
       seenUrls.set(currentImg, { id: pid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: pid,
+          record_type: 'PRODUCT',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21691,6 +21769,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (!check.flagged) {
       seenUrls.set(currentImg, { id: pid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: pid,
+          record_type: 'PRODUCT',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21763,6 +21853,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
       seenUrls.set(currentImg, { id: rid, title, type: 'RFQ' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: rid,
+          record_type: 'RFQ',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21774,6 +21876,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (!check.flagged) {
       seenUrls.set(currentImg, { id: rid, title, type: 'RFQ' });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: rid,
+          record_type: 'RFQ',
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21851,6 +21965,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isManualOverrideEntry(ov) && currentImg && (!currentImg.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(currentImg))) {
       seenUrls.set(currentImg, { id: cid, title, type: rType });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: cid,
+          record_type: rType,
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21862,6 +21988,18 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (!check.flagged) {
       seenUrls.set(currentImg, { id: cid, title, type: rType });
       usedUrlsSet.add(currentImg);
+      if (includeCatalog) {
+        catalogRecords.push({
+          record_id: cid,
+          record_type: rType,
+          title,
+          category,
+          current_image_url: currentImg,
+          previous_image_url: (ov as any)?.previousPrimary,
+          updated_at: ov?.updatedAt,
+          status: 'CLEAN'
+        });
+      }
       continue;
     }
 
@@ -21998,14 +22136,209 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     records_fixed: recordsFixed,
     healthy_records: Math.max(0, totalScanned - (dryRun ? duplicatesDetected + mismatchedDetected : 0)),
     timestamp: new Date().toISOString(),
-    audit_log: auditLog
+    audit_log: auditLog,
+    ...(includeCatalog ? { catalog_records: catalogRecords } : {})
+  };
+}
+
+async function fixSingleCatalogImageRecord(params: {
+  recordId: string;
+  recordType?: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  title?: string;
+  category?: string;
+  customImageUrl?: string;
+  previousImageUrl?: string;
+  revert?: boolean;
+}) {
+  const cleanId = String(params.recordId || '').trim();
+  if (!cleanId) {
+    throw new Error('record_id is required to fix a catalog image');
+  }
+
+  const usedUrlsSet = new Set<string>();
+  for (const [key, entry] of Object.entries(serverProductImageState?.overrides || {})) {
+    if (key === cleanId) continue;
+    const norm = normalizeAuditImageUrl(entry?.primary);
+    if (norm) usedUrlsSet.add(norm);
+  }
+  for (const l of serverListingsStore) {
+    if (!l || `prod-db-${l.id}` === cleanId || String(l.id) === cleanId) continue;
+    const norm = normalizeAuditImageUrl(l.image_url || l.images?.[0]);
+    if (norm) usedUrlsSet.add(norm);
+  }
+  for (const p of serverProductsStore) {
+    if (!p || p.id === cleanId) continue;
+    const norm = normalizeAuditImageUrl(p.images?.[0] || p.image || p.image_url);
+    if (norm) usedUrlsSet.add(norm);
+  }
+  for (const r of serverRfqsStore) {
+    if (!r) continue;
+    const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+    if (rid === cleanId || String(r.id) === cleanId) continue;
+    const norm = normalizeAuditImageUrl(r.image_url || r.image || r.images?.[0]);
+    if (norm) usedUrlsSet.add(norm);
+  }
+
+  const matchedListing = serverListingsStore.find(
+    (l: any) => l && (`prod-db-${l.id}` === cleanId || String(l.id) === cleanId)
+  );
+  const matchedProduct = serverProductsStore.find((p: any) => p && p.id === cleanId);
+  const matchedRfq = serverRfqsStore.find((r: any) => {
+    if (!r) return false;
+    const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+    return rid === cleanId || String(r.id) === cleanId;
+  });
+
+  const existingOverride = serverProductImageState?.overrides?.[cleanId] as
+    | (ProductImageOverrideEntry & { previousPrimary?: string })
+    | undefined;
+  const oldImageUrl =
+    String(params.previousImageUrl || '').trim() ||
+    normalizeAuditImageUrl(
+      existingOverride?.primary ||
+        matchedListing?.image_url ||
+        matchedListing?.images?.[0] ||
+        matchedProduct?.images?.[0] ||
+        matchedProduct?.image ||
+        matchedProduct?.image_url ||
+        matchedRfq?.image_url ||
+        matchedRfq?.image ||
+        matchedRfq?.images?.[0] ||
+        ''
+    );
+
+  const resolvedTitle = String(
+    params.title ||
+      matchedListing?.title ||
+      matchedProduct?.title ||
+      matchedRfq?.productName ||
+      matchedRfq?.product_name ||
+      matchedRfq?.title ||
+      matchedRfq?.subject ||
+      cleanId
+  );
+  const resolvedCategory = String(
+    params.category ||
+      matchedListing?.category ||
+      matchedProduct?.category ||
+      matchedRfq?.category ||
+      'General Wholesale'
+  );
+  const resolvedType: 'PRODUCT' | 'RFQ' | 'OVERRIDE' =
+    params.recordType || (matchedRfq ? 'RFQ' : matchedListing || matchedProduct ? 'PRODUCT' : 'OVERRIDE');
+
+  let finalImageUrl = '';
+  let source = 'admin_manual_selection';
+  let queryUsed = '';
+
+  const requestedCustomUrl = String(params.customImageUrl || '').trim();
+  if (params.revert && requestedCustomUrl && requestedCustomUrl !== '(empty)') {
+    finalImageUrl = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+    source = 'reverted_previous_image';
+    if (finalImageUrl.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(finalImageUrl)) {
+      delete serverProductImageState.overrides[cleanId];
+    } else {
+      bindAutoSavedImageOverride({
+        localUrl: finalImageUrl,
+        productId: cleanId,
+        productName: resolvedTitle,
+        gallery: [finalImageUrl],
+        flushNow: true,
+        forceOverwrite: true,
+        bindByTitle: false,
+        isManual: false
+      });
+    }
+  } else if (requestedCustomUrl && requestedCustomUrl !== '(empty)') {
+    let resolvedCustom = requestedCustomUrl.startsWith('data:image/')
+      ? requestedCustomUrl
+      : normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+    if (/^https?:\/\//i.test(resolvedCustom)) {
+      const mirrored = await mirrorExternalProductImageToLocalUploads({
+        externalUrl: resolvedCustom,
+        productId: cleanId,
+        productName: resolvedTitle,
+        category: resolvedCategory,
+        flushNow: true
+      });
+      if (mirrored) {
+        resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
+      }
+    }
+    finalImageUrl = resolvedCustom;
+    bindAutoSavedImageOverride({
+      localUrl: finalImageUrl,
+      rawExternalUrl: /^https?:\/\//i.test(requestedCustomUrl) ? requestedCustomUrl : undefined,
+      productId: cleanId,
+      productName: resolvedTitle,
+      gallery: [finalImageUrl],
+      flushNow: true,
+      forceOverwrite: true,
+      bindByTitle: false,
+      isManual: true
+    });
+  } else {
+    const resolved = await resolveUniqueVerifiedCatalogImage({
+      recordId: cleanId,
+      recordType: resolvedType,
+      title: resolvedTitle,
+      category: resolvedCategory,
+      specifications: String(matchedListing?.description || matchedProduct?.description || matchedRfq?.specifications || ''),
+      usedUrls: usedUrlsSet,
+      allowLiveGeminiNetwork: true
+    });
+    finalImageUrl = resolved.newImageUrl;
+    source = resolved.source;
+    queryUsed = resolved.queryUsed;
+  }
+
+  if (finalImageUrl && existingOverride) {
+    (serverProductImageState.overrides[cleanId] as any) = {
+      ...serverProductImageState.overrides[cleanId],
+      previousPrimary: oldImageUrl && oldImageUrl !== finalImageUrl ? oldImageUrl : existingOverride.previousPrimary
+    };
+  }
+
+  if (matchedListing && finalImageUrl) {
+    matchedListing.image_url = finalImageUrl;
+    matchedListing.images = [finalImageUrl];
+  }
+  if (matchedProduct && finalImageUrl) {
+    matchedProduct.image = finalImageUrl;
+    matchedProduct.image_url = finalImageUrl;
+    matchedProduct.images = [finalImageUrl];
+  }
+  if (matchedRfq && finalImageUrl) {
+    matchedRfq.image = finalImageUrl;
+    matchedRfq.image_url = finalImageUrl;
+    matchedRfq.images = [finalImageUrl];
+  }
+
+  saveServerProductsToDisk();
+  saveRfqMarketStoreToDisk();
+  scheduleSaveOverridesState(true);
+
+  return {
+    success: true,
+    record_id: cleanId,
+    record_type: resolvedType,
+    title: resolvedTitle,
+    category: resolvedCategory,
+    old_image_url: oldImageUrl || '(empty)',
+    new_image_url: finalImageUrl,
+    query_used: queryUsed,
+    source,
+    is_fallback_card: source === 'gemini_grounded_unique_webp',
+    status: params.revert ? ('FLAGGED' as const) : ('FIXED' as const),
+    updatedAt: new Date().toISOString()
   };
 }
 
 app.get('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
   try {
     const dryRun = req.query.dry_run === '1' || req.query.mode === 'preview';
-    const summary = await runFullCatalogImageAuditAndCleanup({ dryRun });
+    const includeCatalog = req.query.include_catalog === '1';
+    const summary = await runFullCatalogImageAuditAndCleanup({ dryRun, includeCatalog });
     return res.json(summary);
   } catch (err: any) {
     return res.status(500).json({
@@ -22020,11 +22353,13 @@ app.post('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
   try {
     const body = req.body || {};
     const dryRun = Boolean(body.dry_run || body.dryRun || req.query.dry_run === '1' || req.query.mode === 'preview');
+    const includeCatalog = Boolean(body.include_catalog || body.includeCatalog || req.query.include_catalog === '1');
     const extraCatalogItems = Array.isArray(body.catalog_items || body.catalogItems)
       ? (body.catalog_items || body.catalogItems)
       : undefined;
     const summary = await runFullCatalogImageAuditAndCleanup({
       dryRun,
+      includeCatalog,
       extraCatalogItems
     });
     return res.json(summary);
@@ -22033,6 +22368,27 @@ app.post('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
       status: 'error',
       success: false,
       message: err?.message || 'Catalog image audit failed'
+    });
+  }
+});
+
+app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const result = await fixSingleCatalogImageRecord({
+      recordId: String(body.record_id || body.recordId || '').trim(),
+      recordType: body.record_type || body.recordType,
+      title: body.title,
+      category: body.category,
+      customImageUrl: body.custom_image_url || body.customImageUrl,
+      previousImageUrl: body.previous_image_url || body.previousImageUrl,
+      revert: Boolean(body.revert)
+    });
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err?.message || 'Failed to fix catalog image'
     });
   }
 });
