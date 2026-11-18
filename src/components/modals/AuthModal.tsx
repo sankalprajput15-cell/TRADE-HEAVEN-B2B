@@ -212,14 +212,13 @@ export const AuthModal: React.FC<Props> = ({
       setError('Please enter your registered email address before clicking Send OTP.');
       return;
     }
-    if (!isRootAdmin && !effectivePassword) {
-      setError('Please enter both your registered email and password before clicking Send OTP.');
-      return;
-    }
 
     setIsSendingLoginOtp(true);
     try {
-      const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : effectivePassword);
+      const res = await otpService.requestLoginOtp(
+        cleanEmail,
+        isRootAdmin || !effectivePassword ? undefined : effectivePassword
+      );
       if (res.success) {
         setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
@@ -287,17 +286,16 @@ export const AuthModal: React.FC<Props> = ({
       setError('Please enter your registered email address.');
       return;
     }
-    if (!isRootAdmin && !effectivePassword) {
-      setError('Please enter both your registered corporate email and password.');
-      return;
-    }
 
     const cleanOtp = loginOtpCode.trim();
     if (!cleanOtp || cleanOtp.length !== 6) {
       // Step 1: User submitted credentials without OTP - automatically dispatch OTP to registered email
       setIsLoading(true);
       try {
-        const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : effectivePassword);
+        const res = await otpService.requestLoginOtp(
+          cleanEmail,
+          isRootAdmin || !effectivePassword ? undefined : effectivePassword
+        );
         if (res.success) {
           setLoginOtpSent(true);
           setPendingOtpEmail(res.email || cleanEmail);

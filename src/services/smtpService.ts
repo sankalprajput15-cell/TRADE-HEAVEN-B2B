@@ -3969,8 +3969,9 @@ export class ServerDeliveryQueueManager {
             ? mailOptions.trackingId
             : `ms-trk-${Date.now().toString(36)}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
 
+        const isOtpTask = mailOptions.category === 'OTP_SECURITY';
         const injected =
-          typeof mailOptions.html === 'string' && mailOptions.html.trim()
+          !isOtpTask && typeof mailOptions.html === 'string' && mailOptions.html.trim()
             ? injectMailSuiteTrackingIntoHtml(mailOptions.html, trackingId)
             : { html: mailOptions.html || '', trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/${trackingId}.gif` };
 
@@ -4007,7 +4008,11 @@ export class ServerDeliveryQueueManager {
           enqueuedAt: Date.now(),
           resolve
         };
-        this.queue.push(task);
+        if (isOtpTask) {
+          this.queue.unshift(task);
+        } else {
+          this.queue.push(task);
+        }
       });
     });
 
@@ -4052,12 +4057,13 @@ export class ServerDeliveryQueueManager {
       while (this.queue.length > 0) {
         const task = this.queue.shift()!;
         const taskMeta = (task.metadata || {}) as any;
+        const isOtpTask = taskMeta.category === 'OTP_SECURITY';
 
         const transporter = task.customTransporter || this.getDefaultTransporter();
 
-        // Enforce minimum delay (e.g., 2000ms) between consecutive live SMTP emails
+        // Enforce minimum delay (e.g., 2000ms) between consecutive live SMTP emails (bypassed for urgent OTP_SECURITY codes)
         let enforcedDelayMs = 0;
-        if (this.lastDispatchedAt > 0 && (transporter || !taskMeta.skipLegacyInquiryRelay)) {
+        if (!isOtpTask && this.lastDispatchedAt > 0 && (transporter || !taskMeta.skipLegacyInquiryRelay)) {
           const elapsed = Date.now() - this.lastDispatchedAt;
           if (elapsed < this.minDelayMs) {
             enforcedDelayMs = this.minDelayMs - elapsed;
