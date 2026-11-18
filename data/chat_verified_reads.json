@@ -152,6 +152,34 @@
       "adminCopyAccepted": true,
       "deliveryMode": "LIVE_SMTP",
       "sentAt": "2026-11-17T09:05:57.782Z"
+    },
+    "msg-1794925539954-65025": {
+      "messageId": "msg-1794925539954-65025",
+      "conversationId": "conv-1794805539936-4b8e0",
+      "supplierEmail": "larsbarnhart25@gmail.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-18T11:42:39.193Z"
+    },
+    "msg-1794925508580-00f83": {
+      "messageId": "msg-1794925508580-00f83",
+      "conversationId": "conv-1794741737078-40fdd",
+      "supplierEmail": "zac@otec.ltd",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-18T11:42:39.193Z"
     }
   }
 }

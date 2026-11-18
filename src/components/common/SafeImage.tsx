@@ -92,7 +92,10 @@ function initSafeImageGlobalHub() {
     }).catch(() => {});
   }
 
-  const notifyOverrides = () => overrideSubscribers.forEach(cb => cb());
+  const notifyOverrides = () => {
+    FAILED_IMAGE_URLS.clear();
+    overrideSubscribers.forEach(cb => cb());
+  };
   const notifyLiveMode = () => {
     cachedLiveMode = checkIsAdminLiveEditActive();
     liveModeSubscribers.forEach(cb => cb(cachedLiveMode));
@@ -377,6 +380,21 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     const lowerSupplier = (supplierName || '').toLowerCase();
     const pid = (productId || '').trim();
 
+    const pushCandidateWithRawFallback = (rawCandidate: string, optCandidate: string) => {
+      if (optCandidate && !list.includes(optCandidate)) {
+        list.push(optCandidate);
+      }
+      if (rawCandidate && !rawCandidate.startsWith('data:')) {
+        const cleanRaw = rawCandidate.startsWith('/') ? (rawCandidate.split('?')[0] || rawCandidate) : rawCandidate;
+        if (cleanRaw && cleanRaw !== optCandidate && !list.includes(cleanRaw)) {
+          list.push(cleanRaw);
+        }
+        if (rawCandidate !== cleanRaw && rawCandidate !== optCandidate && !list.includes(rawCandidate)) {
+          list.push(rawCandidate);
+        }
+      }
+    };
+
     const isCrossCompanyAsset = (url: string): boolean => {
       const u = url.toLowerCase();
       if (u.includes('leather_belt_')) return true;
@@ -385,18 +403,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       return isMismatchedProductImageUrl(url, productTitle || alt, category);
     };
 
-    const optManualEff =
+    const manualMirrored =
       hasManualOverride && effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()
-        ? (() => {
-            const mirroredEff = resolveLocalMirroredImageUrl(effectiveSrc.trim());
-            return mirroredEff.startsWith('data:image/')
-              ? mirroredEff
-              : optimizeImageUrl(mirroredEff, { width: optimalWidth, isThumbnail });
-          })()
+        ? resolveLocalMirroredImageUrl(effectiveSrc.trim())
         : '';
+    const optManualEff = manualMirrored
+      ? manualMirrored.startsWith('data:image/')
+        ? manualMirrored
+        : optimizeImageUrl(manualMirrored, { width: optimalWidth, isThumbnail })
+      : '';
 
-    if (optManualEff && !list.includes(optManualEff)) {
-      list.push(optManualEff);
+    if (optManualEff) {
+      pushCandidateWithRawFallback(manualMirrored, optManualEff);
     }
 
     if (pid.startsWith('prod-leather-belt-')) {
@@ -420,7 +438,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       const optEff = mirroredEff.startsWith('data:image/')
         ? mirroredEff
         : optimizeImageUrl(mirroredEff, { width: optimalWidth, isThumbnail });
-      if (!list.includes(optEff)) list.push(optEff);
+      pushCandidateWithRawFallback(mirroredEff, optEff);
     }
 
     if (
@@ -434,7 +452,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       const optFb = mirroredFb.startsWith('data:image/')
         ? mirroredFb
         : optimizeImageUrl(mirroredFb, { width: optimalWidth, isThumbnail });
-      if (!list.includes(optFb)) list.push(optFb);
+      pushCandidateWithRawFallback(mirroredFb, optFb);
     }
 
     if (!isLogoOrAvatar && visualPool.length > 0) {
@@ -454,7 +472,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         const optVUrl = mirroredVUrl.startsWith('/assets/uploads/')
           ? optimizeImageUrl(mirroredVUrl, { width: optimalWidth, isThumbnail })
           : mirroredVUrl;
-        if (optVUrl && !list.includes(optVUrl)) list.push(optVUrl);
+        pushCandidateWithRawFallback(mirroredVUrl, optVUrl);
       }
     }
 
@@ -510,7 +528,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
   const currentCandidate = candidates[effectiveAttemptIndex] || '';
 
-  const [isLoaded, setIsLoaded] = useState<boolean>(() => Boolean(currentCandidate && LOADED_IMAGE_URLS.has(currentCandidate)));
+  const [isLoaded, setIsLoaded] = useState<boolean>(() =>
+    Boolean(
+      currentCandidate &&
+        (LOADED_IMAGE_URLS.has(currentCandidate) ||
+          currentCandidate.startsWith('data:') ||
+          currentCandidate.startsWith('blob:'))
+    )
+  );
 
   useEffect(() => {
     if (lastCandidateRef.current !== primaryCandidate) {
@@ -525,7 +550,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       setIsLoaded(false);
       return;
     }
-    if (LOADED_IMAGE_URLS.has(currentCandidate)) {
+    if (
+      LOADED_IMAGE_URLS.has(currentCandidate) ||
+      currentCandidate.startsWith('data:') ||
+      currentCandidate.startsWith('blob:')
+    ) {
       setIsLoaded(true);
       return;
     }
@@ -625,6 +654,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
       setHasError(false);
       setAttemptIndex(0);
+      FAILED_IMAGE_URLS.clear();
       setAfterImageUrl(res.url);
       setCustomUrlInput(res.url);
       setOverrideVersion(v => v + 1);

@@ -395,7 +395,20 @@ function getOrBuildOptimizedImage(
   let didGenerate = false;
   const job = (async (): Promise<CachedOptimizedImage> => {
     try {
-      const outType = formatKey === 'webp' ? 'image/webp' : formatKey === 'orig' ? `image/${path.extname(filename).slice(1).toLowerCase() || 'jpeg'}` : 'image/jpeg';
+      const extLower = path.extname(filename).slice(1).toLowerCase();
+      const origMime =
+        extLower === 'png'
+          ? 'image/png'
+          : extLower === 'webp'
+            ? 'image/webp'
+            : extLower === 'gif'
+              ? 'image/gif'
+              : extLower === 'avif'
+                ? 'image/avif'
+                : extLower === 'svg'
+                  ? 'image/svg+xml'
+                  : 'image/jpeg';
+      const outType = formatKey === 'webp' ? 'image/webp' : formatKey === 'orig' ? origMime : 'image/jpeg';
       const diskPath = getDiskCacheFilePath(cacheKey, mtime, formatKey);
 
       // Fast warm-restart hit from persistent disk cache
@@ -413,18 +426,22 @@ function getOrBuildOptimizedImage(
         }
       }
 
-      const quality = width <= 360 ? 74 : width <= 640 ? 78 : 82;
-      let pipeline = sharp(targetPath, { failOn: 'none' }).rotate();
-
-      if (!isOriginalRequested && width > 0 && width < 3000) {
-        pipeline = pipeline.resize({ width, withoutEnlargement: true });
-      }
-
       let outBuffer: Buffer;
-      if (formatKey === 'webp') {
-        outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
+      if (formatKey === 'orig') {
+        outBuffer = fs.readFileSync(targetPath);
       } else {
-        outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
+        const quality = width <= 360 ? 74 : width <= 640 ? 78 : 82;
+        let pipeline = sharp(targetPath, { failOn: 'none' }).rotate();
+
+        if (width > 0 && width < 3000) {
+          pipeline = pipeline.resize({ width, withoutEnlargement: true });
+        }
+
+        if (formatKey === 'webp') {
+          outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
+        } else {
+          outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
+        }
       }
 
       didGenerate = true;
@@ -813,11 +830,25 @@ app.get(['/uploads/*', '/assets/uploads/*'], async (req, res, next) => {
       'GET',
       { 'User-Agent': 'TradeHeaven-Media-Proxy/1.0' },
       undefined,
-      12000
+      3500
     );
     if (upstreamRes.status < 200 || upstreamRes.status >= 400) return next();
-    const contentType = upstreamRes.headers['content-type'];
-    if (typeof contentType === 'string') res.setHeader('Content-Type', contentType);
+    const contentType = String(upstreamRes.headers['content-type'] || '').toLowerCase();
+    // Reject SPA HTML / JSON shells returned with 200 OK by upstream host when file does not exist
+    if (
+      !contentType ||
+      contentType.startsWith('text/html') ||
+      contentType.startsWith('text/plain') ||
+      contentType.startsWith('application/json') ||
+      upstreamRes.body.length === 0
+    ) {
+      return next();
+    }
+    const headSnippet = upstreamRes.body.subarray(0, 64).toString('utf8').trimStart().toLowerCase();
+    if (headSnippet.startsWith('<!doctype') || headSnippet.startsWith('<html')) {
+      return next();
+    }
+    res.setHeader('Content-Type', String(upstreamRes.headers['content-type']));
     const contentLength = upstreamRes.headers['content-length'];
     if (typeof contentLength === 'string') res.setHeader('Content-Length', contentLength);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -3173,15 +3204,14 @@ app.delete('/api/v1/admin/platform-offers/:id', (req, res) => {
 app.post('/api/v1/admin/platform-offers/upload-banner', async (req, res) => {
   try {
     const { filename = 'campaign-banner.jpg', dataUrl } = req.body || {};
-    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.trim().startsWith('data:')) {
       return res.status(400).json({ success: false, message: 'Valid base64 image dataUrl is required.' });
     }
-    const matches = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i);
-    if (!matches) {
-      return res.status(400).json({ success: false, message: 'Supported formats: PNG, JPG, JPEG, WEBP.' });
+    const parsed = parseBase64DataUrl(dataUrl, 'image/jpeg');
+    if (!parsed || !parsed.mimeType.startsWith('image/')) {
+      return res.status(400).json({ success: false, message: 'Supported formats: PNG, JPG, JPEG, WEBP, GIF.' });
     }
-    const base64Body = matches[2];
-    const buffer = Buffer.from(base64Body, 'base64');
+    const buffer = parsed.buffer;
     if (buffer.length > 8 * 1024 * 1024) {
       return res.status(400).json({ success: false, message: 'Banner image must be under 8 MB.' });
     }
@@ -4539,25 +4569,24 @@ app.post('/api/v1/admin/renewal-offer-template/dispatch', async (req, res) => {
 app.post('/api/v1/admin/renewal-offer-template/upload-asset', (req, res) => {
   try {
     const { dataUrl, fileName, slot, segmentId } = req.body || {};
-    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.trim().startsWith('data:')) {
       return res.status(400).json({
         success: false,
         message: 'A valid base64 image dataUrl is required.'
       });
     }
 
-    const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
-    if (!match) {
+    const parsed = parseBase64DataUrl(dataUrl, 'image/png');
+    if (!parsed || !parsed.mimeType.startsWith('image/')) {
       return res.status(400).json({
         success: false,
         message: 'Malformed image dataUrl.'
       });
     }
 
-    const rawExt = match[1].toLowerCase();
-    const ext = rawExt === 'jpeg' ? 'jpg' : rawExt === 'svg+xml' ? 'svg' : rawExt;
-    const base64Data = match[2];
-    const buffer = Buffer.from(base64Data, 'base64');
+    const rawExt = (parsed.mimeType.split('/')[1] || 'png').split('+')[0].toLowerCase();
+    const ext = rawExt === 'jpeg' ? 'jpg' : parsed.mimeType.includes('svg') ? 'svg' : rawExt;
+    const buffer = parsed.buffer;
 
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'renewal-branding');
     if (!fs.existsSync(uploadDir)) {
@@ -13498,6 +13527,14 @@ const EXCLUDED_SCREENSHOT_FILES = new Set([
   'WhatsApp_Image_2026-11-04_at_7.52.01_AM_ab94e787.jpeg'
 ]);
 
+let serverProductImageState: ProductImageSystemState = {
+  overrides: {},
+  globalDefaultImage: null,
+  categoryOverrides: {},
+  urlReplacements: {},
+  mediaLibrary: []
+};
+
 function normalizeServerAssetUrl(url: string | undefined | null, explicitVersion?: string | number): string {
   if (!url || typeof url !== 'string') return '';
   let out = url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
@@ -13644,12 +13681,13 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
       for (const [pid, rawEntry] of Object.entries(parsed.overrides)) {
         const entry = rawEntry as ProductImageOverrideEntry & { previousPrimary?: string };
         if (!entry || !entry.primary) continue;
-        const cleanPrimary = normalizeServerAssetUrl(entry.primary);
+        const entryVer = entry.updatedAt ? (Date.parse(entry.updatedAt) || undefined) : undefined;
+        const cleanPrimary = normalizeServerAssetUrl(entry.primary, entryVer);
         const incomingIsManual = isManualOverrideEntry(entry);
         if (!incomingIsManual && isGenericOrPlaceholderServerUrl(cleanPrimary)) continue;
         const cleanGallery = Array.isArray(entry.gallery) && entry.gallery.length > 0
           ? entry.gallery
-              .map(u => normalizeServerAssetUrl(u))
+              .map(u => normalizeServerAssetUrl(u, entryVer))
               .filter(u => Boolean(u) && (incomingIsManual || !isGenericOrPlaceholderServerUrl(u)))
           : [cleanPrimary];
         const existing = defaultState.overrides[pid];
@@ -13700,14 +13738,17 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
       }
     }
     if (Array.isArray(parsed.mediaLibrary)) {
-      const seenUrls = new Set(defaultState.mediaLibrary.map(m => m.url));
+      const seenBaseUrls = new Set(defaultState.mediaLibrary.map(m => String(m.url || '').split('?')[0]));
       for (const item of parsed.mediaLibrary) {
         if (!item || !item.url) continue;
-        const fileName = path.basename(item.url);
+        const rawBaseUrl = String(item.url).trim().split('?')[0];
+        const fileName = path.basename(rawBaseUrl);
         if (EXCLUDED_SCREENSHOT_FILES.has(fileName)) continue;
-        const normalizedUrl = normalizeServerAssetUrl(item.url);
-        if (!seenUrls.has(normalizedUrl)) {
-          seenUrls.add(normalizedUrl);
+        const itemVer = item.uploadedAt ? (Date.parse(item.uploadedAt) || undefined) : undefined;
+        const normalizedUrl = normalizeServerAssetUrl(item.url, itemVer);
+        const normalizedBase = normalizedUrl.split('?')[0];
+        if (!seenBaseUrls.has(normalizedBase)) {
+          seenBaseUrls.add(normalizedBase);
           defaultState.mediaLibrary.push({
             ...item,
             url: normalizedUrl
@@ -13735,7 +13776,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
   }
 
   // Scan public/assets/uploads to populate mediaLibrary with real local image files
-  const existingUrls = new Set(defaultState.mediaLibrary.map(m => m.url));
+  const existingBaseUrls = new Set(defaultState.mediaLibrary.map(m => String(m.url || '').split('?')[0]));
   const scanDirForImages = (dirPath: string, urlPrefix: string) => {
     try {
       if (!fs.existsSync(dirPath)) return;
@@ -13745,7 +13786,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
         const ext = path.extname(file).toLowerCase().replace('.', '');
         if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
           const url = `${urlPrefix}/${file}`;
-          if (!existingUrls.has(url)) {
+          if (!existingBaseUrls.has(url)) {
             const stat = fs.statSync(path.join(dirPath, file));
             defaultState.mediaLibrary.unshift({
               id: `media-${file}`,
@@ -13755,7 +13796,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
               sizeBytes: stat.size,
               uploadedAt: stat.mtime.toISOString()
             });
-            existingUrls.add(url);
+            existingBaseUrls.add(url);
           }
         }
       }
@@ -13767,7 +13808,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
   return defaultState;
 }
 
-let serverProductImageState: ProductImageSystemState = loadServerProductImageState();
+serverProductImageState = loadServerProductImageState();
 
 function saveServerProductImageState() {
   ensureUploadsDir();
@@ -13799,6 +13840,36 @@ app.get('/api/v1/admin/product-images', (req, res) => {
   });
 });
 
+function parseBase64DataUrl(
+  raw: string,
+  fallbackMime = 'application/octet-stream'
+): { mimeType: string; buffer: Buffer } | null {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return null;
+
+  let detectedMime = String(fallbackMime || 'application/octet-stream').toLowerCase();
+  let base64Body = trimmed;
+
+  if (trimmed.startsWith('data:')) {
+    const commaIdx = trimmed.indexOf(',');
+    if (commaIdx === -1) return null;
+    const header = trimmed.slice(5, commaIdx);
+    if (!/;base64$/i.test(header)) {
+      return null;
+    }
+    const semiIdx = header.indexOf(';');
+    const rawMime = (semiIdx >= 0 ? header.slice(0, semiIdx) : header).trim().toLowerCase();
+    if (rawMime) detectedMime = rawMime;
+    base64Body = trimmed.slice(commaIdx + 1);
+  }
+
+  const sanitizedB64 = base64Body.replace(/\s+/g, '');
+  if (!sanitizedB64) return null;
+  const buffer = Buffer.from(sanitizedB64, 'base64');
+  if (!buffer || buffer.length === 0) return null;
+  return { mimeType: detectedMime, buffer };
+}
+
 // Shared handler for POST /api/v1/admin/upload-product-image & /api.php?action=upload_product_image
 function handleUploadProductImageRequest(req: express.Request, res: express.Response, customBody?: any) {
   try {
@@ -13822,11 +13893,12 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       return res.status(400).json({ success: false, message: 'Missing base64Data payload.' });
     }
 
-    // Strip data URL prefix if present (e.g., "data:image/webp;base64,...")
-    const matches = base64Data.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
-    const detectedMime = matches ? matches[1] : (mimeType || 'image/jpeg');
-    const rawBase64 = matches ? matches[2] : base64Data;
-    const buffer = Buffer.from(rawBase64, 'base64');
+    const parsed = parseBase64DataUrl(base64Data, mimeType || 'image/jpeg');
+    if (!parsed) {
+      return res.status(400).json({ success: false, message: 'Invalid or empty base64 image payload.' });
+    }
+    const detectedMime = parsed.mimeType;
+    const buffer = parsed.buffer;
 
     // Determine file extension
     let ext = 'jpg';
@@ -13984,7 +14056,6 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       success: true,
       url: uploadedUrl,
       mediaEntry,
-      state: serverProductImageState,
       message: `Image uploaded and saved as ${ext.toUpperCase()}`
     });
   } catch (err: any) {
@@ -14115,14 +14186,13 @@ app.post('/api/v1/client-uploads', (req, res) => {
     let savedFileUrl = '';
     if (fileDataUrl && typeof fileDataUrl === 'string' && fileDataUrl.startsWith('data:')) {
       try {
-        const matches = fileDataUrl.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
-        if (matches) {
-          const rawBase64 = matches[2];
-          const buffer = Buffer.from(rawBase64, 'base64');
+        const parsed = parseBase64DataUrl(fileDataUrl, fileType || 'application/pdf');
+        if (parsed) {
+          const buffer = parsed.buffer;
           let ext = 'pdf';
-          if (fileType.includes('png') || fileName.endsWith('.png')) ext = 'png';
-          else if (fileType.includes('jpeg') || fileType.includes('jpg') || fileName.endsWith('.jpg')) ext = 'jpg';
-          else if (fileType.includes('webp')) ext = 'webp';
+          if (fileType.includes('png') || parsed.mimeType.includes('png') || fileName.endsWith('.png')) ext = 'png';
+          else if (fileType.includes('jpeg') || fileType.includes('jpg') || parsed.mimeType.includes('jpeg') || fileName.endsWith('.jpg')) ext = 'jpg';
+          else if (fileType.includes('webp') || parsed.mimeType.includes('webp')) ext = 'webp';
 
           const sanitized = fileName.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40) || 'wire-slip';
           const finalName = `${sanitized}-${Date.now()}.${ext}`;
@@ -14496,10 +14566,12 @@ app.post('/api/v1/admin/master-uploads', (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing base64Data in request.' });
     }
 
-    const matches = base64Data.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
-    const detectedMime = matches ? matches[1] : mimeType;
-    const rawBase64 = matches ? matches[2] : base64Data;
-    const buffer = Buffer.from(rawBase64, 'base64');
+    const parsed = parseBase64DataUrl(base64Data, mimeType);
+    if (!parsed) {
+      return res.status(400).json({ success: false, message: 'Invalid or empty base64Data payload.' });
+    }
+    const detectedMime = parsed.mimeType;
+    const buffer = parsed.buffer;
 
     let ext = 'bin';
     if (fileName.includes('.')) {
@@ -17009,6 +17081,61 @@ app.post('/api/v1/admin/send-melissa-vip-upgrade-email', async (req, res) => {
   }
 });
 
+// POST /api/v1/admin/send-melissa-deal-timeline-alert - Dispatch Deal Summary & 6-Stage Execution Timeline Alert to Melissa Prezios
+app.post('/api/v1/admin/send-melissa-deal-timeline-alert', async (req, res) => {
+  try {
+    const melissaEmail = req.body?.melissaEmail || 'melissa@mpcommoditybrokers.com';
+    const adminEmail = req.body?.adminEmail || 'sankalprajput15@gmail.com';
+    const secondaryAdminEmail = req.body?.secondaryAdminEmail || 'yr943334@gmail.com';
+    const dealReference = req.body?.dealReference || 'DEAL-TH-AU-61648-FUEL';
+    const vaultReference = req.body?.vaultReference || 'TH-VAULT-AU-61648';
+    const certificateNumber = req.body?.certificateNumber || 'THC-2026-MPC-61648';
+    const amountFormatted = req.body?.amountFormatted || '$50,000.00 USD';
+    const hoursRemaining = req.body?.hoursRemaining ?? 36;
+    const sendAdminCopy = req.body?.sendAdminCopy !== false;
+
+    const result = await automatedSmtpService.sendMelissaDealAndTimelineAlertEmail({
+      melissaEmail,
+      adminEmail,
+      secondaryAdminEmail,
+      dealReference,
+      vaultReference,
+      certificateNumber,
+      amountFormatted,
+      hoursRemaining,
+      sendAdminCopy,
+      dispatchType: 'MANUAL'
+    });
+
+    logServerActivity(
+      req,
+      'ADMIN_EMAIL_DISPATCH',
+      melissaEmail,
+      'ADMIN',
+      '/api/v1/admin/send-melissa-deal-timeline-alert',
+      `Dispatched Deal & 6-Stage Execution Timeline Alert to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd • Deal: ${dealReference} • Vault: ${vaultReference} • ${amountFormatted}).`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      message: `📋 Deal & 6-Stage Timeline Alert dispatched to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd) with admin copies!`,
+      recipient: melissaEmail,
+      dealReference,
+      vaultReference,
+      certificateNumber,
+      melissaReceipt: result.melissaReceipt,
+      adminReceipt: result.adminReceipt,
+      secondaryAdminReceipt: result.secondaryAdminReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to dispatch Melissa Prezios deal & timeline alert email'
+    });
+  }
+});
+
 // POST /api/v1/admin/send-afreh-copper-powder-offers-email - Notify AFREH GROUP LIMITED (yaw.afreh@afrehgroup.com) of 50 buyers offering Advance Payment (24h expiry)
 app.post('/api/v1/admin/send-afreh-copper-powder-offers-email', async (req, res) => {
   try {
@@ -17112,11 +17239,24 @@ app.post('/api/v1/admin/upload-document-or-image', async (req, res) => {
         .replace(/[^a-zA-Z0-9_-]/g, '-')
         .slice(0, 40) || 'asset';
 
-    const imgMatch = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
-    if (imgMatch) {
-      const buffer = Buffer.from(imgMatch[2], 'base64');
+    const parsed = parseBase64DataUrl(dataUrl, 'application/octet-stream');
+    if (!parsed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or empty base64 dataUrl.'
+      });
+    }
+
+    if (parsed.mimeType.startsWith('image/')) {
+      const buffer = parsed.buffer;
       if (buffer.length > 10 * 1024 * 1024) {
         return res.status(400).json({ success: false, message: 'Image must be under 10 MB.' });
+      }
+      if (parsed.mimeType.includes('svg')) {
+        const outFile = `${safeStem}-${Date.now()}.svg`;
+        const outPath = path.join(uploadsStaticDir, outFile);
+        fs.writeFileSync(outPath, buffer);
+        return res.json({ success: true, kind: 'IMAGE', url: `/assets/uploads/${outFile}` });
       }
       const outFile = `${safeStem}-${Date.now()}.jpg`;
       const outPath = path.join(uploadsStaticDir, outFile);
@@ -17128,9 +17268,8 @@ app.post('/api/v1/admin/upload-document-or-image', async (req, res) => {
       return res.json({ success: true, kind: 'IMAGE', url: `/assets/uploads/${outFile}` });
     }
 
-    const pdfMatch = dataUrl.match(/^data:application\/pdf;base64,(.+)$/i);
-    if (pdfMatch) {
-      const buffer = Buffer.from(pdfMatch[1], 'base64');
+    if (parsed.mimeType === 'application/pdf' || String(filename).toLowerCase().endsWith('.pdf')) {
+      const buffer = parsed.buffer;
       if (buffer.length > 15 * 1024 * 1024) {
         return res.status(400).json({ success: false, message: 'PDF document must be under 15 MB.' });
       }
@@ -17142,7 +17281,7 @@ app.post('/api/v1/admin/upload-document-or-image', async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: 'Unsupported file format. Upload PNG, JPG, WEBP, or PDF.'
+      message: 'Unsupported file format. Upload PNG, JPG, WEBP, GIF, SVG, or PDF.'
     });
   } catch (err: any) {
     return res.status(500).json({
@@ -21935,6 +22074,34 @@ async function startServer() {
       message: `API endpoint not found on server: ${req.method} ${req.path}`,
       data: []
     });
+  });
+
+  // Missing static media/upload 404 guard: Never let missing image/upload URLs fall through to SPA HTML (200 OK text/html)
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const isViteAssetImport =
+      req.path.startsWith('/src/assets') &&
+      ('import' in req.query ||
+        'url' in req.query ||
+        'raw' in req.query ||
+        'inline' in req.query ||
+        req.headers['sec-fetch-dest'] === 'script');
+    if (isViteAssetImport) return next();
+
+    if (
+      req.path.startsWith('/assets/uploads/') ||
+      req.path.startsWith('/assets/aistudio/') ||
+      req.path.startsWith('/assets/tradeheaven/') ||
+      req.path.startsWith('/assets/client-uploads/') ||
+      req.path.startsWith('/uploads/') ||
+      req.path.startsWith('/src/assets/images/')
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: `Asset not found: ${req.path}`
+      });
+    }
+    return next();
   });
 
   // Serve pre-built code-split dist assets first whenever dist/index.html exists

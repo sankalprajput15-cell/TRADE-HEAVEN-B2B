@@ -1703,6 +1703,99 @@ export const MARK_JOHNSON_15_BUYER_VISITS: MarkJohnsonBuyerVisitInquiry[] = [
   }
 ];
 
+export interface MelissaDealTimelineStage {
+  id: string;
+  stageNumber: number;
+  phaseLabel: string;
+  title: string;
+  windowLabel: string;
+  status: 'COMPLETED' | 'ACTIVE_URGENT' | 'NEXT' | 'SCHEDULED';
+  details: string;
+}
+
+export const MELISSA_DEAL_AND_TIMELINE = {
+  dealReference: 'DEAL-TH-AU-61648-FUEL',
+  vaultReference: 'TH-VAULT-AU-61648',
+  certificateNumber: 'THC-2026-MPC-61648',
+  beneficiaryName: 'Melissa Prezios',
+  beneficiaryEmail: 'melissa@mpcommoditybrokers.com',
+  beneficiaryPhone: '+61411510887',
+  companyId: 'comp-melissa-mpcommodity',
+  companyName: 'MP Commodity Brokers Australia Pty Ltd',
+  location: 'Sydney, Australia',
+  registrationNumber: 'ABN-61-648-291-004',
+  commodities: 'EN590 10PPM Ultra-Low Sulfur Diesel, Aviation Jet Fuel A-1, D6 Virgin Fuel Oil & Marine Gasoil (MGO)',
+  volumeAllocation: '5,000 – 50,000 MT (Diesel / Jet A-1) & 10,000 – 50,000 BBL (D6 / MGO)',
+  pricingTerms: 'As per Platts Benchmark (No Set Price)',
+  paymentInstrument: 'SBLC Only (Standby Letter of Credit)',
+  escrowBalanceUsd: '$50,000.00 USD',
+  tradeAssuranceLimitUsd: '$1,100,000.00 USD',
+  vipUpgradeRateUsd: '$5,000.00 USD (Discounted from $6,100/yr • 30-Day Service Judgement Agreement)',
+  clearingDeadlineSummary: 'Funds held >12 Hours • ~36 Hours Remaining in 48-Hour Clearing Window',
+  stages: [
+    {
+      id: 'mel-stage-1',
+      stageNumber: 1,
+      phaseLabel: 'Stage 1 • Foundation',
+      title: 'KYC Verification, Platts/SBLC Alignment & Trade Assurance Certificate',
+      windowLabel: 'Completed (Nov 4 – Nov 9, 2026)',
+      status: 'COMPLETED',
+      details:
+        'Australian corporate registration (ABN-61-648-291-004) verified, storefront aligned to SBLC-Only & Platts pricing (Sydney, Australia), and Official Trade Assurance Certificate THC-2026-MPC-61648 ($1,100,000 USD) issued.'
+    },
+    {
+      id: 'mel-stage-2',
+      stageNumber: 2,
+      phaseLabel: 'Stage 2 • Escrow Credit',
+      title: 'Custodial Escrow Vault Allocation ($50,000.00 USD)',
+      windowLabel: 'Completed (Vault: TH-VAULT-AU-61648)',
+      status: 'COMPLETED',
+      details:
+        '$50,000.00 USD commission/settlement allocation (DEP-USD-50000-MELISSA) credited into Trade Heaven Custodial Escrow Vault TH-VAULT-AU-61648.'
+    },
+    {
+      id: 'mel-stage-3',
+      stageNumber: 3,
+      phaseLabel: 'Stage 3 • Action Required',
+      title: '48-Hour Clearing Window & VIP Upgrade Activation ($5,000 USD)',
+      windowLabel: 'Active Now (~36 Hours Remaining)',
+      status: 'ACTIVE_URGENT',
+      details:
+        'Account is on Basic Plan (>12h in vault). Complete discounted $5,000 USD VIP Upgrade checkout (backed by the 30-Day Service Judgement Agreement) and confirm bank payout routing before the 48-hour clearing timer triggers automated reversal.'
+    },
+    {
+      id: 'mel-stage-4',
+      stageNumber: 4,
+      phaseLabel: 'Stage 4 • Instrument Lock',
+      title: 'Buyer Purchase Schedule, Counter-Offer & SBLC (MT760) Bank Verification',
+      windowLabel: 'T+1 to T+3 Business Days',
+      status: 'NEXT',
+      details:
+        'Finalize institutional buyer FOB/CIF/TTO schedule, confirm Platts index pricing formula, and complete issuing/receiving bank verification for the Standby Letter of Credit (SBLC Only).'
+    },
+    {
+      id: 'mel-stage-5',
+      stageNumber: 5,
+      phaseLabel: 'Stage 5 • Inspection & Lift-Off',
+      title: 'SGS / Saybolt Dip Test, Cargo Allocation & Clean On-Board B/L',
+      windowLabel: 'T+4 to T+7 Business Days',
+      status: 'SCHEDULED',
+      details:
+        'Execute independent SGS/Saybolt dip test & sulfur/flash-point assay at loading terminal, release terminal allocation, and issue Clean On-Board Bill of Lading under $1.1M Trade Assurance coverage.'
+    },
+    {
+      id: 'mel-stage-6',
+      stageNumber: 6,
+      phaseLabel: 'Stage 6 • Final Settlement',
+      title: 'Commercial Invoice Clearing & Direct SWIFT Payout Release',
+      windowLabel: 'T+7 to T+10 Business Days',
+      status: 'SCHEDULED',
+      details:
+        'Bank-to-bank SBLC / SWIFT settlement reconciliation, instant release of $50,000.00 USD + deal proceeds to verified corporate bank account, and ongoing 30-day VIP trade desk support.'
+    }
+  ] as MelissaDealTimelineStage[]
+};
+
 export function getDetailedVendorProfile(companyId: string, fallbackBase?: any): DetailedVendorProfile {
   if (companyId === 'user-supplier-melissa') {
     return DETAILED_VENDOR_PROFILES['comp-melissa-mpcommodity'];

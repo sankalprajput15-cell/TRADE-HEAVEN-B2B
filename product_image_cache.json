@@ -3706,14 +3706,133 @@
     "queryUsed": "\"Electronics & Semiconductors\" Electronics & Semiconductors product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme",
     "images": [
       {
-        "url": "/assets/uploads/auto-electronics-semiconductors-446bd6820c13.webp",
-        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-446bd6820c13.webp",
-        "title": "What is a Wafer? - PCB circuit board and PCBA manufacturing",
-        "sourceDomain": "ipcb.eu",
-        "relevanceScore": 18
+        "url": "/assets/uploads/auto-electronics-semiconductors-f3037333ecae.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-f3037333ecae.webp",
+        "title": "Printed Circuit Board Assembly (PCBA), and High-Level Assembly (HLA)",
+        "sourceDomain": "pioneerssystems.com",
+        "relevanceScore": 17
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-99666af2557c.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-99666af2557c.webp",
+        "title": "electronics, Machine, Technology, Circuit, Electronic, Computer ...",
+        "sourceDomain": "wallup.net",
+        "relevanceScore": 9
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-31578185f983.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-31578185f983.webp",
+        "title": "What are Top 10 largest Electronics Parts Suppliers in China? - RayPCB",
+        "sourceDomain": "www.raypcb.com",
+        "relevanceScore": 9
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-d7a2c0ef5b7f.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-d7a2c0ef5b7f.webp",
+        "title": "10 common electronic components and their symbols - IBE Electronics",
+        "sourceDomain": "www.pcbaaa.com",
+        "relevanceScore": 9
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-9adbc522036b.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-9adbc522036b.webp",
+        "title": "10 common electronic components and their symbols - IBE Electronics",
+        "sourceDomain": "www.pcbaaa.com",
+        "relevanceScore": 9
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-38da33b218e8.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-38da33b218e8.webp",
+        "title": "Identifying PCB components：how to do ? - IBE Electronics",
+        "sourceDomain": "www.pcbaaa.com",
+        "relevanceScore": 9
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-e197639b53d0.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-e197639b53d0.webp",
+        "title": "How to Select the Microcontroller for Your New Product",
+        "sourceDomain": "predictabledesigns.com",
+        "relevanceScore": 8
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-fadbcc8937fc.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-fadbcc8937fc.webp",
+        "title": "University of Electronic Science and Technology of China‌",
+        "sourceDomain": "en.tftlab.cn",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-ee6608d0c99b.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-ee6608d0c99b.webp",
+        "title": "What Is Electronics Engineering Technology Hands-On Applications",
+        "sourceDomain": "talktechie.co.uk",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-09c1574040df.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-09c1574040df.webp",
+        "title": "9 Electronics Trends Driving Component Innovation | Engineering.com",
+        "sourceDomain": "www.engineering.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-605d83b9bf65.webp?v=1794999233442",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-605d83b9bf65.webp?v=1794999233442",
+        "title": "Electronic Components Function | Basic Components / Parts & Function",
+        "sourceDomain": "www.electronicsandyou.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-8ddcac976468.webp?v=1794999233444",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-8ddcac976468.webp?v=1794999233444",
+        "title": "Consumer Electronics - SCONDAR",
+        "sourceDomain": "www.scondar.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-c38797acdcf0.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-c38797acdcf0.webp",
+        "title": "What Is Electronic | Types Of Electronic Devices – GVGALK",
+        "sourceDomain": "vp.qiiip.org",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp",
+        "title": "Electronics components and what they do",
+        "sourceDomain": "microcontrollerslab.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-5914f3ba99b0.webp?v=1794999233515",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-5914f3ba99b0.webp?v=1794999233515",
+        "title": "Electronic Devices in English with Pictures | Devices names, Teaching ...",
+        "sourceDomain": "in.pinterest.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-311f8ecfee17.webp?v=1794999233518",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-311f8ecfee17.webp?v=1794999233518",
+        "title": "Electronic Devices And Their Uses – HILSD",
+        "sourceDomain": "wisdom.sindicatdeltaxi.org",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-6752ce931239.webp?v=1794999233512",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-6752ce931239.webp?v=1794999233512",
+        "title": "Basic Electronics Components | Electronics Tutorial | Learn Electronics ...",
+        "sourceDomain": "www.youtube.com",
+        "relevanceScore": 5
+      },
+      {
+        "url": "/assets/uploads/auto-electronics-semiconductors-be2864cc4f5d.webp?v=1794999233521",
+        "thumbnailUrl": "/assets/uploads/auto-electronics-semiconductors-be2864cc4f5d.webp?v=1794999233521",
+        "title": "PPT - BASIC ELECTRONICS PowerPoint Presentation, free download - ID:963878",
+        "sourceDomain": "www.slideserve.com",
+        "relevanceScore": 5
       }
     ],
-    "updatedAt": "2026-11-17T09:48:15.667Z",
+    "updatedAt": "2026-11-18T10:53:23.563Z",
     "provider": "gemini_google_search_grounding"
   },
   "chemicals raw polymers::chemicals raw polymers": {
@@ -3875,29 +3994,29 @@
         "relevanceScore": 17
       },
       {
-        "url": "https://img2.tradewheel.com/uploads/images/products/7/6/0396585001735902158-polymers-additives.jpg.webp",
-        "thumbnailUrl": "https://img2.tradewheel.com/uploads/images/products/7/6/0396585001735902158-polymers-additives.jpg.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-d8b2f8606b7c.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-d8b2f8606b7c.webp",
         "title": "Buy Polymers, Additives, Raw Materials, Solvents, Specialty Chemicals ...",
         "sourceDomain": "www.tradewheel.com",
         "relevanceScore": 17
       },
       {
-        "url": "https://image.made-in-china.com/202f0j00CkPqYHMDfKcj/Chemicals-Additives-Professional-Factory-Supply-Chemical-Raw-Material-Polyvinyl-Alcohol-Polymer-PVA.webp",
-        "thumbnailUrl": "https://image.made-in-china.com/202f0j00CkPqYHMDfKcj/Chemicals-Additives-Professional-Factory-Supply-Chemical-Raw-Material-Polyvinyl-Alcohol-Polymer-PVA.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-8bb2cee2c4ba.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-8bb2cee2c4ba.webp",
         "title": "Chemicals Additives Professional Factory Supply Chemical Raw Material ...",
         "sourceDomain": "cuttingwheel.en.made-in-china.com",
         "relevanceScore": 17
       },
       {
-        "url": "https://image.made-in-china.com/202f0j00kpVbycPaCBue/Organic-Chemicals-Raw-Materials-Polyol-Polyether-Polyol-Polymer-Polyol-Hot-Sale-Polyol-Polyol-Factory-Price.webp",
-        "thumbnailUrl": "https://image.made-in-china.com/202f0j00kpVbycPaCBue/Organic-Chemicals-Raw-Materials-Polyol-Polyether-Polyol-Polymer-Polyol-Hot-Sale-Polyol-Polyol-Factory-Price.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-25c533d81ea6.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-25c533d81ea6.webp",
         "title": "Organic Chemicals Raw Materials Polyol/Polyether Polyol/Polymer Polyol ...",
         "sourceDomain": "czjunchi.en.made-in-china.com",
         "relevanceScore": 17
       },
       {
-        "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_1%29.jpg/960px-For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_1%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "thumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_1%29.jpg/960px-For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_1%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-cec70b4b95b4.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-cec70b4b95b4.webp",
         "title": "For Chemical Progress   DPLA   7d7694e20260c3a022f296be2a252178 (page 1)",
         "sourceDomain": "commons.wikimedia.org",
         "width": 6340,
@@ -3905,8 +4024,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_2%29.jpg/960px-For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "thumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_2%29.jpg/960px-For_Chemical_Progress_-_DPLA_-_7d7694e20260c3a022f296be2a252178_%28page_2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-1c33e2933abb.webp",
         "title": "For Chemical Progress   DPLA   7d7694e20260c3a022f296be2a252178 (page 2)",
         "sourceDomain": "commons.wikimedia.org",
         "width": 6340,
@@ -3914,8 +4033,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hercules_Products_for_Chemical_Progress_-_DPLA_-_9c489bd88b063adcc0ff2130f3c66b16_%28page_3%29.jpg/960px-Hercules_Products_for_Chemical_Progress_-_DPLA_-_9c489bd88b063adcc0ff2130f3c66b16_%28page_3%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-        "thumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hercules_Products_for_Chemical_Progress_-_DPLA_-_9c489bd88b063adcc0ff2130f3c66b16_%28page_3%29.jpg/960px-Hercules_Products_for_Chemical_Progress_-_DPLA_-_9c489bd88b063adcc0ff2130f3c66b16_%28page_3%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-0d191603d8ee.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-0d191603d8ee.webp",
         "title": "Hercules Products for Chemical Progress   DPLA   9c489bd88b063adcc0ff2130f3c66b16 (page 3)",
         "sourceDomain": "commons.wikimedia.org",
         "width": 3818,
@@ -3923,36 +4042,36 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://belyons.com/wp-content/uploads/2025/01/ldpe.png",
-        "thumbnailUrl": "https://belyons.com/wp-content/uploads/2025/01/ldpe.png",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-7a47a3f84901.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-7a47a3f84901.webp",
         "title": "Polymers & Chemicals - Belyons",
         "sourceDomain": "belyons.com",
         "relevanceScore": 16
       },
       {
-        "url": "https://www.chemicalbull.com/images/blog/heat-an-uv-stabilizers-for-polymers-preventing-degradation-in-plastics-and-rubber.webp",
-        "thumbnailUrl": "https://www.chemicalbull.com/images/blog/heat-an-uv-stabilizers-for-polymers-preventing-degradation-in-plastics-and-rubber.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-d112748ac82a.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-d112748ac82a.webp",
         "title": "Complete Aroma Chemicals Guide | Chemical Bull",
         "sourceDomain": "www.chemicalbull.com",
         "relevanceScore": 16
       },
       {
-        "url": "https://matrix-chemicals.com/media/dir-specialty-chemistry.webp",
-        "thumbnailUrl": "https://matrix-chemicals.com/media/dir-specialty-chemistry.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-24a2b73753f0.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-24a2b73753f0.webp",
         "title": "Industrial chemicals & raw materials wholesale — Matrix Chemical Industry",
         "sourceDomain": "matrix-chemicals.com",
         "relevanceScore": 9
       },
       {
-        "url": "https://onex.center/blog/image/industrial-raw-materials-chemical-payments.webp?v=5.1",
-        "thumbnailUrl": "https://onex.center/blog/image/industrial-raw-materials-chemical-payments.webp?v=5.1",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-3c21a0b93842.webp",
         "title": "Importing Chemical Raw Materials and Fertilizers 2026: Pa...",
         "sourceDomain": "onex.center",
         "relevanceScore": 9
       },
       {
-        "url": "https://image.made-in-china.com/202f0j00OMsifFbywWRK/Raw-Material-Rigid-Foam-Chemicals-Liquid-Closed-Cell-PU-Foam-Spray-Insulation-Polyurethane-Foam.webp",
-        "thumbnailUrl": "https://image.made-in-china.com/202f0j00OMsifFbywWRK/Raw-Material-Rigid-Foam-Chemicals-Liquid-Closed-Cell-PU-Foam-Spray-Insulation-Polyurethane-Foam.webp",
+        "url": "/assets/uploads/auto-chemicals-raw-polymers-08af04acbe12.webp",
+        "thumbnailUrl": "/assets/uploads/auto-chemicals-raw-polymers-08af04acbe12.webp",
         "title": "Raw Material Rigid Foam Chemicals Liquid Closed Cell PU Foam Spray ...",
         "sourceDomain": "6a473d0c189003e4.en.made-in-china.com",
         "relevanceScore": 9
@@ -3966,23 +4085,115 @@
     "queryUsed": "\"Medical & Diagnostic Supplies\" Medical & Diagnostic Supplies product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme",
     "images": [
       {
-        "url": "/assets/uploads/auto-medical-diagnostic-supplies-d4e3e3ab7d54.webp",
-        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-d4e3e3ab7d54.webp",
-        "title": "US Navy 050112 N 3228G 003 Donated medical supplies, coordinated by the National Guard, are craned aboard the Military Sealift Command (MSC) hospital ship USNS Mercy (T AH 19) during a brief port visit to Pearl Harbor, Hawaii",
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-32643f07f92e.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-32643f07f92e.webp",
+        "title": "MRI Scanner at Narayana Multispeciality Hospital, Jaipur",
         "sourceDomain": "commons.wikimedia.org",
-        "width": 2250,
-        "height": 1500,
-        "relevanceScore": 17
+        "width": 4496,
+        "height": 3000,
+        "relevanceScore": 22
       },
       {
-        "url": "/assets/uploads/auto-medical-diagnostic-supplies-2bee0a25897e.webp",
-        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-2bee0a25897e.webp",
-        "title": "Medical Imaging Department - Canberra Hospital at Angel Singleton blog",
-        "sourceDomain": "storage.googleapis.com",
-        "relevanceScore": 11
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-ae4a3f8d55b1.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-ae4a3f8d55b1.webp",
+        "title": "Mobile MRI Scanner, Conquest Hospital   geograph.org.uk   2666961",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 480,
+        "relevanceScore": 22
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-3cc93beb4093.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-3cc93beb4093.webp",
+        "title": "Mobile MRI scanner at the Royal Stoke University Hospital   geograph.org.uk   4276444",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1600,
+        "height": 947,
+        "relevanceScore": 22
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-6319e2f2d533.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-6319e2f2d533.webp",
+        "title": "Worcestershire Royal Hospital   mobile MRI scanner   geograph.org.uk   7986509",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 475,
+        "relevanceScore": 22
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-908d43d7d700.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-908d43d7d700.webp",
+        "title": "Worcestershire Royal Hospital   mobile MRI scanner   geograph.org.uk   8248660",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 480,
+        "relevanceScore": 22
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-37893bb53d2c.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-37893bb53d2c.webp",
+        "title": "MRI scanner building, St. Luke's Hospital, Bradford   geograph.org.uk   8390174",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2869,
+        "height": 2029,
+        "relevanceScore": 22
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-19402d10d012.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-19402d10d012.webp",
+        "title": "Helmand’s largest hospital introduces new MRI capabilities 111015 M DF801 051",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 4756,
+        "height": 3290,
+        "relevanceScore": 18
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-6e40106faa11.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-6e40106faa11.webp",
+        "title": "Helmand's largest hospital introduces new MRI capabilities 111015 M DF801 013",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 5130,
+        "height": 3422,
+        "relevanceScore": 18
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-eadb41510b5d.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-eadb41510b5d.webp",
+        "title": "Helmand's largest hospital introduces new MRI capabilities 111015 M DF801 032",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 3742,
+        "height": 2521,
+        "relevanceScore": 18
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-eb1cd5ba8a7b.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-eb1cd5ba8a7b.webp",
+        "title": "MRI Scanner",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 3120,
+        "height": 4160,
+        "relevanceScore": 18
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-ffc6e8c3b6f1.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-ffc6e8c3b6f1.webp",
+        "title": "Modern 3T MRI",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1600,
+        "height": 1200,
+        "relevanceScore": 14
+      },
+      {
+        "url": "/assets/uploads/auto-medical-diagnostic-supplies-8ba70bc7886e.webp",
+        "thumbnailUrl": "/assets/uploads/auto-medical-diagnostic-supplies-8ba70bc7886e.webp",
+        "title": "Diagnostic Imaging and Radiology Facility in Navi Mumbai, Maharashtra, India",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1024,
+        "height": 1024,
+        "relevanceScore": 12
       }
     ],
-    "updatedAt": "2026-11-17T09:49:17.164Z",
+    "updatedAt": "2026-11-18T11:42:43.898Z",
     "provider": "gemini_google_search_grounding"
   },
   "building construction materials::building construction materials": {
@@ -4026,8 +4237,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Plastics_as_building_materials_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Plastics_as_building_materials_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+        "url": "/assets/uploads/auto-building-construction-materials-c3f3a1415b58.webp?v=1794999222871",
+        "thumbnailUrl": "/assets/uploads/auto-building-construction-materials-c3f3a1415b58.webp?v=1794999222871",
         "title": "Plastics as building materials 01",
         "sourceDomain": "commons.wikimedia.org",
         "width": 640,
@@ -4035,8 +4246,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Plastics_as_building_materials_07.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Plastics_as_building_materials_07.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+        "url": "/assets/uploads/auto-building-construction-materials-63aecf72ebf8.webp?v=1794999233597",
+        "thumbnailUrl": "/assets/uploads/auto-building-construction-materials-63aecf72ebf8.webp?v=1794999233597",
         "title": "Plastics as building materials 07",
         "sourceDomain": "commons.wikimedia.org",
         "width": 640,
@@ -4044,8 +4255,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Plastics_as_building_materials_08.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Plastics_as_building_materials_08.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+        "url": "/assets/uploads/auto-building-construction-materials-c53abee0f882.webp?v=1794999233600",
+        "thumbnailUrl": "/assets/uploads/auto-building-construction-materials-c53abee0f882.webp?v=1794999233600",
         "title": "Plastics as building materials 08",
         "sourceDomain": "commons.wikimedia.org",
         "width": 636,
@@ -4053,8 +4264,8 @@
         "relevanceScore": 16
       },
       {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/6/67/Plastics_as_building_materials_09.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-        "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/67/Plastics_as_building_materials_09.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+        "url": "/assets/uploads/auto-building-construction-materials-03d57d8531b9.webp?v=1794999233602",
+        "thumbnailUrl": "/assets/uploads/auto-building-construction-materials-03d57d8531b9.webp?v=1794999233602",
         "title": "Plastics as building materials 09",
         "sourceDomain": "commons.wikimedia.org",
         "width": 640,
@@ -4821,6 +5032,156 @@
       }
     ],
     "updatedAt": "2026-11-17T11:12:59.336Z",
+    "provider": "gemini_google_search_grounding"
+  },
+  "agriculture agro commodities::agriculture agro commodities": {
+    "keyword": "agriculture agro commodities::agriculture agro commodities",
+    "queryUsed": "\"Agriculture & Agro Commodities\" Agriculture & Agro Commodities product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme",
+    "images": [
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp",
+        "title": "A combine harvester at work in a wheat crop field   geograph.org.uk   5482804",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 360,
+        "relevanceScore": 26
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-ec684c3c7874.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-ec684c3c7874.webp",
+        "title": "Combine harvester cutting wheat field   geograph.org.uk   520759",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 480,
+        "relevanceScore": 20
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-dcc54a171e02.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-dcc54a171e02.webp",
+        "title": "Combine harvesting wheat field   geograph.org.uk   520769",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 479,
+        "relevanceScore": 20
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-73e65a4b7a08.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-73e65a4b7a08.webp",
+        "title": "The combine Claas Lexion 584 in the wheat harvest",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2729,
+        "height": 1784,
+        "relevanceScore": 20
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-e5ab6d97218e.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-e5ab6d97218e.webp",
+        "title": "A combine harvester at work in a field of wheat   geograph.org.uk   6246353",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1280,
+        "height": 960,
+        "relevanceScore": 20
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-63065ad556c7.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-63065ad556c7.webp",
+        "title": "Combine harvester at work in wheat field by Astley Lane   geograph.org.uk   6913527",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2592,
+        "height": 1936,
+        "relevanceScore": 20
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-b7f210418ed3.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-b7f210418ed3.webp",
+        "title": "Combine working a field of wheat, Northorpe Fen   geograph.org.uk   523774",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 480,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-904f7cf2767d.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-904f7cf2767d.webp",
+        "title": "Wheat field harvest   geograph.org.uk   1432901",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 640,
+        "height": 457,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-1c8aed38e82c.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-1c8aed38e82c.webp",
+        "title": "Combine in wheat field",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 4037,
+        "height": 2691,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-071637870c92.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-071637870c92.webp",
+        "title": "Small combine and tractor in wheat field (Montana?) (6484365665)",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2000,
+        "height": 1367,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-1beccb643abd.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-1beccb643abd.webp",
+        "title": "Unload wheat by the combine Claas Lexion 584",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2450,
+        "height": 1082,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-4b53960faca8.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-4b53960faca8.webp",
+        "title": "Wheat field waiting for the Combine   geograph.org.uk   2536079",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 4000,
+        "height": 3000,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-6ac00099c4a7.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-6ac00099c4a7.webp",
+        "title": "Combine unloading in a wheat field north of Embleton   geograph.org.uk   3643676",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1024,
+        "height": 768,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-f2f2c92a87b8.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-f2f2c92a87b8.webp",
+        "title": "Wheat (and the odd barley), awaiting the combine   geograph.org.uk   6568375",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1024,
+        "height": 683,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-e9bc29969377.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-e9bc29969377.webp",
+        "title": "Wheat field, Ready for the combine   geograph.org.uk   8107752",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 3444,
+        "height": 2583,
+        "relevanceScore": 16
+      },
+      {
+        "url": "/assets/uploads/auto-agriculture-agro-commodities-de9ef0ad495b.webp",
+        "thumbnailUrl": "/assets/uploads/auto-agriculture-agro-commodities-de9ef0ad495b.webp",
+        "title": "Combine in wheat field Photograph by Julia Gavin - Fine Art America",
+        "sourceDomain": "fineartamerica.com",
+        "relevanceScore": 8
+      }
+    ],
+    "updatedAt": "2026-11-18T11:42:40.111Z",
     "provider": "gemini_google_search_grounding"
   }
 }

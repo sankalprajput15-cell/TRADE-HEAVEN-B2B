@@ -1716,6 +1716,30 @@ const KNOWN_COMPANY_CONTACTS: Record<
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
   {
+    id: 'eh-melissa-deal-timeline-alert-001',
+    trackingId: 'ms-trk-melissa-deal-timeline-001',
+    recipient: 'melissa@mpcommoditybrokers.com',
+    recipientName: 'Melissa Prezios',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '📋 DEAL & TIMELINE ALERT: Bulk EN590 / Jet A-1 / D6 Petroleum Deal (DEAL-TH-AU-61648-FUEL) & 6-Stage Execution Timeline — MP Commodity Brokers Australia Pty Ltd',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Deal & Escrow Desk" <escrow-desk@tradeheaven.net>',
+    success: true,
+    messageId: '<deal-timeline-alert-melissa-prezios-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'DEAL & TIMELINE ALERT SENT TO melissa@mpcommoditybrokers.com: Complete Bulk Fuel & Petroleum Deal Summary (DEAL-TH-AU-61648-FUEL • EN590 10PPM / Jet A-1 / D6 • Platts Pricing • SBLC Only • $50,000.00 USD in Vault TH-VAULT-AU-61648 • Cert THC-2026-MPC-61648) + Full 6-Stage Settlement & Execution Timeline (~36h remaining in 48h window).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    mailSuiteStatus: 'DELIVERED'
+  },
+  {
     id: 'eh-melissa-vip-agreement-supplier-001',
     trackingId: 'ms-trk-melissa-vip-agreement-001',
     recipient: 'melissa@mpcommoditybrokers.com',
@@ -11163,6 +11187,342 @@ TradeHeaven Ecom Solution LLP`;
           recipientName: `Admin Copy (${secondaryAdminEmail})`,
           trackingId: `ms-trk-melissa-vip-admin2-${Date.now().toString(36)}`,
           summaryText: `[ADMIN COPY] VIP upgrade & 30-day service agreement email sent to Melissa Prezios (${melissaEmail}).`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: melissaReceipt.success,
+      melissaReceipt,
+      adminReceipt,
+      secondaryAdminReceipt
+    };
+  }
+
+  /**
+   * Dispatch official Deal Summary & 6-Stage Execution/Settlement Timeline Alert
+   * to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd)
+   * with admin audit copies.
+   */
+  public async sendMelissaDealAndTimelineAlertEmail(options?: {
+    melissaEmail?: string;
+    adminEmail?: string;
+    secondaryAdminEmail?: string;
+    dealReference?: string;
+    vaultReference?: string;
+    certificateNumber?: string;
+    amountFormatted?: string;
+    hoursRemaining?: number;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    melissaReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+    secondaryAdminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const melissaEmail = (options?.melissaEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const adminEmail = (options?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const secondaryAdminEmail = (options?.secondaryAdminEmail || 'yr943334@gmail.com').trim();
+    const dealRef = options?.dealReference || 'DEAL-TH-AU-61648-FUEL';
+    const vaultRef = options?.vaultReference || 'TH-VAULT-AU-61648';
+    const certNumber = options?.certificateNumber || 'THC-2026-MPC-61648';
+    const amount = options?.amountFormatted || '$50,000.00 USD';
+    const hoursRemaining = options?.hoursRemaining ?? 36;
+    const sendAdminCopy = options?.sendAdminCopy !== false;
+    const transporter = this.createPrimaryTransporter();
+    const escapeHtml = (str: string) =>
+      String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+
+    const timelineStages = [
+      {
+        stage: 'Stage 1',
+        status: 'COMPLETED',
+        window: 'Nov 4 – Nov 9, 2026',
+        title: 'KYC Verification, Platts/SBLC Alignment & Trade Assurance Certificate',
+        details: `Corporate ABN-61-648-291-004 verified, SBLC-Only & Platts pricing configured (Sydney, Australia), and Certificate ${certNumber} ($1,100,000 USD) issued.`
+      },
+      {
+        stage: 'Stage 2',
+        status: 'COMPLETED',
+        window: 'Logged in Vault',
+        title: `Custodial Escrow Vault Allocation (${amount})`,
+        details: `${amount} settlement balance (DEP-USD-50000-MELISSA) credited into Custodial Escrow Vault ${vaultRef}.`
+      },
+      {
+        stage: 'Stage 3',
+        status: `URGENT (~${hoursRemaining}h Left)`,
+        window: 'Active 48h Window',
+        title: 'Escrow Clearing Deadline & Discounted VIP Tier Activation ($5,000 USD)',
+        details: `Account is currently Basic Plan (>12h in vault). Complete discounted $5,000 USD VIP Upgrade checkout (backed by 30-Day Service Judgement Agreement) and confirm payout instructions before 48h auto-reversal.`
+      },
+      {
+        stage: 'Stage 4',
+        status: 'NEXT',
+        window: 'T+1 to T+3 Business Days',
+        title: 'Buyer Purchase Schedule, Counter-Offer & SBLC (MT760) Verification',
+        details: 'Finalize institutional buyer FOB/CIF/TTO schedule, lock Platts benchmark pricing formula, and complete bank-to-bank SBLC instrument verification.'
+      },
+      {
+        stage: 'Stage 5',
+        status: 'SCHEDULED',
+        window: 'T+4 to T+7 Business Days',
+        title: 'SGS / Saybolt Dip Test, Allocation & Clean On-Board Bill of Lading',
+        details: `Execute independent SGS/Saybolt inspection at loading terminal, release cargo allocation, and issue Clean On-Board B/L under $1.1M Trade Assurance protection.`
+      },
+      {
+        stage: 'Stage 6',
+        status: 'SCHEDULED',
+        window: 'T+7 to T+10 Business Days',
+        title: 'Final SBLC Settlement & Direct SWIFT Payout Release',
+        details: `Full commercial invoice reconciliation, instant bank wire payout from Vault ${vaultRef}, and 30-Day VIP Trade Desk coverage.`
+      }
+    ];
+
+    const subject = `📋 DEAL & TIMELINE ALERT: Bulk Fuel Deal (${dealRef}) & 6-Stage Execution Timeline — MP Commodity Brokers Australia Pty Ltd`;
+
+    const text = `TRADE HEAVEN — OFFICIAL DEAL & EXECUTION TIMELINE ALERT
+Beneficiary: Melissa Prezios (MP Commodity Brokers Australia Pty Ltd • Sydney, Australia)
+Official Account Email: ${melissaEmail}
+Deal Reference: ${dealRef}
+Escrow Vault: ${vaultRef} | Balance Held: ${amount}
+Trade Assurance Certificate: ${certNumber} ($1,100,000.00 USD Coverage)
+
+Dear Melissa Prezios,
+
+Please review your current active Trade Heaven deal summary and complete 6-stage chronological execution & settlement timeline for MP Commodity Brokers Australia Pty Ltd:
+
+DEAL SPECIFICATION SUMMARY:
+• Deal Reference: ${dealRef}
+• Commodities Covered: EN590 10PPM Ultra-Low Sulfur Diesel, Aviation Jet Fuel A-1, D6 Virgin Fuel Oil & Marine Gasoil (MGO)
+• Allocation Volume: 5,000 – 50,000 MT (Diesel/Jet A-1) & 10,000 – 50,000 BBL (D6/MGO)
+• Pricing Terms: Strictly As per Platts Benchmark (No Set Price)
+• Payment Instrument: SBLC Only (Standby Letter of Credit)
+• Custodial Escrow Balance: ${amount} (Vault: ${vaultRef})
+• Clearing Status: >12 Hours Active — Approximately ${hoursRemaining} Hours Remaining in 48-Hour Window
+
+6-STAGE DEAL & EXECUTION TIMELINE:
+${timelineStages
+  .map((s) => `[${s.stage} • ${s.status} • ${s.window}]\n${s.title}\n- ${s.details}`)
+  .join('\n\n')}
+
+PORTAL ACCESS:
+https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com
+
+Trade Heaven Global Deal & Escrow Clearing Desk
+Support: escrow-desk@tradeheaven.net | support@tradeheaven.net`;
+
+    const timelineRowsHtml = timelineStages
+      .map((s) => {
+        const badgeBg =
+          s.status === 'COMPLETED'
+            ? '#dcfce7'
+            : s.status.startsWith('URGENT')
+              ? '#fee2e2'
+              : s.status === 'NEXT'
+                ? '#e0f2fe'
+                : '#f1f5f9';
+        const badgeColor =
+          s.status === 'COMPLETED'
+            ? '#166534'
+            : s.status.startsWith('URGENT')
+              ? '#991b1b'
+              : s.status === 'NEXT'
+                ? '#075985'
+                : '#334155';
+        return `
+          <tr>
+            <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top; width: 135px;">
+              <div style="font-size: 11px; font-weight: 800; color: #0f172a;">${escapeHtml(s.stage)}</div>
+              <div style="display: inline-block; margin-top: 4px; background: ${badgeBg}; color: ${badgeColor}; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">
+                ${escapeHtml(s.status)}
+              </div>
+              <div style="font-size: 10.5px; color: #64748b; margin-top: 4px; font-weight: 600;">${escapeHtml(s.window)}</div>
+            </td>
+            <td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 3px;">${escapeHtml(s.title)}</div>
+              <div style="font-size: 12px; color: #475569; line-height: 1.5;">${escapeHtml(s.details)}</div>
+            </td>
+          </tr>`;
+      })
+      .join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45); border: 2px solid #0284c7;">
+    <!-- TOP ALERT BAR -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 55%, #b45309 100%); padding: 12px 24px; text-align: center;">
+        <span style="display: inline-block; background: rgba(0,0,0,0.35); color: #fef3c7; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(254,243,199,0.4);">
+          📋 DEAL &amp; EXECUTION TIMELINE ALERT • ${escapeHtml(dealRef)}
+        </span>
+      </td>
+    </tr>
+
+    <!-- BRAND HEADER -->
+    <tr>
+      <td style="background: #0f172a; padding: 26px 32px; border-bottom: 3px solid #0284c7;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">
+                TRADE <span style="color: #38bdf8;">HEAVEN</span>
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3px;">
+                Global Commodity Deal Desk &amp; Custodial Escrow
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <span style="display: inline-block; background: #0c4a6e; color: #e0f2fe; font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 6px; border: 1px solid #0284c7;">
+                VAULT: ${escapeHtml(vaultRef)}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- INTRO & DEAL SUMMARY -->
+    <tr>
+      <td style="padding: 28px 32px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 21px; font-weight: 800; color: #0f172a; line-height: 1.3;">
+          Deal Summary &amp; Execution Timeline Update — MP Commodity Brokers Australia Pty Ltd
+        </h1>
+        <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+          Dear <strong>Melissa Prezios</strong> (<span style="color: #0284c7;">${escapeHtml(melissaEmail)}</span>), below is your consolidated <strong>Fuel &amp; Petroleum Deal Schedule</strong> along with the active <strong>6-Stage Execution &amp; Settlement Timeline</strong>, including the active <strong>~${hoursRemaining}-hour clearing deadline</strong>.
+        </p>
+
+        <!-- DEAL SPEC TABLE -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden;">
+          <tr style="background: #f1f5f9;">
+            <th colspan="2" style="padding: 10px 16px; text-align: left; font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #cbd5e1;">
+              Active Deal Specifications (${escapeHtml(dealRef)})
+            </th>
+          </tr>
+          <tr>
+            <td style="padding: 9px 16px; font-size: 12.5px; color: #64748b; border-bottom: 1px solid #f1f5f9; width: 38%;">Commodities Covered:</td>
+            <td style="padding: 9px 16px; font-size: 12.5px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">EN590 10PPM Diesel, Aviation Jet A-1, D6 Fuel Oil &amp; MGO</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 16px; font-size: 12.5px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Pricing &amp; Payment Terms:</td>
+            <td style="padding: 9px 16px; font-size: 12.5px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">As per Platts Benchmark • SBLC Only (Standby Letter of Credit)</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 16px; font-size: 12.5px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Escrow Balance Held:</td>
+            <td style="padding: 9px 16px; font-size: 14px; font-weight: 900; color: #059669; border-bottom: 1px solid #f1f5f9;">${escapeHtml(amount)} (Vault: ${escapeHtml(vaultRef)})</td>
+          </tr>
+          <tr>
+            <td style="padding: 9px 16px; font-size: 12.5px; color: #64748b; border-bottom: 1px solid #f1f5f9;">Trade Assurance Certificate:</td>
+            <td style="padding: 9px 16px; font-size: 12.5px; font-weight: 700; color: #0369a1; border-bottom: 1px solid #f1f5f9;">${escapeHtml(certNumber)} ($1,100,000.00 USD Protection)</td>
+          </tr>
+          <tr style="background: #fef2f2;">
+            <td style="padding: 10px 16px; font-size: 12.5px; font-weight: 800; color: #991b1b;">Immediate Clearing Window:</td>
+            <td style="padding: 10px 16px; font-size: 13px; font-weight: 900; color: #dc2626;">⏳ ~${hoursRemaining} Hours Remaining (48h Policy) + VIP Checkout ($5,000 USD)</td>
+          </tr>
+        </table>
+
+        <!-- TIMELINE TABLE -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden;">
+          <tr style="background: #0f172a;">
+            <th colspan="2" style="padding: 11px 16px; text-align: left; font-size: 12px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em;">
+              Complete 6-Stage Deal &amp; Settlement Timeline
+            </th>
+          </tr>
+          ${timelineRowsHtml}
+        </table>
+
+        <!-- CTA -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 18px;">
+          <tr>
+            <td align="center">
+              <a href="https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=melissa%40mpcommoditybrokers.com" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-size: 14px; font-weight: 900; text-decoration: none; padding: 14px 32px; border-radius: 10px;">
+                📋 OPEN DEAL &amp; TIMELINE PORTAL →
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+      <td style="background: #f1f5f9; padding: 18px 32px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center;">
+        Trade Heaven Global Deal Desk &amp; Custodial Escrow • MP Commodity Brokers Australia Pty Ltd (Melissa Prezios)
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const melissaReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      melissaEmail,
+      {
+        from: '"Trade Heaven Deal & Escrow Desk" <escrow-desk@tradeheaven.net>',
+        subject,
+        text,
+        html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'MP Commodity Brokers Australia Pty Ltd',
+        companyId: 'comp-melissa-mpcommodity',
+        recipientName: 'Melissa Prezios',
+        trackingId: `ms-trk-melissa-deal-timeline-${Date.now().toString(36)}`,
+        summaryText: `DEAL & TIMELINE ALERT SENT TO ${melissaEmail}: Deal Summary (${dealRef} • EN590 / Jet A-1 / D6 • Platts • SBLC Only • ${amount} in Vault ${vaultRef}) & 6-Stage Execution Timeline (~${hoursRemaining}h remaining in 48h clearing window).`
+      },
+      transporter || undefined
+    );
+
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    let secondaryAdminReceipt: SerializedDeliveryReceipt | undefined;
+
+    if (sendAdminCopy && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: '"Trade Heaven Deal & Escrow Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN AUDIT COPY — ORIGINAL SENT TO ${melissaEmail}]\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            `<!-- BRAND HEADER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700;">[ADMIN AUDIT COPY — ORIGINAL SENT TO ${escapeHtml(melissaEmail)}]</td></tr>`
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-melissa-deal-admin1-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] Deal & Timeline alert dispatched to Melissa Prezios (${melissaEmail}) for ${dealRef}.`
+        },
+        transporter || undefined
+      );
+    }
+
+    if (sendAdminCopy && secondaryAdminEmail && secondaryAdminEmail !== adminEmail) {
+      secondaryAdminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        secondaryAdminEmail,
+        {
+          from: '"Trade Heaven Deal & Escrow Desk" <escrow-desk@tradeheaven.net>',
+          subject: `[ADMIN COPY] ${subject}`,
+          text: `[ADMIN AUDIT COPY — ORIGINAL SENT TO ${melissaEmail}]\n\n${text}`,
+          html: html.replace(
+            '<!-- BRAND HEADER -->',
+            `<!-- BRAND HEADER -->\n<tr><td style="background: #1e1b4b; padding: 8px 16px; text-align: center; color: #c7d2fe; font-size: 11px; font-weight: 700;">[ADMIN AUDIT COPY — ORIGINAL SENT TO ${escapeHtml(melissaEmail)}]</td></tr>`
+          ),
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${secondaryAdminEmail})`,
+          trackingId: `ms-trk-melissa-deal-admin2-${Date.now().toString(36)}`,
+          summaryText: `[ADMIN COPY] Deal & Timeline alert dispatched to Melissa Prezios (${melissaEmail}) for ${dealRef}.`
         },
         transporter || undefined
       );

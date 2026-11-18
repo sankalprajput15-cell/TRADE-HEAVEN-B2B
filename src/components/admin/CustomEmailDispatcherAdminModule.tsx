@@ -1568,6 +1568,47 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
   };
 
+  const [isSendingMelissaDealTimeline, setIsSendingMelissaDealTimeline] = useState(false);
+  const [melissaDealTimelineResult, setMelissaDealTimelineResult] = useState<{ success: boolean; message: string; trackingId?: string } | null>(null);
+
+  const handleSendMelissaDealTimelineAlert = async () => {
+    setIsSendingMelissaDealTimeline(true);
+    setMelissaDealTimelineResult(null);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-deal-timeline-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          melissaEmail: 'melissa@mpcommoditybrokers.com',
+          adminEmail: 'sankalprajput15@gmail.com',
+          secondaryAdminEmail: 'yr943334@gmail.com',
+          sendAdminCopy: true
+        })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setMelissaDealTimelineResult({
+          success: true,
+          message: '📋 Deal & 6-Stage Execution Timeline Alert dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com) and admin audit copies!',
+          trackingId: data?.melissaReceipt?.trackingId
+        });
+        await fetchMailSuiteTelemetry();
+      } else {
+        setMelissaDealTimelineResult({
+          success: false,
+          message: data?.message || 'Failed to dispatch Deal & Timeline alert to Melissa'
+        });
+      }
+    } catch (err: any) {
+      setMelissaDealTimelineResult({
+        success: false,
+        message: err?.message || 'Network error dispatching Deal & Timeline alert'
+      });
+    } finally {
+      setIsSendingMelissaDealTimeline(false);
+    }
+  };
+
   return (
     <div id="custom-email-dispatcher-admin" className="space-y-6">
 
@@ -1834,6 +1875,72 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
             {melissaVipResult.trackingId && (
               <span className="font-mono text-[10px] text-slate-400">
                 MailSuite ID: {melissaVipResult.trackingId}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MELISSA DEAL SUMMARY & 6-STAGE EXECUTION TIMELINE ALERT WORKFLOW BANNER */}
+      <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-emerald-950 rounded-2xl border-2 border-cyan-500/80 p-5 text-white shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-600 text-white shadow-xs">
+                📋 DEAL &amp; 6-STAGE TIMELINE ALERT
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                DEAL-TH-AU-61648-FUEL &bull; EN590 / Jet A-1 / D6 &bull; SBLC Only
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                Platts Pricing &bull; $50K Vault &bull; 6 Milestones
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+              Melissa Prezios (MP Commodity Brokers Australia Pty Ltd &bull; <span className="font-mono text-cyan-300">melissa@mpcommoditybrokers.com</span>)
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+              Sends Melissa the consolidated <strong className="text-white">Fuel &amp; Petroleum Deal Schedule (DEAL-TH-AU-61648-FUEL)</strong>, Platts &amp; SBLC-Only terms, <strong className="text-emerald-300">$50,000.00 USD</strong> escrow vault status (<strong className="text-cyan-300">TH-VAULT-AU-61648</strong>), and the complete <strong className="text-amber-300">6-Stage Execution &amp; Settlement Timeline</strong> (~36h left in 48h window).
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              disabled={isSendingMelissaDealTimeline}
+              onClick={handleSendMelissaDealTimelineAlert}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSendingMelissaDealTimeline ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Sending Deal &amp; Timeline...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Email Melissa Deal &amp; Timeline Alert</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {melissaDealTimelineResult && (
+          <div
+            className={`mt-3.5 p-3 rounded-xl text-xs flex items-center justify-between gap-3 border ${
+              melissaDealTimelineResult.success
+                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                : 'bg-red-950/80 border-red-500/50 text-red-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{melissaDealTimelineResult.message}</span>
+            </div>
+            {melissaDealTimelineResult.trackingId && (
+              <span className="font-mono text-[10px] text-slate-400">
+                MailSuite ID: {melissaDealTimelineResult.trackingId}
               </span>
             )}
           </div>

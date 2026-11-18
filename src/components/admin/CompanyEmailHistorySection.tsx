@@ -122,6 +122,28 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
     if (cleanEmail.includes('mpcommodity') || cleanCompany.includes('mp commodity') || cleanEmail.includes('yr943334')) {
       serviceEntries.push(
         {
+          id: 'eh-melissa-deal-timeline-alert-001',
+          trackingId: 'ms-trk-melissa-deal-timeline-001',
+          recipient: 'melissa@mpcommoditybrokers.com',
+          recipientName: 'Melissa Prezios',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: companyId || 'comp-melissa-mpcommodity',
+          subject: '📋 DEAL & TIMELINE ALERT: Bulk Fuel Deal (DEAL-TH-AU-61648-FUEL) & 6-Stage Execution Timeline — MP Commodity Brokers Australia Pty Ltd',
+          dispatchType: 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          sender: '"Trade Heaven Deal & Escrow Desk" <escrow-desk@tradeheaven.net>',
+          success: true,
+          messageId: '<deal-timeline-alert-melissa-prezios-2026@tradeheaven.net>',
+          dispatchedAt: new Date().toISOString(),
+          enforcedDelayMs: 0,
+          summaryText: 'DEAL & TIMELINE ALERT SENT TO melissa@mpcommoditybrokers.com: Bulk Fuel & Petroleum Deal Summary (DEAL-TH-AU-61648-FUEL • EN590 10PPM / Jet A-1 / D6 • Platts • SBLC Only • $50,000.00 USD in Vault TH-VAULT-AU-61648 • Cert THC-2026-MPC-61648) + Full 6-Stage Settlement & Execution Timeline (~36h remaining in 48h window).',
+          opened: true,
+          openCount: 1,
+          clicked: false,
+          clickCount: 0,
+          mailSuiteStatus: 'DELIVERED'
+        },
+        {
           id: 'eh-melissa-profile-update-confirmation-2026',
           trackingId: 'ms-trk-melissa-profile-updates-2026',
           recipient: 'melissa@mpcommoditybrokers.com',

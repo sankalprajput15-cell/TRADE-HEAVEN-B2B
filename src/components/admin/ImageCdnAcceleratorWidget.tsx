@@ -58,7 +58,7 @@ export const ImageCdnAcceleratorWidget: React.FC = () => {
             <div className="text-xs text-indigo-300">CDN Status</div>
             <div className="text-sm font-bold text-emerald-400 flex items-center gap-1.5 justify-end">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              {config.enabled ? (config.provider.toUpperCase() + ' CDN') : 'Disabled (Local)'}
+              {config.enabled && config.provider !== 'none' ? (config.provider.toUpperCase() + ' CDN') : 'Native Server Optimizer (Sharp WebP)'}
             </div>
           </div>
         </div>
@@ -72,8 +72,8 @@ export const ImageCdnAcceleratorWidget: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Globe className="w-5 h-5 text-indigo-600" />
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Enable Image CDN Acceleration</h3>
-                  <p className="text-xs text-slate-500">Route all product and catalog assets through global CDN edge nodes</p>
+                  <h3 className="text-sm font-semibold text-slate-900">Enable External Image CDN Acceleration</h3>
+                  <p className="text-xs text-slate-500">Optional external CDN proxy (local Sharp WebP optimization is always active)</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -97,10 +97,10 @@ export const ImageCdnAcceleratorWidget: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, provider: e.target.value as ImageCdnProvider })}
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 >
-                  <option value="cloudinary">Cloudinary (Recommended - f_auto, q_auto)</option>
+                  <option value="none">Native Server Optimizer (Recommended - Sharp WebP)</option>
+                  <option value="cloudinary">Cloudinary (Requires valid Cloud Name)</option>
                   <option value="imgix">Imgix (auto=format,compress)</option>
                   <option value="custom">Custom CDN Domain</option>
-                  <option value="none">Disabled (Direct / Local)</option>
                 </select>
               </div>
 

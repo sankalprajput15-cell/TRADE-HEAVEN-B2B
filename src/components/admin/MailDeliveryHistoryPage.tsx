@@ -356,6 +356,39 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     }
   };
 
+  const handleSendMelissaDealTimelineAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-deal-timeline-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendAdminCopy: true })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '📋 Deal & 6-Stage Timeline Alert dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd)!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch Deal & Timeline alert to Melissa.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching Deal & Timeline alert to Melissa.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMarkJohnson15BuyersGeneratorsAndCranesAlert = async () => {
     setIsLoading(true);
     try {
@@ -631,6 +664,16 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
             >
               <Send className="w-3.5 h-3.5" />
               <span>⛽ Send Randy: 10 Buyers Visited &amp; Inquired (Petroleum)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendMelissaDealTimelineAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>📋 Send Melissa: Deal &amp; 6-Stage Execution Timeline Alert</span>
             </button>
 
             <button

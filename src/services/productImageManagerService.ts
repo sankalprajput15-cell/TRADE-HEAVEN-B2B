@@ -1449,22 +1449,36 @@ class ProductImageManagerService {
         const rawDataUrl = reader.result as string;
         const origExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
 
-        // If user selected 'original' (and not autoWebpLossless and no rotation or filters) and it's SVG or GIF, keep raw DataURL directly
+        // If user selected 'original' (and not autoWebpLossless and no rotation or filters) and file is <= 4MB in a web-safe format, keep raw DataURL directly
+        const isWebSafeOriginal =
+          ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'].includes(origExt) ||
+          /image\/(jpeg|jpg|png|webp|svg\+xml|gif)/i.test(file.type || '');
         if (
           !autoWebpLossless &&
           normalizedRotation === 0 &&
           !hasFilters &&
           effectiveTargetFormat === 'original' &&
-          (origExt === 'svg' || origExt === 'gif' || file.type.includes('svg') || file.type.includes('gif'))
+          isWebSafeOriginal &&
+          file.size <= 4 * 1024 * 1024
         ) {
           return resolve({
             dataUrl: rawDataUrl,
-            mimeType: file.type || (origExt === 'svg' ? 'image/svg+xml' : 'image/gif'),
-            extension: origExt,
+            mimeType:
+              file.type ||
+              (origExt === 'svg'
+                ? 'image/svg+xml'
+                : origExt === 'png'
+                  ? 'image/png'
+                  : origExt === 'webp'
+                    ? 'image/webp'
+                    : origExt === 'gif'
+                      ? 'image/gif'
+                      : 'image/jpeg'),
+            extension: origExt === 'jpeg' ? 'jpg' : origExt,
             fileName: file.name,
             sizeBytes: file.size,
             originalSizeBytes: file.size,
-            losslessCompression: false
+            losslessCompression: origExt === 'png' || origExt === 'webp'
           });
         }
 
@@ -1640,6 +1654,7 @@ class ProductImageManagerService {
         updatedBy: 'admin-manual'
       };
 
+      let explicitServerError = '';
       try {
         const response = await fetch('/api/v1/admin/upload-product-image', {
           method: 'POST',
@@ -1647,19 +1662,19 @@ class ProductImageManagerService {
           body: JSON.stringify(uploadPayload)
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.success && data?.url) {
-            finalUrl = normalizeProductAssetUrl(data.url);
-            uploadedToServer = true;
-            if (data.mediaEntry) {
-              finalName = data.mediaEntry.name || finalName;
-              finalFormat = data.mediaEntry.format || finalFormat;
-              if (typeof data.mediaEntry.sizeBytes === 'number') {
-                finalSizeBytes = data.mediaEntry.sizeBytes;
-              }
+        const data = await response.json().catch(() => null);
+        if (response.ok && data?.success && data?.url) {
+          finalUrl = normalizeProductAssetUrl(data.url);
+          uploadedToServer = true;
+          if (data.mediaEntry) {
+            finalName = data.mediaEntry.name || finalName;
+            finalFormat = data.mediaEntry.format || finalFormat;
+            if (typeof data.mediaEntry.sizeBytes === 'number') {
+              finalSizeBytes = data.mediaEntry.sizeBytes;
             }
           }
+        } else if (response.status >= 400 && response.status < 500 && response.status !== 404 && data?.message) {
+          explicitServerError = String(data.message);
         }
       } catch (err) {
         console.warn('[ProductImageManagerService] Primary upload endpoint fallback:', err);
@@ -1673,21 +1688,25 @@ class ProductImageManagerService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(uploadPayload)
           });
-          if (phpRes.ok) {
-            const phpData = await phpRes.json();
-            if (phpData?.success && phpData?.url) {
-              finalUrl = normalizeProductAssetUrl(phpData.url);
-              uploadedToServer = true;
-              if (phpData.mediaEntry) {
-                finalName = phpData.mediaEntry.name || finalName;
-                finalFormat = phpData.mediaEntry.format || finalFormat;
-                if (typeof phpData.mediaEntry.sizeBytes === 'number') {
-                  finalSizeBytes = phpData.mediaEntry.sizeBytes;
-                }
+          const phpData = await phpRes.json().catch(() => null);
+          if (phpRes.ok && phpData?.success && phpData?.url) {
+            finalUrl = normalizeProductAssetUrl(phpData.url);
+            uploadedToServer = true;
+            if (phpData.mediaEntry) {
+              finalName = phpData.mediaEntry.name || finalName;
+              finalFormat = phpData.mediaEntry.format || finalFormat;
+              if (typeof phpData.mediaEntry.sizeBytes === 'number') {
+                finalSizeBytes = phpData.mediaEntry.sizeBytes;
               }
             }
+          } else if (phpRes.status >= 400 && phpRes.status < 500 && phpRes.status !== 404 && phpData?.message && !explicitServerError) {
+            explicitServerError = String(phpData.message);
           }
         } catch {}
+      }
+
+      if (!uploadedToServer && explicitServerError) {
+        throw new Error(explicitServerError);
       }
 
       // If still using local DataURL (offline/static fallback) and it is > 300KB, create a compact DataURL so localStorage never overflows

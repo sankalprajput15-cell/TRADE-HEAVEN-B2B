@@ -22,16 +22,20 @@ const CDN_CONFIG_STORAGE_KEY = 'trade_heaven_image_cdn_config_v1';
 export const IMAGE_CDN_UPDATED_EVENT = 'tradeheaven:image-cdn-updated';
 
 const DEFAULT_CDN_CONFIG: ImageCdnConfig = {
-  provider: 'cloudinary',
-  cloudinaryCloudName: 'tradeheaven-global-cdn',
-  imgixDomain: 'tradeheaven.imgix.net',
-  customCdnBaseUrl: 'https://cdn.tradeheaven.com/assets',
+  provider: 'none',
+  cloudinaryCloudName: '',
+  imgixDomain: '',
+  customCdnBaseUrl: '',
   autoFormat: true,
   autoQuality: true,
   defaultQuality: 82,
   enableResponsiveDpr: true,
-  enabled: true
+  enabled: false
 };
+
+const LEGACY_PLACEHOLDER_CLOUDS = new Set(['tradeheaven-global-cdn']);
+const LEGACY_PLACEHOLDER_IMGIX = new Set(['tradeheaven.imgix.net']);
+const LEGACY_PLACEHOLDER_CUSTOM = new Set(['https://cdn.tradeheaven.com/assets']);
 
 class ImageCdnService {
   private config: ImageCdnConfig;
@@ -41,12 +45,38 @@ class ImageCdnService {
   }
 
   private loadConfig(): ImageCdnConfig {
-    if (typeof window === 'undefined') return DEFAULT_CDN_CONFIG;
+    if (typeof window === 'undefined') return { ...DEFAULT_CDN_CONFIG };
     try {
       const raw = localStorage.getItem(CDN_CONFIG_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        return { ...DEFAULT_CDN_CONFIG, ...parsed };
+        const merged: ImageCdnConfig = { ...DEFAULT_CDN_CONFIG, ...parsed };
+        const hasLegacyPlaceholder =
+          LEGACY_PLACEHOLDER_CLOUDS.has(String(merged.cloudinaryCloudName || '').trim()) ||
+          LEGACY_PLACEHOLDER_IMGIX.has(String(merged.imgixDomain || '').trim()) ||
+          LEGACY_PLACEHOLDER_CUSTOM.has(String(merged.customCdnBaseUrl || '').trim());
+
+        if (hasLegacyPlaceholder) {
+          const cleaned: ImageCdnConfig = {
+            ...merged,
+            provider: 'none',
+            enabled: false,
+            cloudinaryCloudName: LEGACY_PLACEHOLDER_CLOUDS.has(String(merged.cloudinaryCloudName || '').trim())
+              ? ''
+              : merged.cloudinaryCloudName,
+            imgixDomain: LEGACY_PLACEHOLDER_IMGIX.has(String(merged.imgixDomain || '').trim())
+              ? ''
+              : merged.imgixDomain,
+            customCdnBaseUrl: LEGACY_PLACEHOLDER_CUSTOM.has(String(merged.customCdnBaseUrl || '').trim())
+              ? ''
+              : merged.customCdnBaseUrl
+          };
+          try {
+            localStorage.setItem(CDN_CONFIG_STORAGE_KEY, JSON.stringify(cleaned));
+          } catch {}
+          return cleaned;
+        }
+        return merged;
       }
     } catch {}
     return { ...DEFAULT_CDN_CONFIG };
@@ -86,7 +116,7 @@ class ImageCdnService {
     if (!rawUrl || typeof rawUrl !== 'string') return '';
     const trimmed = rawUrl.trim();
 
-    // Never CDN-optimize data URLs, blobs, or SVGs/GIFs unless forced
+    // Never CDN-optimize data URLs, blobs, or SVGs/GIFs
     if (
       trimmed.startsWith('data:') ||
       trimmed.startsWith('blob:') ||
@@ -96,8 +126,26 @@ class ImageCdnService {
       return trimmed;
     }
 
-    // If CDN is disabled, return original URL (or pass through standard query parameters)
+    // Never rewrite relative paths or private/preview origin URLs through external fetch CDNs
+    if (
+      trimmed.startsWith('/') ||
+      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(trimmed) ||
+      /\.run\.app\b/i.test(trimmed)
+    ) {
+      return trimmed;
+    }
+
+    // If CDN is disabled, return original URL
     if (!this.config.enabled || this.config.provider === 'none') {
+      return trimmed;
+    }
+
+    // Guard against unconfigured or placeholder CDN domains
+    if (
+      (this.config.provider === 'cloudinary' && (!this.config.cloudinaryCloudName || LEGACY_PLACEHOLDER_CLOUDS.has(this.config.cloudinaryCloudName.trim()))) ||
+      (this.config.provider === 'imgix' && (!this.config.imgixDomain || LEGACY_PLACEHOLDER_IMGIX.has(this.config.imgixDomain.trim()))) ||
+      (this.config.provider === 'custom' && (!this.config.customCdnBaseUrl || LEGACY_PLACEHOLDER_CUSTOM.has(this.config.customCdnBaseUrl.trim())))
+    ) {
       return trimmed;
     }
 
@@ -114,15 +162,7 @@ class ImageCdnService {
       cleanUrl = cleanUrl.slice(0, qIdx);
     }
 
-    // If relative asset URL (e.g. /assets/uploads/...), convert to absolute domain if needed for CDN fetch
-    let absoluteUrl = cleanUrl;
-    if (cleanUrl.startsWith('/')) {
-      if (typeof window !== 'undefined') {
-        absoluteUrl = `${window.location.origin}${cleanUrl}`;
-      } else {
-        absoluteUrl = `https://tradeheaven.com${cleanUrl}`;
-      }
-    }
+    const absoluteUrl = cleanUrl;
 
     let transformed = trimmed;
 

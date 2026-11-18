@@ -38,7 +38,8 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
       : src;
   const resolvedSrc = normalizeProductAssetUrl(rawSrc) || normalizeProductAssetUrl(imageData?.url) || DEFAULT_HERO_IMAGE;
   const finalSrc = optimizeImageUrl(resolvedSrc, { width: 1280 });
-  const [hasError, setHasError] = useState<boolean>(false);
+  const rawUnparameterizedSrc = resolvedSrc.split('?')[0] || resolvedSrc;
+  const [fallbackStage, setFallbackStage] = useState<0 | 1 | 2>(0);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const finalAlt = alt || imageData?.alt || 'Trade Heaven B2B Wholesale Hero';
@@ -49,12 +50,30 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
       ? `${optimizeImageUrl(resolvedSrc, { width: 720 })} 720w, ${optimizeImageUrl(resolvedSrc, { width: 1280 })} 1280w`
       : undefined;
   const rawSrcSet = restProps.srcSet || localSrcSet || imageData?.srcSet;
-  const finalSrcSet = rawSrcSet && rawSrcSet.trim() !== '' && !rawSrcSet.endsWith(' 1x') ? rawSrcSet : undefined;
+  const finalSrcSet =
+    fallbackStage === 0 && rawSrcSet && rawSrcSet.trim() !== '' && !rawSrcSet.endsWith(' 1x')
+      ? rawSrcSet
+      : undefined;
   const finalSizes = finalSrcSet ? (restProps.sizes || imageData?.sizes || '100vw') : undefined;
 
   useEffect(() => {
-    setHasError(false);
+    setFallbackStage(0);
   }, [finalSrc]);
+
+  const activeSrc =
+    fallbackStage === 0
+      ? finalSrc
+      : fallbackStage === 1
+        ? rawUnparameterizedSrc
+        : DEFAULT_HERO_IMAGE;
+
+  const handleHeroError = () => {
+    setFallbackStage((prev) => {
+      if (prev === 0 && rawUnparameterizedSrc && rawUnparameterizedSrc !== finalSrc) return 1;
+      if (prev < 2) return 2;
+      return 2;
+    });
+  };
 
   return (
     <div
@@ -69,30 +88,20 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
         }}
       />
 
-      {/* Full Resolution Optimized WebP Image */}
-      {!hasError ? (
-        <img
-          ref={imgRef}
-          src={finalSrc}
-          srcSet={finalSrcSet}
-          sizes={finalSizes}
-          alt={finalAlt}
-          decoding={eager ? 'sync' : 'async'}
-          loading={eager ? 'eager' : 'lazy'}
-          fetchPriority={eager ? 'high' : 'auto'}
-          onError={() => setHasError(true)}
-          className={`absolute inset-0 w-full h-full object-cover object-center z-[1] ${imgClassName}`}
-          {...restProps}
-        />
-      ) : (
-        <img
-          src={optimizeImageUrl(DEFAULT_HERO_IMAGE, { width: 1280 })}
-          alt={finalAlt}
-          loading="eager"
-          decoding="async"
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-90 z-[1]"
-        />
-      )}
+      {/* Full Resolution Optimized WebP Image with Raw & Default Fallbacks */}
+      <img
+        ref={imgRef}
+        src={activeSrc}
+        srcSet={finalSrcSet}
+        sizes={finalSizes}
+        alt={finalAlt}
+        decoding={eager ? 'sync' : 'async'}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : 'auto'}
+        onError={handleHeroError}
+        className={`absolute inset-0 w-full h-full object-cover object-center z-[1] ${fallbackStage === 2 ? 'opacity-90' : ''} ${imgClassName}`}
+        {...restProps}
+      />
 
       {showGradientOverlay && (
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/60 to-slate-900/30 z-[2] pointer-events-none" />

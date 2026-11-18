@@ -45,14 +45,14 @@ export const EditableImage: React.FC<EditableImageProps> = ({
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [localEditedSrc, setLocalEditedSrc] = useState<string | null>(null);
   const [tick, setTick] = useState<number>(0);
-  const [imgLoadError, setImgLoadError] = useState<boolean>(false);
+  const [imgFallbackStage, setImgFallbackStage] = useState<0 | 1 | 2>(0);
 
   const canEdit = Boolean(isUserAuthorized(currentUser).isAuthorized && isLiveEditMode);
 
   // Purely derived image source computed during render — NEVER calls setState in useEffect
   const currentSrc = useMemo((): string => {
     const pick = (): string => {
-      if (imgLoadError) {
+      if (imgFallbackStage === 2) {
         return defaultSrc && defaultSrc.trim()
           ? defaultSrc.trim()
           : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75';
@@ -87,8 +87,15 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       return 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75';
     };
 
-    return optimizeImageUrl(pick(), { width: targetWidth });
-  }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgLoadError, targetWidth]);
+    const chosen = pick();
+    if (imgFallbackStage === 1) {
+      return chosen.split('?')[0] || chosen;
+    }
+    if (imgFallbackStage === 2) {
+      return chosen;
+    }
+    return optimizeImageUrl(chosen, { width: targetWidth });
+  }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgFallbackStage, targetWidth]);
 
   const lastHandledEventTsRef = useRef<number>(0);
 
@@ -119,7 +126,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
 
       // Clear any temporary local override so fresh storage source takes over
       setLocalEditedSrc(null);
-      setImgLoadError(false);
+      setImgFallbackStage(0);
 
       // Force this component to re-render with the latest source from storage
       setTick((t) => (t + 1) % 1000000);
@@ -151,7 +158,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
         e.key === 'site_content_override'
       ) {
         setLocalEditedSrc(null);
-        setImgLoadError(false);
+        setImgFallbackStage(0);
         setTick((t) => (t + 1) % 1000000);
       }
     };
@@ -200,7 +207,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       }
 
       setLocalEditedSrc(trimmed);
-      setImgLoadError(false);
+      setImgFallbackStage(0);
       onImageChangeRef.current?.(trimmed);
 
       setStatusMessage({ type: 'success', text: 'Image successfully saved to storage!' });
@@ -234,7 +241,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
           updateField(contentKey, result.url);
         }
         setLocalEditedSrc(result.url);
-        setImgLoadError(false);
+        setImgFallbackStage(0);
         onImageChangeRef.current?.(result.url);
 
         setStatusMessage({ type: 'success', text: `Saved to storage (${result.name})!` });
@@ -254,9 +261,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
 
   // Handle image load error fallback without loop
   const handleImageError = () => {
-    if (!imgLoadError) {
-      setImgLoadError(true);
-    }
+    setImgFallbackStage((prev) => (prev < 2 ? ((prev + 1) as 0 | 1 | 2) : 2));
   };
 
   return (

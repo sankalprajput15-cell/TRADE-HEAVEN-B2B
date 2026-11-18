@@ -56,7 +56,7 @@ import { ActiveView } from '../../types';
 import { getSavedLeads, removeSavedLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
 import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
-import { RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS } from '../../data/detailedVendorProfiles';
+import { RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS, MELISSA_DEAL_AND_TIMELINE } from '../../data/detailedVendorProfiles';
 import {
   VipWithdrawalRequiredModal,
   triggerVipWithdrawalModal,
@@ -679,8 +679,159 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
     currentUser?.email?.toLowerCase() === 'randy@midforkcap.com' ||
     currentUser?.id === 'comp-middle-fox-llc';
 
+  const isMelissaUser =
+    isAdmin ||
+    currentUser?.email?.toLowerCase() === 'melissa@mpcommoditybrokers.com' ||
+    currentUser?.id === 'comp-melissa-mpcommodity' ||
+    currentUser?.id === 'user-supplier-melissa';
+
+  const [showMelissaDealTimeline, setShowMelissaDealTimeline] = useState(true);
+  const [sendingMelissaDealAlert, setSendingMelissaDealAlert] = useState(false);
+  const [melissaDealAlertBanner, setMelissaDealAlertBanner] = useState<string | null>(
+    '📋 Deal & Timeline Email Alert Sent to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd): Deal DEAL-TH-AU-61648-FUEL (EN590 10PPM / Jet A-1 / D6 • Platts • SBLC Only • $50,000.00 USD in Vault TH-VAULT-AU-61648) + Complete 6-Stage Execution Timeline (~36h remaining in 48h window).'
+  );
+
+  const handleDispatchMelissaDealTimelineAlert = async () => {
+    setSendingMelissaDealAlert(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-melissa-deal-timeline-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendAdminCopy: true })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        const trk = data?.melissaReceipt?.trackingId ? ` (MailSuite ID: ${data.melissaReceipt.trackingId})` : '';
+        setMelissaDealAlertBanner(
+          (data.message ||
+            '📋 Deal & 6-Stage Timeline Alert dispatched to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd)!') +
+            trk
+        );
+      }
+    } catch {
+      // ignore offline error
+    } finally {
+      setSendingMelissaDealAlert(false);
+    }
+  };
+
   return (
     <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-4 sm:space-y-6">
+      {/* MELISSA PREZIOS (MP COMMODITY BROKERS AUSTRALIA PTY LTD) — DEAL SUMMARY & 6-STAGE EXECUTION TIMELINE ALERT */}
+      {isMelissaUser && (
+        <div className="bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 text-white rounded-2xl border border-cyan-500/40 p-4 sm:p-5 shadow-md space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[11px] font-bold uppercase tracking-wider">
+                <Mail className="w-3 h-3" />
+                <span>Deal &amp; Timeline Alert • MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-white">
+                📋 Deal Alert Sent to Melissa (<span className="font-mono text-cyan-300">{MELISSA_DEAL_AND_TIMELINE.beneficiaryEmail}</span>): {MELISSA_DEAL_AND_TIMELINE.dealReference} &amp; 6-Stage Timeline
+              </h2>
+              {melissaDealAlertBanner && (
+                <p className="text-xs text-emerald-300 font-medium">{melissaDealAlertBanner}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMelissaDealTimeline((prev) => !prev)}
+                className="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Clock className="w-3.5 h-3.5 text-cyan-300" />
+                <span>{showMelissaDealTimeline ? 'Hide Deal & Timeline' : 'Show Deal & 6-Stage Timeline'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenStorefront('comp-melissa-mpcommodity')}
+                className="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Melissa&apos;s Profile</span>
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleDispatchMelissaDealTimelineAlert}
+                  disabled={sendingMelissaDealAlert}
+                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{sendingMelissaDealAlert ? 'Sending...' : 'Re-Send Deal & Timeline Alert to Melissa'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-white/15 text-xs">
+            <div className="bg-white/5 border border-white/15 rounded-xl p-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Commodities &amp; Pricing</div>
+              <div className="font-bold text-white mt-0.5">EN590 10PPM, Jet A-1, D6, MGO</div>
+              <div className="text-[11px] text-cyan-300">{MELISSA_DEAL_AND_TIMELINE.pricingTerms}</div>
+            </div>
+            <div className="bg-white/5 border border-white/15 rounded-xl p-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment Instrument</div>
+              <div className="font-bold text-white mt-0.5">{MELISSA_DEAL_AND_TIMELINE.paymentInstrument}</div>
+              <div className="text-[11px] text-amber-300">{MELISSA_DEAL_AND_TIMELINE.volumeAllocation}</div>
+            </div>
+            <div className="bg-white/5 border border-white/15 rounded-xl p-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Escrow &amp; Trade Assurance</div>
+              <div className="font-bold text-emerald-300 mt-0.5">
+                {MELISSA_DEAL_AND_TIMELINE.escrowBalanceUsd} ({MELISSA_DEAL_AND_TIMELINE.vaultReference})
+              </div>
+              <div className="text-[11px] text-slate-300">
+                Cert {MELISSA_DEAL_AND_TIMELINE.certificateNumber} ({MELISSA_DEAL_AND_TIMELINE.tradeAssuranceLimitUsd})
+              </div>
+            </div>
+            <div className="bg-red-950/50 border border-red-400/30 rounded-xl p-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-red-300">Active Clearing Deadline</div>
+              <div className="font-bold text-white mt-0.5">{MELISSA_DEAL_AND_TIMELINE.clearingDeadlineSummary}</div>
+              <div className="text-[11px] text-amber-200">{MELISSA_DEAL_AND_TIMELINE.vipUpgradeRateUsd}</div>
+            </div>
+          </div>
+
+          {showMelissaDealTimeline && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2">
+              {MELISSA_DEAL_AND_TIMELINE.stages.map((item) => {
+                const badgeClass =
+                  item.status === 'COMPLETED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                    : item.status === 'ACTIVE_URGENT'
+                      ? 'bg-red-500/25 text-red-200 border-red-400/50'
+                      : item.status === 'NEXT'
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-400/40'
+                        : 'bg-white/10 text-slate-300 border-white/20';
+                const statusLabel =
+                  item.status === 'COMPLETED'
+                    ? 'COMPLETED'
+                    : item.status === 'ACTIVE_URGENT'
+                      ? 'URGENT ACTION'
+                      : item.status === 'NEXT'
+                        ? 'NEXT MILESTONE'
+                        : 'SCHEDULED';
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white/5 border border-white/15 rounded-xl p-3 space-y-1.5 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-cyan-300">{item.phaseLabel}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <div className="font-bold text-white leading-snug">{item.title}</div>
+                    <div className="text-[11px] font-semibold text-amber-300">{item.windowLabel}</div>
+                    <div className="text-[11px] text-slate-300 leading-relaxed">{item.details}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* MARK JOHNSON (ATLANTIC POWER & EQUIPMENT CO.) — 10 BUYERS FOR GENERATORS & 5 BUYERS FOR CRANES NOTIFICATION */}
       {isMarkJohnsonUser && (
         <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white rounded-2xl border border-amber-500/40 p-4 sm:p-5 shadow-md space-y-3">
