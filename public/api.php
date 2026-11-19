@@ -3533,9 +3533,14 @@ switch ($action) {
         $binary = base64_decode($rawBase64);
         $ext = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $targetFormat ?: pathinfo($fileName, PATHINFO_EXTENSION) ?: 'jpg'));
         if ($ext === 'jpeg' || $ext === 'original' || !$ext) $ext = 'jpg';
-        $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
-        $baseName = substr(trim($baseName, '-'), 0, 50) ?: 'product-image';
-        $finalFileName = $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
+        $exactFileName = isset($input['exactFileName']) ? basename(trim((string)$input['exactFileName'])) : '';
+        if ($exactFileName && preg_match('/^[a-zA-Z0-9._-]+\.(jpg|jpeg|png|webp|gif|avif|svg)$/i', $exactFileName)) {
+            $finalFileName = $exactFileName;
+        } else {
+            $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
+            $baseName = substr(trim($baseName, '-'), 0, 50) ?: 'product-image';
+            $finalFileName = $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
+        }
         $filePath = $uploads_dir . '/' . $finalFileName;
         @file_put_contents($filePath, $binary);
 
@@ -3561,6 +3566,9 @@ switch ($action) {
             $state['urlReplacements'][$oldUrlToReplace] = $uploadedUrl;
         }
         $nowMs = (int)round(microtime(true) * 1000);
+        if (!isset($state['productActivityTimestamps']) || !is_array($state['productActivityTimestamps'])) {
+            $state['productActivityTimestamps'] = [];
+        }
         if ($productId) {
             $existingGallery = $state['overrides'][$productId]['gallery'] ?? [];
             $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
@@ -3618,6 +3626,7 @@ switch ($action) {
         $overrides_file = $uploads_dir . '/product-image-overrides.json';
         $state = [
             "overrides" => [],
+            "productActivityTimestamps" => [],
             "globalDefaultImage" => null,
             "categoryOverrides" => [],
             "urlReplacements" => [],
@@ -3629,10 +3638,17 @@ switch ($action) {
                 $state = array_merge($state, $parsed);
             }
         }
+        if (!isset($state['productActivityTimestamps']) || !is_array($state['productActivityTimestamps'])) {
+            $state['productActivityTimestamps'] = [];
+        }
         $nowIso = gmdate('Y-m-d\TH:i:s\Z');
+        $nowMs = (int)round(microtime(true) * 1000);
         if (!empty($input['fullOverridesMap']) && is_array($input['fullOverridesMap'])) {
             foreach ($input['fullOverridesMap'] as $pid => $entry) {
+                if (!is_array($entry) || empty($entry['primary'])) continue;
                 $state['overrides'][$pid] = $entry;
+                $ts = !empty($entry['imageUpdatedAt']) ? (int)$entry['imageUpdatedAt'] : $nowMs;
+                $state['productActivityTimestamps'][$pid] = $ts;
             }
         }
         $primaryUrl = $input['primaryUrl'] ?? null;
@@ -3640,7 +3656,6 @@ switch ($action) {
         $productIds = $input['productIds'] ?? null;
         $galleryUrls = $input['galleryUrls'] ?? null;
         $format = $input['format'] ?? 'JPG';
-        $nowMs = (int)round(microtime(true) * 1000);
         if ($productId && $primaryUrl) {
             $state['overrides'][$productId] = [
                 "primary" => $primaryUrl,

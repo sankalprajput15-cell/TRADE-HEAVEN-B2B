@@ -10472,12 +10472,22 @@ app.get('/api.php', async (req, res) => {
 
   if (action === 'auto_upload_product_image') {
     const extUrl = String(req.query.image_url || req.query.imageUrl || req.query.url || '').trim();
+    const reqPid = String(req.query.product_id || req.query.productId || '').trim();
+    const reqCat = String(req.query.category || '').trim();
     const localUrl = await mirrorExternalProductImageToLocalUploads({
       externalUrl: extUrl,
-      productId: String(req.query.product_id || req.query.productId || '').trim(),
+      productId: reqPid,
       productName: String(req.query.product_name || req.query.productName || '').trim(),
-      category: String(req.query.category || '').trim()
+      category: reqCat
     });
+    if (localUrl && reqPid) {
+      void replicateImageOverrideToLiveServer({
+        productId: reqPid,
+        primaryUrl: localUrl,
+        galleryUrls: [localUrl],
+        category: reqCat || undefined
+      });
+    }
     return res.json({
       status: localUrl ? 'success' : 'error',
       success: Boolean(localUrl),
@@ -10494,6 +10504,7 @@ app.get('/api.php', async (req, res) => {
   }
 
   if (action === 'get_product_images' || action === 'product_images') {
+    void pullNewerManualOverridesFromLiveServer();
     serverProductImageState = loadServerProductImageState(serverProductImageState);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.json({ status: 'success', success: true, data: serverProductImageState });
@@ -11806,11 +11817,13 @@ Message: ${formattedInquiry.message}`
     serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload };
     syncSiteContentCategoriesToImageOverrides(serverSiteContent);
     saveServerSiteContentToDisk();
+    const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
 
     return res.json({
       success: true,
       status: 'success',
       data: serverSiteContent,
+      liveSynced: liveSync.synced,
       message: 'Site content updated and published successfully.'
     });
   }
@@ -12100,13 +12113,23 @@ Message: ${formattedInquiry.message}`
 
   if (action === 'auto_upload_product_image') {
     const extUrl = String(input.image_url || input.imageUrl || input.url || req.query.image_url || '').trim();
+    const reqPid = String(input.product_id || input.productId || req.query.product_id || '').trim();
+    const reqCat = String(input.category || req.query.category || '').trim();
     const localUrl = await mirrorExternalProductImageToLocalUploads({
       externalUrl: extUrl,
-      productId: String(input.product_id || input.productId || req.query.product_id || '').trim(),
+      productId: reqPid,
       productName: String(input.product_name || input.productName || req.query.product_name || '').trim(),
-      category: String(input.category || req.query.category || '').trim(),
+      category: reqCat,
       flushNow: true
     });
+    if (localUrl && reqPid) {
+      void replicateImageOverrideToLiveServer({
+        productId: reqPid,
+        primaryUrl: localUrl,
+        galleryUrls: [localUrl],
+        category: reqCat || undefined
+      });
+    }
     return res.json({
       status: localUrl ? 'success' : 'error',
       success: Boolean(localUrl),
@@ -12151,15 +12174,15 @@ Message: ${formattedInquiry.message}`
   }
 
   if (action === 'upload_product_image') {
-    return handleUploadProductImageRequest(req, res, input);
+    return await handleUploadProductImageRequest(req, res, input);
   }
 
   if (action === 'set_product_images') {
-    return handleSetProductImagesRequest(req, res, input);
+    return await handleSetProductImagesRequest(req, res, input);
   }
 
   if (action === 'delete_product_images') {
-    return handleDeleteProductImagesRequest(req, res, input);
+    return await handleDeleteProductImagesRequest(req, res, input);
   }
 
   if (action === 'auto_batch_persist_rfqs' || action === 'auto_batch_persist') {
@@ -14225,8 +14248,469 @@ if (!fs.existsSync(IMAGE_OVERRIDES_FILE)) {
   saveServerProductImageState();
 }
 
+// -------------------------------------------------------------
+// REAL-TIME CROSS-SERVER IMAGE REPLICATION (Local <-> https://tradeheaven.net)
+// Ensures uploaded binaries and image overrides save across both servers simultaneously
+// -------------------------------------------------------------
+const liveRemoteUploadUrlCache = new Map<string, string>();
+let lastLiveRemotePullMs = 0;
+let isLiveRemotePullInFlight = false;
+
+function getLiveTradeHeavenOrigin(): string {
+  try {
+    return new URL(LIVE_TRADEHEAVEN_API_URL).origin;
+  } catch {
+    return 'https://tradeheaven.net';
+  }
+}
+
+function getMimeTypeForUploadFilename(fileName: string): string {
+  const ext = path.extname(fileName || '').toLowerCase();
+  switch (ext) {
+    case '.webp': return 'image/webp';
+    case '.png': return 'image/png';
+    case '.gif': return 'image/gif';
+    case '.avif': return 'image/avif';
+    case '.svg': return 'image/svg+xml';
+    case '.jpg':
+    case '.jpeg':
+    default: return 'image/jpeg';
+  }
+}
+
+function resolveLocalUploadDiskPath(rawUrl: string): string | null {
+  const clean = String(rawUrl || '').trim().split('?')[0];
+  if (!clean.startsWith('/assets/uploads/')) return null;
+  const fileName = path.basename(clean);
+  if (!fileName || fileName.includes('..')) return null;
+  const candidates = [
+    path.join(UPLOADS_DIR, fileName),
+    path.join(process.cwd(), 'dist', 'assets', 'uploads', fileName)
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      try {
+        if (fs.statSync(candidate).isFile()) return candidate;
+      } catch {
+        // ignore stat errors
+      }
+    }
+  }
+  return null;
+}
+
+async function checkRemoteUploadExistsOnLiveServer(cleanLocalUrl: string): Promise<boolean> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || !cleanLocalUrl.startsWith('/assets/uploads/')) return false;
+  try {
+    const liveUrl = `${getLiveTradeHeavenOrigin()}${cleanLocalUrl}`;
+    const res = await fetch(liveUrl, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(4000)
+    });
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    return res.ok && ct.startsWith('image/');
+  } catch {
+    return false;
+  }
+}
+
+async function ensureLocalImagePresentOnLiveServer(params: {
+  localUrl: string;
+  base64Data?: string;
+  fileName?: string;
+  targetFormat?: string;
+  productId?: string;
+  productIds?: string[];
+  category?: string;
+  applyToAll?: boolean;
+  oldUrlToReplace?: string;
+  forceUpload?: boolean;
+}): Promise<{ synced: boolean; remoteUrl: string; uploadedNow?: boolean; error?: string }> {
+  const cleanLocalUrl = normalizeServerAssetUrl(params.localUrl || '').split('?')[0];
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || !cleanLocalUrl) {
+    return { synced: false, remoteUrl: cleanLocalUrl };
+  }
+  if (!cleanLocalUrl.startsWith('/assets/uploads/')) {
+    return { synced: true, remoteUrl: cleanLocalUrl };
+  }
+
+  const hasBindings = Boolean(
+    params.productId ||
+    (Array.isArray(params.productIds) && params.productIds.length > 0) ||
+    params.category ||
+    params.applyToAll ||
+    params.oldUrlToReplace
+  );
+
+  // If we are NOT forced to upload a fresh binary and we already know the file exists on live server:
+  if (!params.forceUpload && !params.base64Data) {
+    const cachedRemote = liveRemoteUploadUrlCache.get(cleanLocalUrl);
+    if (cachedRemote) {
+      return { synced: true, remoteUrl: cachedRemote, uploadedNow: false };
+    }
+    const existsRemotely = await checkRemoteUploadExistsOnLiveServer(cleanLocalUrl);
+    if (existsRemotely) {
+      liveRemoteUploadUrlCache.set(cleanLocalUrl, cleanLocalUrl);
+      return { synced: true, remoteUrl: cleanLocalUrl, uploadedNow: false };
+    }
+  }
+
+  let dataUrlToSend = params.base64Data || '';
+  const diskFileName = path.basename(cleanLocalUrl);
+  const effectiveFileName = params.fileName || diskFileName || 'product-image.webp';
+  const effectiveExt = (
+    params.targetFormat ||
+    path.extname(effectiveFileName).replace('.', '') ||
+    path.extname(diskFileName).replace('.', '') ||
+    'webp'
+  ).toLowerCase();
+
+  if (!dataUrlToSend) {
+    const diskPath = resolveLocalUploadDiskPath(cleanLocalUrl);
+    if (!diskPath) {
+      return { synced: false, remoteUrl: cleanLocalUrl, error: `Local file not found on disk: ${cleanLocalUrl}` };
+    }
+    const buf = fs.readFileSync(diskPath);
+    if (!buf || buf.length < 32) {
+      return { synced: false, remoteUrl: cleanLocalUrl, error: `Local file empty/corrupt: ${cleanLocalUrl}` };
+    }
+    const mime = getMimeTypeForUploadFilename(diskFileName);
+    dataUrlToSend = `data:${mime};base64,${buf.toString('base64')}`;
+  }
+
+  try {
+    const payload: Record<string, any> = {
+      base64Data: dataUrlToSend,
+      fileName: effectiveFileName,
+      exactFileName: diskFileName,
+      targetFormat: effectiveExt === 'jpeg' ? 'jpg' : effectiveExt
+    };
+    if (hasBindings) {
+      if (params.productId) payload.productId = params.productId;
+      if (Array.isArray(params.productIds) && params.productIds.length > 0) payload.productIds = params.productIds;
+      if (params.category) payload.category = params.category;
+      if (params.applyToAll) payload.applyToAll = true;
+      if (params.oldUrlToReplace) payload.oldUrlToReplace = params.oldUrlToReplace;
+    }
+
+    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=upload_product_image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(12000)
+    });
+    const parsed: any = await res.json().catch(() => null);
+    const returnedUrl = String(parsed?.url || parsed?.rawUrl || '').trim().split('?')[0];
+    if (res.ok && parsed && (parsed.success === true || parsed.status === 'success') && returnedUrl) {
+      liveRemoteUploadUrlCache.set(cleanLocalUrl, returnedUrl);
+      console.log(`[CrossServerImageSync] Replicated binary ${cleanLocalUrl} -> ${LIVE_TRADEHEAVEN_API_URL} (${returnedUrl})`);
+      return { synced: true, remoteUrl: returnedUrl, uploadedNow: true };
+    }
+    return {
+      synced: false,
+      remoteUrl: cleanLocalUrl,
+      error: parsed?.message || `HTTP ${res.status}`
+    };
+  } catch (err: any) {
+    console.warn('[CrossServerImageSync] Failed to upload image to live server:', err?.message || err);
+    return { synced: false, remoteUrl: cleanLocalUrl, error: err?.message || 'network_error' };
+  }
+}
+
+async function replicateImageOverrideToLiveServer(params: {
+  productId?: string;
+  productIds?: string[];
+  primaryUrl?: string;
+  galleryUrls?: string[];
+  format?: string;
+  category?: string;
+  applyToAll?: boolean;
+  oldUrlToReplace?: string;
+  fullOverridesMap?: Record<string, any>;
+}): Promise<{ synced: boolean; remoteUrl?: string; error?: string }> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return { synced: false };
+
+  try {
+    let resolvedPrimary = params.primaryUrl ? normalizeServerAssetUrl(params.primaryUrl).split('?')[0] : '';
+    let alreadyBoundByUpload = false;
+
+    if (resolvedPrimary && resolvedPrimary.startsWith('/assets/uploads/')) {
+      const uploadRes = await ensureLocalImagePresentOnLiveServer({
+        localUrl: resolvedPrimary,
+        productId: params.productId,
+        productIds: params.productIds,
+        category: params.category,
+        applyToAll: params.applyToAll,
+        oldUrlToReplace: params.oldUrlToReplace
+      });
+      if (uploadRes.synced && uploadRes.remoteUrl) {
+        resolvedPrimary = uploadRes.remoteUrl;
+        if (uploadRes.uploadedNow && !params.fullOverridesMap && (!params.galleryUrls || params.galleryUrls.length <= 1)) {
+          alreadyBoundByUpload = true;
+        }
+      }
+    }
+
+    let resolvedGallery: string[] | undefined = undefined;
+    if (Array.isArray(params.galleryUrls) && params.galleryUrls.length > 0) {
+      resolvedGallery = [];
+      for (const gUrl of params.galleryUrls) {
+        const cleanG = normalizeServerAssetUrl(gUrl).split('?')[0];
+        if (!cleanG) continue;
+        if (cleanG === (params.primaryUrl ? normalizeServerAssetUrl(params.primaryUrl).split('?')[0] : '')) {
+          resolvedGallery.push(resolvedPrimary || cleanG);
+        } else if (cleanG.startsWith('/assets/uploads/')) {
+          const gRes = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanG });
+          resolvedGallery.push(gRes.remoteUrl || cleanG);
+        } else {
+          resolvedGallery.push(cleanG);
+        }
+      }
+      resolvedGallery = Array.from(new Set(resolvedGallery));
+    } else if (resolvedPrimary) {
+      resolvedGallery = [resolvedPrimary];
+    }
+
+    let resolvedFullMap: Record<string, any> | undefined = undefined;
+    if (params.fullOverridesMap && typeof params.fullOverridesMap === 'object') {
+      resolvedFullMap = {};
+      for (const [pid, entry] of Object.entries(params.fullOverridesMap)) {
+        if (!entry || typeof entry !== 'object' || !(entry as any).primary) continue;
+        const cleanP = normalizeServerAssetUrl((entry as any).primary).split('?')[0];
+        let remoteP = cleanP;
+        if (cleanP.startsWith('/assets/uploads/')) {
+          const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanP });
+          if (ensured.synced && ensured.remoteUrl) remoteP = ensured.remoteUrl;
+        }
+        resolvedFullMap[pid] = {
+          ...(entry as any),
+          primary: remoteP,
+          gallery: [remoteP]
+        };
+      }
+    }
+
+    if (alreadyBoundByUpload) {
+      return { synced: true, remoteUrl: resolvedPrimary };
+    }
+
+    const payload: Record<string, any> = {};
+    if (params.productId) payload.productId = params.productId;
+    if (Array.isArray(params.productIds) && params.productIds.length > 0) payload.productIds = params.productIds;
+    if (resolvedPrimary) payload.primaryUrl = resolvedPrimary;
+    if (resolvedGallery && resolvedGallery.length > 0) payload.galleryUrls = resolvedGallery;
+    if (params.format) payload.format = params.format;
+    if (params.category) payload.category = params.category;
+    if (params.applyToAll) payload.applyToAll = true;
+    if (params.oldUrlToReplace) payload.oldUrlToReplace = params.oldUrlToReplace;
+    if (resolvedFullMap && Object.keys(resolvedFullMap).length > 0) payload.fullOverridesMap = resolvedFullMap;
+
+    if (Object.keys(payload).length === 0) {
+      return { synced: true, remoteUrl: resolvedPrimary };
+    }
+
+    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=set_product_images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
+    });
+    const parsed: any = await res.json().catch(() => null);
+    const ok = Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success'));
+    if (ok) {
+      console.log(`[CrossServerImageSync] Synced override (${params.productId || params.category || (params.productIds?.length ? `${params.productIds.length} items` : 'batch')}) -> ${LIVE_TRADEHEAVEN_API_URL}`);
+    }
+    return { synced: ok, remoteUrl: resolvedPrimary, error: ok ? undefined : (parsed?.message || `HTTP ${res.status}`) };
+  } catch (err: any) {
+    console.warn('[CrossServerImageSync] Failed to replicate override to live server:', err?.message || err);
+    return { synced: false, error: err?.message || 'network_error' };
+  }
+}
+
+async function replicateImageDeletionToLiveServer(params: {
+  productId?: string;
+  productIds?: string[];
+  category?: string;
+  clearGlobal?: boolean;
+  resetAll?: boolean;
+}): Promise<{ synced: boolean; error?: string }> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return { synced: false };
+  try {
+    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=delete_product_images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
+      },
+      body: JSON.stringify(params),
+      signal: AbortSignal.timeout(8000)
+    });
+    const parsed: any = await res.json().catch(() => null);
+    return { synced: Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
+  } catch (err: any) {
+    console.warn('[CrossServerImageSync] Failed to replicate deletion to live server:', err?.message || err);
+    return { synced: false, error: err?.message || 'network_error' };
+  }
+}
+
+async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ synced: boolean; error?: string }> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || !contentPayload || typeof contentPayload !== 'object') {
+    return { synced: false };
+  }
+  try {
+    const cloned = JSON.parse(JSON.stringify(contentPayload));
+    const cats = cloned?.homepage?.categoriesList;
+    const categoryOverrideMap: Record<string, any> = {};
+    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    if (Array.isArray(cats)) {
+      for (const cat of cats) {
+        if (!cat || !cat.id || !cat.image) continue;
+        const cleanImg = normalizeServerAssetUrl(String(cat.image)).split('?')[0];
+        let remoteImg = cleanImg;
+        if (cleanImg.startsWith('/assets/uploads/')) {
+          const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanImg });
+          if (ensured.synced && ensured.remoteUrl) {
+            remoteImg = ensured.remoteUrl;
+            cat.image = remoteImg;
+          }
+        }
+        categoryOverrideMap[String(cat.id).trim()] = {
+          primary: remoteImg,
+          gallery: [remoteImg],
+          format: remoteImg.split('.').pop()?.toUpperCase() || 'WEBP',
+          updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
+          updatedBy: 'admin-manual'
+        };
+      }
+    }
+
+    if (Object.keys(categoryOverrideMap).length > 0) {
+      await replicateImageOverrideToLiveServer({ fullOverridesMap: categoryOverrideMap });
+    }
+
+    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=save_content`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
+      },
+      body: JSON.stringify(cloned),
+      signal: AbortSignal.timeout(10000)
+    });
+    const parsed: any = await res.json().catch(() => null);
+    return { synced: Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
+  } catch (err: any) {
+    console.warn('[CrossServerImageSync] Failed to replicate site content to live server:', err?.message || err);
+    return { synced: false, error: err?.message || 'network_error' };
+  }
+}
+
+async function pullNewerManualOverridesFromLiveServer(force = false): Promise<number> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || isLiveRemotePullInFlight) return 0;
+  const now = Date.now();
+  if (!force && now - lastLiveRemotePullMs < 20000) return 0;
+  lastLiveRemotePullMs = now;
+  isLiveRemotePullInFlight = true;
+  let pulledCount = 0;
+
+  try {
+    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=get_product_images&t=${now}`, {
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!res.ok) return 0;
+    const json: any = await res.json().catch(() => null);
+    const remoteState = json?.data || json;
+    const remoteOverrides = remoteState?.overrides;
+    if (!remoteOverrides || typeof remoteOverrides !== 'object') return 0;
+
+    const liveOrigin = getLiveTradeHeavenOrigin();
+    let changed = false;
+
+    for (const [pid, rawEntry] of Object.entries(remoteOverrides)) {
+      const remoteEntry = rawEntry as ProductImageOverrideEntry | undefined;
+      if (!remoteEntry || !remoteEntry.primary || remoteEntry.updatedBy !== 'admin-manual') continue;
+      const remoteMs = Math.max(
+        parseServerTimestampMs(remoteEntry.imageUpdatedAt),
+        parseServerTimestampMs(remoteEntry.updatedAt)
+      );
+      if (remoteMs <= 0) continue;
+
+      const localEntry = serverProductImageState.overrides[pid];
+      const localMs = Math.max(
+        parseServerTimestampMs(localEntry?.imageUpdatedAt),
+        parseServerTimestampMs(localEntry?.updatedAt)
+      );
+      // Only adopt from live if live manual edit is strictly newer than local
+      if (localEntry && localMs >= remoteMs) continue;
+
+      const cleanRemotePrimary = normalizeServerAssetUrl(remoteEntry.primary).split('?')[0];
+      let localPrimary = cleanRemotePrimary;
+
+      if (cleanRemotePrimary.startsWith('/assets/uploads/')) {
+        const diskPath = resolveLocalUploadDiskPath(cleanRemotePrimary);
+        if (!diskPath) {
+          // Download binary from live server so local disk always has the exact image
+          try {
+            const imgRes = await fetch(`${liveOrigin}${cleanRemotePrimary}`, {
+              signal: AbortSignal.timeout(6000)
+            });
+            const ct = (imgRes.headers.get('content-type') || '').toLowerCase();
+            if (imgRes.ok && ct.startsWith('image/')) {
+              const arrBuf = await imgRes.arrayBuffer();
+              const buf = Buffer.from(arrBuf);
+              if (buf.length >= 32) {
+                ensureUploadsDir();
+                const targetFile = path.join(UPLOADS_DIR, path.basename(cleanRemotePrimary));
+                fs.writeFileSync(targetFile, buf);
+                liveRemoteUploadUrlCache.set(cleanRemotePrimary, cleanRemotePrimary);
+              } else {
+                continue;
+              }
+            } else {
+              continue;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      serverProductImageState.overrides[pid] = {
+        ...remoteEntry,
+        primary: localPrimary,
+        gallery: [localPrimary],
+        imageUpdatedAt: remoteMs,
+        updatedAt: remoteEntry.updatedAt || new Date(remoteMs).toISOString(),
+        updatedBy: 'admin-manual'
+      };
+      recordServerProductActivityTimestamp(pid, remoteMs);
+      changed = true;
+      pulledCount++;
+    }
+
+    if (changed) {
+      saveServerProductImageState();
+      console.log(`[CrossServerImageSync] Pulled ${pulledCount} newer admin-manual override(s) from ${LIVE_TRADEHEAVEN_API_URL}`);
+    }
+  } catch {
+    // Non-blocking background sync
+  } finally {
+    isLiveRemotePullInFlight = false;
+  }
+  return pulledCount;
+}
+
 // GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch all product image overrides & server media library
 const handleGetProductImages = (_req: express.Request, res: express.Response) => {
+  void pullNewerManualOverridesFromLiveServer();
   serverProductImageState = loadServerProductImageState(serverProductImageState);
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -14270,7 +14754,7 @@ function parseBase64DataUrl(
 }
 
 // Shared handler for POST /api/v1/admin/upload-product-image & /api.php?action=upload_product_image
-function handleUploadProductImageRequest(req: express.Request, res: express.Response, customBody?: any) {
+async function handleUploadProductImageRequest(req: express.Request, res: express.Response, customBody?: any) {
   try {
     ensureUploadsDir();
     const {
@@ -14542,15 +15026,33 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
+    // Real-time cross-server replication: upload binary + bind override on https://tradeheaven.net simultaneously
+    const liveSyncResult = await ensureLocalImagePresentOnLiveServer({
+      localUrl: uploadedUrl,
+      base64Data: `data:${detectedMime};base64,${buffer.toString('base64')}`,
+      fileName: finalFileName,
+      targetFormat: ext,
+      productId: productId ? String(productId).trim() : undefined,
+      productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
+      category: category ? String(category).trim() : undefined,
+      applyToAll: Boolean(applyToAll),
+      oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
+      forceUpload: true
+    });
+
     const cacheBustedUrl = `${uploadedUrl}?v=${nowMs}`;
     return res.json({
       success: true,
       url: cacheBustedUrl,
       rawUrl: uploadedUrl,
+      liveSynced: liveSyncResult.synced,
+      liveUrl: liveSyncResult.remoteUrl || uploadedUrl,
       imageUpdatedAt: nowMs,
       mediaEntry: { ...mediaEntry, url: cacheBustedUrl },
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
-      message: `Image uploaded and saved as ${ext.toUpperCase()}`
+      message: liveSyncResult.synced
+        ? `Image uploaded and synced across all servers as ${ext.toUpperCase()}`
+        : `Image uploaded and saved as ${ext.toUpperCase()}`
     });
   } catch (err: any) {
     console.error('[ProductImageSystem] Upload error:', err);
@@ -14561,7 +15063,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
   }
 }
 
-app.post('/api/v1/admin/upload-product-image', (req, res) => handleUploadProductImageRequest(req, res));
+app.post('/api/v1/admin/upload-product-image', (req, res) => void handleUploadProductImageRequest(req, res));
 
 // -------------------------------------------------------------
 // CLIENT UPLOADED DOCUMENTS & WIRE CONFIRMATION STORAGE
@@ -15200,7 +15702,7 @@ app.delete('/api/v1/admin/master-uploads/:id', (req, res) => {
 });
 
 // Shared handler for PUT /api/v1/admin/product-images & /api.php?action=set_product_images
-function handleSetProductImagesRequest(req: express.Request, res: express.Response, customBody?: any) {
+async function handleSetProductImagesRequest(req: express.Request, res: express.Response, customBody?: any) {
   try {
     const {
       productId,
@@ -15459,12 +15961,32 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
+    // Real-time cross-server replication: ensure image binary exists + override saved on https://tradeheaven.net
+    const liveSyncResult = await replicateImageOverrideToLiveServer({
+      productId: productId ? String(productId).trim() : undefined,
+      productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
+      primaryUrl: primaryUrl ? String(primaryUrl).trim() : undefined,
+      galleryUrls: Array.isArray(galleryUrls) ? galleryUrls : undefined,
+      format: format ? String(format) : undefined,
+      category: category ? String(category).trim() : undefined,
+      applyToAll: Boolean(applyToAll),
+      oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
+      fullOverridesMap:
+        !productId && !(Array.isArray(productIds) && productIds.length > 0) && fullOverridesMap && typeof fullOverridesMap === 'object'
+          ? fullOverridesMap
+          : undefined
+    });
+
     return res.json({
       success: true,
       data: serverProductImageState,
+      liveSynced: liveSyncResult.synced,
+      liveUrl: liveSyncResult.remoteUrl,
       imageUpdatedAt: nowMs,
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
-      message: 'Product image configuration updated successfully.'
+      message: liveSyncResult.synced
+        ? 'Product image configuration updated and synced across servers.'
+        : 'Product image configuration updated successfully.'
     });
   } catch (err: any) {
     return res.status(500).json({
@@ -15474,10 +15996,10 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
   }
 }
 
-app.put('/api/v1/admin/product-images', (req, res) => handleSetProductImagesRequest(req, res));
+app.put('/api/v1/admin/product-images', (req, res) => void handleSetProductImagesRequest(req, res));
 
 // Shared handler for DELETE /api/v1/admin/product-images & /api.php?action=delete_product_images
-function handleDeleteProductImagesRequest(req: express.Request, res: express.Response, customBody?: any) {
+async function handleDeleteProductImagesRequest(req: express.Request, res: express.Response, customBody?: any) {
   const { productId, productIds, category, clearGlobal, resetAll } = (customBody || req.body || req.query || {});
 
   if (resetAll) {
@@ -15505,14 +16027,22 @@ function handleDeleteProductImagesRequest(req: express.Request, res: express.Res
   }
 
   saveServerProductImageState();
+  const liveSyncResult = await replicateImageDeletionToLiveServer({
+    productId: productId ? String(productId) : undefined,
+    productIds: Array.isArray(productIds) ? productIds.map(String) : undefined,
+    category: category ? String(category) : undefined,
+    clearGlobal: Boolean(clearGlobal),
+    resetAll: Boolean(resetAll)
+  });
   return res.json({
     success: true,
+    liveSynced: liveSyncResult.synced,
     data: serverProductImageState,
     message: 'Product image association(s) deleted successfully.'
   });
 }
 
-app.delete('/api/v1/admin/product-images', (req, res) => handleDeleteProductImagesRequest(req, res));
+app.delete('/api/v1/admin/product-images', (req, res) => void handleDeleteProductImagesRequest(req, res));
 
 // CMS Site Content persistent storage on server (saved outside src/ so runtime edits never restart the server)
 const SITE_CONTENT_SEED_FILE = path.join(process.cwd(), 'src', 'data', 'siteContentBackup.json');
@@ -15637,7 +16167,7 @@ app.get('/api/site-content', (req, res) => {
 });
 
 // PUT /api/site-content
-app.put('/api/site-content', (req, res) => {
+app.put('/api/site-content', async (req, res) => {
   const userRole = String(req.headers['x-user-role'] || req.body?.user?.role || '').trim().toUpperCase();
   const userEmail = String(req.headers['x-user-email'] || req.body?.user?.email || '').trim().toLowerCase();
 
@@ -15660,8 +16190,10 @@ app.put('/api/site-content', (req, res) => {
   serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload };
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
   saveServerSiteContentToDisk();
+  const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
   res.json({
     success: true,
+    liveSynced: liveSync.synced,
     data: serverSiteContent,
     message: 'Site content updated and published successfully.'
   });
@@ -23035,8 +23567,20 @@ async function fixSingleCatalogImageRecord(params: {
   saveRfqMarketStoreToDisk();
   scheduleSaveOverridesState(true);
 
+  let liveSynced = false;
+  if (finalImageUrl) {
+    const syncRes = await replicateImageOverrideToLiveServer({
+      productId: cleanId,
+      primaryUrl: finalImageUrl,
+      galleryUrls: [finalImageUrl],
+      format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
+    });
+    liveSynced = syncRes.synced;
+  }
+
   return {
     success: true,
+    liveSynced,
     record_id: cleanId,
     record_type: resolvedType,
     title: resolvedTitle,
@@ -23107,6 +23651,51 @@ app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
     return res.status(400).json({
       success: false,
       message: err?.message || 'Failed to fix catalog image'
+    });
+  }
+});
+
+// Real-time Cross-Server Image Sync endpoint (pushes specified or all local overrides & binaries to live server)
+app.post('/api/v1/admin/sync-images-to-live', async (req, res) => {
+  try {
+    const requestedIds: string[] = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [];
+    const targetIds = requestedIds.length > 0
+      ? requestedIds
+      : Object.keys(serverProductImageState.overrides || {});
+    let syncedCount = 0;
+    const failedIds: string[] = [];
+    const batchMap: Record<string, any> = {};
+
+    for (const id of targetIds) {
+      const entry = serverProductImageState.overrides[id];
+      if (!entry?.primary) continue;
+      const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: entry.primary });
+      if (ensured.synced && ensured.remoteUrl) {
+        batchMap[id] = {
+          ...entry,
+          primary: ensured.remoteUrl,
+          gallery: [ensured.remoteUrl]
+        };
+        syncedCount++;
+      } else {
+        failedIds.push(id);
+      }
+    }
+
+    if (Object.keys(batchMap).length > 0) {
+      await replicateImageOverrideToLiveServer({ fullOverridesMap: batchMap });
+    }
+    return res.json({
+      success: true,
+      syncedCount,
+      failedCount: failedIds.length,
+      failedIds: failedIds.slice(0, 25),
+      liveEndpoint: LIVE_TRADEHEAVEN_API_URL
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to sync images to live server'
     });
   }
 });
