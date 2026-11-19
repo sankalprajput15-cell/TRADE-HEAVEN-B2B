@@ -311,7 +311,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Machinery & Industrial Equipment",
         description: "CNC milling machines, packaging lines, hydraulic presses, automation.",
         iconName: "Cpu",
-        image: "/assets/uploads/auto-machinery-industrial-equipment-0f837bff532d.webp",
+        image: "/assets/uploads/auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
         badge: "Top Sourced",
         productCount: "48,200+ Products"
       },
@@ -329,7 +329,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Electronics & Semiconductors",
         description: "SMD microcontrollers, OLED display panels, power transformers, sensors.",
         iconName: "Radio",
-        image: "/assets/uploads/auto-electronics-semiconductors-446bd6820c13.webp",
+        image: "/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp",
         badge: "Verified OEM",
         productCount: "64,100+ Products"
       },
@@ -338,7 +338,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Chemicals & Raw Polymers",
         description: "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         iconName: "FlaskConical",
-        image: "/assets/uploads/auto-chemicals-raw-polymers-944cb1e5e03a.webp",
+        image: "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp",
         badge: "REACH Compliant",
         productCount: "28,500+ Products"
       },
@@ -365,7 +365,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Agriculture & Agro Commodities",
         description: "Refined ICUMSA 45 sugar, Non-GMO soy, Robusta coffee, cashew nuts.",
         iconName: "Wheat",
-        image: "/assets/uploads/auto-agriculture-agro-commodities-42c7f6e111e6.webp",
+        image: "/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp",
         badge: "Phytosanitary Cert",
         productCount: "41,300+ Products"
       },
@@ -374,7 +374,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Medical & Diagnostic Supplies",
         description: "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         iconName: "Stethoscope",
-        image: "/assets/uploads/auto-medical-diagnostic-supplies-2bee0a25897e.webp",
+        image: "/assets/uploads/auto-disposable-nitrile-examination-7302dff17ffb.webp",
         badge: "FDA 510(k) / CE",
         productCount: "15,700+ Products"
       },
@@ -383,7 +383,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Building & Construction Materials",
         description: "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         iconName: "Box",
-        image: "/assets/uploads/auto-building-construction-materials-60e128f6255b.webp",
+        image: "/assets/uploads/auto-building-construction-materials-37394a3c058e.webp",
         badge: "ASTM / ISO",
         productCount: "37,000+ Products"
       }

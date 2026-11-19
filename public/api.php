@@ -1059,7 +1059,7 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'auto_upload_product_image';
     } elseif (strpos($clean_route, 'admin/upload-product-image') !== false) {
         $raw_action = 'upload_product_image';
-    } elseif (strpos($clean_route, 'admin/product-images') !== false) {
+    } elseif (strpos($clean_route, 'admin/product-images') !== false || strpos($clean_route, 'public/product-images') !== false) {
         if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             $raw_action = 'delete_product_images';
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
@@ -1127,7 +1127,7 @@ if (empty($raw_action)) {
             $raw_action = 'auto_upload_product_image';
         } elseif (strpos($sub, 'admin/upload-product-image') !== false) {
             $raw_action = 'upload_product_image';
-        } elseif (strpos($sub, 'admin/product-images') !== false) {
+        } elseif (strpos($sub, 'admin/product-images') !== false || strpos($sub, 'public/product-images') !== false) {
             if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $raw_action = 'delete_product_images';
             } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
@@ -3405,6 +3405,9 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'get_product_images':
     case 'product_images':
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        header("Expires: 0");
         $uploads_dir = __DIR__ . '/assets/uploads';
         if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
             $uploads_dir = __DIR__ . '/public/assets/uploads';
@@ -3413,19 +3416,70 @@ switch ($action) {
             @mkdir($uploads_dir, 0775, true);
         }
         $overrides_file = $uploads_dir . '/product-image-overrides.json';
+        $public_data_file = __DIR__ . '/data/productImageSystemState.json';
+        if (!file_exists($public_data_file) && file_exists(__DIR__ . '/public/data/productImageSystemState.json')) {
+            $public_data_file = __DIR__ . '/public/data/productImageSystemState.json';
+        }
         $state = [
             "overrides" => [],
+            "productActivityTimestamps" => [],
             "globalDefaultImage" => null,
             "categoryOverrides" => [],
             "urlReplacements" => [],
             "mediaLibrary" => []
         ];
-        if (file_exists($overrides_file)) {
-            $parsed = json_decode(file_get_contents($overrides_file), true);
-            if (is_array($parsed)) {
-                $state = array_merge($state, $parsed);
+        foreach ([$public_data_file, $overrides_file] as $src_json_file) {
+            if (file_exists($src_json_file)) {
+                $parsed = json_decode((string)@file_get_contents($src_json_file), true);
+                if (is_array($parsed)) {
+                    if (!empty($parsed['overrides']) && is_array($parsed['overrides'])) {
+                        $state['overrides'] = array_merge($state['overrides'], $parsed['overrides']);
+                    }
+                    if (!empty($parsed['productActivityTimestamps']) && is_array($parsed['productActivityTimestamps'])) {
+                        $state['productActivityTimestamps'] = array_merge($state['productActivityTimestamps'], $parsed['productActivityTimestamps']);
+                    }
+                    if (!empty($parsed['categoryOverrides']) && is_array($parsed['categoryOverrides'])) {
+                        $state['categoryOverrides'] = array_merge($state['categoryOverrides'], $parsed['categoryOverrides']);
+                    }
+                    if (!empty($parsed['urlReplacements']) && is_array($parsed['urlReplacements'])) {
+                        $state['urlReplacements'] = array_merge($state['urlReplacements'], $parsed['urlReplacements']);
+                    }
+                    if (array_key_exists('globalDefaultImage', $parsed) && $parsed['globalDefaultImage']) {
+                        $state['globalDefaultImage'] = $parsed['globalDefaultImage'];
+                    }
+                    if (!empty($parsed['mediaLibrary']) && is_array($parsed['mediaLibrary'])) {
+                        $state['mediaLibrary'] = $parsed['mediaLibrary'];
+                    }
+                }
             }
         }
+        // Filter out broken local /assets/uploads/* paths missing on disk and resolve verified-<id> if present
+        $clean_overrides = [];
+        foreach ($state['overrides'] as $ov_pid => $ov_entry) {
+            if (!is_array($ov_entry) || empty($ov_entry['primary'])) continue;
+            $prim = (string)$ov_entry['primary'];
+            $clean_prim = strtok($prim, '?');
+            if (strpos($clean_prim, '/assets/uploads/') === 0) {
+                $fname = substr($clean_prim, strlen('/assets/uploads/'));
+                if (!file_exists($uploads_dir . '/' . $fname)) {
+                    $found_verified = null;
+                    foreach (['webp', 'jpg', 'jpeg', 'png'] as $ext) {
+                        if (file_exists($uploads_dir . '/verified-' . $ov_pid . '.' . $ext)) {
+                            $found_verified = '/assets/uploads/verified-' . $ov_pid . '.' . $ext;
+                            break;
+                        }
+                    }
+                    if ($found_verified) {
+                        $ov_entry['primary'] = $found_verified;
+                        $ov_entry['gallery'] = [$found_verified];
+                    } else {
+                        continue;
+                    }
+                }
+            }
+            $clean_overrides[$ov_pid] = $ov_entry;
+        }
+        $state['overrides'] = $clean_overrides;
         echo json_encode([
             "status" => "success",
             "success" => true,
@@ -3506,6 +3560,7 @@ switch ($action) {
         if ($oldUrlToReplace) {
             $state['urlReplacements'][$oldUrlToReplace] = $uploadedUrl;
         }
+        $nowMs = (int)round(microtime(true) * 1000);
         if ($productId) {
             $existingGallery = $state['overrides'][$productId]['gallery'] ?? [];
             $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
@@ -3513,8 +3568,11 @@ switch ($action) {
                 "primary" => $uploadedUrl,
                 "gallery" => $gallery,
                 "format" => strtoupper($ext),
-                "updatedAt" => $nowIso
+                "updatedAt" => $nowIso,
+                "imageUpdatedAt" => $nowMs,
+                "updatedBy" => "admin-manual"
             ];
+            $state['productActivityTimestamps'][$productId] = $nowMs;
         }
         if (is_array($productIds)) {
             foreach ($productIds as $pid) {
@@ -3525,12 +3583,21 @@ switch ($action) {
                     "primary" => $uploadedUrl,
                     "gallery" => $gallery,
                     "format" => strtoupper($ext),
-                    "updatedAt" => $nowIso
+                    "updatedAt" => $nowIso,
+                    "imageUpdatedAt" => $nowMs,
+                    "updatedBy" => "admin-manual"
                 ];
+                $state['productActivityTimestamps'][$pid] = $nowMs;
             }
         }
 
-        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $encodedState = json_encode($state, JSON_PRETTY_PRINT);
+        @file_put_contents($overrides_file, $encodedState);
+        if (is_dir(__DIR__ . '/data')) {
+            @file_put_contents(__DIR__ . '/data/productImageSystemState.json', $encodedState);
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
@@ -3573,13 +3640,17 @@ switch ($action) {
         $productIds = $input['productIds'] ?? null;
         $galleryUrls = $input['galleryUrls'] ?? null;
         $format = $input['format'] ?? 'JPG';
+        $nowMs = (int)round(microtime(true) * 1000);
         if ($productId && $primaryUrl) {
             $state['overrides'][$productId] = [
                 "primary" => $primaryUrl,
                 "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
                 "format" => $format,
-                "updatedAt" => $nowIso
+                "updatedAt" => $nowIso,
+                "imageUpdatedAt" => $nowMs,
+                "updatedBy" => "admin-manual"
             ];
+            $state['productActivityTimestamps'][$productId] = $nowMs;
         }
         if (is_array($productIds) && $primaryUrl) {
             foreach ($productIds as $pid) {
@@ -3588,8 +3659,11 @@ switch ($action) {
                     "primary" => $primaryUrl,
                     "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
                     "format" => $format,
-                    "updatedAt" => $nowIso
+                    "updatedAt" => $nowIso,
+                    "imageUpdatedAt" => $nowMs,
+                    "updatedBy" => "admin-manual"
                 ];
+                $state['productActivityTimestamps'][$pid] = $nowMs;
             }
         }
         if (!empty($input['category']) && $primaryUrl) {
@@ -3601,7 +3675,13 @@ switch ($action) {
         if (!empty($input['applyToAll'])) {
             $state['globalDefaultImage'] = $primaryUrl;
         }
-        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $encodedState = json_encode($state, JSON_PRETTY_PRINT);
+        @file_put_contents($overrides_file, $encodedState);
+        if (is_dir(__DIR__ . '/data')) {
+            @file_put_contents(__DIR__ . '/data/productImageSystemState.json', $encodedState);
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,

@@ -104,7 +104,7 @@ const LEGACY_OVERRIDES_KEY = 'trade_heaven_image_overrides_v7';
 const PRODUCTS_CACHE_KEY = 'trade_heaven_v1_products_v7';
 const IDB_NAME = 'trade_heaven_product_images_idb';
 const IDB_STORE = 'image_system_state';
-const IDB_KEY = 'active_state_v7';
+const IDB_KEY = 'active_state_v8';
 
 let activeProductImageManagerInstance: ProductImageManagerService | null = null;
 
@@ -139,8 +139,8 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
         activeProductImageManagerInstance &&
         typeof activeProductImageManagerInstance.getVersionTagForUrl === 'function'
           ? activeProductImageManagerInstance.getVersionTagForUrl(clean)
-          : String(Date.now());
-      params.set('v', versionTag || String(Date.now()));
+          : 'v7';
+      params.set('v', versionTag || 'v7');
     }
     const qStr = params.toString();
     return qStr ? `${clean}?${qStr}` : clean;
@@ -355,6 +355,7 @@ class ProductImageManagerService {
   private inFlightWriteCount = 0;
   private stateWriteVersion = 0;
   private readonly MANUAL_MUTATION_GRACE_MS = 10 * 60 * 1000;
+  private syncChannel: BroadcastChannel | null = null;
 
   constructor() {
     this.state = this.loadFromLocalStorage();
@@ -363,9 +364,20 @@ class ProductImageManagerService {
       this.hydrateFromIndexedDb();
       this.hydrationPromise = this.syncFromServer(true);
 
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          this.syncChannel = new BroadcastChannel('tradeheaven_product_images_sync');
+          this.syncChannel.onmessage = (ev) => {
+            if (ev?.data?.type === 'sync' && this.inFlightWriteCount === 0) {
+              this.syncFromServer(true).catch(() => {});
+            }
+          };
+        } catch {}
+      }
+
       // Automatically sync when tab becomes visible or window gains focus (never interrupting active manual writes)
       window.addEventListener('focus', () => {
-        if (this.inFlightWriteCount === 0 && Date.now() - this.lastServerSyncAt > 8000) {
+        if (this.inFlightWriteCount === 0 && Date.now() - this.lastServerSyncAt > 2000) {
           this.syncFromServer(false).catch(() => {});
         }
       });
@@ -373,12 +385,11 @@ class ProductImageManagerService {
         if (
           document.visibilityState === 'visible' &&
           this.inFlightWriteCount === 0 &&
-          Date.now() - this.lastServerSyncAt > 8000
+          Date.now() - this.lastServerSyncAt > 2000
         ) {
           this.syncFromServer(false).catch(() => {});
         }
       });
-      // Periodic background sync disabled to prevent continuous network/state churn
     }
   }
 
@@ -466,7 +477,7 @@ class ProductImageManagerService {
 
   private isManualEntry(entry?: ProductImageOverrideEntry | null): boolean {
     if (!entry?.primary) return false;
-    return (entry.updatedBy || '') !== 'auto-site-upload';
+    return entry.updatedBy === 'admin-manual';
   }
 
   public isManualOverride(productId?: string, productTitle?: string): boolean {
@@ -536,7 +547,7 @@ class ProductImageManagerService {
       const t = new Date(media.uploadedAt).getTime();
       if (!isNaN(t)) return String(t);
     }
-    return String(this.stateWriteVersion || Date.now());
+    return String(this.stateWriteVersion || 'v7');
   }
 
   public isHydrated(): boolean {
@@ -727,9 +738,10 @@ class ProductImageManagerService {
   }
 
   private async hydrateFromIndexedDb(): Promise<void> {
+    if (this.isHydratedFromServer) return;
     try {
       const db = await this.openIndexedDb();
-      if (!db) return;
+      if (!db || this.isHydratedFromServer) return;
       const idbState: ProductImageSystemState | null = await new Promise((resolve) => {
         try {
           const tx = db.transaction(IDB_STORE, 'readonly');
@@ -740,11 +752,13 @@ class ProductImageManagerService {
           resolve(null);
         }
       });
+      if (this.isHydratedFromServer) return;
       if (idbState && idbState.overrides && typeof idbState.overrides === 'object') {
         let changed = false;
         const normalizedIdb = this.normalizeOverrideMap(idbState.overrides);
         for (const [pid, idbEntry] of Object.entries(normalizedIdb)) {
           if (this.locallyDeletedIds.has(pid)) continue;
+          if (!this.isManualEntry(idbEntry)) continue;
           const current = this.state.overrides[pid];
           const idbTime = Date.parse(idbEntry.updatedAt || '') || 0;
           const curTime = current ? (Date.parse(current.updatedAt || '') || 0) : 0;
@@ -753,7 +767,7 @@ class ProductImageManagerService {
             changed = true;
           }
         }
-        if (changed) {
+        if (changed && !this.isHydratedFromServer) {
           this.emitImageSavedEvent({ action: 'idb_hydrated' });
           this.notifyListeners();
         }
@@ -803,6 +817,17 @@ class ProductImageManagerService {
       window.dispatchEvent(new CustomEvent('tradeheaven_image_saved_to_storage', { detail }));
       window.dispatchEvent(new CustomEvent('product_image_saved', { detail }));
       window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated', { detail: this.state }));
+
+      const actionName = String(context?.action || '');
+      if (
+        this.syncChannel &&
+        actionName !== 'sync_from_server' &&
+        actionName !== 'idb_hydrated'
+      ) {
+        try {
+          this.syncChannel.postMessage({ type: 'sync', ts: this.lastEmitTimestamp });
+        } catch {}
+      }
     } catch (err) {
       console.warn('[ProductImageManagerService] Error emitting image saved event:', err);
     }
@@ -911,18 +936,22 @@ class ProductImageManagerService {
     try {
       let srv: ProductImageSystemState | null = null;
 
-      // 1. Try Node/Express endpoint
-      try {
-        const res = await fetch(`/api/v1/admin/product-images?_t=${Date.now()}`, {
-          cache: 'no-store'
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.success && json?.data) {
-            srv = json.data;
+      // 1. Try public & admin Node/Express endpoints (non-admin path first for visitor/proxy safety)
+      for (const apiEndpoint of [
+        `/api/v1/public/product-images?_t=${Date.now()}`,
+        `/api/v1/admin/product-images?_t=${Date.now()}`
+      ]) {
+        try {
+          const res = await fetch(apiEndpoint, { cache: 'no-store' });
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.success && json?.data) {
+              srv = json.data;
+              break;
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
       // 2. Fallback to PHP endpoint (for cPanel / BigRock deployment)
       if (!srv) {
@@ -989,26 +1018,16 @@ class ProductImageManagerService {
           }
         }
 
-        // Preserve local overrides if recently mutated in this tab, if local holds manual override, OR if local holds a saved /assets/uploads/ image while server does not
+        // Preserve local overrides ONLY if recently mutated in this active tab (never re-inject stale IndexedDB or pruned dead entries)
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
           const mutatedAt = this.localMutationTimes.get(pid) || 0;
           const isRecentTabMutation = mutatedAt > 0 && Date.now() - mutatedAt < this.MANUAL_MUTATION_GRACE_MS;
+          if (!isRecentTabMutation) continue;
           const srvEntry = mergedOverrides[pid];
-          const srvPrimary = srvEntry?.primary || '';
-          const localIsManual = this.isManualEntry(localEntry);
-          const srvIsManual = this.isManualEntry(srvEntry);
           const localTime = Date.parse(localEntry.updatedAt || '') || 0;
           const srvTime = Date.parse(srvEntry?.updatedAt || '') || 0;
-          const localIsUploaded = localEntry.primary.startsWith('/assets/uploads/');
-          const srvIsUploaded = srvPrimary.startsWith('/assets/uploads/');
-          const srvIsStaleExternal = !srvPrimary || /^https?:\/\//i.test(srvPrimary) || this.isPlaceholderOverrideUrl(srvPrimary);
-          if (
-            (isRecentTabMutation && localTime >= srvTime) ||
-            (localIsManual && !srvIsManual && localTime >= srvTime) ||
-            (localIsManual && localTime > srvTime) ||
-            (localIsUploaded && !srvIsUploaded && srvIsStaleExternal)
-          ) {
+          if (!srvEntry || localTime >= srvTime) {
             mergedOverrides[pid] = localEntry;
           }
         }
@@ -1071,11 +1090,12 @@ class ProductImageManagerService {
           this.state.mediaLibrary = mergedMedia;
         }
 
+        const wasUnhydrated = !this.isHydratedFromServer;
         const nextVisualHash = this.getCanonicalVisualHash(this.state);
         this.isHydratedFromServer = true;
 
-        // Save and notify UI components if image URLs OR activity timestamps changed!
-        if (prevVisualHash !== nextVisualHash || activityTimestampsChanged) {
+        // Save and notify UI components on initial hydration or whenever image URLs / activity timestamps change
+        if (wasUnhydrated || prevVisualHash !== nextVisualHash || activityTimestampsChanged) {
           this.saveToLocalStorage({ action: 'sync_from_server' });
         }
       } else {

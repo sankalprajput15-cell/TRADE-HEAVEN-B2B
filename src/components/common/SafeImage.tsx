@@ -139,6 +139,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
   const [hasError, setHasError] = useState<boolean>(false);
+  const hasErrorRef = useRef<boolean>(false);
+  hasErrorRef.current = hasError;
   const [isLiveUploadActive, setIsLiveUploadActive] = useState<boolean>(() => {
     initSafeImageGlobalHub();
     return cachedLiveMode;
@@ -167,19 +169,17 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   const isLogoOrAvatar = useMemo(() => {
     if (type === 'logo' || type === 'avatar') return true;
+    if (type === 'product' || type === 'rfq' || type === 'category') return false;
+    if (productId || productTitle) return false;
     const lowerSrc = (src || '').toLowerCase();
     const lowerAlt = (resolvedAlt || alt || '').toLowerCase();
     return (
       lowerSrc.includes('logo') ||
       lowerSrc.includes('avatar') ||
-      lowerSrc.includes('profile') ||
-      lowerSrc.includes('user') ||
       lowerAlt.includes('logo') ||
-      lowerAlt.includes('avatar') ||
-      lowerAlt.includes('profile') ||
-      lowerAlt.includes('user')
+      lowerAlt.includes('avatar')
     );
-  }, [src, alt, resolvedAlt, type]);
+  }, [src, alt, resolvedAlt, type, productId, productTitle]);
 
   const [overrideVersion, setOverrideVersion] = useState(0);
   const prevEffectiveSrcRef = useRef<string | undefined>(
@@ -205,6 +205,10 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       });
       if (nextEffective !== prevEffectiveSrcRef.current) {
         prevEffectiveSrcRef.current = nextEffective;
+        setAttemptIndex(0);
+        setHasError(false);
+        setOverrideVersion(v => v + 1);
+      } else if (hasErrorRef.current) {
         setAttemptIndex(0);
         setHasError(false);
         setOverrideVersion(v => v + 1);
@@ -317,6 +321,21 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     if (
+      src &&
+      typeof src === 'string' &&
+      src.trim() &&
+      src.trim() !== (effectiveSrc || '').trim() &&
+      !isGenericOrPlaceholderImageUrl(src.trim()) &&
+      !isCrossCompanyAsset(src.trim())
+    ) {
+      const mirroredRawSrc = resolveLocalMirroredImageUrl(src.trim());
+      const optRawSrc = mirroredRawSrc.startsWith('data:image/')
+        ? mirroredRawSrc
+        : optimizeImageUrl(mirroredRawSrc, { width: optimalWidth, isThumbnail });
+      pushCandidateWithRawFallback(mirroredRawSrc, optRawSrc);
+    }
+
+    if (
       fallbackSrc &&
       typeof fallbackSrc === 'string' &&
       fallbackSrc.trim() &&
@@ -351,11 +370,38 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    const contextText = `${productTitle || ''} ${category || ''} ${alt || ''} ${productId || ''}`.toLowerCase();
-    const isSareeOrTextile = /(saree|sari|textile|apparel|fabric|garment|silk|clothing|lehenga|kurti|dress)/i.test(contextText);
+    // Subject-matched real local fallback photo (confirmed present across local & live deployments) before SVG fallback
+    if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
+      const subjectText = `${productId || ''} ${productTitle || ''} ${category || ''} ${alt || ''}`.toLowerCase();
+      let verifiedRealFallback = '/assets/uploads/auto-building-construction-materials-37394a3c058e.webp';
+      if (/vanilla|pod|bean|extract|spice/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-double-fold-pure-vanilla-extract-c-a3ff90b9f6f3.webp';
+      } else if (/\bgold\b|bullion|dore|nugget|prod-au-|rfq-au-/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-lbma-good-delivery-gold-bullion-ba-6f8695d4a3e8.webp';
+      } else if (/solar|battery|lithium|ess|renewable|energy|inverter|photovoltaic|panel|monocryst/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp';
+      } else if (/generator|genset|diesel|power|cummins|cat\b|engine/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/image002_50ab7837.png';
+      } else if (/leather|belt|tannery|hide|wallet|garment|textile|apparel/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/verified-belt-01.webp';
+      } else if (/auto|vehicle|car|ev\b|tire|brake|wheel/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp';
+      } else if (/electron|semiconductor|chip|sensor|oled|cnc|machin|milling|motor|pump|industrial/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp';
+      } else if (/chem|polymer|resin|solvent|hdpe|urea|fertiliz|plastic|oil|fuel|bitumen/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp';
+      } else if (/medic|glove|nitrile|surgical|hospital|pharma|diagnostic/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-disposable-nitrile-examination-7302dff17ffb.webp';
+      } else if (/agri|sugar|coffee|rice|soy|wheat|cashew|avocado|food|grain|fruit|cocoa|tea|beef|fish|seafood/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp';
+      }
+      if (!list.includes(verifiedRealFallback)) {
+        list.push(verifiedRealFallback);
+      }
+    }
 
     const validList = list.filter(u => u && !FAILED_IMAGE_URLS.has(u));
-    if (validList.length === 0) {
+    if (validList.length === 0 || (!isLogoOrAvatar && (type === 'category' || type === 'product' || type === 'rfq' || Boolean(productId || productTitle)))) {
       const PALETTES: Array<[string, string, string]> = [
         ['#064E3B', '#047857', '#6EE7B7'],
         ['#7F1D1D', '#B91C1C', '#FCA5A5'],
@@ -396,7 +442,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     return validList;
-  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName]);
+  }, [src, effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName, type]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);
@@ -434,13 +480,23 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       return;
     }
     const imgEl = imgRef.current;
-    if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
-      LOADED_IMAGE_URLS.add(currentCandidate);
-      setIsLoaded(true);
+    if (imgEl && imgEl.complete) {
+      if (imgEl.naturalWidth > 0) {
+        LOADED_IMAGE_URLS.add(currentCandidate);
+        setIsLoaded(true);
+      } else {
+        FAILED_IMAGE_URLS.add(currentCandidate);
+        markBrokenExternalImageUrl(currentCandidate);
+        if (effectiveAttemptIndex < candidates.length - 1) {
+          setAttemptIndex(effectiveAttemptIndex + 1);
+        } else {
+          setHasError(true);
+        }
+      }
     } else {
       setIsLoaded(false);
     }
-  }, [currentCandidate]);
+  }, [currentCandidate, effectiveAttemptIndex, candidates.length]);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
@@ -474,7 +530,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           (Boolean(productId) && !hasSavedLocalPid) ||
           (resolvedTitle.length >= 3 && !hasSavedLocalTitle);
 
-        if (needsPersistence && !isGenericOrPlaceholderImageUrl(cleanCandidate)) {
+        if (
+          needsPersistence &&
+          !cleanCandidate.startsWith('data:') &&
+          !cleanCandidate.startsWith('blob:') &&
+          !isGenericOrPlaceholderImageUrl(cleanCandidate)
+        ) {
           void autoUploadDisplayedProductImage({
             imageUrl: cleanCandidate,
             productId,
@@ -569,7 +630,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   };
 
   const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail && !isLogoOrAvatar;
-  const effectiveLoading = callerLoading || (priority ? 'eager' : 'lazy');
+  const effectiveLoading = callerLoading || 'eager';
   const effectiveDecoding = callerDecoding || (priority ? 'sync' : 'async');
   const effectiveFetchPriority = callerFetchPriority || (priority ? 'high' : undefined);
 
@@ -596,14 +657,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           ref={imgRef}
           src={currentCandidate}
           alt={resolvedAlt || alt || (isLogoOrAvatar ? 'User Avatar' : 'Verified B2B Wholesale Product')}
-          referrerPolicy="no-referrer"
+          {...(/^https?:\/\//i.test(currentCandidate) ? { referrerPolicy: 'no-referrer' as const } : {})}
           loading={effectiveLoading}
           decoding={effectiveDecoding}
           {...(effectiveFetchPriority ? { fetchPriority: effectiveFetchPriority } : {})}
           onLoad={handleLoad}
           onError={handleError}
           style={callerStyle}
-          className={`w-full h-full object-cover transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}
+          className={`w-full h-full object-cover opacity-100 ${imgClassName}`}
           {...props}
         />
       )}

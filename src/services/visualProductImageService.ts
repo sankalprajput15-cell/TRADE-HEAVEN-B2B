@@ -28,8 +28,8 @@ const LOCAL_MIRROR_MAP = new Map<string, string>();
 const INFLIGHT_AUTO_UPLOADS = new Map<string, Promise<string | null>>();
 const BOUND_LOCAL_KEYS = new Set<string>();
 
-const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v3';
-const LOCAL_MIRROR_STORAGE_KEY = 'th_local_uploaded_image_mirrors_v1';
+const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v4';
+const LOCAL_MIRROR_STORAGE_KEY = 'th_local_uploaded_image_mirrors_v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 let mirrorCacheHydrated = false;
 
@@ -150,8 +150,15 @@ function persistLocalMirrorMap(): void {
 export function resolveLocalMirroredImageUrl(url?: string): string {
   const clean = String(url || '').trim();
   if (!clean) return '';
+  if (clean.startsWith('/') || clean.startsWith('data:') || clean.startsWith('blob:')) {
+    return clean;
+  }
   hydrateLocalMirrorMap();
-  return LOCAL_MIRROR_MAP.get(clean) || clean;
+  const mirrored = LOCAL_MIRROR_MAP.get(clean);
+  if (mirrored && !BROKEN_EXTERNAL_URLS.has(mirrored) && !BROKEN_EXTERNAL_URLS.has(mirrored.split('?')[0])) {
+    return mirrored;
+  }
+  return clean;
 }
 
 export function cleanProductSearchSubject(rawName: string): string {
@@ -280,7 +287,20 @@ export function isManuallyUploadedImageUrl(url?: string): boolean {
 
 export function markBrokenExternalImageUrl(url: string): void {
   const clean = String(url || '').trim();
-  if (clean) BROKEN_EXTERNAL_URLS.add(clean);
+  if (!clean) return;
+  BROKEN_EXTERNAL_URLS.add(clean);
+  const base = clean.split('?')[0];
+  if (base) BROKEN_EXTERNAL_URLS.add(base);
+  let evicted = false;
+  for (const [k, v] of LOCAL_MIRROR_MAP.entries()) {
+    if (v === clean || v.split('?')[0] === base) {
+      LOCAL_MIRROR_MAP.delete(k);
+      evicted = true;
+    }
+  }
+  if (evicted) {
+    persistLocalMirrorMap();
+  }
 }
 
 export function isBrokenExternalImageUrl(url?: string): boolean {

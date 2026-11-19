@@ -95,6 +95,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
     window.addEventListener('tradeheaven_product_images_updated', handleImageUpdate);
     window.addEventListener('tradeheaven_product_image_saved', handleImageUpdate);
     window.addEventListener('tradeheaven_products_updated', handleImageUpdate);
+    productImageManagerService.ensureHydrated().then(() => {
+      setImageSyncVersion(v => v + 1);
+    }).catch(() => {});
     return () => {
       window.removeEventListener('tradeheaven_product_images_updated', handleImageUpdate);
       window.removeEventListener('tradeheaven_product_image_saved', handleImageUpdate);
@@ -108,8 +111,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       securityService.gateRfqRequirement(r, currentUser)
     );
     const enriched = rawPool.map(r => {
+      const rawPhoto = (r as any).image_url || (r as any).image || (r as any).images?.[0];
       const resolvedPhoto = productImageManagerService.resolveImageSrc({
-        src: (r as any).image_url || (r as any).image || (r as any).images?.[0],
+        src: rawPhoto,
         productId: r.id,
         productTitle: r.productName,
         category: r.category
@@ -122,7 +126,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       });
       return {
         ...r,
-        resolvedPhotoUrl: resolvedPhoto,
+        rawPhotoUrl: rawPhoto,
+        resolvedPhotoUrl: resolvedPhoto || rawPhoto || '',
         recentActivityTs: rank.timestampMs
       };
     });
@@ -276,20 +281,20 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-2.5 flex flex-col justify-between h-full"
                 >
                   <div className="space-y-1.5">
-                    {rfq.resolvedPhotoUrl && (
-                      <div className="relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-white mb-2">
-                        <SafeImage
-                          src={rfq.resolvedPhotoUrl}
-                          alt={rfq.productName}
-                          productId={rfq.id}
-                          productTitle={rfq.productName}
-                          category={rfq.category}
-                          isThumbnail={true}
-                          disableLiveUpload={true}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
+                    <div className="relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-white mb-2">
+                      <SafeImage
+                        src={rfq.resolvedPhotoUrl || rfq.rawPhotoUrl}
+                        fallbackSrc={rfq.rawPhotoUrl}
+                        alt={rfq.productName}
+                        productId={rfq.id}
+                        productTitle={rfq.productName}
+                        category={rfq.category}
+                        type="rfq"
+                        isThumbnail={true}
+                        disableLiveUpload={true}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div className="flex items-start justify-between gap-1.5">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1 flex-wrap">

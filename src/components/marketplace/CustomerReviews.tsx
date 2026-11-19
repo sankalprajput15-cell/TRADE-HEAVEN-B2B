@@ -201,6 +201,7 @@ const reviewsDataset = [
 export const CustomerReviews: React.FC = () => {
   const [dailyReviews, setDailyReviews] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'IN' | 'US'>('ALL');
+  const [failedAvatarIndices, setFailedAvatarIndices] = useState<Record<number, boolean>>({});
 
   // Deterministic Daily Seed Generator (Year * 10000 + Month * 100 + Date)
   const getDailySeed = () => {
@@ -379,25 +380,22 @@ export const CustomerReviews: React.FC = () => {
                 {/* Reviewer Info Footer */}
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
                   {/* User Initial Avatar or Profile Image */}
-                  {review.imageUrl && review.imageUrl.trim() ? (
-                    <img
-                      src={optimizeImageUrl(review.imageUrl.trim(), { width: 160, quality: 75, isThumbnail: true })}
-                      alt={review.name}
-                      width={36}
-                      height={36}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.style.display = 'none';
-                        const next = target.nextElementSibling as HTMLElement | null;
-                        if (next) next.classList.remove('hidden');
-                      }}
-                      className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm bg-slate-100"
-                    />
-                  ) : null}
-                  <div className={`w-9 h-9 rounded-full ${avatarBg} text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-inner ${review.imageUrl && review.imageUrl.trim() ? 'hidden' : ''}`}>
-                    {initial}
+                  <div className={`relative w-9 h-9 rounded-full ${avatarBg} text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-inner overflow-hidden`}>
+                    <span>{initial}</span>
+                    {review.imageUrl && review.imageUrl.trim() && !failedAvatarIndices[index] ? (
+                      <img
+                        src={optimizeImageUrl(review.imageUrl.trim(), { width: 160, quality: 75, isThumbnail: true })}
+                        alt={review.name}
+                        width={36}
+                        height={36}
+                        loading="eager"
+                        decoding="async"
+                        onError={() => {
+                          setFailedAvatarIndices(prev => (prev[index] ? prev : { ...prev, [index]: true }));
+                        }}
+                        className="absolute inset-0 w-9 h-9 rounded-full object-cover"
+                      />
+                    ) : null}
                   </div>
 
                   {/* User Name + Verified Badge + Dynamic Timestamp */}

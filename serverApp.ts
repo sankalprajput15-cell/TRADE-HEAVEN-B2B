@@ -279,6 +279,7 @@ app.use((req, _res, next) => {
 
 // Explicitly serve /assets/uploads & /assets/aistudio directories for product/hero images with CORS + Sharp WebP CDN
 const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
+const distUploadsStaticDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
 const legacyAssetsStaticDir = path.join(process.cwd(), 'public', 'assets', 'aistudio');
 const srcImagesStaticDir = path.join(process.cwd(), 'src', 'assets', 'images');
 const renewalBrandingStaticDir = path.join(process.cwd(), 'public', 'uploads', 'renewal-branding');
@@ -287,6 +288,7 @@ const srcAssetsStatic = express.static(path.join(process.cwd(), 'src', 'assets')
   maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
   }
 });
@@ -588,13 +590,20 @@ app.get([
 
   const primaryPath = path.join(uploadsStaticDir, filename);
   const fallbackPath = path.join(legacyAssetsStaticDir, filename);
+  const distFallbackPath = path.join(distUploadsStaticDir, filename);
   const renewalPath = path.join(renewalBrandingStaticDir, filename);
   const srcPath = path.join(srcImagesStaticDir, filename);
   const targetPath = req.path.startsWith('/src/assets')
     ? (fs.existsSync(srcPath) ? srcPath : null)
     : req.path.startsWith('/uploads/renewal-branding')
       ? (fs.existsSync(renewalPath) ? renewalPath : null)
-      : (fs.existsSync(primaryPath) ? primaryPath : fs.existsSync(fallbackPath) ? fallbackPath : null);
+      : (fs.existsSync(primaryPath)
+          ? primaryPath
+          : fs.existsSync(fallbackPath)
+            ? fallbackPath
+            : fs.existsSync(distFallbackPath)
+              ? distFallbackPath
+              : null);
 
   if (!targetPath) {
     return next();
@@ -614,10 +623,15 @@ app.get([
 
     const { entry: optimized } = await getOrBuildOptimizedImage(targetPath, filename, width, acceptsWebp, isOrig);
 
+    const hasNumericVersion = typeof req.query.v === 'string' && /^\d{8,}$/.test(req.query.v.trim());
     res.setHeader('ETag', optimized.etag);
     res.setHeader('Vary', 'Accept');
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader(
+      'Cache-Control',
+      hasNumericVersion ? 'public, max-age=31536000, immutable' : 'public, max-age=3600, must-revalidate'
+    );
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     if (req.headers['if-none-match'] === optimized.etag) {
       res.setHeader('X-Image-Cache', 'NOT_MODIFIED');
@@ -660,31 +674,43 @@ app.use('/src/assets', (req, res, next) => {
 
 // Static fallbacks for /assets/uploads, /assets/aistudio, /assets/tradeheaven (non-raster files / fallback)
 app.use('/assets/uploads', express.static(uploadsStaticDir, {
-  maxAge: '7d',
+  maxAge: '1h',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
   }
 }));
 app.use('/assets/uploads', express.static(legacyAssetsStaticDir, {
-  maxAge: '7d',
+  maxAge: '1h',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+  }
+}));
+app.use('/assets/uploads', express.static(distUploadsStaticDir, {
+  maxAge: '1h',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
   }
 }));
 app.use('/assets/aistudio', express.static(legacyAssetsStaticDir, {
-  maxAge: '7d',
+  maxAge: '1h',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
   }
 }));
 app.use('/assets/tradeheaven', express.static(uploadsStaticDir, {
-  maxAge: '7d',
+  maxAge: '1h',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
   }
 }));
 
@@ -699,6 +725,7 @@ app.use('/uploads/chat_media', express.static(chatMediaDir, {
   maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Accept-Ranges', 'bytes');
   }
 }));
@@ -709,6 +736,7 @@ const publicStaticMiddleware = express.static(path.join(process.cwd(), 'public')
   maxAge: '1d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 });
 app.use((req, res, next) => {
@@ -13996,6 +14024,62 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
 
   scanDirForImages(UPLOADS_DIR, '/assets/uploads');
 
+  // Verify every local /assets/uploads/* override exists on disk (self-heal via verified-<id> or exact filename stem match)
+  try {
+    const existingUploads = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
+    const existingLegacy = fs.existsSync(legacyAssetsStaticDir) ? fs.readdirSync(legacyAssetsStaticDir) : [];
+    const existingDistUploads = fs.existsSync(distUploadsStaticDir) ? fs.readdirSync(distUploadsStaticDir) : [];
+    const uploadSet = new Set<string>([...existingUploads, ...existingDistUploads]);
+    const legacySet = new Set<string>(existingLegacy);
+    const stemMap = new Map<string, string>();
+    for (const f of uploadSet) {
+      const m = f.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
+      if (m && !stemMap.has(m[1])) {
+        stemMap.set(m[1], f);
+      }
+    }
+
+    const resolveValidLocalFile = (pid: string, urlStr: string): string | null => {
+      const clean = String(urlStr || '').trim().split('?')[0];
+      if (!clean.startsWith('/assets/uploads/')) return urlStr;
+      const fn = clean.slice('/assets/uploads/'.length);
+      if (uploadSet.has(fn) || legacySet.has(fn)) {
+        return urlStr;
+      }
+      for (const ext of ['webp', 'jpg', 'jpeg', 'png']) {
+        const verifiedName = `verified-${pid}.${ext}`;
+        if (uploadSet.has(verifiedName)) {
+          return `/assets/uploads/${verifiedName}`;
+        }
+      }
+      const m = fn.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
+      if (m && stemMap.has(m[1])) {
+        return `/assets/uploads/${stemMap.get(m[1])}`;
+      }
+      return null;
+    };
+
+    for (const [pid, entry] of Object.entries(defaultState.overrides)) {
+      if (!entry?.primary) continue;
+      const primaryClean = String(entry.primary).split('?')[0];
+      if (!primaryClean.startsWith('/assets/uploads/')) continue;
+      const resolvedPrimary = resolveValidLocalFile(pid, entry.primary);
+      if (!resolvedPrimary) {
+        delete defaultState.overrides[pid];
+        continue;
+      }
+      if (resolvedPrimary !== entry.primary) {
+        entry.primary = resolvedPrimary;
+      }
+      if (Array.isArray(entry.gallery)) {
+        const validGallery = entry.gallery
+          .map(u => resolveValidLocalFile(pid, u))
+          .filter((u): u is string => Boolean(u));
+        entry.gallery = validGallery.length > 0 ? Array.from(new Set([entry.primary, ...validGallery])) : [entry.primary];
+      }
+    }
+  } catch {}
+
   return defaultState;
 }
 
@@ -14141,8 +14225,8 @@ if (!fs.existsSync(IMAGE_OVERRIDES_FILE)) {
   saveServerProductImageState();
 }
 
-// GET /api/v1/admin/product-images - Fetch all product image overrides & server media library
-app.get('/api/v1/admin/product-images', (req, res) => {
+// GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch all product image overrides & server media library
+const handleGetProductImages = (_req: express.Request, res: express.Response) => {
   serverProductImageState = loadServerProductImageState(serverProductImageState);
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -14151,7 +14235,9 @@ app.get('/api/v1/admin/product-images', (req, res) => {
     success: true,
     data: serverProductImageState
   });
-});
+};
+app.get('/api/v1/admin/product-images', handleGetProductImages);
+app.get('/api/v1/public/product-images', handleGetProductImages);
 
 function parseBase64DataUrl(
   raw: string,
@@ -23159,14 +23245,31 @@ async function startServer() {
     const distIndexHtml = path.join(distPath, 'index.html');
     if (!fs.existsSync(distIndexHtml)) return next();
 
-    // If requesting a built asset or static public file inside dist
+    // For runtime mutable JSON & uploaded media, check public/ FIRST so runtime updates never get shadowed by dist/
     if (req.path !== '/' && req.path !== '/index.html') {
-      const candidate = path.join(distPath, decodeURIComponent(req.path));
+      const cleanRelPath = decodeURIComponent(req.path);
+      const isRuntimeMutable =
+        cleanRelPath.startsWith('/assets/uploads/') ||
+        cleanRelPath === '/data/productImageSystemState.json' ||
+        cleanRelPath === '/data/fullCatalogSnapshot.json' ||
+        cleanRelPath === '/data/siteContentBackup.json';
+
+      if (isRuntimeMutable) {
+        const publicCandidateFirst = path.join(process.cwd(), 'public', cleanRelPath);
+        if (
+          publicCandidateFirst.startsWith(path.join(process.cwd(), 'public')) &&
+          serveCachedDistFile(req, res, publicCandidateFirst, false)
+        ) {
+          return;
+        }
+      }
+
+      const candidate = path.join(distPath, cleanRelPath);
       if (candidate.startsWith(distPath) && serveCachedDistFile(req, res, candidate, req.path.startsWith('/assets/'))) {
         return;
       }
       // Also check public/ directory for uploaded media
-      const publicCandidate = path.join(process.cwd(), 'public', decodeURIComponent(req.path));
+      const publicCandidate = path.join(process.cwd(), 'public', cleanRelPath);
       if (publicCandidate.startsWith(path.join(process.cwd(), 'public')) && serveCachedDistFile(req, res, publicCandidate, false)) {
         return;
       }
