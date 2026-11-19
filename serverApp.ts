@@ -559,10 +559,7 @@ async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOM
   }
 }
 
-// Run unconditionally every 60 seconds (1 minute) with zero permission prompts
-setInterval(() => {
-  void runAutonomousImageOptimizerCycle('SCHEDULED_60S_AUTONOMOUS_DAEMON');
-}, AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS);
+// Autonomous 60s background image optimizer timer disabled to prevent continuous disk writes
 
 // Automated Image Optimization & High-Speed Cache Middleware (covers uploads, aistudio, tradeheaven, renewal-branding, and non-import src/assets/images)
 app.get([
@@ -16983,10 +16980,7 @@ function executeAutonomousServerSeoCycle(triggeredBy = 'AUTONOMOUS_30M_CRON_DAEM
   }
 }
 
-// Run unconditionally every 30 minutes (24/7/365); initial boot cycle runs right after HTTP server binds
-setInterval(() => {
-  executeAutonomousServerSeoCycle('SCHEDULED_30_MIN_AUTONOMOUS_DAEMON');
-}, AUTONOMOUS_SEO_INTERVAL_MS);
+// Autonomous 30m background SEO timer disabled to prevent continuous disk writes
 
 // Public permissionless endpoint to inspect the 24/7/365 30-minute SEO daemon & real HTTP telemetry
 app.get('/api/v1/seo/autonomous-status', (_req, res) => {
@@ -22823,7 +22817,7 @@ async function startServer() {
         vitePromise = import('vite')
           .then(({ createServer: createViteServer }) =>
             createViteServer({
-              server: { middlewareMode: true, hmr: false, allowedHosts: true },
+              server: { middlewareMode: true, hmr: false, allowedHosts: true, watch: null },
               appType: 'spa',
             })
           )
@@ -22861,18 +22855,6 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
-    setTimeout(() => {
-      void ensureRealHeaderImagesForCategories(false);
-    }, 25000);
-    setTimeout(() => {
-      void runAutonomousImageOptimizerCycle('BOOT_INITIALIZATION_EVERY_MINUTE_DAEMON');
-    }, 45000);
-    setTimeout(() => {
-      executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
-    }, 35000);
-    setInterval(() => {
-      void processUnseenChatAlerts(60);
-    }, 30000);
   });
 
   // Real-time WebSocket server for Multi-Identity Admin Buyer Chat (/ws/chat)

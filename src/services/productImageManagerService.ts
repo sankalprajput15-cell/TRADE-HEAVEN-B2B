@@ -370,16 +370,7 @@ class ProductImageManagerService {
           this.syncFromServer(false).catch(() => {});
         }
       });
-      // Periodic lightweight sync (every 30s) that only notifies UI if actual image URLs changed on server
-      setInterval(() => {
-        if (
-          typeof document !== 'undefined' &&
-          document.visibilityState === 'visible' &&
-          this.inFlightWriteCount === 0
-        ) {
-          this.syncFromServer(false).catch(() => {});
-        }
-      }, 30000);
+      // Periodic background sync disabled to prevent continuous network/state churn
     }
   }
 
@@ -1366,6 +1357,103 @@ class ProductImageManagerService {
         image: primary || resolvedImages[0],
         images: resolvedImages
       };
+    });
+  }
+
+  /**
+   * Computes upload recency tier and timestamp (ms) so products with newly uploaded images sort first.
+   */
+  public getLatestUploadedRank(
+    product: Partial<Product> & { image?: string; createdAt?: string; updatedAt?: string }
+  ): { tier: number; timestampMs: number } {
+    const cleanId = String(product?.id || '').trim();
+    const cleanTitle = String(product?.title || '').trim();
+    const override =
+      (cleanId && (this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()])) ||
+      (cleanTitle && (this.state.overrides[cleanTitle] || this.state.overrides[cleanTitle.toLowerCase()])) ||
+      undefined;
+
+    const primaryUrl = String(
+      product?.images?.[0] || product?.image || override?.primary || ''
+    )
+      .split('?')[0]
+      .trim();
+
+    const matchedMedia = primaryUrl
+      ? (this.state.mediaLibrary || []).find(
+          m => m && m.url && m.url.split('?')[0] === primaryUrl
+        )
+      : undefined;
+
+    const overrideTs = override?.updatedAt ? Date.parse(override.updatedAt) || 0 : 0;
+    const mediaTs = matchedMedia?.uploadedAt ? Date.parse(matchedMedia.uploadedAt) || 0 : 0;
+    const productUpdatedTs = product?.updatedAt
+      ? Date.parse(product.updatedAt) || 0
+      : product?.createdAt
+        ? Date.parse(product.createdAt) || 0
+        : 0;
+
+    const updater = String(override?.updatedBy || '').toLowerCase();
+    const isExplicitUpload =
+      updater === 'admin-manual' ||
+      updater === 'user-upload' ||
+      Boolean(
+        matchedMedia &&
+          !String(matchedMedia.id || '').startsWith('builtin-') &&
+          updater !== 'verified-real-photos-v7' &&
+          updater !== 'auto-site-upload' &&
+          updater !== 'catalog-image-auditor'
+      );
+
+    if (isExplicitUpload) {
+      return {
+        tier: 2,
+        timestampMs: Math.max(overrideTs, mediaTs, productUpdatedTs)
+      };
+    }
+
+    if (productUpdatedTs > 0 && primaryUrl.startsWith('/assets/uploads/') && updater !== 'verified-real-photos-v7') {
+      return {
+        tier: 1,
+        timestampMs: productUpdatedTs
+      };
+    }
+
+    return { tier: 0, timestampMs: 0 };
+  }
+
+  /**
+   * Returns a new list with products having the latest uploaded images sorted first (descending by timestamp),
+   * while preserving original order for baseline catalog items.
+   */
+  public sortProductsLatestUploadedFirst<
+    T extends Partial<Product> & { image?: string; createdAt?: string; updatedAt?: string }
+  >(products: T[], extraScoreFn?: (prod: T) => number): T[] {
+    if (!Array.isArray(products) || products.length <= 1) {
+      return Array.isArray(products) ? [...products] : [];
+    }
+    const indexMap = new Map<T, number>();
+    const rankMap = new Map<T, { tier: number; timestampMs: number; extra: number }>();
+    products.forEach((p, idx) => {
+      indexMap.set(p, idx);
+      const r = this.getLatestUploadedRank(p);
+      rankMap.set(p, {
+        tier: r.tier,
+        timestampMs: r.timestampMs,
+        extra: extraScoreFn ? extraScoreFn(p) : 0
+      });
+    });
+
+    return [...products].sort((a, b) => {
+      const ra = rankMap.get(a)!;
+      const rb = rankMap.get(b)!;
+      if (ra.tier !== rb.tier) return rb.tier - ra.tier;
+      if (ra.tier > 0 && ra.timestampMs !== rb.timestampMs) {
+        return rb.timestampMs - ra.timestampMs;
+      }
+      if (ra.extra !== rb.extra) return rb.extra - ra.extra;
+      if (ra.timestampMs !== rb.timestampMs) return rb.timestampMs - ra.timestampMs;
+      return (indexMap.get(a) ?? 0) - (indexMap.get(b) ?? 0);
     });
   }
 

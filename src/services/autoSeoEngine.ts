@@ -387,14 +387,7 @@ class AutoSeoEngineService {
    * Computes real organic search traffic & keyword density from active Country Portals and indexed SEO records.
    */
   private startDailyGeoDistributionScheduler(): void {
-    if (typeof window === 'undefined') return;
-    if (this.dailyGeoTimer) {
-      clearInterval(this.dailyGeoTimer);
-    }
-    this.dailyGeoTimer = setInterval(() => {
-      this.computeRealGeoDistribution();
-      this.saveToStorage();
-    }, TWENTY_FOUR_HOURS_MS);
+    // Disabled automatic background timer
   }
 
   /**

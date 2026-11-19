@@ -71,7 +71,12 @@ export const ProductDetailModal: React.FC<Props> = ({
       modalScrollRef.current.scrollTop = 0;
     }
     setOrderQuantity(effectiveMoq);
+    setActiveImageIdx(0);
   }, [product?.id]);
+
+  useEffect(() => {
+    setActiveImageIdx(0);
+  }, [product?.images?.[0]]);
 
   const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 

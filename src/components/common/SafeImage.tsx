@@ -107,13 +107,7 @@ function initSafeImageGlobalHub() {
   window.addEventListener('tradeheaven_live_edit_mode_changed', notifyLiveMode);
   window.addEventListener('tradeheaven_auth_changed', notifyLiveMode);
 
-  // Automatic 60-second self-healing sweep for transient image failures (single global timer)
-  window.setInterval(() => {
-    if (FAILED_IMAGE_URLS.size > 0) {
-      FAILED_IMAGE_URLS.clear();
-      notifyOverrides();
-    }
-  }, 60 * 1000);
+  // Automatic 60-second background sweep disabled to prevent continuous re-renders and network writes
 }
 
 export const SafeImage: React.FC<SafeImageProps> = ({
@@ -251,129 +245,10 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     [productId, productTitle, isLogoOrAvatar, overrideVersion]
   );
 
-  // Automatic Visual Product & Category Header Finder fallback ONLY when no manual/saved image exists
+  // Automatic background visual product & category header fetch/upload disabled to prevent continuous file writes
   useEffect(() => {
-    if (isLogoOrAvatar || hasManualOverride || (type !== 'product' && type !== 'rfq' && type !== 'category')) return;
-    const cleanTitle = (productTitle || category || alt || '').trim();
-    if (cleanTitle.length < 3) return;
-
-    let cancelled = false;
-
-    const runLookupAfterHydration = async () => {
-      if (!productImageManagerService.isHydrated()) {
-        await productImageManagerService.ensureHydrated().catch(() => undefined);
-        if (cancelled) return;
-      }
-
-      const hydratedEff = (
-        productImageManagerService.resolveImageSrc({
-          src,
-          productId,
-          productTitle: isLogoOrAvatar ? undefined : productTitle,
-          category: isLogoOrAvatar ? undefined : category,
-          imageIndex
-        }) || ''
-      ).trim();
-
-      const hasSpecificProvidedSrc =
-        Boolean(hydratedEff) &&
-        !isGenericOrPlaceholderImageUrl(hydratedEff) &&
-        !isMismatchedProductImageUrl(hydratedEff, productTitle || alt, category) &&
-        !FAILED_IMAGE_URLS.has(hydratedEff) &&
-        !isBrokenExternalImageUrl(hydratedEff);
-
-      if (hasSpecificProvidedSrc && !hasError) {
-        if (hydratedEff !== (effectiveSrc || '').trim()) {
-          setOverrideVersion(v => v + 1);
-        }
-        return;
-      }
-
-      const lookupKey = `${type}:${normalizeVisualQueryKey(cleanTitle, category)}`;
-      if (visualFetchedKeyRef.current === lookupKey && visualPool.length > 0) return;
-      visualFetchedKeyRef.current = lookupKey;
-
-      if (type === 'category') {
-        try {
-          const catRes = await fetch('/api/v1/categories/auto-fetch-google-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              categoryId: productId || '',
-              categoryName: productTitle || category || cleanTitle,
-              forceRefresh: Boolean(hasError)
-            })
-          });
-          if (!cancelled && catRes.ok) {
-            const catJson = await catRes.json();
-            const localUrl = String(catJson?.localUrl || '').trim();
-            if (catJson?.success && localUrl && !isGenericOrPlaceholderImageUrl(localUrl)) {
-              setVisualPool([localUrl]);
-              setHasError(false);
-              setAttemptIndex(0);
-              productImageManagerService.registerAutoSavedImage({
-                productId,
-                productTitle: productTitle || category || cleanTitle,
-                url: localUrl
-              });
-              return;
-            }
-          }
-        } catch {
-          // fallback to standard visual product image search
-        }
-      }
-
-      fetchVisualProductImages({
-        productName: cleanTitle,
-        productId,
-        category,
-        count: 15
-      })
-        .then(res => {
-          if (cancelled) return;
-          if (res.success && Array.isArray(res.pool) && res.pool.length > 0) {
-            const urls = res.pool.map(item => item.url).filter(Boolean);
-            setVisualPool(urls);
-            setHasError(false);
-            setAttemptIndex(0);
-
-            const topUrl = urls[0];
-            if (topUrl && !isGenericOrPlaceholderImageUrl(topUrl)) {
-              if (topUrl.startsWith('/assets/uploads/')) {
-                productImageManagerService.registerAutoSavedImage({
-                  productId,
-                  productTitle: cleanTitle,
-                  url: topUrl
-                });
-              }
-              void autoUploadDisplayedProductImage({
-                imageUrl: topUrl,
-                productId,
-                productName: cleanTitle,
-                category
-              }).then(localUrl => {
-                if (!cancelled && localUrl) {
-                  productImageManagerService.registerAutoSavedImage({
-                    productId,
-                    productTitle: cleanTitle,
-                    url: localUrl,
-                    originalUrl: /^https?:\/\//i.test(topUrl) ? topUrl : undefined
-                  });
-                }
-              });
-            }
-          }
-        })
-        .catch(() => {});
-    };
-
-    void runLookupAfterHydration();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [src, effectiveSrc, productId, productTitle, alt, category, type, imageIndex, isLogoOrAvatar, hasError, visualPool.length]);
+    // Only resolve local overrides without triggering background network scrapes or disk writes
+  }, []);
 
   const candidates = useMemo(() => {
     const list: string[] = [];

@@ -128,6 +128,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const [cachedProducts, setCachedProducts] = useState<Product[]>(products);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isUsingCache, setIsUsingCache] = useState<boolean>(false);
+  const [imageOrderVersion, setImageOrderVersion] = useState<number>(0);
 
   // Connection monitoring
   useEffect(() => {
@@ -155,6 +156,7 @@ export const ProductCatalog: React.FC<Props> = ({
     const handleUpdate = () => {
       if (isMounted) {
         setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+        setImageOrderVersion(v => v + 1);
       }
     };
 
@@ -162,6 +164,7 @@ export const ProductCatalog: React.FC<Props> = ({
       productImageManagerService.ensureHydrated().then(() => {
         if (isMounted) {
           setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+          setImageOrderVersion(v => v + 1);
         }
       });
     }
@@ -479,13 +482,11 @@ export const ProductCatalog: React.FC<Props> = ({
         return [...ranked, ...remainder];
       }
     }
-    // Even without a search term, keep newly uploaded / Auto-SEO boosted items at the top of the catalog
-    return [...rawFiltered].sort((a, b) => {
-      const aBoost = autoSeoEngine.isProductTopSeoBoosted(a.id) ? 1 : 0;
-      const bBoost = autoSeoEngine.isProductTopSeoBoosted(b.id) ? 1 : 0;
-      return bBoost - aBoost;
-    });
-  }, [rawFiltered, searchTerm]);
+    // Even without a search term, show products with the latest uploaded images first, then Auto-SEO boosted items
+    return productImageManagerService.sortProductsLatestUploadedFirst(rawFiltered, p =>
+      autoSeoEngine.isProductTopSeoBoosted(p.id) ? 1 : 0
+    );
+  }, [rawFiltered, searchTerm, imageOrderVersion]);
 
   const [catalogRfqsPool, setCatalogRfqsPool] = useState<RfqRequirement[]>(() =>
     sortRfqsRealFirst(propRfqs || [])

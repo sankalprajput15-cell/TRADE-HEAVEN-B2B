@@ -3,6 +3,7 @@ import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { useAuth } from '../../context/AuthContext';
+import { productImageManagerService } from '../../services/productImageManagerService';
 import { Building, Lock, ShieldCheck, Award, Image as ImageIcon } from 'lucide-react';
 
 const QuickProductImageModal = React.lazy(() =>
@@ -286,13 +287,16 @@ export const ProductCatalogGrid: React.FC<Props> = ({
           const usedGridUrls = new Set<string>();
           return products.map(product => {
             const candidates = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+            const hasManual = productImageManagerService.isManualOverride(product.id, product.title);
             let chosenSrc = candidates[0] || '';
-            for (const cand of candidates) {
-              const norm = String(cand).split('?')[0];
-              if (norm && !usedGridUrls.has(norm)) {
-                chosenSrc = cand;
-                usedGridUrls.add(norm);
-                break;
+            if (!hasManual) {
+              for (const cand of candidates) {
+                const norm = String(cand).split('?')[0];
+                if (norm && !usedGridUrls.has(norm)) {
+                  chosenSrc = cand;
+                  usedGridUrls.add(norm);
+                  break;
+                }
               }
             }
             if (chosenSrc) usedGridUrls.add(chosenSrc.split('?')[0]);

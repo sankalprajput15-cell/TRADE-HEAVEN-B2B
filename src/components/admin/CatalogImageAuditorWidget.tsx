@@ -1139,7 +1139,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                             <div className="flex items-center gap-1 shrink-0">
                               <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 opacity-70">
                                 {row.old_image_url && row.old_image_url !== '(empty)' ? (
-                                  <SafeImage src={row.old_image_url} alt="Before" className="w-full h-full object-cover" />
+                                  <SafeImage src={row.old_image_url} alt="Before" isThumbnail={true} disableLiveUpload={true} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-slate-400">
                                     None
@@ -1148,13 +1148,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                               </div>
                               <ArrowRight className="w-3 h-3 text-emerald-600 shrink-0" />
                               <div className="w-10 h-10 rounded-lg border-2 border-emerald-500 overflow-hidden bg-slate-100">
-                                <SafeImage src={displayNewUrl} alt={row.title} className="w-full h-full object-cover" />
+                                <SafeImage src={displayNewUrl} alt={row.title} isThumbnail={true} disableLiveUpload={true} className="w-full h-full object-cover" />
                               </div>
                             </div>
                           ) : (
                             <div className="w-11 h-11 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 shrink-0">
                               {displayThumbUrl ? (
-                                <SafeImage src={displayThumbUrl} alt={row.title} className="w-full h-full object-cover" />
+                                <SafeImage src={displayThumbUrl} alt={row.title} isThumbnail={true} disableLiveUpload={true} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-slate-400">
                                   Empty
@@ -1314,6 +1314,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                           <SafeImage
                             src={selectedRecord.old_image_url}
                             alt={`Original ${selectedRecord.title}`}
+                            disableLiveUpload={true}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -1347,6 +1348,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                           <SafeImage
                             src={withDisplayCacheBust(effectivePreviewAfterUrl, selectedRecord.updatedAt)}
                             alt={`New ${selectedRecord.title}`}
+                            disableLiveUpload={true}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -1509,6 +1511,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                               <SafeImage
                                 src={cand.thumbnailUrl || cand.url}
                                 alt={cand.title || selectedRecord.title}
+                                isThumbnail={true}
+                                disableLiveUpload={true}
                                 className="w-full h-full object-cover"
                               />
                               {isChosen && (

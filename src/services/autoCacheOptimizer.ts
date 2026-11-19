@@ -81,13 +81,5 @@ export function runAutomatedClientCachePurger(): void {
   }
 }
 
-// Background scheduler
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    runAutomatedClientCachePurger();
-  }, 3000);
+// Automatic background scheduler disabled to prevent background storage churn
 
-  setInterval(() => {
-    runAutomatedClientCachePurger();
-  }, CLEANUP_INTERVAL_MS);
-}
