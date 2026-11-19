@@ -842,6 +842,7 @@ export interface SingleCatalogImageFixResult {
   is_fallback_card?: boolean;
   status: 'FIXED' | 'FLAGGED';
   updatedAt?: string;
+  imageUpdatedAt?: number;
   message?: string;
 }
 

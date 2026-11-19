@@ -1083,6 +1083,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   `Catalog Image Audit Complete: Cleaned ${res.duplicates_detected} duplicate(s) & fixed ${res.mismatched_detected || 0} mismatched/placeholder photo(s)!`
                 );
               }}
+              onViewOnHomepage={(record) => {
+                onNavigate('HOMEPAGE');
+                const targetId =
+                  record.recordType === 'RFQ'
+                    ? 'recent-rfqs-section'
+                    : 'recently-updated-products-section';
+                window.setTimeout(() => {
+                  const el =
+                    document.getElementById(targetId) ||
+                    document.getElementById('featured-products-section');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 260);
+              }}
             />
 
             {/* ADMIN MENU GRID RIGHT IN MAIN VIEWPORT */}

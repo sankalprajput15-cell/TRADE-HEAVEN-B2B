@@ -73,6 +73,7 @@ interface Props {
   onSupplierTiersChange?: (tiers: string[]) => void;
   selectedCountries?: string[];
   onCountriesChange?: (countries: string[]) => void;
+  hideDefaultProductGrid?: boolean;
 }
 
 export const ProductCatalog: React.FC<Props> = ({
@@ -94,7 +95,8 @@ export const ProductCatalog: React.FC<Props> = ({
   selectedSupplierTiers: propSupplierTiers,
   onSupplierTiersChange,
   selectedCountries: propCountries,
-  onCountriesChange
+  onCountriesChange,
+  hideDefaultProductGrid = false
 }) => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState(() => {
@@ -1265,17 +1267,26 @@ export const ProductCatalog: React.FC<Props> = ({
             </>
           ) : (
             <div className="space-y-4">
-              {viewMode === 'GRID' ? (
-                <ProductCatalogGrid
-                  products={paginatedProducts}
-                  selectedCurrency={selectedCurrency}
-                  onSelectProduct={onSelectProduct}
-                  onOpenStorefront={onOpenStorefront}
-                  onContactSupplier={onContactSupplier}
-                  formatPrice={formatPrice}
-                  getTierBadge={getTierBadge}
-                />
-              ) : (
+              {!(
+                hideDefaultProductGrid &&
+                !searchTerm.trim() &&
+                activeCategory === 'ALL' &&
+                activeSupplierTiers.length === 0 &&
+                activeCountries.length === 0 &&
+                selectedIncoterm === 'ALL'
+              ) && (
+                <>
+                  {viewMode === 'GRID' ? (
+                    <ProductCatalogGrid
+                      products={paginatedProducts}
+                      selectedCurrency={selectedCurrency}
+                      onSelectProduct={onSelectProduct}
+                      onOpenStorefront={onOpenStorefront}
+                      onContactSupplier={onContactSupplier}
+                      formatPrice={formatPrice}
+                      getTierBadge={getTierBadge}
+                    />
+                  ) : (
                 /* List View */
                 <div className="space-y-2.5 sm:space-y-3">
                   {paginatedProducts.map(product => (
@@ -1391,6 +1402,8 @@ export const ProductCatalog: React.FC<Props> = ({
                 itemLabel="products"
                 scrollTargetId="product-catalog-section"
               />
+                </>
+              )}
 
               {/* Live Buyer RFQs & Auto-Generated Demand for Search Results */}
               {(showMatchedRfqs || Boolean(onSelectRfq)) &&

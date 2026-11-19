@@ -22880,32 +22880,56 @@ async function fixSingleCatalogImageRecord(params: {
     queryUsed = resolved.queryUsed;
   }
 
+  const activityMs = Date.now();
+  const nowIso = new Date(activityMs).toISOString();
+
   if (finalImageUrl) {
     ensureUploadedUrlInMediaLibrary(finalImageUrl);
     clearConflictingTitleOverridesForProductId(cleanId, finalImageUrl);
     updateFullCatalogSnapshotRecords([{ id: cleanId, imageUrl: finalImageUrl, gallery: [finalImageUrl] }]);
   }
 
-  if (finalImageUrl && existingOverride && serverProductImageState.overrides[cleanId]) {
+  if (finalImageUrl && serverProductImageState.overrides[cleanId]) {
     (serverProductImageState.overrides[cleanId] as any) = {
       ...serverProductImageState.overrides[cleanId],
-      previousPrimary: oldImageUrl && oldImageUrl !== finalImageUrl ? oldImageUrl : existingOverride.previousPrimary
+      previousPrimary:
+        oldImageUrl && oldImageUrl !== finalImageUrl
+          ? oldImageUrl
+          : existingOverride?.previousPrimary,
+      updatedAt: nowIso,
+      ...(!params.revert ? { imageUpdatedAt: activityMs } : {})
     };
+  }
+
+  if (!params.revert && finalImageUrl) {
+    recordServerProductActivityTimestamp(cleanId, activityMs);
   }
 
   if (matchedListing && finalImageUrl) {
     matchedListing.image_url = finalImageUrl;
     matchedListing.images = [finalImageUrl];
+    if (!params.revert) {
+      matchedListing.updatedAt = activityMs;
+      matchedListing.imageUpdatedAt = activityMs;
+    }
   }
   if (matchedProduct && finalImageUrl) {
     matchedProduct.image = finalImageUrl;
     matchedProduct.image_url = finalImageUrl;
     matchedProduct.images = [finalImageUrl];
+    if (!params.revert) {
+      matchedProduct.updatedAt = activityMs;
+      matchedProduct.imageUpdatedAt = activityMs;
+    }
   }
   if (matchedRfq && finalImageUrl) {
     matchedRfq.image = finalImageUrl;
     matchedRfq.image_url = finalImageUrl;
     matchedRfq.images = [finalImageUrl];
+    if (!params.revert) {
+      matchedRfq.updatedAt = activityMs;
+      matchedRfq.imageUpdatedAt = activityMs;
+    }
   }
 
   saveServerProductsToDisk();
@@ -22924,7 +22948,8 @@ async function fixSingleCatalogImageRecord(params: {
     source,
     is_fallback_card: source === 'gemini_grounded_unique_webp',
     status: params.revert ? ('FLAGGED' as const) : ('FIXED' as const),
-    updatedAt: new Date().toISOString()
+    updatedAt: nowIso,
+    imageUpdatedAt: !params.revert ? activityMs : undefined
   };
 }
 

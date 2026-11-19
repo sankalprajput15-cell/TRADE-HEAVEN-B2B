@@ -18,7 +18,11 @@ import {
   Eye,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Crop,
+  X,
+  Maximize2,
+  ExternalLink
 } from 'lucide-react';
 import {
   runCatalogImageAuditAndCleanup,
@@ -32,10 +36,12 @@ import {
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { Product } from '../../types';
 import { SafeImage } from '../common/SafeImage';
+import { ImageEditingOverlay } from './ImageEditingOverlay';
 
 interface CatalogImageAuditorWidgetProps {
   products?: Product[];
   onAuditCompleted?: (summary: CatalogImageAuditSummary) => void;
+  onViewOnHomepage?: (record: { recordId: string; recordType: 'PRODUCT' | 'RFQ' | 'OVERRIDE' }) => void;
 }
 
 type AuditorFilterTab = 'ALL_ISSUES' | 'DUPLICATE' | 'MISMATCHED' | 'FIXED' | 'ALL_SCANNED';
@@ -72,7 +78,8 @@ function withDisplayCacheBust(url: string | undefined, versionTag?: string): str
 
 export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps> = ({
   products = EMPTY_PRODUCTS,
-  onAuditCompleted
+  onAuditCompleted,
+  onViewOnHomepage
 }) => {
   const [summary, setSummary] = useState<CatalogImageAuditSummary | null>(null);
   const [auditRows, setAuditRows] = useState<UnifiedAuditRow[]>([]);
@@ -105,6 +112,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [candidatesByRecord, setCandidatesByRecord] = useState<Record<string, VisualProductImageCandidate[]>>({});
   const [loadingCandidatesFor, setLoadingCandidatesFor] = useState<string | null>(null);
   const [candidateError, setCandidateError] = useState<string | null>(null);
+  const [isInspectorModalOpen, setIsInspectorModalOpen] = useState<boolean>(false);
+  const [inspectorHighlightPulse, setInspectorHighlightPulse] = useState<boolean>(false);
+  const [croppingRowTarget, setCroppingRowTarget] = useState<{ row: UnifiedAuditRow; imageSrc: string } | null>(null);
 
   const productsRef = useRef<Product[]>(products);
   productsRef.current = products;
@@ -112,6 +122,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const didInitialScanRef = useRef<boolean>(false);
   const rowFileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadTargetRowRef = useRef<UnifiedAuditRow | null>(null);
+  const inspectorPaneRef = useRef<HTMLDivElement | null>(null);
 
   const buildCompactCatalogPayload = useCallback(() => {
     return (productsRef.current || []).map(p => ({
@@ -241,36 +252,41 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   }, [fetchPreviewStats]);
 
   const combinedSourceRows = useMemo<UnifiedAuditRow[]>(() => {
-    if (activeFilter !== 'ALL_SCANNED') {
-      return auditRows;
-    }
     const mapById = new Map<string, UnifiedAuditRow>();
     for (const row of auditRows) {
       mapById.set(row.record_id, row);
     }
-    for (const clean of cleanRecords) {
-      if (!mapById.has(clean.record_id)) {
-        mapById.set(clean.record_id, {
-          record_id: clean.record_id,
-          record_type: clean.record_type,
-          title: clean.title,
-          category: clean.category,
-          issue_type: 'HEALTHY',
-          issue_reason: 'Verified unique asset in catalog',
-          old_image_url: clean.previous_image_url || clean.current_image_url || '(empty)',
-          new_image_url: clean.current_image_url || '',
-          query_used: clean.title,
-          status: clean.status === 'FIXED' ? 'FIXED' : 'CLEAN',
-          updatedAt: clean.updated_at
-        });
+
+    if (activeFilter === 'ALL_SCANNED' || activeFilter === 'FIXED') {
+      for (const clean of cleanRecords) {
+        if (activeFilter === 'FIXED' && clean.status !== 'FIXED') continue;
+        if (!mapById.has(clean.record_id)) {
+          mapById.set(clean.record_id, {
+            record_id: clean.record_id,
+            record_type: clean.record_type,
+            title: clean.title,
+            category: clean.category,
+            issue_type: 'HEALTHY',
+            issue_reason:
+              clean.status === 'FIXED'
+                ? 'Recently updated image — live at #1 on Homepage'
+                : 'Verified unique asset in catalog',
+            old_image_url: clean.previous_image_url || clean.current_image_url || '(empty)',
+            new_image_url: clean.current_image_url || '',
+            query_used: clean.title,
+            status: clean.status === 'FIXED' ? 'FIXED' : 'CLEAN',
+            updatedAt: clean.updated_at
+          });
+        }
       }
     }
+
     return Array.from(mapById.values());
   }, [activeFilter, auditRows, cleanRecords]);
 
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return combinedSourceRows.filter(row => {
+    const list = combinedSourceRows.filter(row => {
       const keepSessionFixedVisible = Boolean(sessionTouchedIds[row.record_id]);
       if (activeFilter === 'DUPLICATE') {
         if (row.issue_type !== 'DUPLICATE' || (row.status === 'FIXED' && !keepSessionFixedVisible)) {
@@ -299,6 +315,18 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         row.issue_type.toLowerCase().includes(q)
       );
     });
+
+    if (activeFilter === 'FIXED') {
+      const parseRowTs = (val?: string) => {
+        if (!val) return 0;
+        if (/^\d{10,16}$/.test(val)) return Number(val);
+        const parsed = Date.parse(val);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+      return [...list].sort((a, b) => parseRowTs(b.updatedAt) - parseRowTs(a.updatedAt));
+    }
+
+    return list;
   }, [combinedSourceRows, activeFilter, searchTerm, sessionTouchedIds]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / ITEMS_PER_PAGE));
@@ -354,13 +382,32 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     [candidatesByRecord]
   );
 
-  const handleSelectRow = (row: UnifiedAuditRow) => {
+  const handleSelectRow = (row: UnifiedAuditRow, opts?: { openModal?: boolean; scrollToInspector?: boolean }) => {
+    setShowWorkbench(true);
     setSelectedRecordId(row.record_id);
     setCandidateError(null);
     const currentResolved =
       row.new_image_url && row.new_image_url !== '(pending audit fix)' ? row.new_image_url : '';
     setStagedPreviewUrl(currentResolved);
     setCustomUrlInput(currentResolved || (row.old_image_url !== '(empty)' ? row.old_image_url : ''));
+
+    if (!candidatesByRecord[row.record_id]?.length && loadingCandidatesFor !== row.record_id) {
+      void handleLoadVisualCandidates(row);
+    }
+
+    setInspectorHighlightPulse(true);
+    window.setTimeout(() => setInspectorHighlightPulse(false), 1200);
+
+    if (opts?.openModal) {
+      setIsInspectorModalOpen(true);
+    }
+    if (opts?.scrollToInspector && inspectorPaneRef.current) {
+      inspectorPaneRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const handleInspectRow = (row: UnifiedAuditRow) => {
+    handleSelectRow(row, { openModal: true, scrollToInspector: true });
   };
 
   useEffect(() => {
@@ -383,7 +430,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     setCurrentPage(1);
     setShowWorkbench(true);
     setSessionTouchedIds({});
-    if (tab === 'ALL_SCANNED' && !cleanLoaded) {
+    if ((tab === 'ALL_SCANNED' || tab === 'FIXED') && !cleanLoaded) {
       void fetchPreviewStats({ includeCatalog: true });
     }
   };
@@ -493,12 +540,16 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       });
 
       applySingleRecordMutationResult(row, result);
+      const activityMs = result.imageUpdatedAt || Date.now();
+      if (!options?.revert) {
+        productImageManagerService.recordProductActivityTimestamp(rid, activityMs, false);
+      }
       productImageManagerService.applyServerOverrideSnapshot([
         {
           id: rid,
           url: result.new_image_url,
           previousUrl: result.old_image_url && result.old_image_url !== '(empty)' ? result.old_image_url : undefined,
-          updatedAt: result.updatedAt,
+          updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
           updatedBy: options?.revert
             ? 'auto-site-upload'
             : options?.customImageUrl
@@ -601,12 +652,14 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         old_image_url: preservedOldUrl || result.old_image_url,
         is_fallback_card: false
       });
+      const activityMs = result.imageUpdatedAt || Date.now();
+      productImageManagerService.recordProductActivityTimestamp(rid, activityMs, false);
       productImageManagerService.applyServerOverrideSnapshot([
         {
           id: rid,
           url: result.new_image_url,
           previousUrl: preservedOldUrl || result.old_image_url,
-          updatedAt: result.updatedAt,
+          updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
           updatedBy: 'admin-manual'
         }
       ]);
@@ -615,7 +668,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       setAlertMessage({
         type: 'success',
         title: `Manual Photo Uploaded for "${targetRow.title}" (${rid})`,
-        detail: `Saved custom WebP image (${cleanUploadedUrl}) and updated the catalog immediately.`
+        detail: `Saved custom WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
+        actionRow: { ...targetRow, new_image_url: result.new_image_url, status: 'FIXED', updatedAt: String(activityMs) }
       });
     } catch (err: any) {
       setAlertMessage({
@@ -627,6 +681,81 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     } finally {
       setUploadingRecordIds(prev => ({ ...prev, [rid]: false }));
       if (rowFileInputRef.current) rowFileInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveCroppedRowImage = async (targetRow: UnifiedAuditRow, editedDataUrl: string) => {
+    const rid = targetRow.record_id;
+    const preservedOldUrl =
+      targetRow.old_image_url && targetRow.old_image_url !== '(empty)'
+        ? targetRow.old_image_url
+        : undefined;
+
+    setCroppingRowTarget(null);
+    setUploadingRecordIds(prev => ({ ...prev, [rid]: true }));
+    setSelectedRecordId(rid);
+    setAlertMessage(null);
+
+    try {
+      const croppedFile = productImageManagerService.dataUrlToFile(
+        editedDataUrl,
+        `${rid}-cropped-${Date.now()}.png`
+      );
+      const uploaded = await productImageManagerService.uploadAndAssignImageFile(croppedFile, {
+        productId: rid,
+        category: targetRow.category,
+        targetFormat: 'webp',
+        autoWebpLossless: true,
+        oldUrlToReplace: undefined
+      });
+
+      if (!uploaded?.url || uploaded.url.startsWith('data:')) {
+        throw new Error('Cropped image could not be saved to the server media library.');
+      }
+
+      const cleanUploadedUrl = uploaded.url.split('?')[0];
+      const result = await fixSingleCatalogImage({
+        recordId: rid,
+        recordType: targetRow.record_type,
+        title: targetRow.title,
+        category: targetRow.category,
+        customImageUrl: cleanUploadedUrl,
+        previousImageUrl: preservedOldUrl
+      });
+
+      applySingleRecordMutationResult(targetRow, {
+        ...result,
+        old_image_url: preservedOldUrl || result.old_image_url,
+        is_fallback_card: false
+      });
+      const activityMs = result.imageUpdatedAt || Date.now();
+      productImageManagerService.recordProductActivityTimestamp(rid, activityMs, false);
+      productImageManagerService.applyServerOverrideSnapshot([
+        {
+          id: rid,
+          url: result.new_image_url,
+          previousUrl: preservedOldUrl || result.old_image_url,
+          updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
+          updatedBy: 'admin-manual'
+        }
+      ]);
+      await syncMarketplaceImageListeners();
+
+      setAlertMessage({
+        type: 'success',
+        title: `Cropped & Saved Photo for "${targetRow.title}" (${rid})`,
+        detail: `Saved framed WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
+        actionRow: { ...targetRow, new_image_url: result.new_image_url, status: 'FIXED', updatedAt: String(activityMs) }
+      });
+    } catch (err: any) {
+      setAlertMessage({
+        type: 'error',
+        title: `Crop Save Failed for "${targetRow.title}"`,
+        detail: err?.message || 'Unable to save cropped product photo.',
+        actionRow: targetRow
+      });
+    } finally {
+      setUploadingRecordIds(prev => ({ ...prev, [rid]: false }));
     }
   };
 
@@ -718,10 +847,16 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       ).length,
     [auditRows]
   );
-  const fixedRowCount = useMemo(
-    () => auditRows.filter(r => r.status === 'FIXED').length,
-    [auditRows]
-  );
+  const fixedRowCount = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of auditRows) {
+      if (r.status === 'FIXED') ids.add(r.record_id);
+    }
+    for (const c of cleanRecords) {
+      if (c.status === 'FIXED') ids.add(c.record_id);
+    }
+    return ids.size;
+  }, [auditRows, cleanRecords]);
 
   const selectedCandidates = selectedRecord ? candidatesByRecord[selectedRecord.record_id] || [] : [];
   const selectedIsFixing = selectedRecord ? Boolean(fixingRecordIds[selectedRecord.record_id]) : false;
@@ -948,16 +1083,37 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             </div>
           </div>
 
-          {alertMessage.actionRow && (
-            <button
-              type="button"
-              onClick={() => triggerDirectRowUpload(alertMessage.actionRow!)}
-              className="px-3 py-1.5 rounded-lg bg-white text-slate-900 hover:bg-slate-100 text-xs font-black flex items-center gap-1.5 shrink-0 cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5 text-blue-600" />
-              <span>Upload Photo Manually</span>
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {alertMessage.actionRow && alertMessage.actionRow.status === 'FIXED' && onViewOnHomepage && (
+              <button
+                type="button"
+                onClick={() =>
+                  onViewOnHomepage({
+                    recordId: alertMessage.actionRow!.record_id,
+                    recordType: alertMessage.actionRow!.record_type
+                  })
+                }
+                className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400 text-xs font-black flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>
+                  {alertMessage.actionRow.record_type === 'RFQ'
+                    ? 'View in Homepage Buy Leads'
+                    : 'View on Homepage (#1)'}
+                </span>
+              </button>
+            )}
+            {alertMessage.actionRow && (
+              <button
+                type="button"
+                onClick={() => triggerDirectRowUpload(alertMessage.actionRow!)}
+                className="px-3 py-1.5 rounded-lg bg-white text-slate-900 hover:bg-slate-100 text-xs font-black flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-blue-600" />
+                <span>Upload Photo Manually</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1190,6 +1346,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                               >
                                 {row.status}
                               </span>
+                              {row.status === 'FIXED' && (
+                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">
+                                  {row.record_type === 'RFQ'
+                                    ? 'Homepage: Buy Leads #1'
+                                    : 'Homepage: Recently Updated #1'}
+                                </span>
+                              )}
                               {row.is_fallback_card && (
                                 <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">
                                   Fallback Card
@@ -1197,7 +1360,28 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                               )}
                             </div>
                             <div className="font-bold text-slate-900 truncate">{row.title}</div>
-                            <div className="text-[11px] text-slate-500 truncate">{row.issue_reason}</div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                              <span className="truncate">{row.issue_reason}</span>
+                              {row.status === 'FIXED' && onViewOnHomepage && (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    onViewOnHomepage({
+                                      recordId: row.record_id,
+                                      recordType: row.record_type
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 underline cursor-pointer shrink-0"
+                                >
+                                  <span>
+                                    {row.record_type === 'RFQ'
+                                      ? 'See in Homepage Buy Leads →'
+                                      : 'See on Homepage (#1) →'}
+                                  </span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1252,11 +1436,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                             type="button"
                             onClick={e => {
                               e.stopPropagation();
-                              handleSelectRow(row);
+                              handleInspectRow(row);
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                            data-testid={`inspect-row-btn-${row.record_id}`}
+                            title="Open Live Before/After Image Inspector & Fix Studio"
+                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
                               isSelected
-                                ? 'bg-slate-900 text-white border-slate-900'
+                                ? 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
                                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
                             }`}
                           >
@@ -1272,7 +1458,12 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             </div>
 
             {/* RIGHT PANE: LIVE BEFORE / AFTER VIEWER & DIRECT CORRECTION STUDIO */}
-            <div className="lg:col-span-5 p-4 sm:p-5 bg-slate-50/70 space-y-4">
+            <div
+              ref={inspectorPaneRef}
+              className={`lg:col-span-5 p-4 sm:p-5 bg-slate-50/70 space-y-4 transition-all ${
+                inspectorHighlightPulse ? 'ring-2 ring-blue-500 bg-blue-50/40' : ''
+              }`}
+            >
               {selectedRecord ? (
                 <>
                   {/* Selected Header */}
@@ -1401,6 +1592,37 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                         <Upload className="w-3.5 h-3.5 text-blue-600" />
                       )}
                       <span>{selectedIsUploading ? 'Uploading...' : 'Manual Upload'}</span>
+                    </button>
+
+                    {(effectivePreviewAfterUrl ||
+                      (selectedRecord.old_image_url && selectedRecord.old_image_url !== '(empty)')) && (
+                      <button
+                        type="button"
+                        disabled={selectedIsUploading || selectedIsFixing}
+                        onClick={() =>
+                          setCroppingRowTarget({
+                            row: selectedRecord,
+                            imageSrc:
+                              effectivePreviewAfterUrl ||
+                              (selectedRecord.old_image_url !== '(empty)' ? selectedRecord.old_image_url : '')
+                          })
+                        }
+                        className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Crop, rotate, or adjust framing for this product image"
+                      >
+                        <Crop className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Crop Photo</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsInspectorModalOpen(true)}
+                      className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Open enlarged Before vs After Inspector Studio"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Full Inspector</span>
                     </button>
 
                     {selectedRecord.status === 'FIXED' &&
@@ -1583,6 +1805,362 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           </div>
         )}
       </div>
+
+      {/* LIVE BEFORE / AFTER IMAGE INSPECTOR & PHOTO FIX STUDIO MODAL (Triggered by Inspect / Viewing button) */}
+      {isInspectorModalOpen && selectedRecord && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Inspect ${selectedRecord.title}`}
+          data-testid="catalog-image-inspector-modal"
+          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setIsInspectorModalOpen(false)}
+        >
+          <div
+            className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden my-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-5 py-4 bg-slate-900 text-white flex items-start justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-[11px] font-bold">
+                    {selectedRecord.record_type} • {selectedRecord.record_id}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      selectedRecord.issue_type === 'DUPLICATE'
+                        ? 'bg-amber-400 text-slate-950'
+                        : selectedRecord.issue_type === 'HEALTHY'
+                        ? 'bg-emerald-400 text-slate-950'
+                        : 'bg-rose-500 text-white'
+                    }`}
+                  >
+                    {selectedRecord.issue_type}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      selectedRecord.status === 'FIXED'
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-white/15 text-white'
+                    }`}
+                  >
+                    {hasUnsavedStagedChange
+                      ? 'PREVIEWING CHANGE'
+                      : selectedRecord.status === 'FIXED'
+                      ? 'APPLIED & SAVED'
+                      : selectedRecord.status}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-white truncate">
+                  {selectedRecord.title}
+                </h3>
+                <p className="text-xs text-slate-300">
+                  <span className="font-semibold text-white">{selectedRecord.category}</span> — {selectedRecord.issue_reason}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsInspectorModalOpen(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer shrink-0"
+                aria-label="Close Inspector"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              {/* Side-by-Side Before & After Comparison */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-600">
+                    <span>Before (Original Image)</span>
+                    <span className="text-[10px] font-mono text-slate-500">Original Record</span>
+                  </div>
+                  <div className="aspect-[4/3] rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
+                    {selectedRecord.old_image_url && selectedRecord.old_image_url !== '(empty)' ? (
+                      <SafeImage
+                        src={selectedRecord.old_image_url}
+                        alt={`Before ${selectedRecord.title}`}
+                        disableLiveUpload={true}
+                        className="w-full h-full object-contain bg-slate-100"
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-slate-400">No Original Image</span>
+                    )}
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-600 truncate" title={selectedRecord.old_image_url}>
+                    {selectedRecord.old_image_url || '(empty)'}
+                  </div>
+                </div>
+
+                <div
+                  className={`rounded-xl p-3 space-y-2 border-2 ${
+                    effectivePreviewAfterUrl
+                      ? hasUnsavedStagedChange
+                        ? 'bg-blue-50/60 border-blue-500'
+                        : 'bg-emerald-50/60 border-emerald-500'
+                      : 'bg-slate-50 border-dashed border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider">
+                    <span className={effectivePreviewAfterUrl ? 'text-emerald-900' : 'text-slate-600'}>
+                      {hasUnsavedStagedChange ? 'After (Staged Preview)' : 'After (Updated / Active)'}
+                    </span>
+                    {effectivePreviewAfterUrl && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">
+                        {hasUnsavedStagedChange ? 'Click Apply to Save' : 'Live'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="aspect-[4/3] rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
+                    {effectivePreviewAfterUrl ? (
+                      <SafeImage
+                        src={withDisplayCacheBust(effectivePreviewAfterUrl, selectedRecord.updatedAt)}
+                        alt={`After ${selectedRecord.title}`}
+                        disableLiveUpload={true}
+                        className="w-full h-full object-contain bg-slate-100"
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-500 text-center px-4">
+                        Click Auto-Fix Unique Photo, Manual Upload, or choose one of the verified alternatives below.
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="text-[11px] font-mono text-slate-700 truncate"
+                    title={effectivePreviewAfterUrl || '(pending selection)'}
+                  >
+                    {effectivePreviewAfterUrl || '(pending selection)'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Toolbar inside Inspector Modal */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  disabled={selectedIsFixing || selectedIsUploading}
+                  onClick={() => void handleFixSingleRecord(selectedRecord)}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {selectedIsFixing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Auto-Fixing Photo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4" />
+                      <span>Auto-Fix Unique Photo</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectedIsUploading || selectedIsFixing}
+                  onClick={() => triggerDirectRowUpload(selectedRecord)}
+                  className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {selectedIsUploading ? (
+                    <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-blue-600" />
+                  )}
+                  <span>{selectedIsUploading ? 'Uploading...' : 'Manual Upload from Device'}</span>
+                </button>
+
+                {(effectivePreviewAfterUrl ||
+                  (selectedRecord.old_image_url && selectedRecord.old_image_url !== '(empty)')) && (
+                  <button
+                    type="button"
+                    disabled={selectedIsUploading || selectedIsFixing}
+                    onClick={() =>
+                      setCroppingRowTarget({
+                        row: selectedRecord,
+                        imageSrc:
+                          effectivePreviewAfterUrl ||
+                          (selectedRecord.old_image_url !== '(empty)' ? selectedRecord.old_image_url : '')
+                      })
+                    }
+                    className="px-4 py-2.5 rounded-xl bg-white border border-indigo-300 hover:bg-indigo-50 text-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Crop className="w-4 h-4 text-indigo-600" />
+                    <span>Crop &amp; Frame Image</span>
+                  </button>
+                )}
+
+                {hasUnsavedStagedChange && stagedPreviewUrl && (
+                  <button
+                    type="button"
+                    disabled={selectedIsFixing}
+                    onClick={() =>
+                      void handleFixSingleRecord(selectedRecord, {
+                        customImageUrl: stagedPreviewUrl
+                      })
+                    }
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{selectedIsFixing ? 'Saving...' : 'Apply Previewed Photo'}</span>
+                  </button>
+                )}
+
+                {selectedRecord.status === 'FIXED' &&
+                  selectedRecord.old_image_url &&
+                  selectedRecord.old_image_url !== '(empty)' && (
+                    <button
+                      type="button"
+                      disabled={selectedIsFixing || selectedIsUploading}
+                      onClick={() =>
+                        void handleFixSingleRecord(selectedRecord, {
+                          customImageUrl: selectedRecord.old_image_url,
+                          revert: true
+                        })
+                      }
+                      className="px-3.5 py-2.5 rounded-xl bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Revert to Original</span>
+                    </button>
+                  )}
+              </div>
+
+              {/* Verified Alternatives Grid inside Modal */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-black text-slate-900">
+                      Verified Product Photo Alternatives
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Click any candidate below to preview it in the After box, then click Apply Previewed Photo.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={loadingCandidatesFor === selectedRecord.record_id}
+                    onClick={() => void handleLoadVisualCandidates(selectedRecord, true)}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${
+                        loadingCandidatesFor === selectedRecord.record_id ? 'animate-spin text-blue-600' : ''
+                      }`}
+                    />
+                    <span>
+                      {loadingCandidatesFor === selectedRecord.record_id
+                        ? 'Searching Photos...'
+                        : 'Shuffle New Alternatives'}
+                    </span>
+                  </button>
+                </div>
+
+                {candidateError && (
+                  <div className="text-xs text-amber-700 font-medium">{candidateError}</div>
+                )}
+
+                {selectedCandidates.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                    {selectedCandidates.slice(0, 12).map((cand, i) => {
+                      const isChosen = stagedPreviewUrl === cand.url;
+                      return (
+                        <button
+                          key={`modal-cand-${cand.url}-${i}`}
+                          type="button"
+                          onClick={() => {
+                            setStagedPreviewUrl(cand.url);
+                            setCustomUrlInput(cand.url);
+                          }}
+                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-white ${
+                            isChosen
+                              ? 'border-blue-600 ring-2 ring-blue-500/30'
+                              : 'border-slate-200 hover:border-blue-400'
+                          }`}
+                          title={cand.title || selectedRecord.title}
+                        >
+                          <SafeImage
+                            src={cand.thumbnailUrl || cand.url}
+                            alt={cand.title || selectedRecord.title}
+                            isThumbnail={true}
+                            disableLiveUpload={true}
+                            className="w-full h-full object-cover"
+                          />
+                          {isChosen && (
+                            <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                              <Check className="w-3 h-3" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500 py-2">
+                    {loadingCandidatesFor === selectedRecord.record_id
+                      ? 'Loading verified product photo candidates...'
+                      : 'Click "Shuffle New Alternatives" to fetch photo options, or use "Manual Upload from Device".'}
+                  </div>
+                )}
+              </div>
+
+              {/* Direct Image URL Input inside Modal */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <label
+                  htmlFor="modal-direct-custom-image-url"
+                  className="text-xs font-bold text-slate-800 flex items-center gap-1.5"
+                >
+                  <Link2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Paste or Edit Direct Image URL</span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    id="modal-direct-custom-image-url"
+                    type="text"
+                    value={customUrlInput}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setCustomUrlInput(val);
+                      if (val.trim()) {
+                        setStagedPreviewUrl(val.trim());
+                      }
+                    }}
+                    placeholder="https://... or /assets/uploads/..."
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slate-800 focus:outline-hidden focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    disabled={selectedIsFixing || !customUrlInput.trim()}
+                    onClick={() =>
+                      void handleFixSingleRecord(selectedRecord, {
+                        customImageUrl: customUrlInput.trim()
+                      })
+                    }
+                    className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer disabled:opacity-40 shrink-0"
+                  >
+                    Save &amp; Apply URL
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLIENT-SIDE IMAGE CROPPING & FRAMING STUDIO OVERLAY */}
+      {croppingRowTarget && (
+        <ImageEditingOverlay
+          imageSrc={croppingRowTarget.imageSrc}
+          imageName={croppingRowTarget.row.title}
+          onClose={() => setCroppingRowTarget(null)}
+          onSave={editedDataUrl => {
+            void handleSaveCroppedRowImage(croppingRowTarget.row, editedDataUrl);
+          }}
+        />
+      )}
     </section>
   );
 };

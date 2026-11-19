@@ -40,6 +40,7 @@ import {
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { securityService } from '../../services/securityService';
 import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
+import { productImageManagerService } from '../../services/productImageManagerService';
 
 interface Props {
   products: Product[];
@@ -87,11 +88,51 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const [activeMobileNav, setActiveMobileNav] = React.useState<'HOME' | 'SEARCH' | 'RFQS' | 'DASHBOARD'>('HOME');
   const mobileSearchInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [imageSyncVersion, setImageSyncVersion] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleImageUpdate = () => setImageSyncVersion(v => v + 1);
+    window.addEventListener('tradeheaven_product_images_updated', handleImageUpdate);
+    window.addEventListener('tradeheaven_product_image_saved', handleImageUpdate);
+    window.addEventListener('tradeheaven_products_updated', handleImageUpdate);
+    return () => {
+      window.removeEventListener('tradeheaven_product_images_updated', handleImageUpdate);
+      window.removeEventListener('tradeheaven_product_image_saved', handleImageUpdate);
+      window.removeEventListener('tradeheaven_products_updated', handleImageUpdate);
+    };
+  }, []);
+
   const isUserPaidMember = isPaidMemberUser(currentUser);
-  const allHomeRfqsPool = React.useMemo(
-    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r => securityService.gateRfqRequirement(r, currentUser)),
-    [rfqs, currentUser]
-  );
+  const allHomeRfqsPool = React.useMemo(() => {
+    const rawPool = (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r =>
+      securityService.gateRfqRequirement(r, currentUser)
+    );
+    const enriched = rawPool.map(r => {
+      const resolvedPhoto = productImageManagerService.resolveImageSrc({
+        src: (r as any).image_url || (r as any).image || (r as any).images?.[0],
+        productId: r.id,
+        productTitle: r.productName,
+        category: r.category
+      });
+      const rank = productImageManagerService.getLatestUploadedRank({
+        id: r.id,
+        title: r.productName,
+        updatedAt: (r as any).updatedAt,
+        imageUpdatedAt: (r as any).imageUpdatedAt
+      });
+      return {
+        ...r,
+        resolvedPhotoUrl: resolvedPhoto,
+        recentActivityTs: rank.timestampMs
+      };
+    });
+    return enriched.sort((a, b) => {
+      if (a.recentActivityTs !== b.recentActivityTs) {
+        return b.recentActivityTs - a.recentActivityTs;
+      }
+      return 0;
+    });
+  }, [rfqs, currentUser, imageSyncVersion]);
   const activeRfqsPool = React.useMemo(
     () => allHomeRfqsPool.slice(0, 40),
     [allHomeRfqsPool]
@@ -203,214 +244,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 1.5 ADMIN-PUBLISHED STOREFRONT BANNERS & ANNOUNCEMENTS */}
       <PlatformAnnouncementBanner variant="hero-banner" onNavigate={onNavigate} />
 
-      {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
-      <CategoryMegaMenu
-        selectedCategory={selectedCategory}
-        onSelectCategory={handleSelectCategoryFromMenu}
-        onNavigateToCategory={onNavigateToCategory || ((cat, sub) => {
-          setSelectedCategory(cat);
-          onNavigate('PRODUCT_DIRECTORY');
-        })}
-        onNavigateToSuppliers={onNavigateToSuppliers || (() => onNavigate('SUPPLIERS_DIRECTORY'))}
-        onNavigateToRfqs={onNavigateToRfqs || (() => onNavigate('BUY_LEADS'))}
-        onNavigate={onNavigate}
-        onOpenCreateRfq={onOpenCreateRfq}
-      />
-
-      {/* 2.5 LIVE GLOBAL TRADE FEED */}
-      <div className="pt-1 pb-2">
-        <LiveGlobalTradeFeed 
-          onSelectLead={(lead) => {
-            if (onNavigateToRfqs) {
-              onNavigateToRfqs(lead.product);
-            } else {
-              onNavigate('BUY_LEADS');
-            }
-          }}
-        />
-      </div>
-
-      {/* 3. FEATURED PRODUCTS CATALOG SECTION */}
-      <div id="featured-products-section" className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <button
-            onClick={() => onNavigate('PRODUCT_DIRECTORY')}
-            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0 cursor-pointer"
-          >
-            <span>{t('viewAllProducts')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <ProductCatalog
-          products={products}
-          selectedCurrency={selectedCurrency}
-          onSelectProduct={onSelectProduct}
-          onOpenStorefront={onOpenStorefront}
-          onContactSupplier={onContactSupplier}
-          selectedCategory={selectedCategory || 'ALL'}
-          onCategoryChange={(cat) => setSelectedCategory(cat === 'ALL' ? null : cat)}
-          isLoading={isLoadingProducts}
-        />
-      </div>
-
-      {/* 4. VERIFIED FACTORY EXPORTERS SHOWCASE */}
-      <div className="bg-slate-50/90 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-10 space-y-6 relative overflow-hidden border border-slate-200 shadow-sm">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 mb-2">
-              <Award className="w-3.5 h-3.5 text-blue-600" />
-              <span>Audited Global Manufacturers (ISO 9001, CE, TÜV)</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-              {t('auditedSuppliersHeading')}
-            </h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-xl">
-              Inspect on-site factory audit certificates, production line capacity, and trade protection limits of premier export partners.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 shadow-sm cursor-pointer"
-          >
-            <span>{t('exploreAllSuppliers')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {!isUserPaidMember && (
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="font-semibold">
-                Paid Members&apos; Direct Factory Contact Data, Liaison Officers, Phones, Emails &amp; Street Addresses are Strictly Protected.
-              </span>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-200/80 text-amber-950 shrink-0">
-              Paid Members Only
-            </span>
-          </div>
-        )}
-
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {displayedCompanies.map((company, index) => {
-            const paidSupplier = isPaidEntity(company);
-            return (
-            <div
-              key={company.id || index}
-              onClick={() => onOpenStorefront(company.id)}
-              className="bg-white hover:bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-xs hover:shadow-md"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <SafeImage
-                    src={company.logoUrl}
-                    alt={company.companyName}
-                    type="logo"
-                    isThumbnail={true}
-                    className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                        {company.tier}
-                      </span>
-                      <span className="text-[10px] text-slate-600 font-mono inline-flex items-center gap-1">
-                        <CountryFlag country={company.country} size="xs" />
-                        <span>{tText(company.country)}</span>
-                      </span>
-                    </div>
-                    <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
-                      {company.companyName}
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
-                  {company.description}
-                </p>
-
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500">{t('tradeAssurance')}:</span>
-                    <div className="font-mono font-bold text-emerald-600">
-                      ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500">{t('factorySize')}:</span>
-                    <div className="font-bold text-slate-800">
-                      {company.factorySizeSqM && company.factorySizeSqM > 0 
-                        ? `${company.factorySizeSqM.toLocaleString()} m²` 
-                        : 'Trading/Desk'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Gated Contact Status Bar */}
-                <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-[10px]">
-                  <span className="text-slate-600 font-semibold truncate">
-                    {isUserPaidMember
-                      ? (company.contactPerson ? `Liaison: ${company.contactPerson}` : 'Direct Factory Contact')
-                      : 'Direct Contact & Address'}
-                  </span>
-                  {isUserPaidMember ? (
-                    <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
-                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                      <span>Unlocked</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                      <Lock className="w-2.5 h-2.5 text-amber-600" />
-                      <span>{paidSupplier ? 'Paid Members Only' : 'Gated'}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
-                <span>{t('viewFactoryAudit')}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-            );
-          })}
-        </div>
-
-        {/* Section 4 Footer Toggle */}
-        <div className="relative z-10 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <span className="text-slate-500 text-xs">
-            Showing <strong className="text-slate-900 font-bold">{displayedCompanies.length}</strong> of <strong className="text-slate-900 font-bold">{MOCK_COMPANIES.length}</strong> audited supplier profiles
-          </span>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowAllSuppliers(!showAllSuppliers)}
-              className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-            >
-              {showAllSuppliers ? 'Show Top 6 Featured Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <span>{t('fullSupplierDirectory')}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. LIVE BUY LEADS FEED TEASER */}
+      {/* 2. RECENT BUY LEADS FEED (Positioned Above Top International Procurement Sectors) */}
       <div id="recent-rfqs-section" className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-              <span>Live Global Sourcing Tenders &amp; RFQ Feed ({activeRfqsPool.length} Active Leads)</span>
-            </div>
             <h3 className="text-xl font-black text-slate-900">
               {t('recentBuyLeads')}
             </h3>
@@ -432,13 +269,27 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           <div className="space-y-4">
             {/* 3x4 / 4x3 Responsive RFQ Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {displayedRfqs.map(rfq => (
+              {displayedRfqs.map((rfq: any) => (
                 <div
                   key={rfq.id}
                   onClick={() => onSelectRfq ? onSelectRfq(rfq) : onNavigate('BUY_LEADS')}
                   className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-2.5 flex flex-col justify-between h-full"
                 >
                   <div className="space-y-1.5">
+                    {rfq.resolvedPhotoUrl && (
+                      <div className="relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-white mb-2">
+                        <SafeImage
+                          src={rfq.resolvedPhotoUrl}
+                          alt={rfq.productName}
+                          productId={rfq.id}
+                          productTitle={rfq.productName}
+                          category={rfq.category}
+                          isThumbnail={true}
+                          disableLiveUpload={true}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-start justify-between gap-1.5">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1 flex-wrap">
@@ -541,6 +392,181 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             </button>
           </div>
         )}
+      </div>
+
+      {/* 3. VERIFIED SECTORS & MEGA DIRECTORY */}
+      <CategoryMegaMenu
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleSelectCategoryFromMenu}
+        onNavigateToCategory={onNavigateToCategory || ((cat, sub) => {
+          setSelectedCategory(cat);
+          onNavigate('PRODUCT_DIRECTORY');
+        })}
+        onNavigateToSuppliers={onNavigateToSuppliers || (() => onNavigate('SUPPLIERS_DIRECTORY'))}
+        onNavigateToRfqs={onNavigateToRfqs || (() => onNavigate('BUY_LEADS'))}
+        onNavigate={onNavigate}
+        onOpenCreateRfq={onOpenCreateRfq}
+      />
+
+      {/* 3.5 LIVE GLOBAL TRADE FEED */}
+      <div className="pt-1 pb-2">
+        <LiveGlobalTradeFeed 
+          onSelectLead={(lead) => {
+            if (onNavigateToRfqs) {
+              onNavigateToRfqs(lead.product);
+            } else {
+              onNavigate('BUY_LEADS');
+            }
+          }}
+        />
+      </div>
+
+      {/* 4. FEATURED PRODUCTS CATALOG SECTION */}
+      <div id="featured-products-section" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
+          <button
+            onClick={() => onNavigate('PRODUCT_DIRECTORY')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0 cursor-pointer"
+          >
+            <span>{t('viewAllProducts')}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <ProductCatalog
+          products={products}
+          selectedCurrency={selectedCurrency}
+          onSelectProduct={onSelectProduct}
+          onOpenStorefront={onOpenStorefront}
+          onContactSupplier={onContactSupplier}
+          selectedCategory={selectedCategory || 'ALL'}
+          onCategoryChange={(cat) => setSelectedCategory(cat === 'ALL' ? null : cat)}
+          isLoading={isLoadingProducts}
+          hideDefaultProductGrid={true}
+        />
+      </div>
+
+      {/* 4. VERIFIED FACTORY EXPORTERS SHOWCASE */}
+      <div className="bg-slate-50/90 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-10 space-y-6 relative overflow-hidden border border-slate-200 shadow-sm">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 mb-2">
+              <Award className="w-3.5 h-3.5 text-blue-600" />
+              <span>Audited Global Manufacturers (ISO 9001, CE, TÜV)</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+              {t('auditedSuppliersHeading')}
+            </h3>
+            <p className="text-xs text-slate-600 mt-1 max-w-xl">
+              Inspect on-site factory audit certificates, production line capacity, and trade protection limits of premier export partners.
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 shadow-sm cursor-pointer"
+          >
+            <span>{t('exploreAllSuppliers')}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
+          {displayedCompanies.map((company, index) => {
+            return (
+            <div
+              key={company.id || index}
+              onClick={() => onOpenStorefront(company.id)}
+              className="bg-white hover:bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-xs hover:shadow-md"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <SafeImage
+                    src={company.logoUrl}
+                    alt={company.companyName}
+                    type="logo"
+                    isThumbnail={true}
+                    className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                        {company.tier}
+                      </span>
+                      <span className="text-[10px] text-slate-600 font-mono inline-flex items-center gap-1">
+                        <CountryFlag country={company.country} size="xs" />
+                        <span>{tText(company.country)}</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
+                      {company.companyName}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
+                  {company.description}
+                </p>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500">{t('tradeAssurance')}:</span>
+                    <div className="font-mono font-bold text-emerald-600">
+                      ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500">{t('factorySize')}:</span>
+                    <div className="font-bold text-slate-800">
+                      {company.factorySizeSqM && company.factorySizeSqM > 0 
+                        ? `${company.factorySizeSqM.toLocaleString()} m²` 
+                        : 'Trading/Desk'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gated Contact Status Bar */}
+                <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-[10px]">
+                  <span className="text-slate-600 font-semibold truncate">
+                    {isUserPaidMember
+                      ? (company.contactPerson ? `Liaison: ${company.contactPerson}` : 'Direct Factory Contact')
+                      : 'Direct Contact & Address'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
+                <span>{t('viewFactoryAudit')}</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+            );
+          })}
+        </div>
+
+        {/* Section 4 Footer Toggle */}
+        <div className="relative z-10 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500 text-xs">
+            Showing <strong className="text-slate-900 font-bold">{displayedCompanies.length}</strong> of <strong className="text-slate-900 font-bold">{MOCK_COMPANIES.length}</strong> audited supplier profiles
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAllSuppliers(!showAllSuppliers)}
+              className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            >
+              {showAllSuppliers ? 'Show Top 6 Featured Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <span>{t('fullSupplierDirectory')}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
