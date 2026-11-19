@@ -1408,7 +1408,7 @@ export const ProductCatalog: React.FC<Props> = ({
               {/* Live Buyer RFQs & Auto-Generated Demand for Search Results */}
               {(showMatchedRfqs || Boolean(onSelectRfq)) &&
                 searchTerm.trim().length >= 2 &&
-                (isScanningCatalogRfqs || matchedCatalogRfqs.length > 0 || catalogMarketInsight) && (
+                (isScanningCatalogRfqs || matchedCatalogRfqs.length > 0) && (
                   <div className="pt-4 space-y-4">
                     {isScanningCatalogRfqs ? (
                       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3 shadow-xs">
@@ -1419,9 +1419,6 @@ export const ProductCatalog: React.FC<Props> = ({
                       </div>
                     ) : (
                       <>
-                        {catalogMarketInsight && (
-                          <LiveMarketDemandBanner insight={catalogMarketInsight} searchedProduct={searchTerm.trim()} />
-                        )}
                         {matchedCatalogRfqs.length > 0 && (
                           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
                             <div className="flex flex-wrap items-center justify-between gap-2">
