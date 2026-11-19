@@ -276,11 +276,29 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     [buildCompactCatalogPayload, mapLogToUnifiedRows, syncMarketplaceImageListeners]
   );
 
+  const lastScannedProductCountRef = useRef<number>(-1);
+
   useEffect(() => {
-    if (didInitialScanRef.current) return;
-    didInitialScanRef.current = true;
-    void fetchPreviewStats();
-  }, [fetchPreviewStats]);
+    if (!didInitialScanRef.current) {
+      didInitialScanRef.current = true;
+      lastScannedProductCountRef.current = products.length;
+      void (async () => {
+        try {
+          await productImageManagerService.syncFromServer(true);
+        } catch {
+          // ignore sync errors
+        }
+        await fetchPreviewStats({ includeCatalog: true });
+      })();
+      return;
+    }
+
+    // If initial scan ran before the product catalog finished hydrating, re-scan once products arrive
+    if (products.length > 0 && lastScannedProductCountRef.current === 0) {
+      lastScannedProductCountRef.current = products.length;
+      void fetchPreviewStats({ includeCatalog: true });
+    }
+  }, [fetchPreviewStats, products.length]);
 
   const combinedSourceRows = useMemo<UnifiedAuditRow[]>(() => {
     const mapById = new Map<string, UnifiedAuditRow>();
@@ -317,15 +335,19 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       }
 
       if (activeFilter === 'CATEGORIES' || activeFilter === 'ALL_SCANNED') {
+        const liveOverrides = productImageManagerService.getState().overrides || {};
         for (const cat of homepageCategories) {
           if (!mapById.has(cat.id)) {
+            const ov = liveOverrides[cat.id];
             const resolvedUrl =
+              ov?.primary ||
               productImageManagerService.resolveImageSrc({
                 src: cat.image,
                 productId: cat.id,
                 productTitle: cat.name,
                 category: cat.name
-              }) || cat.image;
+              }) ||
+              cat.image;
             mapById.set(cat.id, {
               record_id: cat.id,
               record_type: 'CATEGORY',
@@ -333,10 +355,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
               category: cat.name,
               issue_type: 'HEALTHY',
               issue_reason: 'Homepage Top International Procurement Sector card',
-              old_image_url: cat.image || '(empty)',
+              old_image_url: ov?.previousPrimary || cat.image || '(empty)',
               new_image_url: resolvedUrl || '',
               query_used: cat.name,
-              status: 'CLEAN'
+              status: ov?.updatedBy === 'admin-manual' ? 'FIXED' : 'CLEAN',
+              updatedAt: ov?.updatedAt
             });
           }
         }
@@ -990,7 +1013,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             disabled={isScanningPreview || isRunningFix}
             onClick={() =>
               void fetchPreviewStats({
-                includeCatalog: activeFilter === 'ALL_SCANNED' || cleanLoaded,
+                includeCatalog: true,
                 clearSessionTouched: true
               })
             }
