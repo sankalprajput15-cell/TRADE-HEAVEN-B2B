@@ -8,7 +8,6 @@ import { EditableImage } from '../EditableImage';
 import { HeroSection } from './HeroSection';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
 import { LiveGlobalTradeFeed } from './LiveGlobalTradeFeed';
-import { ProductCatalog } from './ProductCatalog';
 import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
@@ -350,14 +349,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                       </span>
                     </div>
 
-                    {/* Gated Contact Details Pill */}
+                    {/* Direct Buyer Contact Bar */}
                     <div className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-between gap-1 text-[9px]">
                       <span className="truncate text-slate-600 font-semibold">
                         Direct Buyer Contact
-                      </span>
-                      <span className="inline-flex items-center gap-0.5 text-amber-800 font-bold bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/80 shrink-0">
-                        <Lock className="w-2.5 h-2.5 text-amber-600" />
-                        <span>Gated</span>
                       </span>
                     </div>
                   </div>
@@ -426,7 +421,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         />
       </div>
 
-      {/* 4. FEATURED PRODUCTS CATALOG SECTION */}
+      {/* 4. FEATURED PRODUCTS CATALOG LINK BAR */}
       <div id="featured-products-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <button
@@ -437,18 +432,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-
-        <ProductCatalog
-          products={products}
-          selectedCurrency={selectedCurrency}
-          onSelectProduct={onSelectProduct}
-          onOpenStorefront={onOpenStorefront}
-          onContactSupplier={onContactSupplier}
-          selectedCategory={selectedCategory || 'ALL'}
-          onCategoryChange={(cat) => setSelectedCategory(cat === 'ALL' ? null : cat)}
-          isLoading={isLoadingProducts}
-          hideDefaultProductGrid={true}
-        />
       </div>
 
       {/* 4. VERIFIED FACTORY EXPORTERS SHOWCASE */}
