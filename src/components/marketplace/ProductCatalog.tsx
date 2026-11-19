@@ -155,7 +155,11 @@ export const ProductCatalog: React.FC<Props> = ({
     let isMounted = true;
     const handleUpdate = () => {
       if (isMounted) {
-        setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+        setCachedProducts(prev =>
+          productImageManagerService.sortProductsLatestUploadedFirst(
+            productImageManagerService.applyOverridesToProductList(prev)
+          )
+        );
         setImageOrderVersion(v => v + 1);
       }
     };
@@ -163,7 +167,11 @@ export const ProductCatalog: React.FC<Props> = ({
     if (!productImageManagerService.isHydrated()) {
       productImageManagerService.ensureHydrated().then(() => {
         if (isMounted) {
-          setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+          setCachedProducts(prev =>
+            productImageManagerService.sortProductsLatestUploadedFirst(
+              productImageManagerService.applyOverridesToProductList(prev)
+            )
+          );
           setImageOrderVersion(v => v + 1);
         }
       });
@@ -180,26 +188,16 @@ export const ProductCatalog: React.FC<Props> = ({
     };
   }, []);
 
-  // Load or update products when products prop or offline state changes
+  // Load or update products in memory when products prop changes (no browser localStorage usage)
   useEffect(() => {
-    if (products.length > 0 && !isOffline) {
-      const overridden = productImageManagerService.applyOverridesToProductList(products);
+    if (products.length > 0) {
+      const overridden = productImageManagerService.sortProductsLatestUploadedFirst(
+        productImageManagerService.applyOverridesToProductList(products)
+      );
       setCachedProducts(overridden);
       setIsUsingCache(false);
-    } else if (products.length === 0 || isOffline) {
-      try {
-        const cached = localStorage.getItem('cached_products');
-        if (cached) {
-          const parsed = JSON.parse(cached) as Product[];
-          if (Array.isArray(parsed)) {
-            const overridden = productImageManagerService.applyOverridesToProductList<Product>(parsed);
-            setCachedProducts(overridden);
-            setIsUsingCache(true);
-          }
-        }
-      } catch {}
     }
-  }, [products, isOffline]);
+  }, [products]);
 
   // Sync external category prop if provided
   useEffect(() => {
@@ -1255,7 +1253,7 @@ export const ProductCatalog: React.FC<Props> = ({
             <div className="mt-8">
               <h3 className="text-lg font-bold text-slate-900 mb-4 px-2">Recommended Products</h3>
               <ProductCatalogGrid
-                products={products.slice(0, 8)}
+                products={productImageManagerService.sortProductsLatestUploadedFirst(cachedProducts).slice(0, 8)}
                 selectedCurrency={selectedCurrency}
                 onSelectProduct={onSelectProduct}
                 onOpenStorefront={onOpenStorefront}

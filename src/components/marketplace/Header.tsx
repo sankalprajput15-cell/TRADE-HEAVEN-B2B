@@ -198,7 +198,9 @@ export const Header: React.FC<Props> = ({
 
   const availableProductsList = useMemo(() => {
     const base = products && products.length > 0 ? products : MOCK_PRODUCTS;
-    return productImageManagerService.applyOverridesToProductList(base);
+    return productImageManagerService.sortProductsLatestUploadedFirst(
+      productImageManagerService.applyOverridesToProductList(base)
+    );
   }, [products, quickAfterUrl]);
 
   useEffect(() => {

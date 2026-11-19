@@ -489,7 +489,9 @@ const MainApp: React.FC = () => {
         p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
       );
     }
-    return productImageManagerService.applyOverridesToProductList(baseList);
+    return productImageManagerService.sortProductsLatestUploadedFirst(
+      productImageManagerService.applyOverridesToProductList(baseList)
+    );
   });
 
   useEffect(() => {
@@ -533,10 +535,12 @@ const MainApp: React.FC = () => {
                 }
               }
             });
-            return productImageManagerService.applyOverridesToProductList([
-              ...additions,
-              ...Array.from(byId.values())
-            ]);
+            return productImageManagerService.sortProductsLatestUploadedFirst(
+              productImageManagerService.applyOverridesToProductList([
+                ...additions,
+                ...Array.from(byId.values())
+              ])
+            );
           });
         } else if (deletedSet.size > 0) {
           setProducts(prev =>
@@ -1300,7 +1304,11 @@ const MainApp: React.FC = () => {
     try {
       const prods = await api.getProducts();
       if (Array.isArray(prods)) {
-        setProducts(prods);
+        setProducts(
+          productImageManagerService.sortProductsLatestUploadedFirst(
+            productImageManagerService.applyOverridesToProductList(prods)
+          )
+        );
       }
     } catch (err) {}
   };
@@ -1322,7 +1330,9 @@ const MainApp: React.FC = () => {
 
     let isMounted = true;
     const applyOverridesIfChanged = (prevList: Product[]): Product[] => {
-      const nextList = productImageManagerService.applyOverridesToProductList(prevList);
+      const nextList = productImageManagerService.sortProductsLatestUploadedFirst(
+        productImageManagerService.applyOverridesToProductList(prevList)
+      );
       let changed = nextList.length !== prevList.length;
       if (!changed) {
         for (let i = 0; i < prevList.length; i++) {
@@ -1331,7 +1341,9 @@ const MainApp: React.FC = () => {
           if (
             p.id !== n.id ||
             p.images?.[0] !== n.images?.[0] ||
-            (p.images?.length || 0) !== (n.images?.length || 0)
+            (p.images?.length || 0) !== (n.images?.length || 0) ||
+            p.imageUpdatedAt !== n.imageUpdatedAt ||
+            p.updatedAt !== n.updatedAt
           ) {
             changed = true;
             break;
@@ -1383,21 +1395,35 @@ const MainApp: React.FC = () => {
       });
     };
     const handleProductsUpdated = (e: Event) => {
-      const deletedId = (e as CustomEvent)?.detail?.deletedId;
+      const detail = (e as CustomEvent)?.detail;
+      const deletedId = detail?.deletedId;
       if (deletedId) {
         setProducts(prev => prev.filter(p => p.id !== deletedId));
         setSelectedProduct(prev => (prev && prev.id === deletedId ? null : prev));
+      }
+      if (detail?.product && detail.product.id) {
+        const addedProd = detail.product as Product;
+        setProducts(prev =>
+          productImageManagerService.sortProductsLatestUploadedFirst(
+            productImageManagerService.applyOverridesToProductList([
+              addedProd,
+              ...prev.filter(p => p.id !== addedProd.id)
+            ])
+          )
+        );
       }
       fetchProducts();
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+    window.addEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+      window.removeEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
     };
   }, []);
@@ -2034,28 +2060,56 @@ const MainApp: React.FC = () => {
     newProd: Partial<Product>,
     opts?: { stayInDashboard?: boolean; alreadySaved?: boolean }
   ) => {
+    const nowMs = Date.now();
     const fullProd = {
       ...newProd,
-      id: newProd.id || `prod-${Date.now()}`
+      id: newProd.id || `prod-${nowMs}`,
+      createdDate: newProd.createdDate || new Date(nowMs).toISOString().split('T')[0],
+      createdAt: typeof newProd.createdAt === 'number' ? newProd.createdAt : nowMs,
+      updatedAt: nowMs,
+      imageUpdatedAt: nowMs
     } as Product;
     if (!opts?.alreadySaved) {
       await api.createProduct(fullProd);
     }
-    setProducts(prev => [fullProd, ...prev.filter(p => p.id !== fullProd.id)]);
+    productImageManagerService.recordProductActivityTimestamp(fullProd.id, nowMs, false);
+    setProducts(prev =>
+      productImageManagerService.sortProductsLatestUploadedFirst(
+        productImageManagerService.applyOverridesToProductList([
+          fullProd,
+          ...prev.filter(p => p.id !== fullProd.id)
+        ])
+      )
+    );
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tradeheaven_products_updated', { detail: { product: fullProd, timestamp: nowMs } }));
+    }
     if (!opts?.stayInDashboard) {
       setActiveView('PRODUCT_DIRECTORY');
     }
   };
 
   const handleProductUpdated = (updatedProd: Product) => {
+    const nowMs = Date.now();
+    const stampedProd: Product = {
+      ...updatedProd,
+      updatedAt: nowMs,
+      imageUpdatedAt: nowMs
+    };
+    productImageManagerService.recordProductActivityTimestamp(stampedProd.id, nowMs, false);
     setProducts(prev => {
-      const exists = prev.some(p => p.id === updatedProd.id);
-      if (exists) {
-        return prev.map(p => (p.id === updatedProd.id ? updatedProd : p));
-      }
-      return [updatedProd, ...prev];
+      const exists = prev.some(p => p.id === stampedProd.id);
+      const merged = exists
+        ? prev.map(p => (p.id === stampedProd.id ? stampedProd : p))
+        : [stampedProd, ...prev];
+      return productImageManagerService.sortProductsLatestUploadedFirst(
+        productImageManagerService.applyOverridesToProductList(merged)
+      );
     });
-    setSelectedProduct(prev => (prev && prev.id === updatedProd.id ? updatedProd : prev));
+    setSelectedProduct(prev => (prev && prev.id === stampedProd.id ? stampedProd : prev));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tradeheaven_products_updated', { detail: { product: stampedProd, timestamp: nowMs } }));
+    }
   };
 
   const handleProductDeleted = (productId: string) => {

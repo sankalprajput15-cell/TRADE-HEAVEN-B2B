@@ -253,6 +253,9 @@ export interface Product {
   rating?: number;
   reviewCount?: number;
   createdDate?: string;
+  createdAt?: number | string;
+  updatedAt?: number | string;
+  imageUpdatedAt?: number;
   ownerEmail?: string;
   ownerId?: string;
   hsCode?: string;

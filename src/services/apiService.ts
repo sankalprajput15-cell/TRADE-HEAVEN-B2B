@@ -1876,7 +1876,10 @@ export const api = {
       baseProducts = baseProducts.filter(p => p.supplierTier === params.tier);
     }
 
-    return productImageManagerService.applyOverridesToProductList(baseProducts);
+    const overridden = productImageManagerService.applyOverridesToProductList(baseProducts);
+    return params?.keyword
+      ? overridden
+      : productImageManagerService.sortProductsLatestUploadedFirst(overridden);
   },
 
   async createProduct(product: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
@@ -1912,6 +1915,7 @@ export const api = {
         finalImages = resolvedVisual.gallery.length > 0 ? resolvedVisual.gallery.map(u => normalizeProductAssetUrl(u)).filter(Boolean) : [];
       }
 
+      const nowMs = Date.now();
       const createdProd: Product = {
         id: targetId,
         title: targetTitle,
@@ -1938,7 +1942,10 @@ export const api = {
         certifications: product.certifications || ['ISO 9001:2015', 'Phytosanitary Certified', 'Organic Verified'],
         customizationAvailable: product.customizationAvailable ?? true,
         featured: true,
-        createdDate: new Date().toISOString().split('T')[0],
+        createdDate: new Date(nowMs).toISOString().split('T')[0],
+        createdAt: nowMs,
+        updatedAt: nowMs,
+        imageUpdatedAt: nowMs,
         hsCode: product.hsCode || '0905.10.00',
         warrantyMonths: product.warrantyMonths || 12,
         isFeatured: true,
@@ -1948,6 +1955,9 @@ export const api = {
         ],
         description: product.description || product.title || 'High quality wholesale product.'
       };
+
+      // Record activity timestamp in memory so the newly created product immediately ranks at index 0
+      productImageManagerService.recordProductActivityTimestamp(createdProd.id, nowMs, false);
 
       // Sync custom product images to Dedicated Product Image System
       if (Array.isArray(createdProd.images) && createdProd.images.length > 0) {
@@ -1970,15 +1980,11 @@ export const api = {
         }, true);
       } catch {}
 
-      // Save to localStorage for instant client persistence
-      try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const raw = localStorage.getItem('trade_heaven_custom_products');
-          const current: Product[] = raw ? JSON.parse(raw) : [];
-          localStorage.setItem('trade_heaven_custom_products', JSON.stringify([createdProd, ...current.filter(p => p.id !== createdProd.id)]));
-          window.dispatchEvent(new Event('tradeheaven_products_updated'));
-        }
-      } catch {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_products_updated', {
+          detail: { product: createdProd, activityTimestamp: nowMs }
+        }));
+      }
 
       // Persist to Express backend and MySQL listing gateway
       await Promise.allSettled([
@@ -2022,13 +2028,24 @@ export const api = {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
     try {
+      const nowMs = Date.now();
       const cleanImages = Array.isArray(updates.images)
         ? updates.images.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
         : undefined;
       const normalizedUpdates: Partial<Product> & { isManualImages?: boolean } = {
         ...updates,
-        ...(cleanImages ? { images: cleanImages, isManualImages: cleanImages.length > 0 } : {})
+        updatedAt: nowMs,
+        ...(cleanImages
+          ? {
+              images: cleanImages,
+              isManualImages: cleanImages.length > 0,
+              ...(cleanImages.length > 0 ? { imageUpdatedAt: nowMs } : {})
+            }
+          : {})
       };
+
+      // Record activity timestamp in memory so recently edited / image-updated products rank #1
+      productImageManagerService.recordProductActivityTimestamp(id, nowMs, false);
 
       // If images are updated via product editor, also persist in Dedicated Product Image System
       if (cleanImages && cleanImages.length > 0) {
@@ -2037,31 +2054,21 @@ export const api = {
         } catch {}
       }
 
-      let savedTitle = id;
-      let mergedProd: Product = { id, ...normalizedUpdates } as Product;
-      // Save updates to localStorage
+      const mergedProd: Product = { id, ...normalizedUpdates } as Product;
+      const savedTitle = mergedProd.title || id;
+
       try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const raw = localStorage.getItem('trade_heaven_custom_products');
-          const current: Product[] = raw ? JSON.parse(raw) : [];
-          const idx = current.findIndex(p => p.id === id);
-          if (idx !== -1) {
-            mergedProd = { ...current[idx], ...normalizedUpdates };
-            current[idx] = mergedProd;
-          } else {
-            current.unshift(mergedProd);
-          }
-          savedTitle = mergedProd.title || id;
-          try {
-            autoSeoEngine.autoOptimizeProduct({
-              ...mergedProd,
-              imageUrl: mergedProd.images?.[0] || (mergedProd as any).imageUrl
-            }, true);
-          } catch {}
-          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(current));
-          window.dispatchEvent(new Event('tradeheaven_products_updated'));
-        }
+        autoSeoEngine.autoOptimizeProduct({
+          ...mergedProd,
+          imageUrl: mergedProd.images?.[0] || (mergedProd as any).imageUrl
+        }, true);
       } catch {}
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_products_updated', {
+          detail: { product: mergedProd, activityTimestamp: nowMs }
+        }));
+      }
 
       // Await Express backend persistence so immediate reloads never revert images
       await fetch(`/api/v1/products/${encodeURIComponent(id)}`, {

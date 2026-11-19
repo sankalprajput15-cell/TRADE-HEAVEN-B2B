@@ -41,6 +41,7 @@ export interface ProductImageOverrideEntry {
   gallery: string[];
   format?: string;
   updatedAt: string;
+  imageUpdatedAt?: number;
   updatedBy?: string;
 }
 
@@ -57,6 +58,7 @@ export interface MediaLibraryItem {
 
 export interface ProductImageSystemState {
   overrides: Record<string, ProductImageOverrideEntry>;
+  productActivityTimestamps?: Record<string, number>;
   globalDefaultImage: string | null;
   categoryOverrides: Record<string, string>;
   urlReplacements: Record<string, string>;
@@ -342,6 +344,7 @@ const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
 
 class ProductImageManagerService {
   private memoryStorage = new Map<string, string>();
+  private productActivityMap = new Map<string, number>();
   private state: ProductImageSystemState;
   private isHydratedFromServer = false;
   private hydrationPromise: Promise<ProductImageSystemState> | null = null;
@@ -425,6 +428,40 @@ class ProductImageManagerService {
     this.state.mediaLibrary = (this.state.mediaLibrary || []).filter(
       m => !m?.url || !deletedSet.has(String(m.url).trim().split('?')[0])
     );
+  }
+
+  private parseTimestampMs(val: number | string | undefined | null): number {
+    if (typeof val === 'number' && Number.isFinite(val) && val > 0) return val;
+    if (typeof val === 'string' && val.trim()) {
+      const trimmed = val.trim();
+      if (/^\d{10,15}$/.test(trimmed)) {
+        const n = Number(trimmed);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+      const parsed = Date.parse(trimmed);
+      if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  public recordProductActivityTimestamp(
+    productId: string | undefined | null,
+    timestampMs = Date.now(),
+    emitEvent = true
+  ): void {
+    const cleanId = String(productId || '').trim();
+    if (!cleanId || !Number.isFinite(timestampMs) || timestampMs <= 0) return;
+    const prev = this.productActivityMap.get(cleanId) || 0;
+    const nextTs = Math.max(prev, timestampMs);
+    this.productActivityMap.set(cleanId, nextTs);
+    if (!this.state.productActivityTimestamps) {
+      this.state.productActivityTimestamps = {};
+    }
+    this.state.productActivityTimestamps[cleanId] = nextTs;
+    if (emitEvent) {
+      this.saveToLocalStorage({ productId: cleanId, action: 'record_product_activity' });
+      this.notifyListeners();
+    }
   }
 
   private isManualEntry(entry?: ProductImageOverrideEntry | null): boolean {
@@ -520,6 +557,7 @@ class ProductImageManagerService {
   private getInitialEmptyState(): ProductImageSystemState {
     return {
       overrides: { ...DEFAULT_BUILTIN_OVERRIDES },
+      productActivityTimestamps: {},
       globalDefaultImage: null,
       categoryOverrides: {},
       urlReplacements: {},
@@ -561,12 +599,14 @@ class ProductImageManagerService {
             .map((u: string) => normalizeProductAssetUrl(u))
             .filter((u: string) => Boolean(u) && (isManual || !this.isPlaceholderOverrideUrl(u)))
         : [primary];
+      const numericImgTs = this.parseTimestampMs(v.imageUpdatedAt);
       out[k] = {
         primary,
         ...(previousPrimary ? { previousPrimary } : {}),
         gallery: gallery.length > 0 ? gallery : [primary],
         format: v.format || this.detectFormatFromUrl(primary),
         updatedAt: v.updatedAt || '2024-01-01T00:00:00.000Z',
+        ...(numericImgTs > 0 ? { imageUpdatedAt: numericImgTs } : {}),
         updatedBy: v.updatedBy
       };
     }
@@ -974,6 +1014,36 @@ class ProductImageManagerService {
         }
 
         this.state.overrides = mergedOverrides;
+        let activityTimestampsChanged = false;
+        const nextActivityObj: Record<string, number> = {
+          ...(this.state.productActivityTimestamps || {})
+        };
+        if (srv.productActivityTimestamps && typeof srv.productActivityTimestamps === 'object') {
+          for (const [pid, rawTs] of Object.entries(srv.productActivityTimestamps)) {
+            const ts = this.parseTimestampMs(rawTs as any);
+            if (ts > 0) {
+              const prevTs = Math.max(this.productActivityMap.get(pid) || 0, nextActivityObj[pid] || 0);
+              if (ts > prevTs) {
+                this.productActivityMap.set(pid, ts);
+                nextActivityObj[pid] = ts;
+                activityTimestampsChanged = true;
+              }
+            }
+          }
+        }
+        for (const [pid, entry] of Object.entries(mergedOverrides)) {
+          const ts = this.parseTimestampMs(entry?.imageUpdatedAt);
+          if (ts > 0) {
+            const prevTs = Math.max(this.productActivityMap.get(pid) || 0, nextActivityObj[pid] || 0);
+            if (ts > prevTs) {
+              this.productActivityMap.set(pid, ts);
+              nextActivityObj[pid] = ts;
+              activityTimestampsChanged = true;
+            }
+          }
+        }
+        this.state.productActivityTimestamps = nextActivityObj;
+
         this.state.globalDefaultImage = srv.globalDefaultImage !== undefined
           ? (srv.globalDefaultImage ? normalizeProductAssetUrl(srv.globalDefaultImage) : null)
           : (this.state.globalDefaultImage ?? null);
@@ -1004,8 +1074,8 @@ class ProductImageManagerService {
         const nextVisualHash = this.getCanonicalVisualHash(this.state);
         this.isHydratedFromServer = true;
 
-        // ONLY save and notify UI components if actual image URLs changed!
-        if (prevVisualHash !== nextVisualHash) {
+        // Save and notify UI components if image URLs OR activity timestamps changed!
+        if (prevVisualHash !== nextVisualHash || activityTimestampsChanged) {
           this.saveToLocalStorage({ action: 'sync_from_server' });
         }
       } else {
@@ -1054,18 +1124,24 @@ class ProductImageManagerService {
       const cleanUrl = normalizeProductAssetUrl(rawUrl);
       if (!cleanUrl || cleanUrl === '(pending audit fix)' || cleanUrl === '(empty)') continue;
 
+      const nowMs = Date.now();
       this.locallyDeletedIds.delete(cleanId);
-      this.localMutationTimes.set(cleanId, Date.now());
+      this.localMutationTimes.set(cleanId, nowMs);
       const existing = this.state.overrides[cleanId];
       const existingGallery = Array.isArray(existing?.gallery) ? existing!.gallery : [];
+      const resolvedTs = this.parseTimestampMs(item.updatedAt) || nowMs;
       this.state.overrides[cleanId] = {
         primary: cleanUrl,
         ...(item.previousUrl ? { previousPrimary: normalizeProductAssetUrl(item.previousUrl) } : {}),
         gallery: [cleanUrl, ...existingGallery.filter(u => u && normalizeProductAssetUrl(u) !== cleanUrl)],
         format: this.detectFormatFromUrl(cleanUrl),
         updatedAt: item.updatedAt || nowIso,
+        imageUpdatedAt: resolvedTs,
         updatedBy: item.updatedBy || (item.revert ? 'auto-site-upload' : 'catalog-image-auditor')
       };
+      if (!item.revert) {
+        this.recordProductActivityTimestamp(cleanId, resolvedTs, false);
+      }
 
       if (cleanUrl.startsWith('/assets/uploads/')) {
         const cleanBase = cleanUrl.split('?')[0];
@@ -1312,6 +1388,15 @@ class ProductImageManagerService {
       let primary = resolvedImages[0] || '';
       const normPrimary = primary.split('?')[0];
       const hasManual = this.isManualOverride(prod.id, prod.title);
+      const cleanId = String(prod?.id || '').trim();
+      const override = cleanId ? (this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()]) : undefined;
+      const activityTs = Math.max(
+        this.productActivityMap.get(cleanId) || 0,
+        this.parseTimestampMs(override?.imageUpdatedAt),
+        this.parseTimestampMs(prod.imageUpdatedAt)
+      );
+      const timestampPatch = activityTs > 0 ? { imageUpdatedAt: activityTs } : {};
+
       if (!hasManual && normPrimary && usedPrimaryUrls.has(normPrimary) && resolvedImages.length > 1) {
         const alt = resolvedImages.find(u => {
           const norm = String(u || '').split('?')[0];
@@ -1323,6 +1408,7 @@ class ProductImageManagerService {
           usedPrimaryUrls.add(alt.split('?')[0]);
           return {
             ...prod,
+            ...timestampPatch,
             image: alt,
             images: reordered
           };
@@ -1331,6 +1417,7 @@ class ProductImageManagerService {
       if (normPrimary) usedPrimaryUrls.add(normPrimary);
       return {
         ...prod,
+        ...timestampPatch,
         image: primary || resolvedImages[0],
         images: resolvedImages
       };
@@ -1338,10 +1425,11 @@ class ProductImageManagerService {
   }
 
   /**
-   * Computes upload recency tier and timestamp (ms) so products with newly uploaded images sort first.
+   * Computes recency tier and numeric timestamp (ms) so newly added products and products
+   * with recently updated/uploaded images always sort first (descending by most recent activity).
    */
   public getLatestUploadedRank(
-    product: Partial<Product> & { image?: string; createdAt?: string; updatedAt?: string }
+    product: Partial<Product> & { image?: string; createdAt?: number | string; updatedAt?: number | string; imageUpdatedAt?: number }
   ): { tier: number; timestampMs: number } {
     const cleanId = String(product?.id || '').trim();
     const cleanTitle = String(product?.title || '').trim();
@@ -1350,49 +1438,47 @@ class ProductImageManagerService {
       (cleanTitle && (this.state.overrides[cleanTitle] || this.state.overrides[cleanTitle.toLowerCase()])) ||
       undefined;
 
-    const primaryUrl = String(
-      product?.images?.[0] || product?.image || override?.primary || ''
-    )
-      .split('?')[0]
-      .trim();
+    const activityMapTs =
+      (cleanId && (this.productActivityMap.get(cleanId) || this.state.productActivityTimestamps?.[cleanId])) || 0;
 
-    const matchedMedia = primaryUrl
-      ? (this.state.mediaLibrary || []).find(
-          m => m && m.url && m.url.split('?')[0] === primaryUrl
-        )
-      : undefined;
-
-    const overrideTs = override?.updatedAt ? Date.parse(override.updatedAt) || 0 : 0;
-    const mediaTs = matchedMedia?.uploadedAt ? Date.parse(matchedMedia.uploadedAt) || 0 : 0;
-    const productUpdatedTs = product?.updatedAt
-      ? Date.parse(product.updatedAt) || 0
-      : product?.createdAt
-        ? Date.parse(product.createdAt) || 0
-        : 0;
-
+    const overrideNumericTs = this.parseTimestampMs(override?.imageUpdatedAt);
+    const overrideIsoTs = this.parseTimestampMs(override?.updatedAt);
     const updater = String(override?.updatedBy || '').toLowerCase();
-    const isExplicitUpload =
-      updater === 'admin-manual' ||
-      updater === 'user-upload' ||
-      Boolean(
-        matchedMedia &&
-          !String(matchedMedia.id || '').startsWith('builtin-') &&
-          updater !== 'verified-real-photos-v7' &&
-          updater !== 'auto-site-upload' &&
-          updater !== 'catalog-image-auditor'
-      );
+    const isBaselineSeed =
+      updater === 'verified-real-photos-v7' ||
+      updater === 'auto-site-upload' ||
+      override?.updatedAt === '2024-01-01T00:00:00.000Z';
 
-    if (isExplicitUpload) {
-      return {
-        tier: 2,
-        timestampMs: Math.max(overrideTs, mediaTs, productUpdatedTs)
-      };
+    const overrideActivityTs =
+      overrideNumericTs > 0
+        ? overrideNumericTs
+        : !isBaselineSeed &&
+            (updater === 'admin-manual' || updater === 'user-upload' || updater === 'catalog-image-auditor')
+          ? overrideIsoTs
+          : 0;
+
+    let idDerivedCreatedTs = 0;
+    const idTsMatch = cleanId.match(/^(?:prod|custom|seller|onboard)[-_](\d{13})(?:$|[-_])/i);
+    if (idTsMatch) {
+      const parsed = Number(idTsMatch[1]);
+      if (Number.isFinite(parsed) && parsed > 1700000000000) {
+        idDerivedCreatedTs = parsed;
+      }
     }
 
-    if (productUpdatedTs > 0 && primaryUrl.startsWith('/assets/uploads/') && updater !== 'verified-real-photos-v7') {
+    const productActivityTs = Math.max(
+      this.parseTimestampMs(product?.imageUpdatedAt),
+      this.parseTimestampMs(product?.updatedAt),
+      this.parseTimestampMs(product?.createdAt),
+      idDerivedCreatedTs
+    );
+
+    const bestActivityTs = Math.max(activityMapTs, overrideActivityTs, productActivityTs);
+
+    if (bestActivityTs > 0) {
       return {
-        tier: 1,
-        timestampMs: productUpdatedTs
+        tier: 2,
+        timestampMs: bestActivityTs
       };
     }
 
@@ -1400,11 +1486,11 @@ class ProductImageManagerService {
   }
 
   /**
-   * Returns a new list with products having the latest uploaded images sorted first (descending by timestamp),
-   * while preserving original order for baseline catalog items.
+   * Returns a new list with newly added products and products with recently updated images sorted first
+   * (descending by imageUpdatedAt / createdAt / updatedAt), followed by remaining catalog items in normal order.
    */
   public sortProductsLatestUploadedFirst<
-    T extends Partial<Product> & { image?: string; createdAt?: string; updatedAt?: string }
+    T extends Partial<Product> & { image?: string; createdAt?: number | string; updatedAt?: number | string; imageUpdatedAt?: number }
   >(products: T[], extraScoreFn?: (prod: T) => number): T[] {
     if (!Array.isArray(products) || products.length <= 1) {
       return Array.isArray(products) ? [...products] : [];
@@ -1907,7 +1993,8 @@ class ProductImageManagerService {
       ];
 
       // Apply requested assignments locally in memory as well
-      const nowIso = new Date().toISOString();
+      const activityTs = Date.now();
+      const nowIso = new Date(activityTs).toISOString();
       if (options?.applyToAll) {
         this.state.globalDefaultImage = finalUrl;
       }
@@ -1923,7 +2010,7 @@ class ProductImageManagerService {
         // Also update any local overrides whose primary currently equals cleanOldUrl
         for (const [k, entry] of Object.entries(this.state.overrides)) {
           if (entry?.primary && entry.primary.split('?')[0] === cleanOldBase) {
-            this.localMutationTimes.set(k, Date.now());
+            this.localMutationTimes.set(k, activityTs);
             this.state.overrides[k] = {
               ...entry,
               previousPrimary: entry.primary,
@@ -1937,15 +2024,17 @@ class ProductImageManagerService {
               ],
               format: finalFormat,
               updatedAt: nowIso,
+              imageUpdatedAt: activityTs,
               updatedBy: 'admin-manual'
             };
+            this.recordProductActivityTimestamp(k, activityTs, false);
           }
         }
       }
       if (options?.productId) {
         const cleanPid = options.productId.trim();
         this.locallyDeletedIds.delete(cleanPid);
-        this.localMutationTimes.set(cleanPid, Date.now());
+        this.localMutationTimes.set(cleanPid, activityTs);
         const existing = this.state.overrides[cleanPid];
         const prevPrimaryBase = existing?.primary ? existing.primary.split('?')[0] : '';
         const previousPrimary =
@@ -1982,8 +2071,10 @@ class ProductImageManagerService {
           gallery,
           format: finalFormat,
           updatedAt: nowIso,
+          imageUpdatedAt: activityTs,
           updatedBy: 'admin-manual'
         };
+        this.recordProductActivityTimestamp(cleanPid, activityTs, false);
 
         if (isAppend) {
           const appendBody = JSON.stringify({
@@ -2014,7 +2105,7 @@ class ProductImageManagerService {
           const pid = rawPid?.trim();
           if (!pid) continue;
           this.locallyDeletedIds.delete(pid);
-          this.localMutationTimes.set(pid, Date.now());
+          this.localMutationTimes.set(pid, activityTs);
           const existing = this.state.overrides[pid];
           const prevBase = existing?.primary ? existing.primary.split('?')[0] : '';
           const gallery = existing?.gallery
@@ -2031,8 +2122,10 @@ class ProductImageManagerService {
             gallery,
             format: finalFormat,
             updatedAt: nowIso,
+            imageUpdatedAt: activityTs,
             updatedBy: 'admin-manual'
           };
+          this.recordProductActivityTimestamp(pid, activityTs, false);
         }
       }
 
@@ -2316,9 +2409,11 @@ class ProductImageManagerService {
         ...(previousPrimary ? { previousPrimary } : {}),
         gallery: resolvedGallery,
         format,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(versionTs).toISOString(),
+        imageUpdatedAt: versionTs,
         updatedBy: 'admin-manual'
       };
+      this.recordProductActivityTimestamp(cleanId, versionTs, false);
 
       try {
         autoSeoEngine.autoOptimizeImageUpload({
@@ -2462,15 +2557,16 @@ class ProductImageManagerService {
     if (!Array.isArray(productIds) || productIds.length === 0 || !primaryUrl) return;
     this.beginWrite();
     try {
-      const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
+      const nowMs = Date.now();
+      const cleanPrimary = this.withFreshCacheBuster(primaryUrl, nowMs);
       const format = this.detectFormatFromUrl(cleanPrimary);
-      const nowIso = new Date().toISOString();
+      const nowIso = new Date(nowMs).toISOString();
 
       for (const rawPid of productIds) {
         const pid = rawPid?.trim();
         if (!pid) continue;
         this.locallyDeletedIds.delete(pid);
-        this.localMutationTimes.set(pid, Date.now());
+        this.localMutationTimes.set(pid, nowMs);
         const existing = this.state.overrides[pid];
         const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
           ? galleryUrls.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
@@ -2483,8 +2579,10 @@ class ProductImageManagerService {
           gallery: resolvedGallery,
           format,
           updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
           updatedBy: 'admin-manual'
         };
+        this.recordProductActivityTimestamp(pid, nowMs, false);
       }
 
       try {

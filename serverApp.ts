@@ -13310,10 +13310,15 @@ app.get('/api/v1/products', (req, res) => {
 
 app.post('/api/v1/products', async (req, res) => {
   const productData = req.body || {};
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
   const newProduct: any = {
-    id: productData.id || `prod-${Date.now()}`,
+    id: productData.id || `prod-${nowMs}`,
     ...productData,
-    createdDate: productData.createdDate || new Date().toISOString().split('T')[0]
+    createdDate: productData.createdDate || nowIso.split('T')[0],
+    createdAt: typeof productData.createdAt === 'number' ? productData.createdAt : nowMs,
+    updatedAt: nowMs,
+    imageUpdatedAt: nowMs
   };
   if (serverDeletedProductIds.has(newProduct.id)) {
     serverDeletedProductIds.delete(newProduct.id);
@@ -13392,13 +13397,15 @@ app.post('/api/v1/products', async (req, res) => {
     }
   }
 
+  recordServerProductActivityTimestamp(String(newProduct.id), nowMs);
   const existingIdx = serverProductsStore.findIndex(p => p.id === newProduct.id);
   if (existingIdx !== -1) {
-    serverProductsStore[existingIdx] = { ...serverProductsStore[existingIdx], ...newProduct };
+    serverProductsStore[existingIdx] = { ...serverProductsStore[existingIdx], ...newProduct, updatedAt: nowMs, imageUpdatedAt: nowMs };
   } else {
     serverProductsStore.unshift(newProduct);
   }
   saveServerProductsToDisk();
+  saveServerProductImageState();
 
   res.status(201).json({ success: true, data: newProduct, message: 'Product listed successfully' });
 });
@@ -13420,16 +13427,31 @@ app.put('/api/v1/products/:id', (req, res) => {
     incomingBody.images = [cleanSingle];
   }
 
+  const nowMs = Date.now();
   const index = serverProductsStore.findIndex(p => p.id === id);
   let updatedProduct: any;
   if (index !== -1) {
-    serverProductsStore[index] = { ...serverProductsStore[index], ...incomingBody, id };
+    serverProductsStore[index] = {
+      ...serverProductsStore[index],
+      ...incomingBody,
+      id,
+      updatedAt: nowMs,
+      ...(incomingBody.images || incomingBody.image ? { imageUpdatedAt: nowMs } : {})
+    };
     updatedProduct = serverProductsStore[index];
   } else {
-    updatedProduct = { id, ...incomingBody, updatedAt: new Date().toISOString() };
+    updatedProduct = {
+      id,
+      ...incomingBody,
+      createdAt: typeof incomingBody.createdAt === 'number' ? incomingBody.createdAt : nowMs,
+      updatedAt: nowMs,
+      imageUpdatedAt: nowMs
+    };
     serverProductsStore.unshift(updatedProduct);
   }
+  recordServerProductActivityTimestamp(id, nowMs);
   saveServerProductsToDisk();
+  saveServerProductImageState();
 
   const listingIdx = serverListingsStore.findIndex(
     l => String(l.id) === id || `prod-db-${l.id}` === id
@@ -13524,11 +13546,13 @@ interface ProductImageOverrideEntry {
   gallery: string[];
   format?: string;
   updatedAt: string;
+  imageUpdatedAt?: number;
   updatedBy?: string;
 }
 
 interface ProductImageSystemState {
   overrides: Record<string, ProductImageOverrideEntry>;
+  productActivityTimestamps?: Record<string, number>;
   globalDefaultImage: string | null;
   categoryOverrides: Record<string, string>;
   urlReplacements: Record<string, string>;
@@ -13556,11 +13580,38 @@ const EXCLUDED_SCREENSHOT_FILES = new Set([
 
 let serverProductImageState: ProductImageSystemState = {
   overrides: {},
+  productActivityTimestamps: {},
   globalDefaultImage: null,
   categoryOverrides: {},
   urlReplacements: {},
   mediaLibrary: []
 };
+
+function parseServerTimestampMs(val: number | string | undefined | null): number {
+  if (typeof val === 'number' && Number.isFinite(val) && val > 0) return val;
+  if (typeof val === 'string' && val.trim()) {
+    const trimmed = val.trim();
+    if (/^\d{10,15}$/.test(trimmed)) {
+      const n = Number(trimmed);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 0;
+}
+
+function recordServerProductActivityTimestamp(productId: string | undefined | null, timestampMs = Date.now()): void {
+  const cleanId = String(productId || '').trim();
+  if (!cleanId) return;
+  if (!serverProductImageState.productActivityTimestamps) {
+    serverProductImageState.productActivityTimestamps = {};
+  }
+  const prev = Number(serverProductImageState.productActivityTimestamps[cleanId] || 0);
+  if (timestampMs >= prev) {
+    serverProductImageState.productActivityTimestamps[cleanId] = timestampMs;
+  }
+}
 
 function normalizeServerAssetUrl(url: string | undefined | null, explicitVersion?: string | number): string {
   if (!url || typeof url !== 'string') return '';
@@ -13780,6 +13831,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
   ensureUploadsDir();
   const defaultState: ProductImageSystemState = {
     overrides: {},
+    productActivityTimestamps: {},
     globalDefaultImage: null,
     categoryOverrides: {},
     urlReplacements: {},
@@ -13788,11 +13840,29 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
 
   const mergeOverridesFromParsed = (parsed: any, forceOverwrite = false) => {
     if (!parsed || typeof parsed !== 'object') return;
+    if (parsed.productActivityTimestamps && typeof parsed.productActivityTimestamps === 'object') {
+      if (!defaultState.productActivityTimestamps) {
+        defaultState.productActivityTimestamps = {};
+      }
+      for (const [pid, rawTs] of Object.entries(parsed.productActivityTimestamps)) {
+        const ts = parseServerTimestampMs(rawTs as any);
+        if (ts > 0) {
+          const existingTs = defaultState.productActivityTimestamps[pid] || 0;
+          if (ts > existingTs) {
+            defaultState.productActivityTimestamps[pid] = ts;
+          }
+        }
+      }
+    }
     if (parsed.overrides && typeof parsed.overrides === 'object') {
       for (const [pid, rawEntry] of Object.entries(parsed.overrides)) {
         const entry = rawEntry as ProductImageOverrideEntry & { previousPrimary?: string };
         if (!entry || !entry.primary) continue;
-        const entryVer = entry.updatedAt ? (Date.parse(entry.updatedAt) || undefined) : undefined;
+        const entryTs = Math.max(
+          parseServerTimestampMs(entry.imageUpdatedAt),
+          parseServerTimestampMs(entry.updatedAt)
+        );
+        const entryVer = entryTs > 0 ? entryTs : undefined;
         const cleanPrimary = normalizeServerAssetUrl(entry.primary, entryVer);
         const incomingIsManual = isManualOverrideEntry(entry);
         if (!incomingIsManual && isGenericOrPlaceholderServerUrl(cleanPrimary)) continue;
@@ -13805,19 +13875,28 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
         if (!existing || forceOverwrite) {
           defaultState.overrides[pid] = {
             ...entry,
+            ...(typeof entry.imageUpdatedAt === 'number' && entry.imageUpdatedAt > 0
+              ? { imageUpdatedAt: entry.imageUpdatedAt }
+              : {}),
             primary: cleanPrimary,
             gallery: cleanGallery.length > 0 ? cleanGallery : [cleanPrimary]
           };
         } else {
           const existingIsManual = isManualOverrideEntry(existing);
-          const existingTime = Date.parse(existing.updatedAt || '') || 0;
-          const incomingTime = Date.parse(entry.updatedAt || '') || 0;
+          const existingTime = Math.max(
+            parseServerTimestampMs(existing.imageUpdatedAt),
+            parseServerTimestampMs(existing.updatedAt)
+          );
+          const incomingTime = entryTs;
           if (existingIsManual && !incomingIsManual) {
             continue;
           }
           if ((incomingIsManual && !existingIsManual) || incomingTime >= existingTime) {
             defaultState.overrides[pid] = {
               ...entry,
+              ...(typeof entry.imageUpdatedAt === 'number' && entry.imageUpdatedAt > 0
+                ? { imageUpdatedAt: entry.imageUpdatedAt }
+                : {}),
               primary: cleanPrimary,
               gallery: cleanGallery.length > 0 ? cleanGallery : [cleanPrimary]
             };
@@ -14166,10 +14245,11 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
     void prewarmSingleImageFile(filePath);
 
     const uploadedUrl = `/assets/uploads/${finalFileName}`;
-    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
 
     const mediaEntry = {
-      id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `media-${nowMs}-${Math.random().toString(36).slice(2, 6)}`,
       url: uploadedUrl,
       name: finalFileName,
       format: ext.toUpperCase(),
@@ -14225,22 +14305,24 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
             gallery: nextGallery,
             format: ext.toUpperCase(),
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          recordServerProductActivityTimestamp(ovKey, nowMs);
           snapshotUpdates.push({ id: ovKey, imageUrl: uploadedUrl, gallery: nextGallery });
         }
       }
       serverProductsStore = serverProductsStore.map(p => {
         const curImg = normalizeServerAssetUrl(p.images?.[0] || p.image || p.image_url);
         if (curImg === normOld || p.image === oldUrlToReplace || p.images?.[0] === oldUrlToReplace) {
-          return { ...p, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl, ...(p.images || []).slice(1)] };
+          return { ...p, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl, ...(p.images || []).slice(1)], updatedAt: nowMs, imageUpdatedAt: nowMs };
         }
         return p;
       });
       serverListingsStore = serverListingsStore.map(l => {
         const curImg = normalizeServerAssetUrl(l.image_url || l.images?.[0]);
         if (curImg === normOld || l.image_url === oldUrlToReplace || l.images?.[0] === oldUrlToReplace) {
-          return { ...l, image_url: uploadedUrl, images: [uploadedUrl, ...(l.images || []).slice(1)] };
+          return { ...l, image_url: uploadedUrl, images: [uploadedUrl, ...(l.images || []).slice(1)], updatedAt: nowMs, imageUpdatedAt: nowMs };
         }
         return l;
       });
@@ -14287,17 +14369,19 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
         gallery,
         format: ext.toUpperCase(),
         updatedAt: nowIso,
+        imageUpdatedAt: nowMs,
         updatedBy: 'admin-manual'
       };
+      recordServerProductActivityTimestamp(cleanId, nowMs);
       clearConflictingTitleOverridesForProductId(cleanId, uploadedUrl);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', uploadedUrl);
       snapshotUpdates.push({ id: cleanId, imageUrl: uploadedUrl, gallery });
       serverProductsStore = serverProductsStore.map(p =>
-        p.id === cleanId ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: gallery } : p
+        p.id === cleanId ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: gallery, updatedAt: nowMs, imageUpdatedAt: nowMs } : p
       );
       serverListingsStore = serverListingsStore.map(l =>
         String(l.id) === cleanId || `prod-db-${l.id}` === cleanId
-          ? { ...l, image_url: uploadedUrl, images: gallery }
+          ? { ...l, image_url: uploadedUrl, images: gallery, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : l
       );
       serverRfqsStore = serverRfqsStore.map(r => {
@@ -14341,18 +14425,20 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
           gallery,
           format: ext.toUpperCase(),
           updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
           updatedBy: 'admin-manual'
         };
+        recordServerProductActivityTimestamp(cleanPid, nowMs);
         clearConflictingTitleOverridesForProductId(cleanPid, uploadedUrl);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', uploadedUrl);
         snapshotUpdates.push({ id: cleanPid, imageUrl: uploadedUrl, gallery });
       }
       serverProductsStore = serverProductsStore.map(p =>
-        pidSet.has(p.id) ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl] } : p
+        pidSet.has(p.id) ? { ...p, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl], updatedAt: nowMs, imageUpdatedAt: nowMs } : p
       );
       serverListingsStore = serverListingsStore.map(l =>
         pidSet.has(String(l.id)) || pidSet.has(`prod-db-${l.id}`)
-          ? { ...l, image_url: uploadedUrl, images: [uploadedUrl] }
+          ? { ...l, image_url: uploadedUrl, images: [uploadedUrl], updatedAt: nowMs, imageUpdatedAt: nowMs }
           : l
       );
       serverRfqsStore = serverRfqsStore.map(r => {
@@ -14370,11 +14456,12 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
-    const cacheBustedUrl = `${uploadedUrl}?v=${Date.now()}`;
+    const cacheBustedUrl = `${uploadedUrl}?v=${nowMs}`;
     return res.json({
       success: true,
       url: cacheBustedUrl,
       rawUrl: uploadedUrl,
+      imageUpdatedAt: nowMs,
       mediaEntry: { ...mediaEntry, url: cacheBustedUrl },
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
       message: `Image uploaded and saved as ${ext.toUpperCase()}`
@@ -15044,7 +15131,8 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
       forceFullSync
     } = (customBody || req.body || {});
 
-    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
 
     if (fullOverridesMap && typeof fullOverridesMap === 'object') {
       if (forceFullSync) {
@@ -15054,8 +15142,14 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
             const existingEntry = serverProductImageState.overrides[pid];
             const incomingManual = isManualOverrideEntry(incomingEntry);
             const existingManual = isManualOverrideEntry(existingEntry);
-            const existingTime = Date.parse(existingEntry?.updatedAt || '') || 0;
-            const incomingTime = Date.parse(incomingEntry?.updatedAt || '') || 0;
+            const existingTime = Math.max(
+              parseServerTimestampMs(existingEntry?.imageUpdatedAt),
+              parseServerTimestampMs(existingEntry?.updatedAt)
+            );
+            const incomingTime = Math.max(
+              parseServerTimestampMs(incomingEntry?.imageUpdatedAt),
+              parseServerTimestampMs(incomingEntry?.updatedAt)
+            );
             if (existingManual && !incomingManual && existingTime >= incomingTime) {
               continue;
             }
@@ -15063,7 +15157,10 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
               serverProductImageState.overrides[pid] = {
                 ...incomingEntry,
                 primary: normalizeServerAssetUrl(incomingEntry.primary),
-                updatedAt: incomingEntry.updatedAt || nowIso
+                updatedAt: incomingEntry.updatedAt || nowIso,
+                ...(typeof incomingEntry.imageUpdatedAt === 'number' && incomingEntry.imageUpdatedAt > 0
+                  ? { imageUpdatedAt: incomingEntry.imageUpdatedAt }
+                  : {})
               };
             }
           }
@@ -15130,21 +15227,23 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
             primary: cleanNew,
             gallery: [cleanNew, ...(ovVal.gallery || []).filter(u => u && normalizeServerAssetUrl(u) !== normOld && u !== cleanNew)],
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          recordServerProductActivityTimestamp(ovKey, nowMs);
         }
       }
       serverProductsStore = serverProductsStore.map(p => {
         const curImg = normalizeServerAssetUrl(p.images?.[0] || p.image || p.image_url);
         if (curImg === normOld || p.image === oldUrlToReplace || p.images?.[0] === oldUrlToReplace) {
-          return { ...p, image: cleanNew, image_url: cleanNew, images: [cleanNew, ...(p.images || []).slice(1)] };
+          return { ...p, image: cleanNew, image_url: cleanNew, images: [cleanNew, ...(p.images || []).slice(1)], updatedAt: nowMs, imageUpdatedAt: nowMs };
         }
         return p;
       });
       serverListingsStore = serverListingsStore.map(l => {
         const curImg = normalizeServerAssetUrl(l.image_url || l.images?.[0]);
         if (curImg === normOld || l.image_url === oldUrlToReplace || l.images?.[0] === oldUrlToReplace) {
-          return { ...l, image_url: cleanNew, images: [cleanNew, ...(l.images || []).slice(1)] };
+          return { ...l, image_url: cleanNew, images: [cleanNew, ...(l.images || []).slice(1)], updatedAt: nowMs, imageUpdatedAt: nowMs };
         }
         return l;
       });
@@ -15189,19 +15288,21 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
         gallery: resolvedGallery,
         format: format || (cleanPrim.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
         updatedAt: nowIso,
+        imageUpdatedAt: nowMs,
         updatedBy: 'admin-manual'
       };
+      recordServerProductActivityTimestamp(cleanId, nowMs);
       clearConflictingTitleOverridesForProductId(cleanId, cleanPrim);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', cleanPrim);
       snapshotUpdates.push({ id: cleanId, imageUrl: cleanPrim, gallery: resolvedGallery });
       serverProductsStore = serverProductsStore.map(p =>
         p.id === cleanId
-          ? { ...p, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery }
+          ? { ...p, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : p
       );
       serverListingsStore = serverListingsStore.map(l =>
         String(l.id) === cleanId || `prod-db-${l.id}` === cleanId
-          ? { ...l, image_url: cleanPrim, images: resolvedGallery }
+          ? { ...l, image_url: cleanPrim, images: resolvedGallery, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : l
       );
       serverRfqsStore = serverRfqsStore.map(r => {
@@ -15239,20 +15340,22 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
           gallery: resolvedGallery,
           format: format || (cleanPrim.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
           updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
           updatedBy: 'admin-manual'
         };
+        recordServerProductActivityTimestamp(cleanPid, nowMs);
         clearConflictingTitleOverridesForProductId(cleanPid, cleanPrim);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', cleanPrim);
         snapshotUpdates.push({ id: cleanPid, imageUrl: cleanPrim, gallery: resolvedGallery });
       }
       serverProductsStore = serverProductsStore.map(p =>
         idSet.has(p.id)
-          ? { ...p, image: cleanPrim, image_url: cleanPrim, images: [cleanPrim, ...(p.images || []).filter((u: string) => u !== cleanPrim)] }
+          ? { ...p, image: cleanPrim, image_url: cleanPrim, images: [cleanPrim, ...(p.images || []).filter((u: string) => u !== cleanPrim)], updatedAt: nowMs, imageUpdatedAt: nowMs }
           : p
       );
       serverListingsStore = serverListingsStore.map(l =>
         idSet.has(String(l.id)) || idSet.has(`prod-db-${l.id}`)
-          ? { ...l, image_url: cleanPrim, images: [cleanPrim, ...(l.images || []).filter((u: string) => u !== cleanPrim)] }
+          ? { ...l, image_url: cleanPrim, images: [cleanPrim, ...(l.images || []).filter((u: string) => u !== cleanPrim)], updatedAt: nowMs, imageUpdatedAt: nowMs }
           : l
       );
       serverRfqsStore = serverRfqsStore.map(r => {
@@ -15273,6 +15376,7 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
     return res.json({
       success: true,
       data: serverProductImageState,
+      imageUpdatedAt: nowMs,
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
       message: 'Product image configuration updated successfully.'
     });
@@ -17880,6 +17984,7 @@ app.post('/api/v1/admin/onboard-member-and-listing', async (req, res) => {
       ]
     };
 
+    const onboardNowMs = Date.now();
     const numericMoq = Math.max(1, Number(moq) || 1);
     const productEntry = {
       id: productId,
@@ -17908,8 +18013,14 @@ app.post('/api/v1/admin/onboard-member-and-listing', async (req, res) => {
       featured: true,
       inStock: true,
       rating: 4.9,
-      reviewCount: Number(buyerOfferCount) || 25
+      reviewCount: Number(buyerOfferCount) || 25,
+      createdAt: onboardNowMs,
+      updatedAt: onboardNowMs,
+      imageUpdatedAt: onboardNowMs
     };
+
+    recordServerProductActivityTimestamp(productId, onboardNowMs);
+    saveServerProductImageState();
 
     const catalogStore = loadCustomCatalogFromDisk();
     catalogStore.companies = [
@@ -20660,7 +20771,8 @@ function bindAutoSavedImageOverride(params: {
   if (!cleanLocal) return;
   if (!params.isManual && isGenericOrPlaceholderServerUrl(cleanLocal)) return;
 
-  const nowIso = new Date().toISOString();
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
   const resolvedGallery =
     Array.isArray(params.gallery) && params.gallery.length > 0
       ? params.gallery
@@ -20695,8 +20807,12 @@ function bindAutoSavedImageOverride(params: {
         gallery: resolvedGallery,
         format: (path.extname(cleanLocal).replace('.', '') || 'WEBP').toUpperCase(),
         updatedAt: nowIso,
+        ...(params.isManual || params.forceOverwrite ? { imageUpdatedAt: nowMs } : {}),
         updatedBy: params.isManual ? 'admin-manual' : params.forceOverwrite ? 'catalog-image-auditor' : 'auto-site-upload'
       };
+      if (params.isManual || params.forceOverwrite) {
+        recordServerProductActivityTimestamp(pid, nowMs);
+      }
       stateUpdated = true;
     }
   }

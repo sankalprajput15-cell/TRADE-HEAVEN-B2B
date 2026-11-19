@@ -11923,22 +11923,24 @@
       "updatedBy": "auto-site-upload"
     },
     "rfq-100": {
-      "primary": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp?v=1795009329884",
+      "primary": "/assets/uploads/auto-heavy-duty-industrial-diesel-gener-ac22f9e163c2.webp?v=1795068202271",
       "gallery": [
-        "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp?v=1795009329884"
+        "/assets/uploads/auto-heavy-duty-industrial-diesel-gener-ac22f9e163c2.webp?v=1795068202271"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-18T13:42:09.884Z",
-      "updatedBy": "catalog-image-auditor"
+      "updatedAt": "2026-11-19T06:03:22.271Z",
+      "updatedBy": "catalog-image-auditor",
+      "previousPrimary": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-0610865b4522.webp"
     },
     "rfq-101": {
-      "primary": "/assets/uploads/auto-stainless-steel-coils-15035b3bc55e.webp?v=1795010790818",
+      "primary": "/assets/uploads/auto-stainless-steel-coils-595c7ea29451.webp?v=1795068223382",
       "gallery": [
-        "/assets/uploads/auto-stainless-steel-coils-15035b3bc55e.webp?v=1795010790818"
+        "/assets/uploads/auto-stainless-steel-coils-595c7ea29451.webp?v=1795068223382"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-18T14:06:30.818Z",
-      "updatedBy": "catalog-image-auditor"
+      "updatedAt": "2026-11-19T06:03:43.382Z",
+      "updatedBy": "catalog-image-auditor",
+      "previousPrimary": "/assets/uploads/auto-stainless-steel-coils-15035b3bc55e.webp"
     },
     "Stainless Steel Coils": {
       "primary": "/assets/uploads/auto-stainless-steel-coils-a7c7b1b34f41.webp?v=1795010788912",
@@ -11959,13 +11961,14 @@
       "updatedBy": "catalog-image-auditor"
     },
     "rfq-103": {
-      "primary": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1318a0490eaf.webp?v=1795010797910",
+      "primary": "/assets/uploads/auto-5-axis-cnc-milling-centers-b3d7436750bc.webp?v=1795068252697",
       "gallery": [
-        "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1318a0490eaf.webp?v=1795010797910"
+        "/assets/uploads/auto-5-axis-cnc-milling-centers-b3d7436750bc.webp?v=1795068252697"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-18T14:06:37.910Z",
-      "updatedBy": "catalog-image-auditor"
+      "updatedAt": "2026-11-19T06:04:12.697Z",
+      "updatedBy": "catalog-image-auditor",
+      "previousPrimary": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1318a0490eaf.webp"
     },
     "rfq-mkt-1794680044952": {
       "primary": "/assets/uploads/auto-heavy-duty-hydraulic-4133e907e828.webp?v=1795010801516",
@@ -11977,13 +11980,15 @@
       "updatedBy": "catalog-image-auditor"
     },
     "rfq-mkt-1794680044956": {
-      "primary": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp?v=1795010805017",
+      "primary": "/assets/uploads/auto-heavy-duty-industrial-monocrystall-6f9cf9158f30.webp?v=1795068281340",
       "gallery": [
-        "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp?v=1795010805017"
+        "/assets/uploads/auto-heavy-duty-industrial-monocrystall-6f9cf9158f30.webp?v=1795068281340"
       ],
       "format": "WEBP",
-      "updatedAt": "2026-11-18T14:06:45.017Z",
-      "updatedBy": "catalog-image-auditor"
+      "updatedAt": "2026-11-19T06:04:41.340Z",
+      "imageUpdatedAt": 1795068281340,
+      "updatedBy": "catalog-image-auditor",
+      "previousPrimary": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-185ac13984c9.webp"
     },
     "rfq-mkt-1794680044958": {
       "primary": "/assets/uploads/auto-hybrid-solar-inverter-06a9b3ec1537.webp?v=1795010805092",
@@ -12551,7 +12556,20 @@
       "format": "WEBP",
       "updatedAt": "2026-11-19T05:33:58.177Z",
       "updatedBy": "auto-site-upload"
+    },
+    "5-Axis CNC Milling Centers": {
+      "primary": "/assets/uploads/auto-5-axis-cnc-milling-centers-f961374a6545.webp?v=1795068251790",
+      "gallery": [
+        "/assets/uploads/auto-5-axis-cnc-milling-centers-f961374a6545.webp?v=1795068251790"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-19T06:04:11.790Z",
+      "updatedBy": "auto-site-upload"
     }
+  },
+  "productActivityTimestamps": {
+    "rfq-mkt-1794680044956": 1795068281340,
+    "prod-verify-sort-1795068290385": 1795068294598
   },
   "globalDefaultImage": null,
   "categoryOverrides": {},
@@ -12633,19 +12651,19 @@
     "https://upload.wikimedia.org/wikipedia/commons/f/f4/Plastics_as_building_materials_07.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-building-construction-materials-63aecf72ebf8.webp?v=1794999233597",
     "https://upload.wikimedia.org/wikipedia/commons/c/ca/Plastics_as_building_materials_08.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-building-construction-materials-c53abee0f882.webp?v=1794999233600",
     "https://upload.wikimedia.org/wikipedia/commons/6/67/Plastics_as_building_materials_09.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-building-construction-materials-03d57d8531b9.webp?v=1794999233602",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/TGFT29_guitar_neck_CNC_milling_machines_-_Taylor_Guitar_Factory.jpg/960px-TGFT29_guitar_neck_CNC_milling_machines_-_Taylor_Guitar_Factory.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-0f837bff532d.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/CNC_milling_machine.jpg/960px-CNC_milling_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-f961374a6545.webp?v=1795011037525",
-    "https://upload.wikimedia.org/wikipedia/commons/5/55/Double_side_horizontal_cnc_milling_machine_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-e9ff9a6fdc4d.webp?v=1795011037525",
-    "https://upload.wikimedia.org/wikipedia/commons/3/35/Double_side_horizontal_cnc_milling_machine_loading_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-b3d7436750bc.webp?v=1795011037525",
-    "https://upload.wikimedia.org/wikipedia/commons/d/d0/Double_side_horizontal_cnc_milling_machine_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-33c0192a9418.webp?v=1795011037525",
-    "https://upload.wikimedia.org/wikipedia/commons/9/9f/Double_side_horizontal_cnc_milling_machine_6.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-a0d9342ec686.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/3D_Printshow_2014_London_-_Roland_DG_monoFab_SRM-20_Desktop_CNC_milling_machine_%2814964338568%29.jpg/960px-3D_Printshow_2014_London_-_Roland_DG_monoFab_SRM-20_Desktop_CNC_milling_machine_%2814964338568%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-f65508c17a6b.webp?v=1795011037525",
-    "https://upload.wikimedia.org/wikipedia/commons/9/91/Aluminum_and_steel_parts_made_with_CNC_milling_machine_in_NideloK.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-2b5fc8104411.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/CNC_PCB_Milling_Machine.jpg/960px-CNC_PCB_Milling_Machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-4f24a029bf55.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/CNC_PCB_Milling_Machine_-_6964914967.jpg/960px-CNC_PCB_Milling_Machine_-_6964914967.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1318a0490eaf.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Xyz_display_milling_machine.jpg/960px-Xyz_display_milling_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-a46be35a1c3c.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Pantograph_milling_machine_001.jpg/960px-Pantograph_milling_machine_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-bf086d952f35.webp?v=1795011037525",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/US_patent_4621410_-_Williamson_System_24_CNC_machine_shop.png/960px-US_patent_4621410_-_Williamson_System_24_CNC_machine_shop.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-29a803d19e2d.webp?v=1795011037525",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/TGFT29_guitar_neck_CNC_milling_machines_-_Taylor_Guitar_Factory.jpg/960px-TGFT29_guitar_neck_CNC_milling_machines_-_Taylor_Guitar_Factory.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-0f837bff532d.webp?v=1795068254983",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/CNC_milling_machine.jpg/960px-CNC_milling_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-f961374a6545.webp?v=1795068251790",
+    "https://upload.wikimedia.org/wikipedia/commons/5/55/Double_side_horizontal_cnc_milling_machine_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-5-axis-cnc-milling-centers-e9ff9a6fdc4d.webp?v=1795068254995",
+    "https://upload.wikimedia.org/wikipedia/commons/3/35/Double_side_horizontal_cnc_milling_machine_loading_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-5-axis-cnc-milling-centers-b3d7436750bc.webp?v=1795068252697",
+    "https://upload.wikimedia.org/wikipedia/commons/d/d0/Double_side_horizontal_cnc_milling_machine_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-5-axis-cnc-milling-centers-33c0192a9418.webp?v=1795068255004",
+    "https://upload.wikimedia.org/wikipedia/commons/9/9f/Double_side_horizontal_cnc_milling_machine_6.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-5-axis-cnc-milling-centers-a0d9342ec686.webp?v=1795068258048",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/3D_Printshow_2014_London_-_Roland_DG_monoFab_SRM-20_Desktop_CNC_milling_machine_%2814964338568%29.jpg/960px-3D_Printshow_2014_London_-_Roland_DG_monoFab_SRM-20_Desktop_CNC_milling_machine_%2814964338568%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-f65508c17a6b.webp?v=1795068258070",
+    "https://upload.wikimedia.org/wikipedia/commons/9/91/Aluminum_and_steel_parts_made_with_CNC_milling_machine_in_NideloK.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-5-axis-cnc-milling-centers-2b5fc8104411.webp?v=1795068258075",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/CNC_PCB_Milling_Machine.jpg/960px-CNC_PCB_Milling_Machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-4f24a029bf55.webp?v=1795068258078",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/CNC_PCB_Milling_Machine_-_6964914967.jpg/960px-CNC_PCB_Milling_Machine_-_6964914967.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-1318a0490eaf.webp?v=1795068258082",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Xyz_display_milling_machine.jpg/960px-Xyz_display_milling_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-a46be35a1c3c.webp?v=1795068258087",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Pantograph_milling_machine_001.jpg/960px-Pantograph_milling_machine_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-bf086d952f35.webp?v=1795068258089",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/US_patent_4621410_-_Williamson_System_24_CNC_machine_shop.png/960px-US_patent_4621410_-_Williamson_System_24_CNC_machine_shop.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-5-axis-cnc-milling-centers-29a803d19e2d.webp?v=1795068258092",
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Pantograph_milling_machine_001.jpg/960px-Pantograph_milling_machine_001.jpg": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-326fe8a2e327.webp?v=1795008886210",
     "http://4.imimg.com/data4/PX/IU/MY-24895296/heavy-duty-diesel-generator-500x500.jpg": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-9d5512ccfb01.webp?v=1795009326374",
     "https://image.made-in-china.com/202f0j00ZYtBMQjCbrqc/Reliable-1250kVA-Diesel-Generator-for-Heavy-Duty-Power-Needs.webp": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-35b591be63e3.webp?v=1795009326374",
@@ -12663,7 +12681,7 @@
     "https://image.made-in-china.com/2f0j00pRMvKedcfGkD/Heavy-Duty-6b-Series-Diesel-Generators-for-Industrial-Use.jpg": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-8b0d22ef7e8b.webp?v=1795009326374",
     "https://www.kechengelectric.com/upload/8005/1-63944.jpg": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-fd88c8d6b03d.webp?v=1795009326374",
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Stainless_steel_coiled_tubes_made_by_Sandvik.jpg/960px-Stainless_steel_coiled_tubes_made_by_Sandvik.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-stainless-steel-coils-a7c7b1b34f41.webp?v=1795010788912",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Coil_of_1Hp_submersible_electric_pumping_machine.jpg/960px-Coil_of_1Hp_submersible_electric_pumping_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-stainless-steel-coils-595c7ea29451.webp?v=1795010817823",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Coil_of_1Hp_submersible_electric_pumping_machine.jpg/960px-Coil_of_1Hp_submersible_electric_pumping_machine.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail": "/assets/uploads/auto-stainless-steel-coils-595c7ea29451.webp?v=1795068223382",
     "https://www.ricostainless.com/images/stainless-steel-coil.jpg": "/assets/uploads/auto-stainless-steel-coils-b6a020f01ddd.webp?v=1795010817825",
     "https://www.tubesolutions.com.cn/wp-content/uploads/sites/5/2022/11/stainless-steel-coil-001-scaled.jpg": "/assets/uploads/auto-stainless-steel-coils-505bf50856d5.webp?v=1795010817828",
     "https://gengfeisteel.com/wp-content/uploads/2025/04/304-austenitic-stainless-steel-coil.jpg": "/assets/uploads/auto-stainless-steel-coils-cad045ad4736.webp?v=1795010817831",
@@ -12734,6 +12752,14 @@
     "https://upload.wikimedia.org/wikipedia/commons/9/9f/Animal_skin_shoes.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled": "/assets/uploads/auto-international-standard-animal-leathe-2dfba808b910.webp?v=1795011037525"
   },
   "mediaLibrary": [
+    {
+      "id": "media-manual-certified-hms-1-2-uae-origin-1795011343090.webp",
+      "url": "/assets/uploads/manual-certified-hms-1-2-uae-origin-1795011343090.webp?v=1795011343097",
+      "name": "manual-certified-hms-1-2-uae-origin-1795011343090.webp",
+      "format": "WEBP",
+      "sizeBytes": 108,
+      "uploadedAt": "2026-11-18T14:15:43.097Z"
+    },
     {
       "id": "media-auto-double-fold-pure-vanilla-extract-c-a3ff90b9f6f3.webp",
       "url": "/assets/uploads/auto-double-fold-pure-vanilla-extract-c-a3ff90b9f6f3.webp?v=1795011341683",
@@ -12829,6 +12855,16 @@
       "format": "WEBP",
       "sizeBytes": 22900,
       "uploadedAt": "2026-11-18T14:15:32.584Z"
+    },
+    {
+      "id": "media-1795011050047-g9eb",
+      "url": "/assets/uploads/verify-test-upload-1795011050042.webp?v=1795011050047",
+      "name": "verify-test-upload-1795011050042.webp",
+      "format": "WEBP",
+      "sizeBytes": 78,
+      "originalSizeBytes": 78,
+      "losslessCompression": false,
+      "uploadedAt": "2026-11-18T14:10:50.047Z"
     },
     {
       "id": "media-auto-international-standard-animal-leathe-2dfba808b910.webp",
@@ -16797,6 +16833,16 @@
       "format": "WEBP",
       "sizeBytes": 78680,
       "uploadedAt": "2026-11-18T14:06:29.230Z"
+    },
+    {
+      "id": "media-1795010778705-1ei2",
+      "url": "/assets/uploads/verify-test-upload-1795010778701.webp?v=1795010778705",
+      "name": "verify-test-upload-1795010778701.webp",
+      "format": "WEBP",
+      "sizeBytes": 78,
+      "originalSizeBytes": 78,
+      "losslessCompression": false,
+      "uploadedAt": "2026-11-18T14:06:18.705Z"
     },
     {
       "id": "media-auto-building-construction-materials-60e128f6255b.webp",
@@ -32162,32 +32208,116 @@
       "uploadedAt": "2026-11-18T11:59:41.458Z"
     },
     {
-      "id": "media-manual-certified-hms-1-2-uae-origin-1795011343090.webp",
-      "url": "/assets/uploads/manual-certified-hms-1-2-uae-origin-1795011343090.webp?v=1795011343097",
-      "name": "manual-certified-hms-1-2-uae-origin-1795011343090.webp",
+      "id": "media-auto-heavy-duty-industrial-monocrystall-6f9cf9158f30.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-monocrystall-6f9cf9158f30.webp?v=1795068266707",
+      "name": "auto-heavy-duty-industrial-monocrystall-6f9cf9158f30.webp",
       "format": "WEBP",
-      "sizeBytes": 108,
-      "uploadedAt": "2026-11-18T14:15:43.097Z"
+      "sizeBytes": 54986,
+      "uploadedAt": "2026-11-19T06:04:26.707Z"
     },
     {
-      "id": "media-1795011050047-g9eb",
-      "url": "/assets/uploads/verify-test-upload-1795011050042.webp?v=1795011050047",
-      "name": "verify-test-upload-1795011050042.webp",
+      "id": "media-auto-5-axis-cnc-milling-centers-29a803d19e2d.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-29a803d19e2d.webp?v=1795068256870",
+      "name": "auto-5-axis-cnc-milling-centers-29a803d19e2d.webp",
       "format": "WEBP",
-      "sizeBytes": 78,
-      "originalSizeBytes": 78,
-      "losslessCompression": false,
-      "uploadedAt": "2026-11-18T14:10:50.047Z"
+      "sizeBytes": 125042,
+      "uploadedAt": "2026-11-19T06:04:16.870Z"
     },
     {
-      "id": "media-1795010778705-1ei2",
-      "url": "/assets/uploads/verify-test-upload-1795010778701.webp?v=1795010778705",
-      "name": "verify-test-upload-1795010778701.webp",
+      "id": "media-auto-5-axis-cnc-milling-centers-bf086d952f35.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-bf086d952f35.webp?v=1795068256516",
+      "name": "auto-5-axis-cnc-milling-centers-bf086d952f35.webp",
       "format": "WEBP",
-      "sizeBytes": 78,
-      "originalSizeBytes": 78,
-      "losslessCompression": false,
-      "uploadedAt": "2026-11-18T14:06:18.705Z"
+      "sizeBytes": 150380,
+      "uploadedAt": "2026-11-19T06:04:16.516Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-1318a0490eaf.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-1318a0490eaf.webp?v=1795068256507",
+      "name": "auto-5-axis-cnc-milling-centers-1318a0490eaf.webp",
+      "format": "WEBP",
+      "sizeBytes": 72594,
+      "uploadedAt": "2026-11-19T06:04:16.507Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-a46be35a1c3c.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-a46be35a1c3c.webp?v=1795068256019",
+      "name": "auto-5-axis-cnc-milling-centers-a46be35a1c3c.webp",
+      "format": "WEBP",
+      "sizeBytes": 81424,
+      "uploadedAt": "2026-11-19T06:04:16.019Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-4f24a029bf55.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-4f24a029bf55.webp?v=1795068255782",
+      "name": "auto-5-axis-cnc-milling-centers-4f24a029bf55.webp",
+      "format": "WEBP",
+      "sizeBytes": 90904,
+      "uploadedAt": "2026-11-19T06:04:15.782Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-f65508c17a6b.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-f65508c17a6b.webp?v=1795068255115",
+      "name": "auto-5-axis-cnc-milling-centers-f65508c17a6b.webp",
+      "format": "WEBP",
+      "sizeBytes": 96158,
+      "uploadedAt": "2026-11-19T06:04:15.115Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-a0d9342ec686.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-a0d9342ec686.webp?v=1795068255110",
+      "name": "auto-5-axis-cnc-milling-centers-a0d9342ec686.webp",
+      "format": "WEBP",
+      "sizeBytes": 72144,
+      "uploadedAt": "2026-11-19T06:04:15.110Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-2b5fc8104411.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-2b5fc8104411.webp?v=1795068255105",
+      "name": "auto-5-axis-cnc-milling-centers-2b5fc8104411.webp",
+      "format": "WEBP",
+      "sizeBytes": 14234,
+      "uploadedAt": "2026-11-19T06:04:15.105Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-0f837bff532d.webp?v=1795068252676",
+      "name": "auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+      "format": "WEBP",
+      "sizeBytes": 155234,
+      "uploadedAt": "2026-11-19T06:04:12.676Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-b3d7436750bc.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-b3d7436750bc.webp?v=1795068252590",
+      "name": "auto-5-axis-cnc-milling-centers-b3d7436750bc.webp",
+      "format": "WEBP",
+      "sizeBytes": 38254,
+      "uploadedAt": "2026-11-19T06:04:12.590Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-e9ff9a6fdc4d.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-e9ff9a6fdc4d.webp?v=1795068252385",
+      "name": "auto-5-axis-cnc-milling-centers-e9ff9a6fdc4d.webp",
+      "format": "WEBP",
+      "sizeBytes": 37608,
+      "uploadedAt": "2026-11-19T06:04:12.385Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-f961374a6545.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-f961374a6545.webp?v=1795068251872",
+      "name": "auto-5-axis-cnc-milling-centers-f961374a6545.webp",
+      "format": "WEBP",
+      "sizeBytes": 192008,
+      "uploadedAt": "2026-11-19T06:04:11.872Z"
+    },
+    {
+      "id": "media-auto-heavy-duty-industrial-diesel-gener-ac22f9e163c2.webp",
+      "url": "/assets/uploads/auto-heavy-duty-industrial-diesel-gener-ac22f9e163c2.webp?v=1795068202279",
+      "name": "auto-heavy-duty-industrial-diesel-gener-ac22f9e163c2.webp",
+      "format": "WEBP",
+      "sizeBytes": 59138,
+      "uploadedAt": "2026-11-19T06:03:22.279Z"
     },
     {
       "id": "media-1795066702390-in2s",
@@ -32198,6 +32328,14 @@
       "originalSizeBytes": 70,
       "losslessCompression": false,
       "uploadedAt": "2026-11-19T05:38:22.390Z"
+    },
+    {
+      "id": "media-auto-5-axis-cnc-milling-centers-33c0192a9418.webp",
+      "url": "/assets/uploads/auto-5-axis-cnc-milling-centers-33c0192a9418.webp?v=1795068254080",
+      "name": "auto-5-axis-cnc-milling-centers-33c0192a9418.webp",
+      "format": "WEBP",
+      "sizeBytes": 100674,
+      "uploadedAt": "2026-11-19T06:04:14.080Z"
     }
   ]
 }
