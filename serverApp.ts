@@ -13233,22 +13233,30 @@ app.get('/api/debug-login-alert', async (req, res) => {
   }
 });
 
-// Server-side products cache & CRUD with persistent disk backup
-const CUSTOM_PRODUCTS_DB_FILE = path.join(process.cwd(), 'src', 'data', 'customProductsBackup.json');
-const DELETED_PRODUCTS_DB_FILE = path.join(process.cwd(), 'src', 'data', 'deletedProductsBackup.json');
+// Server-side products cache & CRUD with persistent disk backup (stored outside src/ so runtime saves never restart the server)
+const CUSTOM_PRODUCTS_SEED_FILE = path.join(process.cwd(), 'src', 'data', 'customProductsBackup.json');
+const DELETED_PRODUCTS_SEED_FILE = path.join(process.cwd(), 'src', 'data', 'deletedProductsBackup.json');
+const CUSTOM_PRODUCTS_DB_FILE = path.join(process.cwd(), 'public', 'data', 'customProductsBackup.json');
+const DELETED_PRODUCTS_DB_FILE = path.join(process.cwd(), 'public', 'data', 'deletedProductsBackup.json');
 let serverProductsStore: any[] = [];
 let serverDeletedProductIds = new Set<string>();
 
 try {
-  if (fs.existsSync(CUSTOM_PRODUCTS_DB_FILE)) {
-    const parsed = JSON.parse(fs.readFileSync(CUSTOM_PRODUCTS_DB_FILE, 'utf8'));
+  const sourceCustomFile = fs.existsSync(CUSTOM_PRODUCTS_DB_FILE)
+    ? CUSTOM_PRODUCTS_DB_FILE
+    : CUSTOM_PRODUCTS_SEED_FILE;
+  if (fs.existsSync(sourceCustomFile)) {
+    const parsed = JSON.parse(fs.readFileSync(sourceCustomFile, 'utf8'));
     if (Array.isArray(parsed)) serverProductsStore = parsed;
   }
 } catch {}
 
 try {
-  if (fs.existsSync(DELETED_PRODUCTS_DB_FILE)) {
-    const parsed = JSON.parse(fs.readFileSync(DELETED_PRODUCTS_DB_FILE, 'utf8'));
+  const sourceDeletedFile = fs.existsSync(DELETED_PRODUCTS_DB_FILE)
+    ? DELETED_PRODUCTS_DB_FILE
+    : DELETED_PRODUCTS_SEED_FILE;
+  if (fs.existsSync(sourceDeletedFile)) {
+    const parsed = JSON.parse(fs.readFileSync(sourceDeletedFile, 'utf8'));
     if (Array.isArray(parsed)) serverDeletedProductIds = new Set(parsed);
   }
 } catch {}
@@ -13861,7 +13869,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
     }
   };
 
-  for (const fileToRead of [PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_BACKUP_FILE, IMAGE_OVERRIDES_FILE]) {
+  for (const fileToRead of [IMAGE_OVERRIDES_BACKUP_FILE, PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE]) {
     try {
       if (fs.existsSync(fileToRead)) {
         const raw = fs.readFileSync(fileToRead, 'utf-8');
@@ -13889,6 +13897,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
         const ext = path.extname(file).toLowerCase().replace('.', '');
         if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
           const url = `${urlPrefix}/${file}`;
+          if (recentlyDeletedUploadUrls.has(url)) continue;
           if (!existingBaseUrls.has(url)) {
             const stat = fs.statSync(path.join(dirPath, file));
             defaultState.mediaLibrary.unshift({
@@ -13911,6 +13920,128 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
   return defaultState;
 }
 
+const CLIENT_UPLOADS_CLEANUP_DIR = path.join(process.cwd(), 'public', 'assets', 'client-uploads');
+const recentlyDeletedUploadUrls = new Set<string>();
+
+function resolveManagedUploadDiskPath(rawUrl: string | undefined | null): string | null {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const cleanPath = rawUrl.trim().split('?')[0].split('#')[0];
+  let baseDir: string | null = null;
+  let relativeFile = '';
+
+  if (cleanPath.startsWith('/assets/uploads/')) {
+    baseDir = UPLOADS_DIR;
+    relativeFile = cleanPath.slice('/assets/uploads/'.length);
+  } else if (cleanPath.startsWith('/assets/client-uploads/')) {
+    baseDir = CLIENT_UPLOADS_CLEANUP_DIR;
+    relativeFile = cleanPath.slice('/assets/client-uploads/'.length);
+  } else {
+    return null;
+  }
+
+  let decodedRel = relativeFile;
+  try {
+    decodedRel = decodeURIComponent(relativeFile);
+  } catch {}
+  if (!decodedRel || decodedRel.includes('..') || decodedRel.includes('\0')) return null;
+
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(resolvedBase, decodedRel);
+  if (!resolvedTarget.startsWith(resolvedBase + path.sep)) return null;
+  if (resolvedTarget.toLowerCase().endsWith('.json')) return null;
+  return resolvedTarget;
+}
+
+function isUploadUrlStillReferenced(
+  candidateUrl: string,
+  excludeProductIds: Set<string> = new Set()
+): boolean {
+  const targetBase = candidateUrl.trim().split('?')[0].split('#')[0];
+  if (!targetBase) return false;
+
+  const matchesUrl = (u?: string | null) =>
+    Boolean(u && String(u).trim().split('?')[0].split('#')[0] === targetBase);
+
+  if (matchesUrl(serverProductImageState.globalDefaultImage)) return true;
+
+  for (const catUrl of Object.values(serverProductImageState.categoryOverrides || {})) {
+    if (matchesUrl(catUrl)) return true;
+  }
+
+  for (const [pid, entry] of Object.entries(serverProductImageState.overrides || {})) {
+    if (excludeProductIds.has(pid)) continue;
+    if (!entry) continue;
+    if (matchesUrl(entry.primary)) return true;
+    if (Array.isArray(entry.gallery) && entry.gallery.some(u => matchesUrl(u))) return true;
+  }
+
+  for (const p of serverProductsStore || []) {
+    if (!p || excludeProductIds.has(String(p.id))) continue;
+    if (matchesUrl(p.image) || matchesUrl(p.image_url)) return true;
+    if (Array.isArray(p.images) && p.images.some((u: string) => matchesUrl(u))) return true;
+  }
+
+  for (const l of serverListingsStore || []) {
+    if (!l) continue;
+    const lid = String(l.id);
+    if (excludeProductIds.has(lid) || excludeProductIds.has(`prod-db-${lid}`)) continue;
+    if (matchesUrl(l.image_url)) return true;
+    if (Array.isArray(l.images) && l.images.some((u: string) => matchesUrl(u))) return true;
+  }
+
+  return false;
+}
+
+function permanentlyDeleteReplacedUploadFiles(
+  candidateUrls: Array<string | undefined | null>,
+  newReplacementUrls: Array<string | undefined | null> = [],
+  excludeProductIds: Set<string> = new Set()
+): string[] {
+  const deletedUrls: string[] = [];
+  const keepBases = new Set(
+    newReplacementUrls
+      .filter((u): u is string => Boolean(u))
+      .map(u => u.trim().split('?')[0].split('#')[0])
+  );
+  const seenCandidates = new Set<string>();
+
+  for (const rawOld of candidateUrls) {
+    if (!rawOld || typeof rawOld !== 'string') continue;
+    const oldBase = rawOld.trim().split('?')[0].split('#')[0];
+    if (!oldBase || seenCandidates.has(oldBase) || keepBases.has(oldBase)) continue;
+    seenCandidates.add(oldBase);
+
+    const diskPath = resolveManagedUploadDiskPath(oldBase);
+    if (!diskPath) continue;
+
+    // Only delete if NO other product/category/global override still references this file
+    if (isUploadUrlStillReferenced(oldBase, excludeProductIds)) continue;
+
+    try {
+      if (fs.existsSync(diskPath) && fs.statSync(diskPath).isFile()) {
+        recentlyDeletedUploadUrls.add(oldBase);
+        setTimeout(() => recentlyDeletedUploadUrls.delete(oldBase), 30000);
+        fs.unlink(diskPath, (unlinkErr) => {
+          if (unlinkErr && (unlinkErr as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.warn('[ProductImageSystem] Failed to delete replaced image file:', diskPath, unlinkErr.message);
+          } else {
+            console.info('[ProductImageSystem] Permanently deleted replaced image:', oldBase);
+          }
+        });
+        deletedUrls.push(oldBase);
+      }
+    } catch (err) {
+      console.warn('[ProductImageSystem] Error checking/deleting replaced image file:', oldBase, err);
+    }
+
+    serverProductImageState.mediaLibrary = (serverProductImageState.mediaLibrary || []).filter(
+      m => !m?.url || String(m.url).trim().split('?')[0] !== oldBase
+    );
+  }
+
+  return deletedUrls;
+}
+
 serverProductImageState = loadServerProductImageState();
 
 function saveServerProductImageState() {
@@ -13920,8 +14051,8 @@ function saveServerProductImageState() {
       serverProductImageState = loadServerProductImageState(serverProductImageState);
     }
     const serialized = JSON.stringify(serverProductImageState, null, 2);
+    // Persist strictly inside public/assets/uploads and public/data (never write into src/ at runtime)
     fs.writeFileSync(IMAGE_OVERRIDES_FILE, serialized, 'utf-8');
-    fs.writeFileSync(IMAGE_OVERRIDES_BACKUP_FILE, serialized, 'utf-8');
     fs.writeFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized, 'utf-8');
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
@@ -14056,6 +14187,7 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
     ];
 
     const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
+    const deletedOldUrls: string[] = [];
 
     if (applyToAll) {
       serverProductImageState.globalDefaultImage = uploadedUrl;
@@ -14064,8 +14196,20 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       serverProductImageState.categoryOverrides[category] = uploadedUrl;
     }
     if (oldUrlToReplace) {
-      serverProductImageState.urlReplacements[oldUrlToReplace] = uploadedUrl;
       const normOld = normalizeServerAssetUrl(oldUrlToReplace);
+      const affectedIds = new Set<string>();
+      for (const [ovKey, ovVal] of Object.entries(serverProductImageState.overrides)) {
+        if (!ovVal?.primary) continue;
+        const normOv = normalizeServerAssetUrl(ovVal.primary);
+        if (normOv === normOld || ovVal.primary === oldUrlToReplace) {
+          affectedIds.add(ovKey);
+        }
+      }
+      deletedOldUrls.push(
+        ...permanentlyDeleteReplacedUploadFiles([oldUrlToReplace, normOld], [uploadedUrl], affectedIds)
+      );
+
+      serverProductImageState.urlReplacements[oldUrlToReplace] = uploadedUrl;
       if (normOld) {
         serverProductImageState.urlReplacements[normOld] = uploadedUrl;
       }
@@ -14113,12 +14257,30 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       const existing = serverProductImageState.overrides[cleanId] as (ProductImageOverrideEntry & { previousPrimary?: string }) | undefined;
       const existingProd = serverProductsStore.find(p => p.id === cleanId);
       const prevPrimary =
-        existing?.primary && existing.primary !== uploadedUrl
+        existing?.primary && existing.primary.split('?')[0] !== uploadedUrl
           ? existing.primary
-          : existingProd?.images?.[0] && existingProd.images[0] !== uploadedUrl
+          : existingProd?.images?.[0] && String(existingProd.images[0]).split('?')[0] !== uploadedUrl
             ? normalizeServerAssetUrl(existingProd.images[0])
             : existing?.previousPrimary;
-      const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u && String(u).split('?')[0] !== uploadedUrl)] : [uploadedUrl];
+
+      const prevPrimaryBase = prevPrimary ? prevPrimary.split('?')[0] : '';
+      // Permanently delete replaced previous uploaded image if unused by any other product
+      if (prevPrimaryBase && prevPrimaryBase !== uploadedUrl) {
+        deletedOldUrls.push(
+          ...permanentlyDeleteReplacedUploadFiles([prevPrimaryBase], [uploadedUrl], new Set([cleanId]))
+        );
+      }
+
+      const deletedSet = new Set(deletedOldUrls);
+      const gallery = existing?.gallery
+        ? [
+            uploadedUrl,
+            ...existing.gallery.filter(u => {
+              const uBase = String(u || '').split('?')[0];
+              return Boolean(uBase) && uBase !== uploadedUrl && uBase !== prevPrimaryBase && !deletedSet.has(uBase);
+            })
+          ]
+        : [uploadedUrl];
       (serverProductImageState.overrides as any)[cleanId] = {
         primary: uploadedUrl,
         previousPrimary: prevPrimary,
@@ -14146,12 +14308,34 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
       });
     }
     if (Array.isArray(productIds)) {
-      const pidSet = new Set(productIds.filter(Boolean));
+      const pidSet = new Set(productIds.filter(Boolean).map(p => String(p).trim()));
+      const replacedCandidates: string[] = [];
+      for (const cleanPid of pidSet) {
+        const existing = serverProductImageState.overrides[cleanPid];
+        if (existing?.primary && existing.primary.split('?')[0] !== uploadedUrl) {
+          replacedCandidates.push(existing.primary);
+        }
+      }
+      if (replacedCandidates.length > 0) {
+        deletedOldUrls.push(
+          ...permanentlyDeleteReplacedUploadFiles(replacedCandidates, [uploadedUrl], pidSet)
+        );
+      }
+      const deletedSet = new Set(deletedOldUrls);
       for (const pid of productIds) {
         if (!pid) continue;
         const cleanPid = String(pid).trim();
         const existing = serverProductImageState.overrides[cleanPid];
-        const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u && String(u).split('?')[0] !== uploadedUrl)] : [uploadedUrl];
+        const oldPrimaryBase = existing?.primary ? existing.primary.split('?')[0] : '';
+        const gallery = existing?.gallery
+          ? [
+              uploadedUrl,
+              ...existing.gallery.filter(u => {
+                const uBase = String(u || '').split('?')[0];
+                return Boolean(uBase) && uBase !== uploadedUrl && uBase !== oldPrimaryBase && !deletedSet.has(uBase);
+              })
+            ]
+          : [uploadedUrl];
         serverProductImageState.overrides[cleanPid] = {
           primary: uploadedUrl,
           gallery,
@@ -14186,10 +14370,13 @@ function handleUploadProductImageRequest(req: express.Request, res: express.Resp
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
+    const cacheBustedUrl = `${uploadedUrl}?v=${Date.now()}`;
     return res.json({
       success: true,
-      url: uploadedUrl,
-      mediaEntry,
+      url: cacheBustedUrl,
+      rawUrl: uploadedUrl,
+      mediaEntry: { ...mediaEntry, url: cacheBustedUrl },
+      deletedOldUrls: Array.from(new Set(deletedOldUrls)),
       message: `Image uploaded and saved as ${ext.toUpperCase()}`
     });
   } catch (err: any) {
@@ -14964,6 +15151,7 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
     }
 
     const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
+    const deletedOldUrls: string[] = [];
 
     if (productId && primaryUrl) {
       const cleanId = String(productId).trim();
@@ -14975,11 +15163,26 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
       const existing = serverProductImageState.overrides[cleanId] as (ProductImageOverrideEntry & { previousPrimary?: string }) | undefined;
       const existingProd = serverProductsStore.find(p => p.id === cleanId);
       const prevPrimary =
-        existing?.primary && existing.primary !== cleanPrim
+        existing?.primary && existing.primary.split('?')[0] !== cleanPrim.split('?')[0]
           ? existing.primary
-          : existingProd?.images?.[0] && existingProd.images[0] !== cleanPrim
+          : existingProd?.images?.[0] && String(existingProd.images[0]).split('?')[0] !== cleanPrim.split('?')[0]
             ? normalizeServerAssetUrl(existingProd.images[0])
             : existing?.previousPrimary;
+
+      // Delete any replaced uploaded image(s) for this product that are no longer used anywhere else
+      const prevCandidates: string[] = [];
+      if (prevPrimary) prevCandidates.push(prevPrimary);
+      if (Array.isArray(existing?.gallery)) {
+        for (const oldG of existing.gallery) {
+          if (oldG) prevCandidates.push(oldG);
+        }
+      }
+      if (prevCandidates.length > 0) {
+        deletedOldUrls.push(
+          ...permanentlyDeleteReplacedUploadFiles(prevCandidates, [cleanPrim, ...resolvedGallery], new Set([cleanId]))
+        );
+      }
+
       (serverProductImageState.overrides as any)[cleanId] = {
         primary: cleanPrim,
         previousPrimary: prevPrimary,
@@ -15012,13 +15215,25 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
     if (Array.isArray(productIds) && primaryUrl) {
       const cleanPrim = normalizeServerAssetUrl(primaryUrl);
       ensureUploadedUrlInMediaLibrary(cleanPrim);
-      const idSet = new Set(productIds.filter(Boolean).map(String));
+      const idSet = new Set(productIds.filter(Boolean).map(p => String(p).trim()));
+      const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
+        ? galleryUrls.map((u: string) => normalizeServerAssetUrl(u)).filter(Boolean)
+        : [cleanPrim];
+
+      const bulkCandidates: string[] = [];
+      for (const cleanPid of idSet) {
+        const existing = serverProductImageState.overrides[cleanPid];
+        if (existing?.primary) bulkCandidates.push(existing.primary);
+      }
+      if (bulkCandidates.length > 0) {
+        deletedOldUrls.push(
+          ...permanentlyDeleteReplacedUploadFiles(bulkCandidates, [cleanPrim, ...resolvedGallery], idSet)
+        );
+      }
+
       for (const pid of productIds) {
         if (!pid) continue;
         const cleanPid = String(pid).trim();
-        const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
-          ? galleryUrls.map((u: string) => normalizeServerAssetUrl(u)).filter(Boolean)
-          : [cleanPrim];
         serverProductImageState.overrides[cleanPid] = {
           primary: cleanPrim,
           gallery: resolvedGallery,
@@ -15058,6 +15273,7 @@ function handleSetProductImagesRequest(req: express.Request, res: express.Respon
     return res.json({
       success: true,
       data: serverProductImageState,
+      deletedOldUrls: Array.from(new Set(deletedOldUrls)),
       message: 'Product image configuration updated successfully.'
     });
   } catch (err: any) {
@@ -15108,8 +15324,9 @@ function handleDeleteProductImagesRequest(req: express.Request, res: express.Res
 
 app.delete('/api/v1/admin/product-images', (req, res) => handleDeleteProductImagesRequest(req, res));
 
-// CMS Site Content persistent storage on server
-const SITE_CONTENT_BACKUP_FILE = path.join(process.cwd(), 'src', 'data', 'siteContentBackup.json');
+// CMS Site Content persistent storage on server (saved outside src/ so runtime edits never restart the server)
+const SITE_CONTENT_SEED_FILE = path.join(process.cwd(), 'src', 'data', 'siteContentBackup.json');
+const SITE_CONTENT_BACKUP_FILE = path.join(process.cwd(), 'public', 'data', 'siteContentBackup.json');
 function extractSiteContentPayload(rawBody: any): Record<string, any> {
   if (!rawBody || typeof rawBody !== 'object') return {};
   const unwrapped =
@@ -15125,8 +15342,11 @@ function extractSiteContentPayload(rawBody: any): Record<string, any> {
 
 function loadServerSiteContentFromDisk(): any {
   try {
-    if (fs.existsSync(SITE_CONTENT_BACKUP_FILE)) {
-      const raw = fs.readFileSync(SITE_CONTENT_BACKUP_FILE, 'utf-8');
+    const sourceFile = fs.existsSync(SITE_CONTENT_BACKUP_FILE)
+      ? SITE_CONTENT_BACKUP_FILE
+      : SITE_CONTENT_SEED_FILE;
+    if (fs.existsSync(sourceFile)) {
+      const raw = fs.readFileSync(sourceFile, 'utf-8');
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
         return extractSiteContentPayload(parsed);

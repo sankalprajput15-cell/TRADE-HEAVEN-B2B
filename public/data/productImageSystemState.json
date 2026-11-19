@@ -4399,9 +4399,9 @@
       "category": "Metals & Metallurgy"
     },
     "prod-scrap-17": {
-      "primary": "/assets/uploads/auto-certified-hms-1-2-uae-origin-e99214f38fa8.webp",
+      "primary": "/assets/uploads/auto-certified-hms-1-2-uae-origin-e99214f38fa8.webp?v=1795011344407",
       "gallery": [
-        "/assets/uploads/auto-certified-hms-1-2-uae-origin-e99214f38fa8.webp"
+        "/assets/uploads/auto-certified-hms-1-2-uae-origin-e99214f38fa8.webp?v=1795011344407"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-18T14:15:44.407Z",
@@ -12532,6 +12532,24 @@
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-18T14:08:42.777Z",
+      "updatedBy": "auto-site-upload"
+    },
+    "prod-db-2": {
+      "primary": "/assets/uploads/auto-stainless-steel-coils-2bed95591bcf.webp?v=1795066438177",
+      "gallery": [
+        "/assets/uploads/auto-stainless-steel-coils-2bed95591bcf.webp?v=1795066438177"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-19T05:33:58.177Z",
+      "updatedBy": "auto-site-upload"
+    },
+    "Stainless Steel Heavy Coils": {
+      "primary": "/assets/uploads/auto-stainless-steel-coils-2bed95591bcf.webp?v=1795066438177",
+      "gallery": [
+        "/assets/uploads/auto-stainless-steel-coils-2bed95591bcf.webp?v=1795066438177"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-19T05:33:58.177Z",
       "updatedBy": "auto-site-upload"
     }
   },
@@ -32142,6 +32160,44 @@
       "format": "WEBP",
       "sizeBytes": 271348,
       "uploadedAt": "2026-11-18T11:59:41.458Z"
+    },
+    {
+      "id": "media-manual-certified-hms-1-2-uae-origin-1795011343090.webp",
+      "url": "/assets/uploads/manual-certified-hms-1-2-uae-origin-1795011343090.webp?v=1795011343097",
+      "name": "manual-certified-hms-1-2-uae-origin-1795011343090.webp",
+      "format": "WEBP",
+      "sizeBytes": 108,
+      "uploadedAt": "2026-11-18T14:15:43.097Z"
+    },
+    {
+      "id": "media-1795011050047-g9eb",
+      "url": "/assets/uploads/verify-test-upload-1795011050042.webp?v=1795011050047",
+      "name": "verify-test-upload-1795011050042.webp",
+      "format": "WEBP",
+      "sizeBytes": 78,
+      "originalSizeBytes": 78,
+      "losslessCompression": false,
+      "uploadedAt": "2026-11-18T14:10:50.047Z"
+    },
+    {
+      "id": "media-1795010778705-1ei2",
+      "url": "/assets/uploads/verify-test-upload-1795010778701.webp?v=1795010778705",
+      "name": "verify-test-upload-1795010778701.webp",
+      "format": "WEBP",
+      "sizeBytes": 78,
+      "originalSizeBytes": 78,
+      "losslessCompression": false,
+      "uploadedAt": "2026-11-18T14:06:18.705Z"
+    },
+    {
+      "id": "media-1795066702390-in2s",
+      "url": "/assets/uploads/verify-two-1795066702388.png?v=1795066702390",
+      "name": "verify-two-1795066702388.png",
+      "format": "PNG",
+      "sizeBytes": 70,
+      "originalSizeBytes": 70,
+      "losslessCompression": false,
+      "uploadedAt": "2026-11-19T05:38:22.390Z"
     }
   ]
 }
