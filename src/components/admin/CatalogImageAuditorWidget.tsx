@@ -34,6 +34,8 @@ import {
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { useSiteContent } from '../../context/SiteContentContext';
+import { CATEGORIES_TREE } from '../../data/mockData';
 import { Product } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
@@ -41,14 +43,14 @@ import { ImageEditingOverlay } from './ImageEditingOverlay';
 interface CatalogImageAuditorWidgetProps {
   products?: Product[];
   onAuditCompleted?: (summary: CatalogImageAuditSummary) => void;
-  onViewOnHomepage?: (record: { recordId: string; recordType: 'PRODUCT' | 'RFQ' | 'OVERRIDE' }) => void;
+  onViewOnHomepage?: (record: { recordId: string; recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' }) => void;
 }
 
-type AuditorFilterTab = 'ALL_ISSUES' | 'DUPLICATE' | 'MISMATCHED' | 'FIXED' | 'ALL_SCANNED';
+type AuditorFilterTab = 'ALL_ISSUES' | 'DUPLICATE' | 'MISMATCHED' | 'CATEGORIES' | 'FIXED' | 'ALL_SCANNED';
 
 interface UnifiedAuditRow {
   record_id: string;
-  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category: string;
   issue_type: 'DUPLICATE' | 'PLACEHOLDER_OR_MISSING' | 'MISMATCHED' | 'BROKEN_ASSET' | 'HEALTHY';
@@ -116,6 +118,27 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [inspectorHighlightPulse, setInspectorHighlightPulse] = useState<boolean>(false);
   const [croppingRowTarget, setCroppingRowTarget] = useState<{ row: UnifiedAuditRow; imageSrc: string } | null>(null);
 
+  const { siteContent } = useSiteContent();
+
+  const homepageCategories = useMemo(() => {
+    const hpCats = siteContent?.homepage?.categoriesList;
+    if (Array.isArray(hpCats) && hpCats.length > 0) {
+      return hpCats.map(c => ({
+        id: String(c.id),
+        name: String(c.name || c.id),
+        image: String(c.image || '')
+      }));
+    }
+    return (CATEGORIES_TREE || []).map(c => ({
+      id: String(c.id),
+      name: String(c.name || c.id),
+      image: String((c as any).image || '')
+    }));
+  }, [siteContent?.homepage?.categoriesList]);
+
+  const homepageCategoriesRef = useRef(homepageCategories);
+  homepageCategoriesRef.current = homepageCategories;
+
   const productsRef = useRef<Product[]>(products);
   productsRef.current = products;
 
@@ -125,13 +148,21 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const inspectorPaneRef = useRef<HTMLDivElement | null>(null);
 
   const buildCompactCatalogPayload = useCallback(() => {
-    return (productsRef.current || []).map(p => ({
+    const prodItems = (productsRef.current || []).map(p => ({
       id: String(p.id),
       type: 'PRODUCT' as const,
       title: String(p.title || ''),
       category: String(p.category || 'General'),
       image_url: String(p.images?.[0] || '')
     }));
+    const catItems = (homepageCategoriesRef.current || []).map(c => ({
+      id: c.id,
+      type: 'CATEGORY' as const,
+      title: c.name,
+      category: c.name,
+      image_url: c.image
+    }));
+    return [...catItems, ...prodItems];
   }, []);
 
   const mapLogToUnifiedRows = useCallback((logs: CatalogImageAuditLogItem[]): UnifiedAuditRow[] => {
@@ -257,9 +288,10 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       mapById.set(row.record_id, row);
     }
 
-    if (activeFilter === 'ALL_SCANNED' || activeFilter === 'FIXED') {
+    if (activeFilter === 'ALL_SCANNED' || activeFilter === 'FIXED' || activeFilter === 'CATEGORIES') {
       for (const clean of cleanRecords) {
         if (activeFilter === 'FIXED' && clean.status !== 'FIXED') continue;
+        if (activeFilter === 'CATEGORIES' && clean.record_type !== 'CATEGORY') continue;
         if (!mapById.has(clean.record_id)) {
           mapById.set(clean.record_id, {
             record_id: clean.record_id,
@@ -269,8 +301,12 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             issue_type: 'HEALTHY',
             issue_reason:
               clean.status === 'FIXED'
-                ? 'Recently updated image — live at #1 on Homepage'
-                : 'Verified unique asset in catalog',
+                ? clean.record_type === 'CATEGORY'
+                  ? 'Recently updated sector image — live in Procurement Sectors'
+                  : 'Recently updated image — live at #1 on Homepage'
+                : clean.record_type === 'CATEGORY'
+                  ? 'Homepage Top International Procurement Sector card'
+                  : 'Verified unique asset in catalog',
             old_image_url: clean.previous_image_url || clean.current_image_url || '(empty)',
             new_image_url: clean.current_image_url || '',
             query_used: clean.title,
@@ -279,10 +315,36 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           });
         }
       }
+
+      if (activeFilter === 'CATEGORIES' || activeFilter === 'ALL_SCANNED') {
+        for (const cat of homepageCategories) {
+          if (!mapById.has(cat.id)) {
+            const resolvedUrl =
+              productImageManagerService.resolveImageSrc({
+                src: cat.image,
+                productId: cat.id,
+                productTitle: cat.name,
+                category: cat.name
+              }) || cat.image;
+            mapById.set(cat.id, {
+              record_id: cat.id,
+              record_type: 'CATEGORY',
+              title: cat.name,
+              category: cat.name,
+              issue_type: 'HEALTHY',
+              issue_reason: 'Homepage Top International Procurement Sector card',
+              old_image_url: cat.image || '(empty)',
+              new_image_url: resolvedUrl || '',
+              query_used: cat.name,
+              status: 'CLEAN'
+            });
+          }
+        }
+      }
     }
 
     return Array.from(mapById.values());
-  }, [activeFilter, auditRows, cleanRecords]);
+  }, [activeFilter, auditRows, cleanRecords, homepageCategories]);
 
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -300,6 +362,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         if (!isMismatchType || (row.status === 'FIXED' && !keepSessionFixedVisible)) {
           return false;
         }
+      } else if (activeFilter === 'CATEGORIES') {
+        if (row.record_type !== 'CATEGORY') return false;
       } else if (activeFilter === 'FIXED') {
         if (row.status !== 'FIXED') return false;
       } else if (activeFilter === 'ALL_ISSUES') {
@@ -430,7 +494,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     setCurrentPage(1);
     setShowWorkbench(true);
     setSessionTouchedIds({});
-    if ((tab === 'ALL_SCANNED' || tab === 'FIXED') && !cleanLoaded) {
+    if ((tab === 'ALL_SCANNED' || tab === 'FIXED' || tab === 'CATEGORIES') && !cleanLoaded) {
       void fetchPreviewStats({ includeCatalog: true });
     }
   };
@@ -626,7 +690,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     try {
       const uploaded = await productImageManagerService.uploadAndAssignImageFile(file, {
         productId: rid,
-        category: targetRow.category,
         targetFormat: 'webp',
         autoWebpLossless: true,
         oldUrlToReplace: undefined
@@ -668,7 +731,10 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       setAlertMessage({
         type: 'success',
         title: `Manual Photo Uploaded for "${targetRow.title}" (${rid})`,
-        detail: `Saved custom WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
+        detail:
+          targetRow.record_type === 'CATEGORY'
+            ? `Saved custom WebP image (${cleanUploadedUrl}) — live in Homepage Top International Procurement Sectors.`
+            : `Saved custom WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
         actionRow: { ...targetRow, new_image_url: result.new_image_url, status: 'FIXED', updatedAt: String(activityMs) }
       });
     } catch (err: any) {
@@ -703,7 +769,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       );
       const uploaded = await productImageManagerService.uploadAndAssignImageFile(croppedFile, {
         productId: rid,
-        category: targetRow.category,
         targetFormat: 'webp',
         autoWebpLossless: true,
         oldUrlToReplace: undefined
@@ -744,7 +809,10 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       setAlertMessage({
         type: 'success',
         title: `Cropped & Saved Photo for "${targetRow.title}" (${rid})`,
-        detail: `Saved framed WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
+        detail:
+          targetRow.record_type === 'CATEGORY'
+            ? `Saved framed WebP image (${cleanUploadedUrl}) — live in Homepage Top International Procurement Sectors.`
+            : `Saved framed WebP image (${cleanUploadedUrl}) and promoted to #1 in Homepage Recently Updated.`,
         actionRow: { ...targetRow, new_image_url: result.new_image_url, status: 'FIXED', updatedAt: String(activityMs) }
       });
     } catch (err: any) {
@@ -976,7 +1044,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             {totalScanned.toLocaleString()}
           </div>
           <div className="text-[11px] font-semibold text-blue-700 flex items-center justify-between">
-            <span>Products, Listings &amp; RFQs</span>
+            <span>Products, Sectors &amp; RFQs</span>
             <span>Browse →</span>
           </div>
         </button>
@@ -1097,9 +1165,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>
-                  {alertMessage.actionRow.record_type === 'RFQ'
-                    ? 'View in Homepage Buy Leads'
-                    : 'View on Homepage (#1)'}
+                  {alertMessage.actionRow.record_type === 'CATEGORY'
+                    ? 'View in Procurement Sectors'
+                    : alertMessage.actionRow.record_type === 'RFQ'
+                      ? 'View in Homepage Buy Leads'
+                      : 'View on Homepage (#1)'}
                 </span>
               </button>
             )}
@@ -1154,6 +1224,18 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
               }`}
             >
               Mismatched / Broken ({mismatchedRowCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFilterCardClick('CATEGORIES')}
+              data-testid="filter-tab-categories"
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                activeFilter === 'CATEGORIES'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50'
+              }`}
+            >
+              Procurement Sectors ({homepageCategories.length})
             </button>
             <button
               type="button"
@@ -1348,9 +1430,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                               </span>
                               {row.status === 'FIXED' && (
                                 <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">
-                                  {row.record_type === 'RFQ'
-                                    ? 'Homepage: Buy Leads #1'
-                                    : 'Homepage: Recently Updated #1'}
+                                  {row.record_type === 'CATEGORY'
+                                    ? 'Homepage: Procurement Sectors'
+                                    : row.record_type === 'RFQ'
+                                      ? 'Homepage: Buy Leads #1'
+                                      : 'Homepage: Recently Updated #1'}
                                 </span>
                               )}
                               {row.is_fallback_card && (
@@ -1375,9 +1459,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                                   className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 underline cursor-pointer shrink-0"
                                 >
                                   <span>
-                                    {row.record_type === 'RFQ'
-                                      ? 'See in Homepage Buy Leads →'
-                                      : 'See on Homepage (#1) →'}
+                                    {row.record_type === 'CATEGORY'
+                                      ? 'See in Procurement Sectors →'
+                                      : row.record_type === 'RFQ'
+                                        ? 'See in Homepage Buy Leads →'
+                                        : 'See on Homepage (#1) →'}
                                   </span>
                                 </button>
                               )}

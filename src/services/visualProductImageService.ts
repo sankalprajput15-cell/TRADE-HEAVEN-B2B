@@ -791,7 +791,7 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
 
 export interface CatalogImageAuditLogItem {
   record_id: string;
-  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category: string;
   issue_type: 'DUPLICATE' | 'PLACEHOLDER_OR_MISSING' | 'MISMATCHED' | 'BROKEN_ASSET';
@@ -804,7 +804,7 @@ export interface CatalogImageAuditLogItem {
 
 export interface CatalogScannedCleanRecord {
   record_id: string;
-  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category: string;
   current_image_url: string;
@@ -820,6 +820,7 @@ export interface CatalogImageAuditSummary {
   total_scanned: number;
   products_scanned?: number;
   rfqs_scanned?: number;
+  categories_scanned?: number;
   duplicates_detected: number;
   mismatched_detected?: number;
   records_fixed: number;
@@ -832,7 +833,7 @@ export interface CatalogImageAuditSummary {
 export interface SingleCatalogImageFixResult {
   success: boolean;
   record_id: string;
-  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category: string;
   old_image_url: string;
@@ -851,7 +852,7 @@ export async function runCatalogImageAuditAndCleanup(options?: {
   includeCatalog?: boolean;
   catalogItems?: Array<{
     id: string;
-    type?: 'PRODUCT' | 'RFQ';
+    type?: 'PRODUCT' | 'RFQ' | 'CATEGORY';
     title: string;
     category?: string;
     image_url?: string;
@@ -897,7 +898,7 @@ export async function runCatalogImageAuditAndCleanup(options?: {
 
 export async function fixSingleCatalogImage(params: {
   recordId: string;
-  recordType?: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  recordType?: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title?: string;
   category?: string;
   customImageUrl?: string;

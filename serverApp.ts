@@ -21434,7 +21434,7 @@ app.post('/api/v1/categories/sync-all-google-headers', async (req, res) => {
 // =============================================================
 export interface CatalogAuditLogEntry {
   record_id: string;
-  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category: string;
   issue_type: 'DUPLICATE' | 'PLACEHOLDER_OR_MISSING' | 'MISMATCHED' | 'BROKEN_ASSET';
@@ -21495,7 +21495,7 @@ function collectAllUsedCatalogImageUrls(excludeRecordId?: string): Map<string, {
 function detectCatalogImageIssue(
   record: {
     id: string;
-    type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+    type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
     title: string;
     category: string;
     imageUrl: string;
@@ -21916,7 +21916,7 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
 
 async function resolveUniqueVerifiedCatalogImage(params: {
   recordId: string;
-  recordType: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
   category?: string;
   specifications?: string;
@@ -22080,7 +22080,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   includeCatalog?: boolean;
   extraCatalogItems?: Array<{
     id: string;
-    type?: 'PRODUCT' | 'RFQ';
+    type?: 'PRODUCT' | 'RFQ' | 'CATEGORY';
     title: string;
     category?: string;
     image_url?: string;
@@ -22100,7 +22100,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const catalogRecords: Array<{
     record_id: string;
-    record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+    record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
     title: string;
     category: string;
     current_image_url: string;
@@ -22112,6 +22112,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let totalScanned = 0;
   let productsScanned = 0;
   let rfqsScanned = 0;
+  let categoriesScanned = 0;
   let duplicatesDetected = 0;
   let mismatchedDetected = 0;
   let recordsFixed = 0;
@@ -22121,7 +22122,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   const scannedIds = new Set<string>();
 
   // Load full site baseline snapshot (992+ catalog products & active RFQs) if no explicit catalogItems override was passed
-  let snapshotItems: Array<{ id: string; type?: 'PRODUCT' | 'RFQ'; title: string; category?: string; image_url?: string }> = [];
+  let snapshotItems: Array<{ id: string; type?: 'PRODUCT' | 'RFQ' | 'CATEGORY'; title: string; category?: string; image_url?: string }> = [];
   try {
     if (fs.existsSync(FULL_CATALOG_SNAPSHOT_FILE)) {
       const parsedSnap = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_FILE, 'utf8'));
@@ -22499,8 +22500,10 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (!cid || scannedIds.has(cid) || serverDeletedProductIds.has(cid)) continue;
     scannedIds.add(cid);
     totalScanned++;
-    const rType = item.type === 'RFQ' ? 'RFQ' : 'PRODUCT';
+    const rType: 'PRODUCT' | 'RFQ' | 'CATEGORY' =
+      item.type === 'RFQ' ? 'RFQ' : item.type === 'CATEGORY' ? 'CATEGORY' : 'PRODUCT';
     if (rType === 'RFQ') rfqsScanned++;
+    else if (rType === 'CATEGORY') categoriesScanned++;
     else productsScanned++;
 
     const ov = serverProductImageState?.overrides?.[cid];
@@ -22618,6 +22621,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       scannedIds.add(key);
       totalScanned++;
       if (key.startsWith('rfq-')) rfqsScanned++;
+      else if (key.startsWith('cat-')) categoriesScanned++;
       else productsScanned++;
       seenUrls.set(currentImg, { id: key, title: key, type: 'OVERRIDE' });
       usedUrlsSet.add(currentImg);
@@ -22664,6 +22668,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     scannedIds.add(key);
     totalScanned++;
     if (key.startsWith('rfq-')) rfqsScanned++;
+    else if (key.startsWith('cat-')) categoriesScanned++;
     else productsScanned++;
     seenUrls.set(ovCheckUrl, { id: key, title: key, type: 'OVERRIDE' });
     usedUrlsSet.add(ovCheckUrl);
@@ -22687,6 +22692,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     total_scanned: totalScanned,
     products_scanned: productsScanned,
     rfqs_scanned: rfqsScanned,
+    categories_scanned: categoriesScanned,
     duplicates_detected: duplicatesDetected,
     mismatched_detected: mismatchedDetected,
     records_fixed: recordsFixed,
@@ -22699,7 +22705,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
 
 async function fixSingleCatalogImageRecord(params: {
   recordId: string;
-  recordType?: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  recordType?: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title?: string;
   category?: string;
   customImageUrl?: string;
@@ -22780,8 +22786,15 @@ async function fixSingleCatalogImageRecord(params: {
       matchedRfq?.category ||
       'General Wholesale'
   );
-  const resolvedType: 'PRODUCT' | 'RFQ' | 'OVERRIDE' =
-    params.recordType || (matchedRfq ? 'RFQ' : matchedListing || matchedProduct ? 'PRODUCT' : 'OVERRIDE');
+  const resolvedType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
+    params.recordType ||
+    (matchedRfq
+      ? 'RFQ'
+      : matchedListing || matchedProduct
+        ? 'PRODUCT'
+        : cleanId.startsWith('cat-')
+          ? 'CATEGORY'
+          : 'OVERRIDE');
 
   let finalImageUrl = '';
   let source = 'admin_manual_selection';

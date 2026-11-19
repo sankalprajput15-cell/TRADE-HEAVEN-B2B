@@ -1085,16 +1085,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }}
               onViewOnHomepage={(record) => {
                 onNavigate('HOMEPAGE');
-                const targetId =
-                  record.recordType === 'RFQ'
-                    ? 'recent-rfqs-section'
-                    : 'recently-updated-products-section';
                 window.setTimeout(() => {
                   const el =
-                    document.getElementById(targetId) ||
-                    document.getElementById('featured-products-section');
+                    record.recordType === 'CATEGORY'
+                      ? document.getElementById(`category-card-${record.recordId}`) ||
+                        document.getElementById('category-mega-menu')
+                      : record.recordType === 'RFQ'
+                        ? document.getElementById('recent-rfqs-section')
+                        : document.getElementById('featured-products-section') ||
+                          document.getElementById('category-mega-menu');
                   if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
                 }, 260);
               }}
