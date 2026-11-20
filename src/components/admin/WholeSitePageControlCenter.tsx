@@ -277,14 +277,37 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   onNavigate,
   onOpenAdminTab
 }) => {
-  const { siteContent, updateSiteContent } = useSiteContent();
+  const { siteContent, updateSiteContent, draftRecord, saveDraft: saveContextDraft, discardDraft: discardContextDraft } = useSiteContent();
 
   const [selectedPage, setSelectedPage] = useState<SitePageKey>('HOMEPAGE');
   const [homepageSubTab, setHomepageSubTab] = useState<HomepageSubTab>('FEATURED_PRODUCTS');
   const [pageSearch, setPageSearch] = useState('');
 
-  // Load saved draft if present, otherwise initialize from live published siteContent
-  const initialStoredDraft = useMemo(() => readStoredDraft(), []);
+  // Load saved draft if present (from either Whole Site Manager or shared SiteContentContext draft)
+  const initialStoredDraft = useMemo(() => {
+    const localMgr = readStoredDraft();
+    if (localMgr && draftRecord) {
+      const mgrTime = Date.parse(localMgr.savedAt) || 0;
+      const ctxTime = Date.parse(draftRecord.savedAt) || 0;
+      if (ctxTime > mgrTime) {
+        return {
+          draft: mergeSiteContentDefaults(draftRecord.content),
+          stagedItemImages: localMgr.stagedItemImages || {},
+          savedAt: draftRecord.savedAt
+        };
+      }
+      return localMgr;
+    }
+    if (localMgr) return localMgr;
+    if (draftRecord) {
+      return {
+        draft: mergeSiteContentDefaults(draftRecord.content),
+        stagedItemImages: {},
+        savedAt: draftRecord.savedAt
+      };
+    }
+    return null;
+  }, []);
 
   const [draft, setDraft] = useState<SiteContent>(() =>
     initialStoredDraft ? initialStoredDraft.draft : mergeSiteContentDefaults(siteContent)
@@ -527,9 +550,10 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     return changes;
   }, [draft, siteContent, displayConfig, liveDisplayConfig, pendingImageCount]);
 
-  // Save Draft (stores locally WITHOUT publishing to live visitors)
+  // Save Draft (stores locally with timestamp WITHOUT publishing to live visitors)
   const handleSaveDraft = () => {
-    const nowIso = new Date().toISOString();
+    const ctxRes = saveContextDraft(draft, 'Whole Site Page Manager');
+    const nowIso = ctxRes.savedAt || new Date().toISOString();
     const payload: StoredSiteDraftPayload = {
       draft,
       stagedItemImages,
@@ -539,7 +563,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
       localStorage.setItem(WHOLE_SITE_DRAFT_STORAGE_KEY, JSON.stringify(payload));
       setSavedDraftAt(nowIso);
       setHasDraftEdits(true);
-      flashNotice('success', 'Draft saved locally. Live website is unchanged until you click Publish Live.');
+      flashNotice('success', 'Draft saved locally with timestamp. Live website is unchanged until you click Publish Live.');
     } catch {
       flashNotice('error', 'Could not store draft in browser storage.');
     }
@@ -550,6 +574,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     try {
       localStorage.removeItem(WHOLE_SITE_DRAFT_STORAGE_KEY);
     } catch {}
+    discardContextDraft();
     setDraft(mergeSiteContentDefaults(siteContent));
     setStagedItemImages({});
     setSavedDraftAt(null);
@@ -576,6 +601,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
         try {
           localStorage.removeItem(WHOLE_SITE_DRAFT_STORAGE_KEY);
         } catch {}
+        discardContextDraft();
         setStagedItemImages({});
         setSavedDraftAt(null);
         setHasDraftEdits(false);

@@ -8,7 +8,10 @@ import {
   Layers, 
   Image as ImageIcon,
   RotateCcw,
-  Type
+  Type,
+  BookmarkCheck,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 
 interface Props {
@@ -22,30 +25,74 @@ export const LiveSectionEditModal: React.FC<Props> = ({
   onClose,
   sectionKey
 }) => {
-  const { siteContent, updateSiteContent, currentUser, isUserAuthorized } = useSiteContent();
-  const [formData, setFormData] = useState(siteContent);
+  const {
+    siteContent,
+    updateSiteContent,
+    currentUser,
+    isUserAuthorized,
+    draftRecord,
+    hasSavedDraft,
+    saveDraft,
+    discardDraft
+  } = useSiteContent();
+  const [formData, setFormData] = useState(draftRecord?.content || siteContent);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [draftFeedback, setDraftFeedback] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
 
   React.useEffect(() => {
-    setFormData(siteContent);
-  }, [siteContent, isOpen]);
+    if (isOpen) {
+      setFormData(draftRecord?.content || siteContent);
+      setDraftFeedback(null);
+      setErrorMsg(null);
+      setSavedSuccess(false);
+    }
+  }, [siteContent, draftRecord, isOpen]);
 
   if (!isOpen || !sectionKey || !isAdmin) return null;
 
+  const formatTimestamp = (iso?: string | null) => {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      return iso;
+    }
+  };
+
+  const handleSaveDraft = () => {
+    setErrorMsg(null);
+    const res = saveDraft(formData, `Quick Section Editor (${sectionKey})`);
+    if (res.success) {
+      setDraftFeedback(`Draft saved locally (${formatTimestamp(res.savedAt)}). Live site unchanged until published.`);
+    } else {
+      setErrorMsg(res.message || 'Could not save draft locally.');
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft();
+    setFormData(siteContent);
+    setDraftFeedback('Saved draft discarded. Restored live published section values.');
+  };
+
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    setErrorMsg(null);
     const res = await updateSiteContent(formData, currentUser);
     if (res.success) {
+      discardDraft();
+      setDraftFeedback(null);
       setSavedSuccess(true);
       setTimeout(() => {
         setSavedSuccess(false);
         onClose();
       }, 1200);
     } else {
-      alert(`Error saving section: ${res.message}`);
+      setErrorMsg(`Error saving section: ${res.message || 'Failed to publish section.'}`);
     }
   };
 
@@ -95,10 +142,42 @@ export const LiveSectionEditModal: React.FC<Props> = ({
 
         {/* Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+          {hasSavedDraft && draftRecord && (
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span className="truncate font-semibold">
+                  Loaded saved draft from {formatTimestamp(draftRecord.savedAt)} (not live yet)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[11px] shrink-0 cursor-pointer"
+              >
+                Discard Draft
+              </button>
+            </div>
+          )}
+
+          {draftFeedback && (
+            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-white font-semibold flex items-center gap-2">
+              <BookmarkCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{draftFeedback}</span>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           {savedSuccess && (
             <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Section updated successfully!</span>
+              <span>Section published live successfully!</span>
             </div>
           )}
 
@@ -440,7 +519,7 @@ export const LiveSectionEditModal: React.FC<Props> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
           <button
             type="button"
             onClick={onClose}
@@ -448,14 +527,24 @@ export const LiveSectionEditModal: React.FC<Props> = ({
           >
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={() => handleSave()}
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>Apply &amp; Save Section</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <BookmarkCheck className="w-4 h-4 text-amber-700" />
+              <span>Save Draft</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSave()}
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Apply &amp; Publish Live</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

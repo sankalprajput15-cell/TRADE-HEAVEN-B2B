@@ -33,7 +33,9 @@ import {
   ChevronRight,
   Lock,
   ShieldAlert,
-  KeyRound
+  KeyRound,
+  Clock,
+  BookmarkCheck
 } from 'lucide-react';
 
 type CmsTab = 
@@ -57,14 +59,20 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
     currentUser: contextUser,
     isLiveEditMode,
     toggleLiveEditMode,
-    isUserAuthorized
+    isUserAuthorized,
+    draftRecord,
+    hasSavedDraft,
+    saveDraft,
+    discardDraft
   } = useSiteContent();
 
   const currentUser = propUser || contextUser;
 
   const [activeTab, setActiveTab] = useState<CmsTab>('HERO_BRAND');
-  const [formData, setFormData] = useState<SiteContent>(siteContent);
+  const [formData, setFormData] = useState<SiteContent>(() => (draftRecord?.content ? draftRecord.content : siteContent));
+  const [isLoadedFromDraft, setIsLoadedFromDraft] = useState<boolean>(() => Boolean(draftRecord?.content));
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -86,16 +94,72 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       currentUser.token
   );
 
-  // Sync state if context changes externally
+  const hasUnsavedChangesVsLive = React.useMemo(() => {
+    try {
+      return JSON.stringify(formData) !== JSON.stringify(siteContent);
+    } catch {
+      return false;
+    }
+  }, [formData, siteContent]);
+
+  const formatDraftTimestamp = (iso?: string | null) => {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  // Only sync from live siteContent when NOT editing a saved draft or local modifications
   React.useEffect(() => {
+    if (!isLoadedFromDraft && !hasSavedDraft && !hasUnsavedChangesVsLive) {
+      setFormData(siteContent);
+    }
+  }, [siteContent, isLoadedFromDraft, hasSavedDraft, hasUnsavedChangesVsLive]);
+
+  const handleSaveDraft = () => {
+    setSaveErrorMsg(null);
+    const res = saveDraft(formData, 'Full Site CMS Studio');
+    if (res.success) {
+      setIsLoadedFromDraft(true);
+      const formatted = formatDraftTimestamp(res.savedAt);
+      setDraftNotice(`Draft saved locally (${formatted}). Live website was not deployed or modified — you can resume editing anytime.`);
+      setTimeout(() => setDraftNotice(null), 5000);
+    } else {
+      setSaveErrorMsg(res.message || 'Could not save draft to local storage.');
+    }
+  };
+
+  const handleResumeSavedDraft = () => {
+    if (!draftRecord?.content) return;
+    setFormData(draftRecord.content);
+    setIsLoadedFromDraft(true);
+    setSaveErrorMsg(null);
+    setDraftNotice(`Resumed saved draft from ${formatDraftTimestamp(draftRecord.savedAt)}.`);
+    setTimeout(() => setDraftNotice(null), 3500);
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft();
     setFormData(siteContent);
-  }, [siteContent]);
+    setIsLoadedFromDraft(false);
+    setSaveErrorMsg(null);
+    setDraftNotice('Saved draft discarded. Editor restored to live published site content.');
+    setTimeout(() => setDraftNotice(null), 3500);
+  };
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setSaveErrorMsg(null);
     const res = await updateSiteContent(formData, currentUser);
     if (res.success) {
+      discardDraft();
+      setIsLoadedFromDraft(false);
+      setDraftNotice(null);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } else {
@@ -106,6 +170,8 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
   const handleReset = async () => {
     setSaveErrorMsg(null);
     const res = await resetToDefaults(currentUser);
+    discardDraft();
+    setIsLoadedFromDraft(false);
     setFormData(DEFAULT_SITE_CONTENT);
     if (res.success) {
       setSavedSuccess(true);
@@ -142,10 +208,35 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       const res = await updateSiteContent(parsed, currentUser);
       setJsonError(null);
       if (res.success) {
+        discardDraft();
+        setIsLoadedFromDraft(false);
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 2500);
       } else {
         setSaveErrorMsg(res.message || 'Failed to persist JSON update to server.');
+      }
+    } catch (err: any) {
+      setJsonError('Invalid JSON format: ' + err.message);
+    }
+  };
+
+  const handleSaveJsonAsDraft = () => {
+    try {
+      const sourceText = jsonInput || JSON.stringify(formData, null, 2);
+      if (sourceText.length > 5 * 1024 * 1024) {
+        setJsonError(`JSON payload exceeds 5 MB limit (${(sourceText.length / (1024 * 1024)).toFixed(1)} MB).`);
+        return;
+      }
+      const parsed = JSON.parse(sourceText);
+      setFormData(parsed);
+      setJsonError(null);
+      const res = saveDraft(parsed, 'Full Site CMS Studio (JSON)');
+      if (res.success) {
+        setIsLoadedFromDraft(true);
+        setDraftNotice(`JSON saved to local draft (${formatDraftTimestamp(res.savedAt)}). Live site unchanged.`);
+        setTimeout(() => setDraftNotice(null), 4500);
+      } else {
+        setSaveErrorMsg(res.message || 'Could not save JSON draft.');
       }
     } catch (err: any) {
       setJsonError('Invalid JSON format: ' + err.message);
@@ -435,6 +526,16 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
 
           <button
             type="button"
+            onClick={handleSaveDraft}
+            className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Save your current edits locally with a timestamp without deploying to the live site"
+          >
+            <BookmarkCheck className="w-3.5 h-3.5 text-amber-700" />
+            <span>Save Draft</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleSave()}
             className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
           >
@@ -443,6 +544,74 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
           </button>
         </div>
       </div>
+
+      {/* Persistent Local Draft Banner */}
+      {(hasSavedDraft || hasUnsavedChangesVsLive) && (
+        <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+            <div className="space-y-0.5">
+              <div className="font-bold text-amber-950">
+                {hasSavedDraft && draftRecord
+                  ? isLoadedFromDraft
+                    ? `Editing Saved Local Draft • Last saved ${formatDraftTimestamp(draftRecord.savedAt)}`
+                    : `Saved Draft Available (${formatDraftTimestamp(draftRecord.savedAt)})`
+                  : 'Unsaved local edits in progress — not yet saved as draft or published live'}
+              </div>
+              <div className="text-[11px] text-amber-800">
+                {hasSavedDraft && draftRecord?.source
+                  ? `Saved from ${draftRecord.source}. Live website visitors still see the published version until you click Save All Changes.`
+                  : 'Use Save Draft to keep your changes in browser storage without triggering a live deployment.'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {hasSavedDraft && !isLoadedFromDraft && (
+              <button
+                type="button"
+                onClick={handleResumeSavedDraft}
+                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors cursor-pointer"
+              >
+                Resume Saved Draft
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] transition-colors cursor-pointer"
+            >
+              Update Draft
+            </button>
+            {hasSavedDraft && (
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[11px] transition-colors cursor-pointer"
+              >
+                Discard Draft
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Draft Action Feedback Notice */}
+      {draftNotice && (
+        <div className="p-3.5 rounded-2xl bg-slate-900 text-white border border-slate-700 text-xs font-semibold flex items-center justify-between gap-2 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <BookmarkCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{draftNotice}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDraftNotice(null)}
+            className="text-slate-300 hover:text-white underline text-[11px] cursor-pointer shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Success Notification */}
       {savedSuccess && (
@@ -1642,7 +1811,15 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveJsonAsDraft}
+                  className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <BookmarkCheck className="w-4 h-4 text-amber-700" />
+                  <span>Save Pasted JSON as Draft</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleApplyJson}
@@ -1659,15 +1836,25 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
         {/* Global Save Button at Bottom */}
         <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="text-xs text-slate-500">
-            Clicking <strong>Save All Changes</strong> updates live React state and writes to your local and server CMS storage.
+            Use <strong>Save Draft</strong> to store edits locally with a timestamp, or <strong>Save &amp; Publish Website Changes</strong> to deploy live.
           </span>
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save &amp; Publish Website Changes</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <BookmarkCheck className="w-4 h-4 text-amber-700" />
+              <span>Save Draft</span>
+            </button>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save &amp; Publish Website Changes</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>

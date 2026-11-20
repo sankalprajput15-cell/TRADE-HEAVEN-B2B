@@ -61,6 +61,13 @@ interface UserAuthorizationResult {
   statusText: string;
 }
 
+export interface SiteContentDraftRecord {
+  content: SiteContent;
+  savedAt: string;
+  savedBy?: string;
+  source?: string;
+}
+
 interface SiteContentContextType {
   siteContent: SiteContent;
   updateSiteContent: (newContent: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
@@ -77,6 +84,12 @@ interface SiteContentContextType {
   updateSection: <K extends keyof SiteContent>(sectionKey: K, data: Partial<SiteContent[K]>) => Promise<{ success: boolean; message?: string }>;
   updateField: (path: string, value: any) => void;
   forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
+  // Local Draft Persistence (non-deploying)
+  draftRecord: SiteContentDraftRecord | null;
+  hasSavedDraft: boolean;
+  saveDraft: (draftContent: SiteContent, source?: string) => { success: boolean; savedAt: string; message?: string };
+  discardDraft: () => void;
+  getSavedDraft: () => SiteContentDraftRecord | null;
   // Visual Live Edit Mode
   isLiveEditMode: boolean;
   setIsLiveEditMode: (val: boolean) => void;
@@ -121,8 +134,29 @@ interface SiteContentContextType {
 }
 
 const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v2';
+export const SITE_CONTENT_DRAFT_STORAGE_KEY = 'trade_heaven_site_content_draft_v1';
 const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 const HERO_TANKER_IMAGE = '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+
+function readSiteContentDraftFromStorage(): SiteContentDraftRecord | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(SITE_CONTENT_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.content && typeof parsed.content === 'object') {
+      return {
+        content: normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed.content }),
+        savedAt: typeof parsed.savedAt === 'string' && parsed.savedAt ? parsed.savedAt : new Date().toISOString(),
+        savedBy: typeof parsed.savedBy === 'string' ? parsed.savedBy : undefined,
+        source: typeof parsed.source === 'string' ? parsed.source : undefined
+      };
+    }
+  } catch {
+    // ignore malformed draft storage
+  }
+  return null;
+}
 
 function normalizeHeroImage(content: SiteContent): SiteContent {
   const mergedDisplayConfig = {
@@ -199,6 +233,50 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     return DEFAULT_SITE_CONTENT;
   });
+
+  const [draftRecord, setDraftRecord] = useState<SiteContentDraftRecord | null>(() => readSiteContentDraftFromStorage());
+  const hasSavedDraft = Boolean(draftRecord);
+
+  const getSavedDraft = (): SiteContentDraftRecord | null => {
+    const stored = readSiteContentDraftFromStorage();
+    setDraftRecord(stored);
+    return stored;
+  };
+
+  const saveDraft = (
+    draftContent: SiteContent,
+    source = 'Site Content CMS'
+  ): { success: boolean; savedAt: string; message?: string } => {
+    const savedAt = new Date().toISOString();
+    const record: SiteContentDraftRecord = {
+      content: normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...draftContent }),
+      savedAt,
+      savedBy: currentUser?.email || currentUser?.name || 'Administrator',
+      source
+    };
+    try {
+      localStorage.setItem(SITE_CONTENT_DRAFT_STORAGE_KEY, JSON.stringify(record));
+      setDraftRecord(record);
+      return {
+        success: true,
+        savedAt,
+        message: 'Draft saved locally. Live website remains unchanged until published.'
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        savedAt,
+        message: err?.message || 'Unable to save draft to browser local storage.'
+      };
+    }
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(SITE_CONTENT_DRAFT_STORAGE_KEY);
+    } catch {}
+    setDraftRecord(null);
+  };
 
   const [authorizedUsers, setAuthorizedUsers] = useState<CmsAuthorizedUser[]>([
     {
@@ -315,6 +393,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           const parsed = JSON.parse(e.newValue);
           setSiteContent(normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed }));
         } catch {}
+      } else if (e.key === SITE_CONTENT_DRAFT_STORAGE_KEY) {
+        setDraftRecord(readSiteContentDraftFromStorage());
       }
     };
 
@@ -689,6 +769,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updateSection,
         updateField,
         forceSaveNow,
+        draftRecord,
+        hasSavedDraft,
+        saveDraft,
+        discardDraft,
+        getSavedDraft,
         isLiveEditMode,
         setIsLiveEditMode,
         toggleLiveEditMode,

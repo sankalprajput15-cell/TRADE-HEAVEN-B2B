@@ -27,7 +27,8 @@ import {
   FileText,
   MessageSquare,
   ArrowUpRight,
-  Building2
+  Building2,
+  BookmarkCheck
 } from 'lucide-react';
 
 interface Props {
@@ -48,7 +49,9 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
     resetToDefaults, 
     exportContentJson,
     currentUser,
-    isUserAuthorized
+    isUserAuthorized,
+    hasSavedDraft,
+    draftRecord
   } = useSiteContent();
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -106,6 +109,28 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {hasSavedDraft && draftRecord && (
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate('CMS_MANAGEMENT');
+                setIsExpanded(false);
+              }}
+              className="w-full p-2.5 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <BookmarkCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-amber-200 truncate">Saved CMS Draft Ready</div>
+                  <div className="text-[10px] text-amber-300/80 truncate">
+                    Saved {new Date(draftRecord.savedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })} • Resume editing
+                  </div>
+                </div>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            </button>
+          )}
 
           {/* Sub Tab Switcher */}
           <div className="flex rounded-xl bg-slate-800 p-1 text-[11px] font-bold">
