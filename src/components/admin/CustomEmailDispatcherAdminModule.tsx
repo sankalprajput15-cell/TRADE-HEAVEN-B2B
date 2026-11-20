@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Mail, 
   Send, 
@@ -23,6 +23,12 @@ import {
   Layers,
   Clock,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
+  PanelRightOpen,
+  PanelRightClose,
+  X,
   CheckCheck,
   Check,
   MousePointerClick,
@@ -44,6 +50,52 @@ const MEMBERSHIP_RENEWAL_DEFAULTS = {
   paymentMethod: 'Debit Card'
 };
 
+type BuiltinSectionKey =
+  | 'headerBanner'
+  | 'greetingIntro'
+  | 'billingSummary'
+  | 'credentialsBox'
+  | 'loginGuide'
+  | 'inquiries'
+  | 'ctaButton'
+  | 'closingNote'
+  | 'escrowBadge'
+  | 'footer';
+
+interface CustomEmailSectionBlock {
+  id: string;
+  title: string;
+  badge: string;
+  body: string;
+  tone: 'neutral' | 'info' | 'warning' | 'success' | 'danger';
+}
+
+const BUILTIN_SECTION_LABELS: Record<BuiltinSectionKey, string> = {
+  headerBanner: 'Header Banner',
+  greetingIntro: 'Greeting & Message Body',
+  billingSummary: 'Membership & Billing Box',
+  credentialsBox: 'Portal Credentials Box',
+  loginGuide: '3-Step Login Guide',
+  inquiries: 'Active Inquiries / Tenders',
+  ctaButton: 'Call-to-Action Button',
+  closingNote: 'Custom Closing Note',
+  escrowBadge: 'Escrow Protection Notice',
+  footer: 'Email Footer'
+};
+
+function escapeEmailHtml(val: string): string {
+  return String(val || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatEmailMultilineHtml(val: string): string {
+  return escapeEmailHtml(val).replace(/\n/g, '<br/>');
+}
+
 interface DispatchedHistoryItem {
   id: string;
   recipientEmail: string;
@@ -55,6 +107,7 @@ interface DispatchedHistoryItem {
   trackingId?: string;
   dispatchedAt: string;
   success: boolean;
+  deliveryMode?: string;
   error?: string;
 }
 
@@ -67,7 +120,110 @@ const PRESET_TEMPLATES: Array<{
   name: string;
   description: string;
   data: CustomAdminEmailPayload;
+  defaultCustomSections?: CustomEmailSectionBlock[];
 }> = [
+  {
+    id: 'GLOBAL_AD_CAMPAIGN_VISIBILITY_REPORT',
+    name: '🌍 Global Ad Campaign Report — Country Clicks, Procedure/Price/Payment Inquiries & Visibility Growth',
+    description: 'Ready-to-send client ad performance report showing buyers by country & region who clicked ads, requested procedure, pricing & payment terms, and rising product visibility.',
+    data: {
+      recipientName: '{{decisionMakerName}}',
+      decisionMakerName: '{{decisionMakerName}}',
+      recipientEmail: '{{email}}',
+      companyName: '{{companyName}}',
+      address: '{{address}}',
+      contactPhone: '',
+      paymentMethod: 'Active Global Ad Campaign',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: '🌍 Global Ad Campaign Report: Rising Product Visibility & Verified Buyer Inquiries (Procedure, Price & Payment Terms) — {{companyName}}',
+      badgeLabel: '🌍 GLOBAL AD PERFORMANCE & BUYER INTEREST REPORT',
+      headline: 'Your Global Ad Campaign Is Driving Strong Buyer Interest & Higher Visibility',
+      subheadline: 'Regional Clicks, Procedure / Price / Payment Term Requests & Storefront Growth Summary for {{companyName}}',
+      introMessage:
+        'We are pleased to share the latest performance report from your active Global Ad Campaign on Trade Heaven.\n\nFollowing the launch of your promoted listings across international B2B trade corridors, your storefront and product listings are experiencing a steady increase in global visibility, ad clicks, and direct buyer engagement. Buyers from multiple countries and trading hubs have clicked your ads, reviewed your products, and specifically requested your Supply Procedure (SCO/FCO), Unit Pricing (FOB/CIF), and Payment Terms.',
+      includeCredentialsBox: false,
+      includeLoginGuide: false,
+      includeEscrowBadge: true,
+      isMembershipRenewal: false,
+      inquiriesTitle: 'Sample High-Intent Buyer Inquiries From Your Global Ad Run',
+      inquiries: [
+        {
+          id: 'AD-LEAD-ME-01',
+          title: 'Requested Supply Procedure, CIF Price & Payment Terms (SBLC / LC)',
+          buyerCompany: 'Verified Importer — Middle East & UAE (Dubai / Jebel Ali)',
+          buyerCountry: 'United Arab Emirates',
+          quantity: 'Trial + Monthly Contract Volume',
+          estimatedValue: 'High-Intent Corporate Buyer',
+          incotermPort: 'CIF Jebel Ali / Fujairah',
+          paymentTerms: 'Requested Procedure, Unit Price & LC / Escrow Terms',
+          urgency: 'HIGH'
+        },
+        {
+          id: 'AD-LEAD-EU-02',
+          title: 'Clicked Product Ad & Requested Formal Quotation + Delivery Procedure',
+          buyerCompany: 'Verified Trading Desk — Europe & UK (Rotterdam / London)',
+          buyerCountry: 'Netherlands / UK',
+          quantity: 'Bulk Commercial Order',
+          estimatedValue: 'Verified B2B Buyer',
+          incotermPort: 'CIF Rotterdam / Antwerp',
+          paymentTerms: 'Requested Pricing Sheet & Payment Procedure',
+          urgency: 'HIGH'
+        },
+        {
+          id: 'AD-LEAD-APAC-03',
+          title: 'Product Interest & Direct Inquiry on Pricing, MOQ & Payment Terms',
+          buyerCompany: 'Industrial Procurement Group — Asia-Pacific (Singapore / India)',
+          buyerCountry: 'Singapore / India',
+          quantity: 'Recurring Quarterly Supply',
+          estimatedValue: 'Active Sourcing Mandate',
+          incotermPort: 'CIF Singapore / Nhava Sheva',
+          paymentTerms: 'Requested SCO, Pricing & DLC / TT Terms',
+          urgency: 'HIGH'
+        }
+      ],
+      customClosingNote:
+        'Next Step: Please reply to this email or log in to your Trade Heaven dashboard with your latest Procedure, Pricing (FOB/CIF), and acceptable Payment Terms so we can respond immediately to these interested buyers and keep your ad momentum growing.',
+      ctaText: 'View Buyer Inquiries & Ad Insights on Trade Heaven →',
+      ctaUrl: 'https://www.tradeheaven.net'
+    },
+    defaultCustomSections: [
+      {
+        id: 'ad-report-country-breakdown',
+        title: '1. Global Reach & Interested Buyers by Country / Region',
+        badge: 'WORLDWIDE AD CLICKS',
+        tone: 'info',
+        body:
+          '• Middle East (UAE, Saudi Arabia, Qatar, Oman): 142 Ad Clicks | 18 Buyers Showed Direct Product Interest\n' +
+          '• Europe & UK (Netherlands, Germany, UK, Italy, Spain): 118 Ad Clicks | 15 Buyers Showed Direct Product Interest\n' +
+          '• North America (USA — Texas, New York, California; Canada): 96 Ad Clicks | 12 Buyers Showed Direct Product Interest\n' +
+          '• Asia-Pacific (Singapore, India, China, Australia, Malaysia): 134 Ad Clicks | 16 Buyers Showed Direct Product Interest\n' +
+          '• Africa & Latin America (South Africa, Nigeria, Brazil, Kenya): 64 Ad Clicks | 9 Buyers Showed Direct Product Interest\n\n' +
+          'Total Worldwide Engagement: 554 Targeted Ad Clicks | 70 Qualified Buyers Expressed Interest Across 5 Global Regions.'
+      },
+      {
+        id: 'ad-report-inquiry-topics',
+        title: '2. What Buyers Asked About Your Products',
+        badge: 'HIGH BUYER INTENT',
+        tone: 'warning',
+        body:
+          '• Supply & Transaction Procedure (SCO / FCO / Inspection Steps): 29 Buyers Requested Procedure\n' +
+          '• Product Pricing & Volume Discounts (FOB / CIF Rates): 41 Buyers Requested Pricing\n' +
+          '• Payment Terms & Instruments (LC, DLC, SBLC, TT, Escrow): 24 Buyers Asked for Payment Terms\n' +
+          '• Direct Product Interest & Specification Requests: 70 Total Buyers Engaged With Your Catalog'
+      },
+      {
+        id: 'ad-report-visibility-growth',
+        title: '3. Rising Storefront & Product Visibility After Running Ads',
+        badge: 'VISIBILITY UP ↑',
+        tone: 'success',
+        body:
+          '• Global Ad Impressions: +285% Increase Since Campaign Launch (14,800+ Verified B2B Views)\n' +
+          '• Storefront & Product Page Visits: +190% Growth Week-over-Week\n' +
+          '• Marketplace Search Positioning: Featured in Top Category Results Across Target Importing Countries\n' +
+          '• Repeat Buyer Profile Visits: +64% Increase in Returning Procurement Managers Reviewing Your Listings'
+      }
+    ]
+  },
   {
     id: 'MELISSA_VIP_UPGRADE_AGREEMENT',
     name: '💳 Melissa Prezios (melissa@mpcommoditybrokers.com) — VIP Upgrade, Escrow Release & 30-Day Agreement',
@@ -857,9 +1013,48 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
   };
 
   const [isSending, setIsSending] = useState(false);
+  const [sendingTarget, setSendingTarget] = useState<'ADMIN' | 'CLIENT' | 'BOTH' | null>(null);
   const [isSendingDemoAdmin, setIsSendingDemoAdmin] = useState(false);
   const [sendAdminCopy, setSendAdminCopy] = useState(true);
   const [adminCopyEmail, setAdminCopyEmail] = useState('yr943334@gmail.com');
+
+  // Interactive Live Preview & Per-Section Add / Edit / Delete Builder State
+  const [showInlinePreview, setShowInlinePreview] = useState(true);
+  const [editingSectionKey, setEditingSectionKey] = useState<string | null>(null);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<BuiltinSectionKey, boolean>>(() => {
+    const initial = PRESET_TEMPLATES[0].data;
+    return {
+      headerBanner: true,
+      greetingIntro: true,
+      billingSummary: Boolean(initial.address || initial.paymentMethod || initial.isMembershipRenewal),
+      credentialsBox: initial.includeCredentialsBox !== false,
+      loginGuide: initial.includeLoginGuide !== false,
+      inquiries: Boolean(initial.inquiries && initial.inquiries.length > 0),
+      ctaButton: true,
+      closingNote: Boolean(initial.customClosingNote),
+      escrowBadge: initial.includeEscrowBadge !== false,
+      footer: true
+    };
+  });
+  const [greetingPrefix, setGreetingPrefix] = useState('Dear');
+  const [billingSectionTitle, setBillingSectionTitle] = useState('CLIENT MEMBERSHIP & BILLING SUMMARY');
+  const [billingSectionBadge, setBillingSectionBadge] = useState('CURRENT OFFER ACTIVE');
+  const [loginGuideTitle, setLoginGuideTitle] = useState('Quick 3-Step Login Guide:');
+  const [loginGuideSteps, setLoginGuideSteps] = useState<string[]>([
+    'Go to your Trade Heaven portal URL and click "Sign In" at the top right.',
+    'Enter your registered User ID / Email and assigned Password.',
+    'Open your Dashboard > Inquiries & Buy Leads to review specifications and submit quotations.'
+  ]);
+  const [escrowNoticeText, setEscrowNoticeText] = useState(
+    'All high-value institutional contracts finalized on Trade Heaven operate under regulated escrow protocols with independent SGS/Saybolt verification prior to funds release.'
+  );
+  const [footerText, setFooterText] = useState(
+    'Dispatched via noreply@tradeheaven.net • Immediate support on WhatsApp +91 85329 34479 or help@tradeheaven.net'
+  );
+  const [customSections, setCustomSections] = useState<CustomEmailSectionBlock[]>(() =>
+    (PRESET_TEMPLATES[0].defaultCustomSections || []).map(sec => ({ ...sec }))
+  );
+
   const [sendResult, setSendResult] = useState<{
     success: boolean;
     message: string;
@@ -867,34 +1062,122 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     trackingId?: string;
     trackingPixelUrl?: string;
     dispatchedAt?: string;
-  } | null>({
-    success: true,
-    message: '⚡🏗️ MESSAGE DISPATCHED TO MARK JOHNSON (mjohnson@atlanticpowerequip.com) + ADMIN COPY SHARED AT yr943334@gmail.com: Notified that 10 buyers visited his profile and inquired to buy generators and 5 for cranes (Tracking ID: ms-trk-mark-johnson-15-buyers-gen-cranes-2026).',
-    messageId: '<mark-johnson-10-generators-5-cranes-buyers-2026@tradeheaven.net>',
-    trackingId: 'ms-trk-mark-johnson-15-buyers-gen-cranes-2026',
-    trackingPixelUrl: '/api/v1/track/open/ms-trk-mark-johnson-15-buyers-gen-cranes-2026.gif',
-    dispatchedAt: new Date().toLocaleTimeString()
-  });
+  } | null>(null);
 
   // MailSuite Open & Click Tracking Telemetry State
   const [mailSuiteStats, setMailSuiteStats] = useState<MailSuiteAnalyticsSummary | null>(null);
   const [trackedServerEmails, setTrackedServerEmails] = useState<CompanyEmailHistoryEntry[]>([]);
   const [simulatingTrackKey, setSimulatingTrackKey] = useState<string | null>(null);
 
-  const fetchMailSuiteTelemetry = async () => {
+  const mergeServerEntriesIntoHistory = useCallback((entries: CompanyEmailHistoryEntry[]) => {
+    if (!Array.isArray(entries) || entries.length === 0) return;
+    setHistory(prev => {
+      const seenKeys = new Set<string>();
+      const combined: DispatchedHistoryItem[] = [];
+
+      const makeKey = (recipient: string, msgId?: string, trkId?: string, subj?: string, dt?: string) => {
+        const cleanRec = (recipient || '').trim().toLowerCase();
+        if (msgId) return `m:${cleanRec}:${msgId}`;
+        if (trkId) return `t:${cleanRec}:${trkId}`;
+        return `s:${cleanRec}:${(subj || '').slice(0, 60)}:${(dt || '').slice(0, 16)}`;
+      };
+
+      for (const s of entries) {
+        const rec = (s as any).recipient || (s as any).recipientEmail || '';
+        if (!rec) continue;
+        const k = makeKey(rec, s.messageId, s.trackingId, s.subject, s.dispatchedAt);
+        if (seenKeys.has(k)) continue;
+        seenKeys.add(k);
+        combined.push({
+          id: s.id || `srv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          recipientEmail: rec,
+          recipientName: s.recipientName || 'Trade Partner',
+          companyName: s.companyName || 'Corporate Entity',
+          subject: s.subject || 'Trade Heaven Notification',
+          templatePreset: s.category || 'CUSTOM_ADMIN_NOTICE',
+          messageId: s.messageId,
+          trackingId: s.trackingId,
+          dispatchedAt: s.dispatchedAt || new Date().toISOString(),
+          success: s.success !== false,
+          deliveryMode: (s as any).deliveryMode,
+          error: s.error || undefined
+        });
+      }
+
+      for (const local of prev) {
+        const k = makeKey(local.recipientEmail, local.messageId, local.trackingId, local.subject, local.dispatchedAt);
+        if (seenKeys.has(k)) continue;
+        seenKeys.add(k);
+        combined.push(local);
+      }
+
+      combined.sort((a, b) => new Date(b.dispatchedAt).getTime() - new Date(a.dispatchedAt).getTime());
+      return combined.slice(0, 300);
+    });
+  }, []);
+
+  const fetchMailSuiteTelemetry = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/admin/mailsuite/analytics', {
-        headers: { Accept: 'application/json' }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.analytics) setMailSuiteStats(data.analytics);
-        if (Array.isArray(data?.entries)) setTrackedServerEmails(data.entries);
+      let resolvedEntries: CompanyEmailHistoryEntry[] = [];
+      let resolvedStats: MailSuiteAnalyticsSummary | null = null;
+
+      // 1. Primary Node endpoints
+      try {
+        const [analyticsRes, historyRes] = await Promise.all([
+          fetch('/api/v1/admin/mailsuite/analytics', { headers: { Accept: 'application/json' } }).catch(() => null),
+          fetch('/api/v1/admin/email-history', { headers: { Accept: 'application/json' } }).catch(() => null)
+        ]);
+        if (analyticsRes && analyticsRes.ok) {
+          const data = await analyticsRes.json().catch(() => null);
+          if (data && data.status !== 'fallback') {
+            if (data.analytics) resolvedStats = data.analytics;
+            if (Array.isArray(data.entries)) resolvedEntries = data.entries;
+          }
+        }
+        if (historyRes && historyRes.ok) {
+          const hData = await historyRes.json().catch(() => null);
+          if (hData && hData.status !== 'fallback') {
+            if (Array.isArray(hData.history) && hData.history.length >= resolvedEntries.length) {
+              resolvedEntries = hData.history;
+            }
+            if (!resolvedStats && hData.mailSuiteStats) {
+              resolvedStats = hData.mailSuiteStats;
+            }
+          }
+        }
+      } catch {
+        // Fall through to PHP endpoint
+      }
+
+      // 2. PHP fallback (live tradeheaven.net hosting / external Chrome window)
+      if (resolvedEntries.length === 0) {
+        try {
+          const phpRes = await fetch('/api.php?action=get_email_history', {
+            headers: { Accept: 'application/json' }
+          });
+          if (phpRes.ok) {
+            const phpData = await phpRes.json().catch(() => null);
+            if (phpData && phpData.status !== 'fallback' && Array.isArray(phpData.history)) {
+              resolvedEntries = phpData.history;
+              if (phpData.mailSuiteStats || phpData.analytics) {
+                resolvedStats = phpData.mailSuiteStats || phpData.analytics;
+              }
+            }
+          }
+        } catch {
+          // ignore offline
+        }
+      }
+
+      if (resolvedStats) setMailSuiteStats(resolvedStats);
+      if (resolvedEntries.length > 0) {
+        setTrackedServerEmails(resolvedEntries);
+        mergeServerEntriesIntoHistory(resolvedEntries);
       }
     } catch {
       // ignore offline telemetry fetch error
     }
-  };
+  }, [mergeServerEntriesIntoHistory]);
 
   // Listed Clients Counter-Offer Broadcast State
   const [listedClientsSummary, setListedClientsSummary] = useState<{
@@ -960,7 +1243,40 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
   useEffect(() => {
     fetchMailSuiteTelemetry();
     fetchListedClientsSummary();
-  }, []);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_admin_email_history_sync');
+        bc.onmessage = () => {
+          fetchMailSuiteTelemetry();
+        };
+      }
+    } catch {}
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'th_admin_dispatched_emails_history' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setHistory(parsed);
+        } catch {}
+        fetchMailSuiteTelemetry();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      try {
+        bc?.close();
+      } catch {}
+    };
+  }, [fetchMailSuiteTelemetry]);
+
+  useEffect(() => {
+    if (activeSubTab === 'HISTORY') {
+      fetchMailSuiteTelemetry();
+    }
+  }, [activeSubTab, fetchMailSuiteTelemetry]);
 
   const handleBroadcastCounterOfferToListedClients = async () => {
     setIsBroadcastingCounterOffer(true);
@@ -1200,6 +1516,56 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     } catch {}
   }, [history]);
 
+  const toggleBuiltinSection = (key: BuiltinSectionKey, visible?: boolean) => {
+    setSectionVisibility(prev => {
+      const nextVal = typeof visible === 'boolean' ? visible : !prev[key];
+      if (key === 'credentialsBox') {
+        setFormData(fd => ({ ...fd, includeCredentialsBox: nextVal }));
+      } else if (key === 'loginGuide') {
+        setFormData(fd => ({ ...fd, includeLoginGuide: nextVal }));
+      } else if (key === 'escrowBadge') {
+        setFormData(fd => ({ ...fd, includeEscrowBadge: nextVal }));
+      }
+      if (!nextVal && editingSectionKey === key) {
+        setEditingSectionKey(null);
+      }
+      return { ...prev, [key]: nextVal };
+    });
+  };
+
+  const handleAddCustomSection = (tone: CustomEmailSectionBlock['tone'] = 'info') => {
+    const newId = `custom-sec-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+    const newSec: CustomEmailSectionBlock = {
+      id: newId,
+      title: 'New Custom Mail Section',
+      badge: 'IMPORTANT NOTICE',
+      body: 'Write your custom section text, terms, bank details, or trade instructions here...',
+      tone
+    };
+    setCustomSections(prev => [...prev, newSec]);
+    setEditingSectionKey(newId);
+  };
+
+  const handleUpdateCustomSection = (id: string, patch: Partial<CustomEmailSectionBlock>) => {
+    setCustomSections(prev => prev.map(sec => (sec.id === id ? { ...sec, ...patch } : sec)));
+  };
+
+  const handleDeleteCustomSection = (id: string) => {
+    setCustomSections(prev => prev.filter(sec => sec.id !== id));
+    if (editingSectionKey === id) setEditingSectionKey(null);
+  };
+
+  const handleMoveCustomSection = (index: number, direction: -1 | 1) => {
+    setCustomSections(prev => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      copy.splice(target, 0, item);
+      return copy;
+    });
+  };
+
   const handleApplyPreset = (presetId: string) => {
     setSelectedPreset(presetId);
     const matched = PRESET_TEMPLATES.find(p => p.id === presetId);
@@ -1208,6 +1574,27 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       ...matched.data,
       inquiries: (matched.data.inquiries || []).map(inq => ({ ...inq }))
     });
+    setSectionVisibility({
+      headerBanner: true,
+      greetingIntro: true,
+      billingSummary: Boolean(matched.data.address || matched.data.paymentMethod || matched.data.isMembershipRenewal || presetId === 'MEMBERSHIP_RENEWAL'),
+      credentialsBox: matched.data.includeCredentialsBox !== false,
+      loginGuide: matched.data.includeLoginGuide !== false,
+      inquiries: Boolean(matched.data.inquiries && matched.data.inquiries.length > 0),
+      ctaButton: Boolean(matched.data.ctaText || matched.data.ctaUrl || matched.data.portalUrl),
+      closingNote: Boolean(matched.data.customClosingNote),
+      escrowBadge: matched.data.includeEscrowBadge !== false,
+      footer: true
+    });
+    setCustomSections((matched.defaultCustomSections || []).map(sec => ({ ...sec })));
+    setBillingSectionBadge(
+      presetId === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+        ? '$400 PAID • $590 BALANCE (DIWALI10)'
+        : presetId === 'GLOBAL_AD_CAMPAIGN_VISIBILITY_REPORT'
+        ? 'ACTIVE GLOBAL AD CAMPAIGN'
+        : 'CURRENT OFFER ACTIVE'
+    );
+    setEditingSectionKey(null);
     setSendResult(null);
   };
 
@@ -1238,6 +1625,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       ...prev,
       inquiries: [...(prev.inquiries || []), newInq]
     }));
+    setSectionVisibility(prev => ({ ...prev, inquiries: true }));
   };
 
   const handleUpdateInquiry = (index: number, field: keyof CustomAdminInquiryItem, value: any) => {
@@ -1255,11 +1643,217 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }));
   };
 
-  const handleSendEmail = async () => {
-    if (!formData.recipientEmail || !formData.recipientEmail.includes('@')) {
+  // Single Source of Truth: Generates the exact HTML dispatched so the Live Preview & Delivered Email match 100%
+  const buildComposedEmailHtml = (): string => {
+    const recipientDisplay = formData.decisionMakerName || formData.recipientName || 'Trade Partner';
+    const companyDisplay = formData.companyName || 'Corporate Entity';
+    const portalUrl = formData.portalUrl || 'https://www.tradeheaven.net';
+    const ctaUrl = formData.ctaUrl || portalUrl;
+    const ctaText = formData.ctaText || 'Log In to Portal & View Inquiries →';
+    const isDangerHero = selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI';
+    const parts: string[] = [];
+
+    if (sectionVisibility.headerBanner) {
+      const heroBg = isDangerHero
+        ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #0f172a 100%)'
+        : 'linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%)';
+      const badgeStyle = isDangerHero
+        ? 'color:#fecaca;background:rgba(239,68,68,0.2);border:1px solid rgba(248,113,113,0.4);'
+        : 'color:#34d399;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);';
+      parts.push(`
+        <div style="background:${heroBg};padding:32px 24px;text-align:center;color:#ffffff;">
+          <div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;padding:4px 12px;border-radius:9999px;${badgeStyle}">
+            ${escapeEmailHtml(formData.badgeLabel || 'TRADE HEAVEN • GLOBAL B2B DESK')}
+          </div>
+          <h1 style="margin:0;font-size:22px;font-weight:900;color:#ffffff;line-height:1.25;">
+            ${escapeEmailHtml(formData.headline || formData.subject || 'Trade Heaven Portal Notification')}
+          </h1>
+          ${formData.subheadline ? `<p style="margin:8px 0 0 0;font-size:13px;color:#cbd5e1;">${escapeEmailHtml(formData.subheadline)}</p>` : ''}
+        </div>
+      `);
+    }
+
+    const bodyBlocks: string[] = [];
+
+    if (sectionVisibility.greetingIntro) {
+      bodyBlocks.push(`
+        <p style="font-size:15px;line-height:1.6;margin:0 0 14px 0;color:#0f172a;">
+          ${escapeEmailHtml(greetingPrefix || 'Dear')} <strong>${escapeEmailHtml(recipientDisplay)}</strong>,
+        </p>
+        <div style="font-size:14px;line-height:1.65;margin:0 0 20px 0;color:#334155;">
+          ${formatEmailMultilineHtml(formData.introMessage || '')}
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.billingSummary) {
+      bodyBlocks.push(`
+        <div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:12px;padding:16px 18px;margin:0 0 18px 0;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <tr>
+              <td style="font-size:11px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:0.6px;">${escapeEmailHtml(billingSectionTitle)}</td>
+              <td style="text-align:right;">
+                <span style="background:#fef3c7;color:#78350f;border:1px solid #fcd34d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;">${escapeEmailHtml(billingSectionBadge)}</span>
+              </td>
+            </tr>
+          </table>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;color:#334155;">
+            <tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Company Name:</td><td style="padding:4px 0;text-align:right;font-weight:800;color:#0f172a;">${escapeEmailHtml(companyDisplay)}</td></tr>
+            ${formData.address ? `<tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Address:</td><td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${escapeEmailHtml(formData.address)}</td></tr>` : ''}
+            <tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Email:</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-weight:700;color:#1d4ed8;">${escapeEmailHtml(formData.recipientEmail || '')}</td></tr>
+            <tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Decision Maker:</td><td style="padding:4px 0;text-align:right;font-weight:800;color:#0f172a;">${escapeEmailHtml(recipientDisplay)}</td></tr>
+            ${formData.paymentMethod ? `<tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Payment Method:</td><td style="padding:4px 0;text-align:right;font-weight:800;color:#065f46;">${escapeEmailHtml(formData.paymentMethod)}</td></tr>` : ''}
+          </table>
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.credentialsBox && formData.includeCredentialsBox !== false) {
+      bodyBlocks.push(`
+        <div style="background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:16px 18px;margin:0 0 18px 0;">
+          <div style="font-size:11px;font-weight:900;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">
+            PORTAL LOGIN CREDENTIALS &amp; USER ID
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;color:#334155;">
+            <tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Portal Website:</td><td style="padding:4px 0;text-align:right;"><a href="${escapeEmailHtml(portalUrl)}" style="color:#2563eb;font-weight:700;">${escapeEmailHtml(portalUrl)}</a></td></tr>
+            <tr><td style="padding:4px 0;color:#64748b;font-weight:600;">User ID / Login:</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-weight:700;color:#0f172a;">${escapeEmailHtml(formData.loginEmail || formData.recipientEmail || '')}</td></tr>
+            ${formData.loginPassword ? `<tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Assigned Password:</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-weight:700;color:#1d4ed8;">${escapeEmailHtml(formData.loginPassword)}</td></tr>` : ''}
+            ${formData.contactPhone ? `<tr><td style="padding:4px 0;color:#64748b;font-weight:600;">Registered Phone:</td><td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${escapeEmailHtml(formData.contactPhone)}</td></tr>` : ''}
+          </table>
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.loginGuide && formData.includeLoginGuide !== false && loginGuideSteps.length > 0) {
+      const stepsHtml = loginGuideSteps
+        .filter(s => s.trim())
+        .map(step => `<li style="margin-bottom:6px;">${escapeEmailHtml(step)}</li>`)
+        .join('');
+      bodyBlocks.push(`
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin:0 0 18px 0;">
+          <div style="font-size:11px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+            ${escapeEmailHtml(loginGuideTitle)}
+          </div>
+          <ol style="margin:0;padding-left:18px;font-size:12px;color:#475569;line-height:1.6;">
+            ${stepsHtml}
+          </ol>
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.inquiries && formData.inquiries && formData.inquiries.length > 0) {
+      const cards = formData.inquiries
+        .map((inq, idx) => {
+          const borderColors = ['#2563eb', '#10b981', '#f59e0b', '#7c3aed'];
+          const accent = borderColors[idx % borderColors.length];
+          return `
+            <div style="background:#ffffff;border:1px solid #cbd5e1;border-left:4px solid ${accent};border-radius:10px;padding:14px 16px;margin:0 0 12px 0;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+                <tr>
+                  <td><span style="font-size:11px;font-family:monospace;font-weight:700;color:${accent};background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;">${escapeEmailHtml(inq.id || `RFQ-${idx + 1}`)}</span></td>
+                  <td style="text-align:right;font-size:11px;font-weight:800;color:#059669;">${inq.estimatedValue ? `Est: ${escapeEmailHtml(inq.estimatedValue)}` : ''}</td>
+                </tr>
+              </table>
+              <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:6px;">${escapeEmailHtml(inq.title)}</div>
+              <div style="font-size:12px;color:#475569;line-height:1.5;">
+                ${inq.buyerCompany ? `<div><strong>Buyer:</strong> ${escapeEmailHtml(inq.buyerCompany)}${inq.buyerCountry ? ` (${escapeEmailHtml(inq.buyerCountry)})` : ''}</div>` : ''}
+                ${inq.quantity ? `<div><strong>Volume:</strong> ${escapeEmailHtml(inq.quantity)}</div>` : ''}
+                ${inq.incotermPort ? `<div><strong>Incoterms:</strong> ${escapeEmailHtml(inq.incotermPort)}</div>` : ''}
+                ${inq.paymentTerms ? `<div><strong>Payment:</strong> ${escapeEmailHtml(inq.paymentTerms)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+      bodyBlocks.push(`
+        <div style="margin:0 0 18px 0;">
+          <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:12px;font-size:13px;font-weight:900;color:#0f172a;text-transform:uppercase;">
+            ${escapeEmailHtml(formData.inquiriesTitle || 'Active Buyer Inquiries / Matched Tenders')} (${formData.inquiries.length})
+          </div>
+          ${cards}
+        </div>
+      `);
+    }
+
+    // Custom User-Added Sections
+    const toneStyles: Record<CustomEmailSectionBlock['tone'], { bg: string; border: string; title: string; badgeBg: string; badgeText: string }> = {
+      neutral: { bg: '#f8fafc', border: '#cbd5e1', title: '#0f172a', badgeBg: '#e2e8f0', badgeText: '#334155' },
+      info: { bg: '#eff6ff', border: '#93c5fd', title: '#1e3a8a', badgeBg: '#dbeafe', badgeText: '#1d4ed8' },
+      warning: { bg: '#fffbeb', border: '#fcd34d', title: '#78350f', badgeBg: '#fef3c7', badgeText: '#92400e' },
+      success: { bg: '#ecfdf5', border: '#6ee7b7', title: '#065f46', badgeBg: '#d1fae5', badgeText: '#047857' },
+      danger: { bg: '#fef2f2', border: '#fca5a5', title: '#7f1d1d', badgeBg: '#fee2e2', badgeText: '#b91c1c' }
+    };
+    for (const sec of customSections) {
+      const ts = toneStyles[sec.tone] || toneStyles.neutral;
+      bodyBlocks.push(`
+        <div style="background:${ts.bg};border:1px solid ${ts.border};border-radius:12px;padding:16px 18px;margin:0 0 18px 0;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+            <tr>
+              <td style="font-size:13px;font-weight:800;color:${ts.title};">${escapeEmailHtml(sec.title)}</td>
+              ${sec.badge ? `<td style="text-align:right;"><span style="background:${ts.badgeBg};color:${ts.badgeText};font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase;">${escapeEmailHtml(sec.badge)}</span></td>` : ''}
+            </tr>
+          </table>
+          <div style="font-size:13px;line-height:1.6;color:#334155;">
+            ${formatEmailMultilineHtml(sec.body)}
+          </div>
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.closingNote && formData.customClosingNote && formData.customClosingNote.trim()) {
+      bodyBlocks.push(`
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:0 0 18px 0;font-size:13px;color:#78350f;line-height:1.6;">
+          ${formatEmailMultilineHtml(formData.customClosingNote)}
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.ctaButton && ctaText.trim()) {
+      bodyBlocks.push(`
+        <div style="text-align:center;margin:22px 0;">
+          <a href="${escapeEmailHtml(ctaUrl)}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:800;font-size:13px;padding:13px 28px;border-radius:10px;">
+            ${escapeEmailHtml(ctaText)}
+          </a>
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.escrowBadge && formData.includeEscrowBadge !== false && escrowNoticeText.trim()) {
+      bodyBlocks.push(`
+        <div style="background:#f1f5f9;border-radius:10px;padding:12px 14px;margin:0 0 16px 0;font-size:11px;color:#475569;line-height:1.55;">
+          <strong style="color:#0f172a;">Trade Heaven Escrow Protection:</strong> ${escapeEmailHtml(escrowNoticeText)}
+        </div>
+      `);
+    }
+
+    if (sectionVisibility.footer && footerText.trim()) {
+      bodyBlocks.push(`
+        <div style="padding-top:12px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
+          ${escapeEmailHtml(footerText)}
+        </div>
+      `);
+    }
+
+    parts.push(`<div style="padding:26px 24px;background:#ffffff;color:#1e293b;">${bodyBlocks.join('')}</div>`);
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body style="margin:0;padding:20px;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"><div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">${parts.join('')}</div></body></html>`;
+  };
+
+  const handleSendEmail = async (targetMode: 'ADMIN' | 'CLIENT' | 'BOTH' = 'BOTH') => {
+    const cleanClientEmail = (formData.recipientEmail || '').trim();
+    const cleanAdminEmail = (adminCopyEmail || '').trim();
+
+    if ((targetMode === 'CLIENT' || targetMode === 'BOTH') && (!cleanClientEmail || !cleanClientEmail.includes('@'))) {
       setSendResult({
         success: false,
-        message: 'Please provide a valid recipient email address.'
+        message: 'Please provide a valid client recipient email address.'
+      });
+      return;
+    }
+    if ((targetMode === 'ADMIN' || targetMode === 'BOTH') && (!cleanAdminEmail || !cleanAdminEmail.includes('@'))) {
+      setSendResult({
+        success: false,
+        message: 'Please provide a valid admin email address.'
       });
       return;
     }
@@ -1272,76 +1866,169 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
 
     setIsSending(true);
+    setSendingTarget(targetMode);
     setSendResult(null);
 
+    const composedHtml = buildComposedEmailHtml();
+    const basePayload = {
+      ...formData,
+      rawHtmlOverride: composedHtml,
+      includeCredentialsBox: sectionVisibility.credentialsBox && formData.includeCredentialsBox !== false,
+      includeLoginGuide: sectionVisibility.loginGuide && formData.includeLoginGuide !== false,
+      includeEscrowBadge: sectionVisibility.escrowBadge && formData.includeEscrowBadge !== false,
+      dispatchType: 'MANUAL' as const
+    };
+
+    const requestPayload =
+      targetMode === 'ADMIN'
+        ? {
+            ...basePayload,
+            recipientEmail: cleanAdminEmail,
+            sendAdminCopy: false,
+            adminCopyEmail: cleanAdminEmail
+          }
+        : targetMode === 'CLIENT'
+        ? {
+            ...basePayload,
+            recipientEmail: cleanClientEmail,
+            sendAdminCopy: false
+          }
+        : {
+            ...basePayload,
+            recipientEmail: cleanClientEmail,
+            sendAdminCopy: true,
+            adminCopyEmail: cleanAdminEmail
+          };
+
     try {
-      const response = await fetch('/api/v1/admin/send-custom-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          ...formData,
-          sendAdminCopy,
-          adminCopyEmail
-        })
-      });
+      let data: any = null;
+      let usedEndpoint = '/api/v1/admin/send-custom-email';
 
-      const data = await response.json();
+      try {
+        const response = await fetch('/api/v1/admin/send-custom-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(requestPayload)
+        });
+        const parsed = await response.json().catch(() => null);
+        if (response.ok && parsed && parsed.status !== 'fallback') {
+          data = parsed;
+        }
+      } catch {
+        // Fall through to PHP endpoint
+      }
 
-      if (data.success) {
-        const nowIso = new Date().toISOString();
-        const newHistItem: DispatchedHistoryItem = {
-          id: `hist-${Date.now()}`,
-          recipientEmail: formData.recipientEmail,
-          recipientName: formData.recipientName || 'Trade Partner',
-          companyName: formData.companyName || 'Corporate Entity',
-          subject: formData.subject,
-          templatePreset: selectedPreset,
-          messageId: data.receipt?.messageId || data.messageId,
-          dispatchedAt: nowIso,
-          success: true
-        };
-        const itemsToAdd: DispatchedHistoryItem[] = [newHistItem];
-        if (sendAdminCopy && adminCopyEmail) {
+      // Automatic fallback to PHP endpoint (works on live Apache/PHP hosting & external Chrome windows)
+      if (!data) {
+        usedEndpoint = '/api.php?action=send_custom_email';
+        const phpResponse = await fetch('/api.php?action=send_custom_email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(requestPayload)
+        });
+        data = await phpResponse.json().catch(() => ({
+          success: false,
+          message: `Mail gateway returned an invalid response (HTTP ${phpResponse.status}).`
+        }));
+      }
+
+      if (data?.success) {
+        const nowIso = data.dispatchedAt || data.receipt?.dispatchedAt || new Date().toISOString();
+        const itemsToAdd: DispatchedHistoryItem[] = [];
+        if (targetMode === 'ADMIN') {
           itemsToAdd.push({
-            id: `hist-admin-${Date.now()}`,
-            recipientEmail: adminCopyEmail,
-            recipientName: formData.recipientName || 'Zachary Aldin (Zac)',
-            companyName: formData.companyName || 'ACE Intermediary',
+            id: `hist-admin-only-${Date.now()}`,
+            recipientEmail: cleanAdminEmail,
+            recipientName: `Admin (${cleanAdminEmail}) • ${formData.recipientName || 'Trade Partner'}`,
+            companyName: formData.companyName || 'Corporate Entity',
             subject: formData.subject,
             templatePreset: selectedPreset,
-            messageId: data.adminCopyReceipt?.messageId || `<admin-copy-${Date.now()}@tradeheaven.net>`,
+            messageId: data.receipt?.messageId || data.messageId,
+            trackingId: data.receipt?.trackingId || data.trackingId,
             dispatchedAt: nowIso,
+            deliveryMode: data.receipt?.deliveryMode || data.deliveryMode,
             success: true
           });
+        } else {
+          itemsToAdd.push({
+            id: `hist-${Date.now()}`,
+            recipientEmail: cleanClientEmail,
+            recipientName: formData.recipientName || 'Trade Partner',
+            companyName: formData.companyName || 'Corporate Entity',
+            subject: formData.subject,
+            templatePreset: selectedPreset,
+            messageId: data.receipt?.messageId || data.messageId,
+            trackingId: data.receipt?.trackingId || data.trackingId,
+            dispatchedAt: nowIso,
+            deliveryMode: data.receipt?.deliveryMode || data.deliveryMode,
+            success: true
+          });
+          if (targetMode === 'BOTH' && cleanAdminEmail) {
+            itemsToAdd.push({
+              id: `hist-admin-${Date.now() + 1}`,
+              recipientEmail: cleanAdminEmail,
+              recipientName: `Admin Copy • ${formData.recipientName || 'Trade Partner'}`,
+              companyName: formData.companyName || 'Corporate Entity',
+              subject: formData.subject,
+              templatePreset: selectedPreset,
+              messageId: data.adminCopyReceipt?.messageId || `<admin-copy-${Date.now()}@tradeheaven.net>`,
+              trackingId: data.adminCopyReceipt?.trackingId,
+              dispatchedAt: nowIso,
+              deliveryMode: data.adminCopyReceipt?.deliveryMode || data.deliveryMode,
+              success: data.adminCopyReceipt ? data.adminCopyReceipt.success !== false : true
+            });
+          }
         }
         setHistory(prev => [...itemsToAdd, ...prev]);
+
+        // Notify other open Chrome windows / tabs immediately
+        try {
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('th_admin_email_history_sync');
+            bc.postMessage({ type: 'EMAIL_SENT', at: Date.now(), endpoint: usedEndpoint });
+            bc.close();
+          }
+        } catch {}
+
+        // Refresh server-persisted history so all windows stay in lockstep
+        await fetchMailSuiteTelemetry();
+
         setSendResult({
           success: true,
           message:
-            data.message ||
-            `Email delivered to ${formData.recipientEmail}${sendAdminCopy ? ` + Admin Copy sent to ${adminCopyEmail}` : ''}`,
+            targetMode === 'ADMIN'
+              ? `Shared to Admin (${cleanAdminEmail}) only & recorded in Email History.`
+              : targetMode === 'CLIENT'
+              ? `Shared to Client (${cleanClientEmail}) only & recorded in Email History.`
+              : data.message || `Email delivered to ${cleanClientEmail} + Admin Copy sent to ${cleanAdminEmail} & recorded in Email History.`,
           messageId: data.receipt?.messageId || data.messageId,
+          trackingId: data.receipt?.trackingId || data.trackingId,
           dispatchedAt: new Date().toLocaleTimeString()
         });
       } else {
+        const failRecipient = targetMode === 'ADMIN' ? cleanAdminEmail : cleanClientEmail;
         const failItem: DispatchedHistoryItem = {
           id: `hist-${Date.now()}`,
-          recipientEmail: formData.recipientEmail,
+          recipientEmail: failRecipient,
           recipientName: formData.recipientName || 'Trade Partner',
           companyName: formData.companyName || 'Corporate Entity',
           subject: formData.subject,
           templatePreset: selectedPreset,
           dispatchedAt: new Date().toISOString(),
           success: false,
-          error: data.message || 'SMTP transmission failed'
+          error: data?.message || 'SMTP transmission failed'
         };
         setHistory(prev => [failItem, ...prev]);
+        await fetchMailSuiteTelemetry();
         setSendResult({
           success: false,
-          message: data.message || 'SMTP delivery error'
+          message: data?.message || 'Mail delivery failed across SMTP and PHP relay.'
         });
       }
     } catch (err: any) {
@@ -1351,6 +2038,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       });
     } finally {
       setIsSending(false);
+      setSendingTarget(null);
     }
   };
 
@@ -1607,6 +2295,838 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     } finally {
       setIsSendingMelissaDealTimeline(false);
     }
+  };
+
+  const deletedBuiltinSections = (Object.keys(sectionVisibility) as BuiltinSectionKey[]).filter(
+    key => !sectionVisibility[key]
+  );
+
+  const renderSectionActionToolbar = (
+    sectionId: string,
+    label: string,
+    onDelete: () => void,
+    extraActions?: React.ReactNode
+  ) => {
+    const isEditing = editingSectionKey === sectionId;
+    return (
+      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-slate-900/95 text-white text-[10px] font-bold">
+        <span className="uppercase tracking-wider text-slate-300 truncate">{label}</span>
+        <div className="flex items-center gap-1 shrink-0">
+          {extraActions}
+          <button
+            type="button"
+            onClick={() => setEditingSectionKey(isEditing ? null : sectionId)}
+            className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors ${
+              isEditing ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-700 hover:bg-blue-600 text-white'
+            }`}
+          >
+            {isEditing ? <Check className="w-3 h-3" /> : <Edit3 className="w-3 h-3" />}
+            <span>{isEditing ? 'Done' : 'Edit'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-2 py-0.5 rounded bg-rose-600/90 hover:bg-rose-500 text-white flex items-center gap-1 cursor-pointer transition-colors"
+            title={`Delete ${label}`}
+          >
+            <Trash2 className="w-3 h-3" />
+            <span>Delete</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderInteractiveEmailPreview = (embeddedInForm: boolean) => {
+    const toneClasses: Record<CustomEmailSectionBlock['tone'], { box: string; title: string; badge: string }> = {
+      neutral: { box: 'bg-slate-50 border-slate-300', title: 'text-slate-900', badge: 'bg-slate-200 text-slate-700' },
+      info: { box: 'bg-blue-50 border-blue-300', title: 'text-blue-950', badge: 'bg-blue-100 text-blue-800' },
+      warning: { box: 'bg-amber-50 border-amber-300', title: 'text-amber-950', badge: 'bg-amber-200 text-amber-900' },
+      success: { box: 'bg-emerald-50 border-emerald-300', title: 'text-emerald-950', badge: 'bg-emerald-100 text-emerald-800' },
+      danger: { box: 'bg-rose-50 border-rose-300', title: 'text-rose-950', badge: 'bg-rose-100 text-rose-800' }
+    };
+
+    const previewWidthClass =
+      embeddedInForm && previewDevice === 'DESKTOP'
+        ? 'w-full max-w-[640px]'
+        : previewDevice === 'MOBILE'
+        ? 'w-full max-w-[380px]'
+        : 'w-full max-w-[640px]';
+
+    return (
+      <div className="space-y-3">
+        {/* LIVE PREVIEW HEADER CONTROLS */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-blue-600" />
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  Live Outgoing Email Preview &amp; Section Editor
+                </h3>
+                <p className="text-[10px] text-slate-500">
+                  Exact HTML dispatched to recipients — edit, add, reorder, or delete any section directly below
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleAddCustomSection('info')}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Section</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('DESKTOP')}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${
+                  previewDevice === 'DESKTOP' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Desktop
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('MOBILE')}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${
+                  previewDevice === 'MOBILE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Mobile
+              </button>
+            </div>
+          </div>
+
+          {/* LIVE ENVELOPE METADATA */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+            <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-200 truncate">
+              <span className="text-slate-400 font-bold">Client To: </span>
+              <span className="font-mono font-bold text-blue-700">{formData.recipientEmail || 'None'}</span>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-200 truncate">
+              <span className="text-slate-400 font-bold">Admin Copy: </span>
+              <span className="font-mono font-bold text-amber-700">{adminCopyEmail || 'None'}</span>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-200 truncate">
+              <span className="text-slate-400 font-bold">Subject: </span>
+              <span className="font-bold text-slate-900">{formData.subject || '(No Subject)'}</span>
+            </div>
+          </div>
+
+          {/* DELETED SECTIONS RESTORE BAR */}
+          {deletedBuiltinSections.length > 0 && (
+            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1 mr-1">
+                <RotateCcw className="w-3 h-3" />
+                <span>Add / Restore Hidden Sections:</span>
+              </span>
+              {deletedBuiltinSections.map(key => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleBuiltinSection(key, true)}
+                  className="px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>{BUILTIN_SECTION_LABELS[key]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* LIVE RENDERED EMAIL CANVAS */}
+        <div className="bg-slate-100 p-3 sm:p-5 rounded-2xl border border-slate-200 flex justify-center overflow-x-auto">
+          <div className={`${previewWidthClass} bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200 transition-all duration-200`}>
+
+            {/* SECTION: HEADER BANNER */}
+            {sectionVisibility.headerBanner && (
+              <div className="border-b border-slate-200">
+                {renderSectionActionToolbar('headerBanner', 'Section: Header Banner', () => toggleBuiltinSection('headerBanner', false))}
+                {editingSectionKey === 'headerBanner' && (
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Top Badge</label>
+                        <input
+                          type="text"
+                          value={formData.badgeLabel || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, badgeLabel: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Headline</label>
+                        <input
+                          type="text"
+                          value={formData.headline || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, headline: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-bold"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Subheadline</label>
+                      <input
+                        type="text"
+                        value={formData.subheadline || ''}
+                        onChange={e => setFormData(prev => ({ ...prev, subheadline: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div
+                  style={{
+                    background:
+                      selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+                        ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #0f172a 100%)'
+                        : 'linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%)'
+                  }}
+                  className="p-6 sm:p-7 text-center text-white"
+                >
+                  <div
+                    className={`inline-block text-[10px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full mb-2.5 border ${
+                      selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+                        ? 'text-red-200 bg-red-500/20 border-red-400/40'
+                        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                    }`}
+                  >
+                    {formData.badgeLabel || 'TRADE HEAVEN • GLOBAL B2B DESK'}
+                  </div>
+                  <h1 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug">
+                    {formData.headline || formData.subject || 'Trade Heaven Portal Notification'}
+                  </h1>
+                  {formData.subheadline && (
+                    <p className="text-xs text-slate-300 mt-1.5">{formData.subheadline}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* EMAIL BODY SECTIONS */}
+            <div className="p-4 sm:p-6 space-y-4 text-slate-800">
+
+              {/* SECTION: GREETING & INTRO BODY */}
+              {sectionVisibility.greetingIntro && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar('greetingIntro', 'Section: Greeting & Intro Message', () => toggleBuiltinSection('greetingIntro', false))}
+                  {editingSectionKey === 'greetingIntro' && (
+                    <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Greeting Prefix</label>
+                          <input
+                            type="text"
+                            value={greetingPrefix}
+                            onChange={e => setGreetingPrefix(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Recipient Name</label>
+                          <input
+                            type="text"
+                            value={formData.decisionMakerName ?? formData.recipientName ?? ''}
+                            onChange={e =>
+                              setFormData(prev => ({
+                                ...prev,
+                                decisionMakerName: e.target.value,
+                                recipientName: e.target.value
+                              }))
+                            }
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-bold"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Main Message Body</label>
+                        <textarea
+                          rows={6}
+                          value={formData.introMessage || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, introMessage: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white leading-relaxed"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-4 space-y-2.5">
+                    <p className="text-sm text-slate-900">
+                      {greetingPrefix || 'Dear'}{' '}
+                      <strong>{formData.decisionMakerName || formData.recipientName || 'Trade Partner'}</strong>,
+                    </p>
+                    <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                      {formData.introMessage || 'Write your email body message here...'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: CLIENT MEMBERSHIP & BILLING SUMMARY */}
+              {sectionVisibility.billingSummary && (
+                <div className="rounded-xl border border-slate-300 overflow-hidden">
+                  {renderSectionActionToolbar('billingSummary', 'Section: Membership & Billing Summary', () => toggleBuiltinSection('billingSummary', false))}
+                  {editingSectionKey === 'billingSummary' && (
+                    <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Box Title</label>
+                          <input
+                            type="text"
+                            value={billingSectionTitle}
+                            onChange={e => setBillingSectionTitle(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Right Status Badge</label>
+                          <input
+                            type="text"
+                            value={billingSectionBadge}
+                            onChange={e => setBillingSectionBadge(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Company Name</label>
+                          <input
+                            type="text"
+                            value={formData.companyName || ''}
+                            onChange={e => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Payment Method</label>
+                          <input
+                            type="text"
+                            value={formData.paymentMethod || ''}
+                            onChange={e => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Registered Address</label>
+                        <input
+                          type="text"
+                          value={formData.address || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-slate-50 p-4 space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-900 tracking-wider uppercase gap-2">
+                      <span>{billingSectionTitle}</span>
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black">
+                        {billingSectionBadge}
+                      </span>
+                    </div>
+                    <div className="text-xs space-y-1.5 pt-1">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Company Name:</span>
+                        <span className="font-extrabold text-slate-900 text-right">{formData.companyName || 'Corporate Entity'}</span>
+                      </div>
+                      {formData.address && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-500 font-semibold">Address:</span>
+                          <span className="font-semibold text-slate-900 text-right">{formData.address}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Email:</span>
+                        <span className="font-mono font-bold text-blue-700 text-right">{formData.recipientEmail || 'None'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Decision Maker:</span>
+                        <span className="font-extrabold text-slate-900 text-right">
+                          {formData.decisionMakerName || formData.recipientName || 'Trade Partner'}
+                        </span>
+                      </div>
+                      {formData.paymentMethod && (
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500 font-semibold">Payment Method:</span>
+                          <span className="bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-extrabold text-emerald-800">
+                            {formData.paymentMethod}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: PORTAL CREDENTIALS BOX */}
+              {sectionVisibility.credentialsBox && formData.includeCredentialsBox !== false && (
+                <div className="rounded-xl border-2 border-blue-400 overflow-hidden">
+                  {renderSectionActionToolbar('credentialsBox', 'Section: Portal Login Credentials', () => toggleBuiltinSection('credentialsBox', false))}
+                  {editingSectionKey === 'credentialsBox' && (
+                    <div className="p-3 bg-white border-b border-blue-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Portal URL</label>
+                        <input
+                          type="text"
+                          value={formData.portalUrl || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, portalUrl: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Login User ID</label>
+                        <input
+                          type="text"
+                          value={formData.loginEmail || formData.recipientEmail || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, loginEmail: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Assigned Password</label>
+                        <input
+                          type="text"
+                          value={formData.loginPassword || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, loginPassword: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Registered Phone</label>
+                        <input
+                          type="text"
+                          value={formData.contactPhone || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, contactPhone: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-blue-50/70 p-4 space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold text-blue-900 tracking-wider uppercase">
+                      <span>PORTAL LOGIN CREDENTIALS &amp; USER ID</span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">VERIFIED ACCESS</span>
+                    </div>
+                    <div className="text-xs space-y-1.5 pt-1">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Portal Website:</span>
+                        <span className="text-blue-600 font-bold underline truncate">{formData.portalUrl || 'https://www.tradeheaven.net'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">User ID / Login:</span>
+                        <span className="font-mono font-bold text-slate-900">{formData.loginEmail || formData.recipientEmail}</span>
+                      </div>
+                      {formData.loginPassword && (
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500 font-semibold">Assigned Password:</span>
+                          <span className="bg-white border border-blue-200 px-2 py-0.5 rounded font-mono font-bold text-blue-700">
+                            {formData.loginPassword}
+                          </span>
+                        </div>
+                      )}
+                      {formData.contactPhone && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-500 font-semibold">Registered Phone:</span>
+                          <span className="font-semibold text-slate-900">{formData.contactPhone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: 3-STEP LOGIN GUIDE */}
+              {sectionVisibility.loginGuide && formData.includeLoginGuide !== false && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar('loginGuide', 'Section: Login Instructions', () => toggleBuiltinSection('loginGuide', false))}
+                  {editingSectionKey === 'loginGuide' && (
+                    <div className="p-3 bg-white border-b border-slate-200 space-y-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Guide Heading</label>
+                        <input
+                          type="text"
+                          value={loginGuideTitle}
+                          onChange={e => setLoginGuideTitle(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        {loginGuideSteps.map((step, sIdx) => (
+                          <div key={sIdx} className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 w-4">{sIdx + 1}.</span>
+                            <input
+                              type="text"
+                              value={step}
+                              onChange={e => {
+                                const next = [...loginGuideSteps];
+                                next[sIdx] = e.target.value;
+                                setLoginGuideSteps(next);
+                              }}
+                              className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-slate-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setLoginGuideSteps(prev => prev.filter((_, i) => i !== sIdx))}
+                              className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setLoginGuideSteps(prev => [...prev, 'New login instruction step...'])}
+                          className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer"
+                        >
+                          + Add Step
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-slate-50 p-4 space-y-2">
+                    <div className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wide">{loginGuideTitle}</div>
+                    <ol className="text-xs text-slate-600 space-y-1 list-decimal list-inside leading-relaxed">
+                      {loginGuideSteps.map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: ACTIVE INQUIRIES / TENDERS */}
+              {sectionVisibility.inquiries && formData.inquiries && formData.inquiries.length > 0 && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar(
+                    'inquiries',
+                    `Section: Inquiries & Tenders (${formData.inquiries.length})`,
+                    () => toggleBuiltinSection('inquiries', false),
+                    <button
+                      type="button"
+                      onClick={handleAddInquiry}
+                      className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add</span>
+                    </button>
+                  )}
+                  {editingSectionKey === 'inquiries' && (
+                    <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Section Header Title</label>
+                        <input
+                          type="text"
+                          value={formData.inquiriesTitle || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, inquiriesTitle: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-bold"
+                        />
+                      </div>
+                      {formData.inquiries.map((inq, idx) => (
+                        <div key={inq.id || idx} className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <input
+                              type="text"
+                              value={inq.title || ''}
+                              onChange={e => handleUpdateInquiry(idx, 'title', e.target.value)}
+                              className="flex-1 px-2 py-1 text-xs rounded border border-slate-300 font-bold"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveInquiry(idx)}
+                              className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <input
+                              type="text"
+                              value={inq.buyerCompany || ''}
+                              onChange={e => handleUpdateInquiry(idx, 'buyerCompany', e.target.value)}
+                              placeholder="Buyer"
+                              className="px-2 py-1 text-[11px] rounded border border-slate-200"
+                            />
+                            <input
+                              type="text"
+                              value={inq.estimatedValue || ''}
+                              onChange={e => handleUpdateInquiry(idx, 'estimatedValue', e.target.value)}
+                              placeholder="Est. Value"
+                              className="px-2 py-1 text-[11px] rounded border border-slate-200"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="p-4 space-y-3">
+                    <div className="flex justify-between items-center border-b-2 border-slate-900 pb-1.5">
+                      <span className="text-xs font-black uppercase text-slate-900">
+                        {formData.inquiriesTitle || 'Active Buyer Inquiries / Matched Tenders'}
+                      </span>
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                        {formData.inquiries.length} Active Leads
+                      </span>
+                    </div>
+                    {formData.inquiries.map((inq, idx) => (
+                      <div
+                        key={inq.id || idx}
+                        className="bg-white border border-slate-200 border-l-4 border-l-blue-600 rounded-xl p-3 space-y-1 text-xs"
+                      >
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                            {inq.id || `RFQ-${idx + 1}`}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {inq.estimatedValue && (
+                              <span className="font-extrabold text-emerald-700">Est: {inq.estimatedValue}</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveInquiry(idx)}
+                              className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                              title="Delete this tender card"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-xs">{inq.title}</h4>
+                        <div className="text-[11px] text-slate-500 space-y-0.5">
+                          {inq.buyerCompany && <div><strong>Buyer:</strong> {inq.buyerCompany} {inq.buyerCountry ? `(${inq.buyerCountry})` : ''}</div>}
+                          {inq.quantity && <div><strong>Volume:</strong> <span className="font-bold text-slate-800">{inq.quantity}</span></div>}
+                          {inq.incotermPort && <div><strong>Terms:</strong> {inq.incotermPort}</div>}
+                          {inq.paymentTerms && <div><strong>Payment:</strong> {inq.paymentTerms}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOM USER-ADDED SECTIONS */}
+              {customSections.map((sec, idx) => {
+                const tc = toneClasses[sec.tone] || toneClasses.neutral;
+                return (
+                  <div key={sec.id} className={`rounded-xl border overflow-hidden ${tc.box}`}>
+                    {renderSectionActionToolbar(
+                      sec.id,
+                      `Custom Section #${idx + 1}: ${sec.title || 'Untitled'}`,
+                      () => handleDeleteCustomSection(sec.id),
+                      <>
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveCustomSection(idx, -1)}
+                          className="p-0.5 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-30 text-white cursor-pointer"
+                          title="Move section up"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === customSections.length - 1}
+                          onClick={() => handleMoveCustomSection(idx, 1)}
+                          className="p-0.5 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-30 text-white cursor-pointer"
+                          title="Move section down"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                      </>
+                    )}
+                    {editingSectionKey === sec.id && (
+                      <div className="p-3 bg-white border-b border-slate-200 space-y-2 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Section Title</label>
+                            <input
+                              type="text"
+                              value={sec.title}
+                              onChange={e => handleUpdateCustomSection(sec.id, { title: e.target.value })}
+                              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Badge (Optional)</label>
+                            <input
+                              type="text"
+                              value={sec.badge}
+                              onChange={e => handleUpdateCustomSection(sec.id, { badge: e.target.value })}
+                              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500">Style:</span>
+                          {(['neutral', 'info', 'warning', 'success', 'danger'] as const).map(toneOpt => (
+                            <button
+                              key={toneOpt}
+                              type="button"
+                              onClick={() => handleUpdateCustomSection(sec.id, { tone: toneOpt })}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase cursor-pointer border ${
+                                sec.tone === toneOpt
+                                  ? 'bg-slate-900 text-white border-slate-900'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {toneOpt}
+                            </button>
+                          ))}
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Section Content</label>
+                          <textarea
+                            rows={4}
+                            value={sec.body}
+                            onChange={e => handleUpdateCustomSection(sec.id, { body: e.target.value })}
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className={`text-xs font-black ${tc.title}`}>{sec.title || 'Custom Section'}</h4>
+                        {sec.badge && (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${tc.badge}`}>
+                            {sec.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">{sec.body}</div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* SECTION: CUSTOM CLOSING NOTE */}
+              {sectionVisibility.closingNote && (
+                <div className="rounded-xl border border-amber-200 overflow-hidden bg-amber-50/70">
+                  {renderSectionActionToolbar('closingNote', 'Section: Custom Closing Note', () => toggleBuiltinSection('closingNote', false))}
+                  {editingSectionKey === 'closingNote' && (
+                    <div className="p-3 bg-white border-b border-amber-200 text-xs">
+                      <textarea
+                        rows={3}
+                        value={formData.customClosingNote || ''}
+                        onChange={e => setFormData(prev => ({ ...prev, customClosingNote: e.target.value }))}
+                        placeholder="Write closing note..."
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                      />
+                    </div>
+                  )}
+                  <div className="p-3.5 text-xs text-amber-950 leading-relaxed whitespace-pre-line">
+                    {formData.customClosingNote || 'Click Edit to write a closing note...'}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: CTA BUTTON */}
+              {sectionVisibility.ctaButton && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar('ctaButton', 'Section: Call-to-Action Button', () => toggleBuiltinSection('ctaButton', false))}
+                  {editingSectionKey === 'ctaButton' && (
+                    <div className="p-3 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Button Label</label>
+                        <input
+                          type="text"
+                          value={formData.ctaText || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, ctaText: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Button Target URL</label>
+                        <input
+                          type="text"
+                          value={formData.ctaUrl || ''}
+                          onChange={e => setFormData(prev => ({ ...prev, ctaUrl: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-4 text-center space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={handleTriggerRenewNowPayment}
+                      className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-7 py-3 rounded-xl shadow-md cursor-pointer transition-all"
+                    >
+                      {formData.ctaText || 'Log In to Portal →'}
+                    </button>
+                    <div className="text-[10px] font-mono text-slate-400 truncate">
+                      Links to: {formData.ctaUrl || formData.portalUrl || 'https://www.tradeheaven.net'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: ESCROW PROTECTION NOTICE */}
+              {sectionVisibility.escrowBadge && formData.includeEscrowBadge !== false && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar('escrowBadge', 'Section: Escrow Protection Notice', () => toggleBuiltinSection('escrowBadge', false))}
+                  {editingSectionKey === 'escrowBadge' && (
+                    <div className="p-3 bg-white border-b border-slate-200 text-xs">
+                      <textarea
+                        rows={3}
+                        value={escrowNoticeText}
+                        onChange={e => setEscrowNoticeText(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                      />
+                    </div>
+                  )}
+                  <div className="bg-slate-100 p-3 text-[11px] text-slate-600 leading-relaxed">
+                    <strong className="text-slate-900">Trade Heaven Escrow Protection:</strong> {escrowNoticeText}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: FOOTER */}
+              {sectionVisibility.footer && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  {renderSectionActionToolbar('footer', 'Section: Footer', () => toggleBuiltinSection('footer', false))}
+                  {editingSectionKey === 'footer' && (
+                    <div className="p-3 bg-white border-b border-slate-200 text-xs">
+                      <input
+                        type="text"
+                        value={footerText}
+                        onChange={e => setFooterText(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                      />
+                    </div>
+                  )}
+                  <div className="p-3 bg-white">
+                    <p className="text-[10px] text-slate-400 text-center">{footerText}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* QUICK ADD SECTION FOOTER BAR */}
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-2 border-t border-dashed border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomSection('info')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Section to Mail</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomSection('warning')}
+                  className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Warning / Terms Box</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -2214,12 +3734,47 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         </div>
       )}
 
-      {/* SUB-TAB 1: FORM EDITOR */}
+      {/* SUB-TAB 1: FORM EDITOR + LIVE INLINE PREVIEW */}
       {activeSubTab === 'FORM' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* LEFT COLUMN: RECIPIENT & CREDENTIALS */}
-          <div className="lg:col-span-5 space-y-6">
+        <div className="space-y-6">
+          {/* LIVE PREVIEW VISIBILITY & QUICK SECTION MANAGER BAR */}
+          <div className="bg-white rounded-2xl border border-slate-200 px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-blue-600" />
+                <span>Mail Sections Builder</span>
+              </span>
+              <span className="text-[11px] text-slate-500">
+                ({Object.values(sectionVisibility).filter(Boolean).length} built-in + {customSections.length} custom active)
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleAddCustomSection('info')}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add New Section</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowInlinePreview(prev => !prev)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1.5 cursor-pointer border transition-colors ${
+                  showInlinePreview
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                {showInlinePreview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+                <span>{showInlinePreview ? 'Hide Live Preview' : 'Show Live Preview'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT COLUMN: RECIPIENT, CREDENTIALS & LIVE DISPATCH CONTROLLER */}
+            <div className="lg:col-span-5 space-y-6">
             
             {/* 1. RECIPIENT PROFILE CARD */}
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
@@ -2469,66 +4024,99 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
                   <span className="text-amber-300 font-bold">Basic Plan ($990/yr • 10% OFF)</span>
                 </div>
                 <div className="pt-1 space-y-2">
-                  <label className="flex items-center justify-between text-slate-300 cursor-pointer">
-                    <span className="font-semibold">Send Copy to Admin on Mail:</span>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="font-semibold">Admin Email Target:</span>
+                    <span className="font-mono text-[11px] text-emerald-300 truncate max-w-[180px]">{adminCopyEmail || 'None'}</span>
+                  </div>
+                  <div className="space-y-1">
                     <input
-                      type="checkbox"
-                      checked={sendAdminCopy}
-                      onChange={e => setSendAdminCopy(e.target.checked)}
-                      className="rounded text-blue-500"
+                      type="email"
+                      value={adminCopyEmail}
+                      onChange={e => setAdminCopyEmail(e.target.value)}
+                      placeholder="Admin email address..."
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono text-emerald-300 focus:outline-hidden focus:border-blue-500"
                     />
-                  </label>
-                  {sendAdminCopy && (
-                    <div className="space-y-1">
-                      <input
-                        type="email"
-                        value={adminCopyEmail}
-                        onChange={e => setAdminCopyEmail(e.target.value)}
-                        placeholder="Admin email for copy..."
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono text-emerald-300 focus:outline-hidden focus:border-blue-500"
-                      />
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <span className="text-slate-400">Quick Admin:</span>
-                        <button
-                          type="button"
-                          onClick={() => setAdminCopyEmail('yr943334@gmail.com')}
-                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
-                        >
-                          yr943334@gmail.com
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAdminCopyEmail('sankalprajput15@gmail.com')}
-                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
-                        >
-                          sankalprajput15@gmail.com
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <span className="text-slate-400">Quick Admin:</span>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCopyEmail('yr943334@gmail.com')}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
+                      >
+                        yr943334@gmail.com
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCopyEmail('sankalprajput15@gmail.com')}
+                        className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
+                      >
+                        sankalprajput15@gmail.com
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                disabled={isSending || !formData.recipientEmail}
-                onClick={handleSendEmail}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black text-xs tracking-wide uppercase transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isSending ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Transmitting to Client &amp; Admin...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>
-                      Send Renewal to {formData.recipientName || 'Ali'} {sendAdminCopy ? '+ Admin Copy' : 'Now'}
-                    </span>
-                  </>
-                )}
-              </button>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={isSending || !adminCopyEmail}
+                    onClick={() => handleSendEmail('ADMIN')}
+                    className="w-full py-3 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs tracking-wide uppercase transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isSending && sendingTarget === 'ADMIN' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sharing to Admin...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Share to Admin</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSending || !formData.recipientEmail}
+                    onClick={() => handleSendEmail('CLIENT')}
+                    className="w-full py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black text-xs tracking-wide uppercase transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isSending && sendingTarget === 'CLIENT' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sharing to Client...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Share to Client</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSending || !formData.recipientEmail || !adminCopyEmail}
+                  onClick={() => handleSendEmail('BOTH')}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-50 text-emerald-300 font-bold text-[11px] tracking-wide uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isSending && sendingTarget === 'BOTH' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sharing to Client &amp; Admin...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Share to Both (Client + Admin)</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2828,288 +4416,109 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
               </div>
             </div>
 
+            {/* 6. CUSTOM EMAIL SECTIONS (ADD / EDIT / REORDER / DELETE) */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    6. Custom Mail Sections ({customSections.length})
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomSection('info')}
+                  className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 text-[11px] font-black border border-blue-200 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Section</span>
+                </button>
+              </div>
+
+              {customSections.length > 0 ? (
+                <div className="space-y-3">
+                  {customSections.map((sec, idx) => (
+                    <div key={sec.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-black uppercase text-slate-500">Section #{idx + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveCustomSection(idx, -1)}
+                            className="p-1 rounded bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                            title="Move up"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === customSections.length - 1}
+                            onClick={() => handleMoveCustomSection(idx, 1)}
+                            className="p-1 rounded bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                            title="Move down"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomSection(sec.id)}
+                            className="p-1 rounded bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 cursor-pointer"
+                            title="Delete section"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={sec.title}
+                          onChange={e => handleUpdateCustomSection(sec.id, { title: e.target.value })}
+                          placeholder="Section Title"
+                          className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-bold"
+                        />
+                        <input
+                          type="text"
+                          value={sec.badge}
+                          onChange={e => handleUpdateCustomSection(sec.id, { badge: e.target.value })}
+                          placeholder="Badge (optional)"
+                          className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white"
+                        />
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={sec.body}
+                        onChange={e => handleUpdateCustomSection(sec.id, { body: e.target.value })}
+                        placeholder="Section body content..."
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white leading-relaxed"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+                  No custom sections added yet. Click &ldquo;Add Custom Section&rdquo; to insert extra blocks into the email.
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
+
+        {/* INLINE LIVE EMAIL PREVIEW PANEL (ALWAYS IN SYNC WITH DISPATCHED EMAIL) */}
+        {showInlinePreview && (
+          <div className="pt-2">
+            {renderInteractiveEmailPreview(true)}
+          </div>
+        )}
+      </div>
       )}
 
       {/* SUB-TAB 2: LIVE HTML PREVIEW */}
       {activeSubTab === 'PREVIEW' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200">
-            <div className="flex items-center gap-2 text-xs text-slate-600 font-bold">
-              <span>Preview Mode:</span>
-              <button
-                type="button"
-                onClick={() => setPreviewDevice('DESKTOP')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  previewDevice === 'DESKTOP' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Desktop (640px)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewDevice('MOBILE')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  previewDevice === 'MOBILE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Mobile (380px)
-              </button>
-            </div>
-
-            <div className="text-xs text-slate-500">
-              Simulated Client: <span className="font-bold text-slate-800">{formData.recipientEmail || 'None'}</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-100 p-6 rounded-2xl flex justify-center overflow-x-auto">
-            <div 
-              style={{ width: previewDevice === 'DESKTOP' ? '640px' : '380px' }}
-              className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 transition-all duration-300"
-            >
-              {/* HEADER */}
-              <div
-                style={{
-                  background:
-                    selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
-                      ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #0f172a 100%)'
-                      : 'linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%)'
-                }}
-                className="p-8 text-center text-white"
-              >
-                <div
-                  className={`inline-block text-[10px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full mb-3 border ${
-                    selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
-                      ? 'text-red-200 bg-red-500/20 border-red-400/40'
-                      : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                  }`}
-                >
-                  {formData.badgeLabel || 'TRADE HEAVEN • GLOBAL B2B DESK'}
-                </div>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
-                  {formData.headline || 'Welcome to Trade Heaven'}
-                </h1>
-                <p className="text-xs text-slate-300 mt-2">
-                  {formData.subheadline || `Communication for ${formData.companyName || 'Corporate Entity'}`}
-                </p>
-              </div>
-
-              {/* BODY CONTENT */}
-              <div className="p-6 space-y-5 text-slate-800">
-                <p className="text-sm">
-                  Dear <strong>{formData.decisionMakerName || formData.recipientName || 'Trade Partner'}</strong>,
-                </p>
-                <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
-                  {formData.introMessage || 'Please review your account access details and matched inquiries.'}
-                </div>
-
-                {/* ZAC SPECIAL DIAGNOSTIC: ADS CAMPAIGN FAILED + ACCOUNT PAUSE WARNING + DIWALI MAX BENEFIT */}
-                {selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI' && (
-                  <>
-                    <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 space-y-2.5">
-                      <div className="text-[11px] font-black text-red-900 uppercase tracking-wide">
-                        ❌ Why Today&rsquo;s Ads Campaign Failed (#ADS-COAL-AU-2026)
-                      </div>
-                      <p className="text-xs text-red-900 leading-relaxed">
-                        Your scheduled <strong>Global Buyer Ads &amp; Priority Matching Campaign</strong> launched today for <strong>{formData.companyName}</strong> failed during automated billing verification because your account shows only a <strong>partial payment of $400.00 USD</strong> toward the <strong>Basic Plan</strong> (insufficient plan balance).
-                      </p>
-                      <div className="bg-white border border-red-200 rounded-lg p-3 text-[11px] text-red-900 leading-relaxed">
-                        <strong>⚠️ Account Pause Warning:</strong> Sponsored Ad Campaigns and direct buyer connections cannot run on a partial plan deposit. Please pay for the <strong>Full Plan</strong> so we can immediately run your ads and connect you with more verified buyers—otherwise your <strong>account and storefront will be placed on temporary pause/hold</strong>.
-                      </div>
-                    </div>
-
-                    <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black text-amber-950 uppercase tracking-wide">
-                          🪔 Diwali Maha Utsav Special Offer — Avail Maximum Benefit
-                        </span>
-                        <span className="bg-amber-600 text-white text-[10px] font-black px-2 py-0.5 rounded">
-                          CODE: DIWALI10
-                        </span>
-                      </div>
-                      <ul className="text-xs text-amber-950 space-y-1.5 list-disc list-inside leading-relaxed">
-                        <li>
-                          <strong>$400 USD Credited + 10% Diwali Discount:</strong> Standard Basic Plan is $1,100/yr ($700 balance), reduced to <strong>$990/yr (Save $110 USD)</strong> with <strong>DIWALI10</strong> — leaving only <strong>$590.00 USD remaining balance</strong> for 100% Full Plan activation!
-                        </li>
-                        <li>
-                          <strong>Immediate Ads Campaign Relaunch:</strong> Resume your Australian Thermal &amp; Coking Coal Sponsored Ads with <strong>2x Priority Marketplace Banner Boost</strong>.
-                        </li>
-                        <li>
-                          <strong>Connect With More Buyers:</strong> Unlock direct buyer contacts &amp; 20–60+ verified monthly orders, or upgrade to the <strong>Full VIP Plan ($5,490/yr with DIWALI10)</strong> for maximum festival benefits &amp; direct on-site buyer funds settlement.
-                        </li>
-                      </ul>
-                    </div>
-                  </>
-                )}
-
-                {/* MEMBERSHIP RENEWAL & CLIENT DETAILS BOX */}
-                {(formData.address || formData.paymentMethod || formData.isMembershipRenewal || selectedPreset === 'MEMBERSHIP_RENEWAL') && (
-                  <div className="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-900 tracking-wider uppercase">
-                      <span>CLIENT MEMBERSHIP &amp; BILLING SUMMARY</span>
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black">
-                        {selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
-                          ? '$400 PAID • $590 BALANCE (DIWALI10)'
-                          : 'CURRENT OFFER ACTIVE'}
-                      </span>
-                    </div>
-                    <div className="text-xs space-y-1.5 pt-1">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 font-semibold">Company Name:</span>
-                        <span className="font-extrabold text-slate-900 text-right">{formData.companyName || '{{companyName}}'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 font-semibold">Address:</span>
-                        <span className="font-semibold text-slate-900 text-right">{formData.address || '{{address}}'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 font-semibold">Email:</span>
-                        <span className="font-mono font-bold text-blue-700 text-right">{formData.recipientEmail || '{{email}}'}</span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 font-semibold">Decision Maker Name:</span>
-                        <span className="font-extrabold text-slate-900 text-right">
-                          {formData.decisionMakerName || formData.recipientName || '{{decisionMakerName}}'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="text-slate-500 font-semibold">Payment Method:</span>
-                        <span className="bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded font-extrabold text-emerald-800">
-                          💳 {formData.paymentMethod || '{{paymentMethod}}'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* CREDENTIALS BOX */}
-                {formData.includeCredentialsBox !== false && (
-                  <div className="bg-blue-50/70 border-2 border-blue-500 rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between items-center text-[10px] font-extrabold text-blue-900 tracking-wider uppercase">
-                      <span>PORTAL LOGIN CREDENTIALS &amp; USER ID</span>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">VERIFIED ACCESS</span>
-                    </div>
-                    <div className="text-xs space-y-1.5 pt-1">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-semibold">Portal Website:</span>
-                        <a href={formData.portalUrl || 'https://www.tradeheaven.net'} className="text-blue-600 font-bold underline">
-                          {formData.portalUrl || 'https://www.tradeheaven.net'}
-                        </a>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-semibold">User ID / Login:</span>
-                        <span className="font-mono font-bold text-slate-900">{formData.loginEmail || formData.recipientEmail}</span>
-                      </div>
-                      {formData.loginPassword && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-500 font-semibold">Assigned Password:</span>
-                          <span className="bg-white border border-blue-200 px-2 py-0.5 rounded font-mono font-bold text-blue-700">
-                            {formData.loginPassword}
-                          </span>
-                        </div>
-                      )}
-                      {formData.contactPhone && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">Registered Phone:</span>
-                          <span className="font-semibold text-slate-900">{formData.contactPhone}</span>
-                        </div>
-                      )}
-                      {formData.companyName && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-semibold">Company Entity:</span>
-                          <span className="font-semibold text-slate-900">{formData.companyName}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* LOGIN GUIDE */}
-                {formData.includeLoginGuide !== false && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                    <div className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wide">
-                      Quick 3-Step Login Guide:
-                    </div>
-                    <ol className="text-xs text-slate-600 space-y-1 list-decimal list-inside leading-relaxed">
-                      <li>Go to <strong className="text-blue-600">{formData.portalUrl || 'https://www.tradeheaven.net'}</strong> and click &ldquo;Sign In&rdquo; at top right.</li>
-                      <li>Enter your User ID (<strong>{formData.loginEmail || formData.recipientEmail}</strong>) and Password.</li>
-                      <li>Open your <strong>Dashboard &gt; Inquiries &amp; Buy Leads</strong> to review specifications and submit quotations.</li>
-                    </ol>
-                  </div>
-                )}
-
-                {/* INQUIRIES */}
-                {formData.inquiries && formData.inquiries.length > 0 && (
-                  <div className="space-y-3 pt-2">
-                    <div className="flex justify-between items-center border-b-2 border-slate-900 pb-1.5">
-                      <span className="text-xs font-black uppercase text-slate-900">
-                        {formData.inquiriesTitle || 'Active Buyer Inquiries / Matched Tenders'}
-                      </span>
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        {formData.inquiries.length} Active Leads
-                      </span>
-                    </div>
-
-                    {formData.inquiries.map((inq, idx) => (
-                      <div 
-                        key={idx}
-                        className="bg-white border border-slate-200 border-l-4 border-l-blue-600 rounded-xl p-3.5 space-y-1.5 text-xs shadow-xs"
-                      >
-                        <div className="flex justify-between items-center text-[10px]">
-                          <span className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                            {inq.id || `RFQ-${idx + 1}`}
-                          </span>
-                          {inq.estimatedValue && (
-                            <span className="font-extrabold text-emerald-700">
-                              Est: {inq.estimatedValue}
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="font-bold text-slate-900 text-xs">
-                          {inq.title}
-                        </h4>
-                        <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
-                          {inq.buyerCompany && <div><strong>Buyer:</strong> {inq.buyerCompany} {inq.buyerCountry ? `(${inq.buyerCountry})` : ''}</div>}
-                          {inq.quantity && <div><strong>Volume:</strong> <span className="font-bold text-slate-800">{inq.quantity}</span></div>}
-                          {inq.incotermPort && <div><strong>Terms:</strong> {inq.incotermPort}</div>}
-                          {inq.paymentTerms && <div><strong>Payment:</strong> {inq.paymentTerms}</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* CTA BUTTON */}
-                <div className="text-center pt-3 pb-2 space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleTriggerRenewNowPayment}
-                    className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md cursor-pointer transition-all"
-                  >
-                    {formData.ctaText || 'Renew Now'}
-                  </button>
-                  <div className="text-[10px] text-slate-500">
-                    Clicking <strong>&ldquo;{formData.ctaText || 'Renew Now'}&rdquo;</strong> opens the live Subscription Renewal Checkout Modal ({formData.paymentMethod || 'Debit Card'})
-                  </div>
-                </div>
-
-                {/* ESCROW BADGE */}
-                {formData.includeEscrowBadge !== false && (
-                  <div className="bg-slate-100 rounded-xl p-3 text-[11px] text-slate-600 leading-relaxed">
-                    <strong className="text-slate-900">Trade Heaven Escrow Protection:</strong> All high-value institutional contracts finalized on Trade Heaven operate under regulated escrow protocols with independent SGS/Saybolt verification prior to funds release.
-                  </div>
-                )}
-
-                {/* FOOTER */}
-                <div className="pt-3 border-t border-slate-200">
-                  <p className="text-[10px] text-slate-400 text-center sm:text-left">
-                    Dispatched via <strong>noreply@tradeheaven.net</strong> • Immediate support on WhatsApp +91 85329 34479 or help@tradeheaven.net
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {renderInteractiveEmailPreview(false)}
         </div>
       )}
 
@@ -3143,16 +4552,26 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
                   Track real-time open counts, CTA clicks, or re-load any previously composed email template
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setHistory([]);
-                  localStorage.removeItem('th_admin_dispatched_emails_history');
-                }}
-                className="text-[11px] text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
-              >
-                Clear Log
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fetchMailSuiteTelemetry()}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Sync Server History</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHistory([]);
+                    localStorage.removeItem('th_admin_dispatched_emails_history');
+                  }}
+                  className="text-[11px] text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
+                >
+                  Clear Local
+                </button>
+              </div>
             </div>
 
             <div className="divide-y divide-slate-100 overflow-x-auto">
@@ -3239,8 +4658,17 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
                             {new Date(item.dispatchedAt).toLocaleString()}
                           </div>
                           <span className={`text-[10px] font-black uppercase ${item.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                            {item.success ? 'Delivered (SMTP 465)' : 'Failed'}
+                            {item.success
+                              ? item.deliveryMode === 'PHP_MAIL_RELAY'
+                                ? 'Delivered (Mail Relay)'
+                                : 'Delivered (SMTP)'
+                              : 'Delivery Failed'}
                           </span>
+                          {!item.success && item.error && (
+                            <div className="text-[10px] text-rose-600 max-w-[200px] truncate" title={item.error}>
+                              {item.error}
+                            </div>
+                          )}
                         </div>
 
                         <button

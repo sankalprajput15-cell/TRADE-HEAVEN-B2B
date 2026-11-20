@@ -1,6 +1,5 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
-import backupOverridesJson from '../data/productImageOverridesBackup.json';
 import { imageCdnService } from './imageCdnService';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
@@ -243,8 +242,7 @@ const RAW_BUILTIN_BASE: Record<string, ProductImageOverrideEntry> = {
 };
 
 const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
-  ...RAW_BUILTIN_BASE,
-  ...((backupOverridesJson as { overrides?: Record<string, ProductImageOverrideEntry> })?.overrides || {})
+  ...RAW_BUILTIN_BASE
 };
 
 const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
@@ -926,7 +924,7 @@ class ProductImageManagerService {
     return this.state;
   }
 
-  public async syncFromServer(force = true): Promise<ProductImageSystemState> {
+  public async syncFromServer(force = true, includeFullMedia = false): Promise<ProductImageSystemState> {
     if (!force && (this.inFlightWriteCount > 0 || Date.now() - this.lastServerSyncAt < 5000)) {
       return this.state;
     }
@@ -935,10 +933,11 @@ class ProductImageManagerService {
 
     try {
       let srv: ProductImageSystemState | null = null;
+      const mediaParam = includeFullMedia ? 'includeMedia=1&' : '';
 
       // 1. Try public & admin Node/Express endpoints (non-admin path first for visitor/proxy safety)
       for (const apiEndpoint of [
-        `/api/v1/public/product-images?_t=${Date.now()}`,
+        `/api/v1/public/product-images?${mediaParam}_t=${Date.now()}`,
         `/api/v1/admin/product-images?_t=${Date.now()}`
       ]) {
         try {
@@ -985,6 +984,17 @@ class ProductImageManagerService {
             }
           } catch {}
         }
+      }
+
+      // 4. Last-resort dynamic backup JSON fallback (lazy-loaded only if server & static endpoints fail)
+      if (!srv) {
+        try {
+          const backupMod = await import('../data/productImageOverridesBackup.json');
+          const parsed = (backupMod as any)?.default || backupMod;
+          if (parsed && typeof parsed === 'object' && parsed.overrides) {
+            srv = parsed;
+          }
+        } catch {}
       }
 
       // Never overwrite in-flight or newer local mutations made while the GET was in flight

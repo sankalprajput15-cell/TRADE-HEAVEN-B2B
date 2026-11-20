@@ -8,7 +8,32 @@ const isTsxRuntime =
   process.execArgv.some((arg) => arg.includes('tsx')) ||
   process.env.npm_lifecycle_event === 'dev';
 
+function isCompiledServerFresh(): boolean {
+  try {
+    if (!fs.existsSync(distServerPath)) return false;
+    const distMtime = fs.statSync(distServerPath).mtimeMs;
+    const sourceDeps = [
+      path.join(process.cwd(), 'serverApp.ts'),
+      path.join(process.cwd(), 'src', 'services', 'smtpService.ts'),
+      path.join(process.cwd(), 'src', 'services', 'tradeHeavenMediatorEngine.ts')
+    ];
+    for (const dep of sourceDeps) {
+      if (fs.existsSync(dep) && fs.statSync(dep).mtimeMs > distMtime) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function bootstrapServer() {
+  if (isCompiledServerFresh()) {
+    require(distServerPath);
+    return;
+  }
+
   if (!isTsxRuntime && fs.existsSync(distServerPath)) {
     require(distServerPath);
     return;

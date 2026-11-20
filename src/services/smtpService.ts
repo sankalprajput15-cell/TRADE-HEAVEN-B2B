@@ -4132,7 +4132,7 @@ export class ServerDeliveryQueueManager {
             continue;
           }
           try {
-            const resp = await fetch('https://tradeheaven.net/api.php?action=submit_inquiry', {
+            const resp = await fetch('https://tradeheaven.net/api.php?action=send_custom_email', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -4140,38 +4140,69 @@ export class ServerDeliveryQueueManager {
                 'User-Agent': 'TradeHeaven-Internal-Node/1.0'
               },
               body: JSON.stringify({
-                rfq_id: `QUEUE-${Date.now()}`,
-                name: 'Trade Heaven Security & Notification',
-                email: task.recipient,
-                company: 'Trade Heaven Administration',
-                product: 'Image Update & Product Catalog Proof: Agricultural Rice Husk Powder',
-                quantity: '50 MT',
-                target_price: 280,
-                incoterm: 'N/A',
-                destination_port: 'Admin Hub',
-                subject: String(task.mailOptions.subject || 'Trade Heaven Alert Notification'),
-                message: String(task.mailOptions.text || task.mailOptions.html || 'Trade Heaven Alert Notification')
+                recipientEmail: task.recipient,
+                recipientName: taskMeta.recipientName || 'Trade Partner',
+                companyName: taskMeta.companyName || 'Corporate Entity',
+                companyId: taskMeta.companyId || '',
+                subject: String(task.mailOptions.subject || 'Trade Heaven Global B2B Notification'),
+                introMessage: String(task.mailOptions.text || taskMeta.summaryText || ''),
+                rawHtmlOverride: typeof task.mailOptions.html === 'string' ? task.mailOptions.html : undefined,
+                trackingId: taskMeta.trackingId,
+                dispatchType: taskMeta.dispatchType || 'MANUAL',
+                category: taskMeta.category || 'CUSTOM_ADMIN_NOTICE',
+                sendAdminCopy: false
               })
             });
             const rData: any = await resp.json().catch(() => null);
-            if (rData && (rData.status === 'success' || rData.id)) {
+            if (rData && rData.success === true) {
               this.lastDispatchedAt = Date.now();
               const mtaReceipt: SerializedDeliveryReceipt = {
                 recipient: task.recipient,
                 success: true,
                 deliveryMode: 'PHP_MAIL_RELAY',
-                messageId: `<bigrock-mta-${Date.now()}@tradeheaven.net>`,
-                trackingId: taskMeta.trackingId,
+                messageId: rData.messageId || rData.receipt?.messageId || `<bigrock-mta-${Date.now()}@tradeheaven.net>`,
+                trackingId: rData.trackingId || taskMeta.trackingId,
                 trackingPixelUrl: taskMeta.trackingPixelUrl,
-                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                dispatchedAt: rData.dispatchedAt || new Date(this.lastDispatchedAt).toISOString(),
                 enforcedDelayMs
               };
               this.recordReceipt(mtaReceipt, task);
               task.resolve(mtaReceipt);
               continue;
             }
-          } catch (rErr) {
+            const relayFailMsg = rData?.message || `Remote mail relay returned HTTP ${resp.status}`;
+            if (taskMeta.dispatchType === 'MANUAL') {
+              const failReceipt: SerializedDeliveryReceipt = {
+                recipient: task.recipient,
+                success: false,
+                deliveryMode: 'PHP_MAIL_RELAY',
+                trackingId: taskMeta.trackingId,
+                trackingPixelUrl: taskMeta.trackingPixelUrl,
+                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                enforcedDelayMs,
+                error: `SMTP credentials not configured and remote PHP relay failed: ${relayFailMsg}`
+              };
+              this.recordReceipt(failReceipt, task);
+              task.resolve(failReceipt);
+              continue;
+            }
+          } catch (rErr: any) {
             console.warn('[Queue Relay warning]:', rErr);
+            if (taskMeta.dispatchType === 'MANUAL') {
+              const failReceipt: SerializedDeliveryReceipt = {
+                recipient: task.recipient,
+                success: false,
+                deliveryMode: 'PHP_MAIL_RELAY',
+                trackingId: taskMeta.trackingId,
+                trackingPixelUrl: taskMeta.trackingPixelUrl,
+                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                enforcedDelayMs,
+                error: `SMTP not configured and remote mail relay unreachable: ${rErr?.message || rErr}`
+              };
+              this.recordReceipt(failReceipt, task);
+              task.resolve(failReceipt);
+              continue;
+            }
           }
           executeSimulatedSuccess('SMTP credentials not configured');
           continue;
@@ -4277,7 +4308,7 @@ export class ServerDeliveryQueueManager {
             continue;
           }
           try {
-            const resp = await fetch('https://tradeheaven.net/api.php?action=submit_inquiry', {
+            const resp = await fetch('https://tradeheaven.net/api.php?action=send_custom_email', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -4285,38 +4316,68 @@ export class ServerDeliveryQueueManager {
                 'User-Agent': 'TradeHeaven-Internal-Node/1.0'
               },
               body: JSON.stringify({
-                rfq_id: `FALLBACK-MTA-${Date.now()}`,
-                name: 'Trade Heaven Security & Notification',
-                email: task.recipient,
-                company: 'Trade Heaven Administration',
-                product: 'Image Update & Product Catalog Proof: Agricultural Rice Husk Powder',
-                quantity: '50 MT',
-                target_price: 280,
-                incoterm: 'N/A',
-                destination_port: 'Admin Hub',
-                subject: String(task.mailOptions.subject || 'Trade Heaven Alert Notification'),
-                message: String(task.mailOptions.text || task.mailOptions.html || 'Trade Heaven Alert Notification')
+                recipientEmail: task.recipient,
+                recipientName: taskMeta.recipientName || 'Trade Partner',
+                companyName: taskMeta.companyName || 'Corporate Entity',
+                companyId: taskMeta.companyId || '',
+                subject: String(task.mailOptions.subject || 'Trade Heaven Global B2B Notification'),
+                introMessage: String(task.mailOptions.text || taskMeta.summaryText || ''),
+                rawHtmlOverride: typeof task.mailOptions.html === 'string' ? task.mailOptions.html : undefined,
+                trackingId: taskMeta.trackingId,
+                dispatchType: taskMeta.dispatchType || 'MANUAL',
+                category: taskMeta.category || 'CUSTOM_ADMIN_NOTICE',
+                sendAdminCopy: false
               })
             });
             const rData: any = await resp.json().catch(() => null);
-            if (rData && (rData.status === 'success' || rData.id)) {
+            if (rData && rData.success === true) {
               this.lastDispatchedAt = Date.now();
               const mtaReceipt: SerializedDeliveryReceipt = {
                 recipient: task.recipient,
                 success: true,
                 deliveryMode: 'PHP_MAIL_RELAY',
-                messageId: `<remote-mta-${Date.now()}@tradeheaven.net>`,
-                trackingId: taskMeta.trackingId,
+                messageId: rData.messageId || rData.receipt?.messageId || `<remote-mta-${Date.now()}@tradeheaven.net>`,
+                trackingId: rData.trackingId || taskMeta.trackingId,
                 trackingPixelUrl: taskMeta.trackingPixelUrl,
-                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                dispatchedAt: rData.dispatchedAt || new Date(this.lastDispatchedAt).toISOString(),
                 enforcedDelayMs
               };
               this.recordReceipt(mtaReceipt, task);
               task.resolve(mtaReceipt);
               continue;
             }
+            if (taskMeta.dispatchType === 'MANUAL') {
+              const failReceipt: SerializedDeliveryReceipt = {
+                recipient: task.recipient,
+                success: false,
+                deliveryMode: 'PHP_MAIL_RELAY',
+                trackingId: taskMeta.trackingId,
+                trackingPixelUrl: taskMeta.trackingPixelUrl,
+                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                enforcedDelayMs,
+                error: `${errMsg} | Remote PHP relay failed: ${rData?.message || `HTTP ${resp.status}`}`
+              };
+              this.recordReceipt(failReceipt, task);
+              task.resolve(failReceipt);
+              continue;
+            }
           } catch (mtaErr: any) {
             console.error('[Queue Remote MTA Fallback Error]', mtaErr?.message || mtaErr);
+            if (taskMeta.dispatchType === 'MANUAL') {
+              const failReceipt: SerializedDeliveryReceipt = {
+                recipient: task.recipient,
+                success: false,
+                deliveryMode: 'LIVE_SMTP',
+                trackingId: taskMeta.trackingId,
+                trackingPixelUrl: taskMeta.trackingPixelUrl,
+                dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+                enforcedDelayMs,
+                error: `${errMsg} | Remote PHP relay error: ${mtaErr?.message || mtaErr}`
+              };
+              this.recordReceipt(failReceipt, task);
+              task.resolve(failReceipt);
+              continue;
+            }
           }
           executeSimulatedSuccess(errMsg);
         }

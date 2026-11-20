@@ -61,7 +61,13 @@
 
             window.addEventListener('unhandledrejection', function(event) {
               var reason = event && (event.reason ? (event.reason.message || String(event.reason)) : '');
-              if (typeof reason === 'string' && reason.indexOf('postMessage') !== -1) {
+              var stack = event && event.reason && event.reason.stack ? String(event.reason.stack) : '';
+              var isBenignPostMessage = typeof reason === 'string' && reason.indexOf('postMessage') !== -1;
+              var isBenignViteWs =
+                typeof reason === 'string' &&
+                (reason.indexOf('WebSocket closed without opened') !== -1 ||
+                  (reason.indexOf('WebSocket') !== -1 && stack.indexOf('@vite/client') !== -1));
+              if (isBenignPostMessage || isBenignViteWs) {
                 if (typeof event.preventDefault === 'function') {
                   event.preventDefault();
                 }

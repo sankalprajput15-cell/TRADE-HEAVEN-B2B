@@ -198,6 +198,35 @@ app.use('/api', (req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Fast lightweight gzip compression for JSON & text API responses > 1KB
+app.use((req, res, next) => {
+  const acceptEncoding = String(req.headers['accept-encoding'] || '');
+  if (!acceptEncoding.includes('gzip')) return next();
+  if (req.path.startsWith('/assets/uploads/') || req.path.startsWith('/uploads/')) return next();
+
+  const origJson = res.json.bind(res);
+  res.json = ((body: any) => {
+    try {
+      if (res.headersSent || res.getHeader('Content-Encoding')) {
+        return origJson(body);
+      }
+      const jsonStr = JSON.stringify(body);
+      if (!jsonStr || jsonStr.length < 1024) {
+        return origJson(body);
+      }
+      const compressed = zlib.gzipSync(Buffer.from(jsonStr, 'utf-8'), { level: 4 });
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Vary', 'Accept-Encoding');
+      res.setHeader('Content-Length', String(compressed.length));
+      return res.end(compressed);
+    } catch {
+      return origJson(body);
+    }
+  }) as any;
+  next();
+});
+
 interface HttpErrorLogEntry {
   method: string;
   url: string;
@@ -3507,7 +3536,7 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
     const receipt = await automatedSmtpService.sendCustomAdminEmail(payload);
 
     let adminCopyReceipt = null;
-    if (payload.sendAdminCopy || payload.isMembershipRenewal) {
+    if (payload.sendAdminCopy === true || (payload.sendAdminCopy !== false && payload.isMembershipRenewal)) {
       const adminEmail = (payload.adminCopyEmail || 'yr943334@gmail.com').trim();
       if (adminEmail && adminEmail.toLowerCase() !== payload.recipientEmail.trim().toLowerCase()) {
         adminCopyReceipt = await automatedSmtpService.sendCustomAdminEmail({
@@ -3541,9 +3570,57 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
       payload.recipientEmail,
       'ADMIN',
       '/api/v1/admin/send-custom-email',
-      `Dispatched customized email (${payload.subject || 'Custom Notice'}) to ${payload.recipientEmail} (${payload.companyName || 'Corporate Entity'})${adminCopyReceipt ? ` + Admin Copy to ${adminCopyReceipt.recipient}` : ''} via secure corporate SMTP.`,
+      `Dispatched customized email (${payload.subject || 'Custom Notice'}) to ${payload.recipientEmail} (${payload.companyName || 'Corporate Entity'})${adminCopyReceipt ? ` + Admin Copy to ${adminCopyReceipt.recipient}` : ''} via ${receipt.deliveryMode || 'SMTP'}.`,
       receipt.success ? 'SUCCESS' : 'FAILED'
     );
+
+    // Best-effort mirror to live PHP email-history.json so external Chrome windows on tradeheaven.net see the exact same record
+    const entriesToMirror: Array<Record<string, any>> = [];
+    if (receipt.deliveryMode !== 'PHP_MAIL_RELAY') {
+      entriesToMirror.push({
+        recipient: receipt.recipient,
+        recipientName: payload.decisionMakerName || payload.recipientName || 'Trade Partner',
+        companyName: payload.companyName || 'Corporate Entity',
+        companyId: payload.companyId || null,
+        subject: payload.subject || 'Custom Notice',
+        category: payload.category || 'CUSTOM_ADMIN_NOTICE',
+        dispatchType: payload.dispatchType || 'MANUAL',
+        deliveryMode: receipt.deliveryMode || 'LIVE_SMTP',
+        dispatchedAt: receipt.dispatchedAt,
+        success: receipt.success,
+        messageId: receipt.messageId,
+        trackingId: receipt.trackingId,
+        summaryText: payload.introMessage || '',
+        htmlPreview: payload.rawHtmlOverride || null,
+        error: receipt.error || null
+      });
+    }
+    if (adminCopyReceipt && adminCopyReceipt.deliveryMode !== 'PHP_MAIL_RELAY') {
+      entriesToMirror.push({
+        recipient: adminCopyReceipt.recipient,
+        recipientName: `Admin Copy (${adminCopyReceipt.recipient}) • ${payload.decisionMakerName || payload.recipientName || 'Trade Partner'}`,
+        companyName: payload.companyName || 'Corporate Entity',
+        companyId: payload.companyId || null,
+        subject: payload.subject || 'Custom Notice',
+        category: payload.category || 'CUSTOM_ADMIN_NOTICE',
+        dispatchType: payload.dispatchType || 'MANUAL',
+        deliveryMode: adminCopyReceipt.deliveryMode || 'LIVE_SMTP',
+        dispatchedAt: adminCopyReceipt.dispatchedAt,
+        success: adminCopyReceipt.success,
+        messageId: adminCopyReceipt.messageId,
+        trackingId: adminCopyReceipt.trackingId,
+        summaryText: payload.introMessage || '',
+        htmlPreview: payload.rawHtmlOverride || null,
+        error: adminCopyReceipt.error || null
+      });
+    }
+    if (entriesToMirror.length > 0) {
+      fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=record_email_history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ entries: entriesToMirror })
+      }).catch(() => {});
+    }
 
     return res.json({
       success: receipt.success,
@@ -10166,6 +10243,35 @@ app.get('/api.php', async (req, res) => {
   res.type('application/json');
   const action = String(req.query.action || '').replace(/-/g, '_').toLowerCase();
 
+  if (action === 'get_email_history' || action === 'email_history') {
+    const email = typeof req.query.email === 'string' ? req.query.email.trim() : undefined;
+    const companyName = typeof req.query.companyName === 'string' ? req.query.companyName.trim() : undefined;
+    const companyId = typeof req.query.companyId === 'string' ? req.query.companyId.trim() : undefined;
+    const dispatchType =
+      req.query.dispatchType === 'AUTOMATED' || req.query.dispatchType === 'MANUAL'
+        ? req.query.dispatchType
+        : undefined;
+    const history = serverDeliveryQueueManager.getEmailHistory({ email, companyName, companyId, dispatchType });
+    const summary = serverDeliveryQueueManager.getMailSuiteAnalytics({ email, companyName, companyId });
+    return res.json({
+      status: 'success',
+      success: true,
+      totalCount: history.length,
+      history,
+      entries: history,
+      stats: {
+        total: history.length,
+        automatedCount: history.filter(e => e.dispatchType === 'AUTOMATED').length,
+        manualCount: history.filter(e => e.dispatchType === 'MANUAL').length,
+        deliveredCount: history.filter(e => e.success).length,
+        failedCount: history.filter(e => !e.success).length
+      },
+      mailSuiteStats: summary,
+      summary,
+      analytics: summary
+    });
+  }
+
   if (action === 'auth_me' || action === 'me') {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -10699,6 +10805,74 @@ app.post('/api.php', async (req, res) => {
 
   if (await forwardApiPhpToLiveUpstream(req, res, action, 'POST')) {
     return;
+  }
+
+  if (action === 'send_custom_email') {
+    try {
+      const payload = input || {};
+      const targetEmail = String(payload.recipientEmail || payload.email || '').trim();
+      if (!targetEmail || !targetEmail.includes('@')) {
+        return res.status(400).json({ status: 'error', success: false, message: 'Valid recipient email is required.' });
+      }
+      const receipt = await automatedSmtpService.sendCustomAdminEmail({ ...payload, recipientEmail: targetEmail });
+      let adminCopyReceipt = null;
+      if (payload.sendAdminCopy === true || (payload.sendAdminCopy !== false && payload.isMembershipRenewal)) {
+        const adminEmail = String(payload.adminCopyEmail || 'yr943334@gmail.com').trim();
+        if (adminEmail && adminEmail.toLowerCase() !== targetEmail.toLowerCase()) {
+          adminCopyReceipt = await automatedSmtpService.sendCustomAdminEmail({
+            ...payload,
+            recipientEmail: adminEmail,
+            recipientName: payload.decisionMakerName || payload.recipientName || 'Admin Copy',
+            subject: payload.subject || 'Trade Heaven Notice'
+          });
+        }
+      }
+      return res.json({
+        status: receipt.success ? 'success' : 'error',
+        success: receipt.success,
+        recipient: receipt.recipient,
+        deliveryMode: receipt.deliveryMode,
+        messageId: receipt.messageId,
+        trackingId: receipt.trackingId,
+        dispatchedAt: receipt.dispatchedAt,
+        receipt,
+        adminCopyReceipt,
+        message: receipt.success
+          ? `Custom email dispatched to ${receipt.recipient}${adminCopyReceipt?.success ? ` and Admin Copy sent to ${adminCopyReceipt.recipient}` : ''}.`
+          : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`
+      });
+    } catch (err: any) {
+      return res.status(500).json({ status: 'error', success: false, message: err?.message || 'Dispatch failed' });
+    }
+  }
+
+  if (action === 'record_email_history') {
+    const rawEntries = Array.isArray(input?.entries) ? input.entries : input?.recipient || input?.recipientEmail ? [input] : [];
+    let recorded = 0;
+    for (const entry of rawEntries) {
+      const rec = String(entry?.recipient || entry?.recipientEmail || '').trim();
+      if (!rec) continue;
+      serverDeliveryQueueManager.recordExternalDispatch({
+        recipient: rec,
+        recipientName: entry.recipientName || 'Trade Partner',
+        companyName: entry.companyName || 'Corporate Entity',
+        companyId: entry.companyId || undefined,
+        subject: entry.subject || 'Trade Heaven Notification',
+        text: entry.summaryText || '',
+        html: entry.htmlPreview || undefined,
+        success: entry.success !== false,
+        deliveryMode: entry.deliveryMode || 'PHP_MAIL_RELAY',
+        category: entry.category || 'CUSTOM_ADMIN_NOTICE',
+        dispatchType: entry.dispatchType || 'MANUAL',
+        summaryText: entry.summaryText || '',
+        error: entry.error || undefined,
+        messageId: entry.messageId || undefined,
+        dispatchedAt: entry.dispatchedAt || undefined,
+        trackingId: entry.trackingId || undefined
+      });
+      recorded++;
+    }
+    return res.json({ status: 'success', success: true, recorded });
   }
 
   // Send OTP (Login or Registration) via /api.php?action=send_otp
@@ -13878,7 +14052,41 @@ function ensureUploadsDir() {
   }
 }
 
-function loadServerProductImageState(existingMemoryState?: ProductImageSystemState): ProductImageSystemState {
+let lastLoadedProductImageDiskSig = '';
+let hasCompletedUploadsDirScan = false;
+
+function computeProductImageDiskSignature(includeUploadsDir: boolean): string {
+  const parts: string[] = [];
+  const pathsToCheck = includeUploadsDir
+    ? [IMAGE_OVERRIDES_BACKUP_FILE, PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE, UPLOADS_DIR]
+    : [IMAGE_OVERRIDES_BACKUP_FILE, PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE];
+  for (const p of pathsToCheck) {
+    try {
+      const st = fs.statSync(p);
+      parts.push(`${Math.floor(st.mtimeMs)}:${st.size}`);
+    } catch {
+      parts.push('0');
+    }
+  }
+  return `${includeUploadsDir ? 'full' : 'fast'}|${parts.join('|')}`;
+}
+
+function loadServerProductImageState(
+  existingMemoryState?: ProductImageSystemState,
+  options?: { skipDirectoryScan?: boolean; forceReload?: boolean }
+): ProductImageSystemState {
+  const skipDirectoryScan = Boolean(options?.skipDirectoryScan);
+  const diskSig = computeProductImageDiskSignature(!skipDirectoryScan);
+  if (
+    !options?.forceReload &&
+    existingMemoryState &&
+    lastLoadedProductImageDiskSig &&
+    (diskSig === lastLoadedProductImageDiskSig ||
+      (!skipDirectoryScan && hasCompletedUploadsDirScan && diskSig === lastLoadedProductImageDiskSig))
+  ) {
+    return existingMemoryState;
+  }
+
   ensureUploadsDir();
   const defaultState: ProductImageSystemState = {
     overrides: {},
@@ -14016,93 +14224,102 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
     mergeOverridesFromParsed(existingMemoryState, false);
   }
 
-  // Scan public/assets/uploads to populate mediaLibrary with real local image files
-  const existingBaseUrls = new Set(defaultState.mediaLibrary.map(m => String(m.url || '').split('?')[0]));
-  const scanDirForImages = (dirPath: string, urlPrefix: string) => {
-    try {
-      if (!fs.existsSync(dirPath)) return;
-      const files = fs.readdirSync(dirPath);
-      for (const file of files) {
-        if (EXCLUDED_SCREENSHOT_FILES.has(file)) continue;
-        const ext = path.extname(file).toLowerCase().replace('.', '');
-        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
-          const url = `${urlPrefix}/${file}`;
-          if (recentlyDeletedUploadUrls.has(url)) continue;
-          if (!existingBaseUrls.has(url)) {
-            const stat = fs.statSync(path.join(dirPath, file));
-            defaultState.mediaLibrary.unshift({
-              id: `media-${file}`,
-              url,
-              name: file,
-              format: ext.toUpperCase(),
-              sizeBytes: stat.size,
-              uploadedAt: stat.mtime.toISOString()
-            });
-            existingBaseUrls.add(url);
+  // Scan public/assets/uploads to populate mediaLibrary with real local image files (skipped on fast initial boot, deferred to setImmediate)
+  if (!skipDirectoryScan) {
+    const existingBaseUrls = new Set(defaultState.mediaLibrary.map(m => String(m.url || '').split('?')[0]));
+    const newlyScannedMedia: ProductImageSystemState['mediaLibrary'] = [];
+    const scanDirForImages = (dirPath: string, urlPrefix: string) => {
+      try {
+        if (!fs.existsSync(dirPath)) return;
+        const files = fs.readdirSync(dirPath);
+        for (const file of files) {
+          if (EXCLUDED_SCREENSHOT_FILES.has(file)) continue;
+          const ext = path.extname(file).toLowerCase().replace('.', '');
+          if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
+            const url = `${urlPrefix}/${file}`;
+            if (recentlyDeletedUploadUrls.has(url)) continue;
+            if (!existingBaseUrls.has(url)) {
+              const stat = fs.statSync(path.join(dirPath, file));
+              newlyScannedMedia.push({
+                id: `media-${file}`,
+                url,
+                name: file,
+                format: ext.toUpperCase(),
+                sizeBytes: stat.size,
+                uploadedAt: stat.mtime.toISOString()
+              });
+              existingBaseUrls.add(url);
+            }
           }
+        }
+      } catch {}
+    };
+
+    scanDirForImages(UPLOADS_DIR, '/assets/uploads');
+    if (newlyScannedMedia.length > 0) {
+      newlyScannedMedia.reverse();
+      defaultState.mediaLibrary = [...newlyScannedMedia, ...defaultState.mediaLibrary];
+    }
+
+    // Verify every local /assets/uploads/* override exists on disk (self-heal via verified-<id> or exact filename stem match)
+    try {
+      const existingUploads = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
+      const existingLegacy = fs.existsSync(legacyAssetsStaticDir) ? fs.readdirSync(legacyAssetsStaticDir) : [];
+      const existingDistUploads = fs.existsSync(distUploadsStaticDir) ? fs.readdirSync(distUploadsStaticDir) : [];
+      const uploadSet = new Set<string>([...existingUploads, ...existingDistUploads]);
+      const legacySet = new Set<string>(existingLegacy);
+      const stemMap = new Map<string, string>();
+      for (const f of uploadSet) {
+        const m = f.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
+        if (m && !stemMap.has(m[1])) {
+          stemMap.set(m[1], f);
+        }
+      }
+
+      const resolveValidLocalFile = (pid: string, urlStr: string): string | null => {
+        const clean = String(urlStr || '').trim().split('?')[0];
+        if (!clean.startsWith('/assets/uploads/')) return urlStr;
+        const fn = clean.slice('/assets/uploads/'.length);
+        if (uploadSet.has(fn) || legacySet.has(fn)) {
+          return urlStr;
+        }
+        for (const ext of ['webp', 'jpg', 'jpeg', 'png']) {
+          const verifiedName = `verified-${pid}.${ext}`;
+          if (uploadSet.has(verifiedName)) {
+            return `/assets/uploads/${verifiedName}`;
+          }
+        }
+        const m = fn.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
+        if (m && stemMap.has(m[1])) {
+          return `/assets/uploads/${stemMap.get(m[1])}`;
+        }
+        return null;
+      };
+
+      for (const [pid, entry] of Object.entries(defaultState.overrides)) {
+        if (!entry?.primary) continue;
+        const primaryClean = String(entry.primary).split('?')[0];
+        if (!primaryClean.startsWith('/assets/uploads/')) continue;
+        const resolvedPrimary = resolveValidLocalFile(pid, entry.primary);
+        if (!resolvedPrimary) {
+          delete defaultState.overrides[pid];
+          continue;
+        }
+        if (resolvedPrimary !== entry.primary) {
+          entry.primary = resolvedPrimary;
+        }
+        if (Array.isArray(entry.gallery)) {
+          const validGallery = entry.gallery
+            .map(u => resolveValidLocalFile(pid, u))
+            .filter((u): u is string => Boolean(u));
+          entry.gallery = validGallery.length > 0 ? Array.from(new Set([entry.primary, ...validGallery])) : [entry.primary];
         }
       }
     } catch {}
-  };
+    hasCompletedUploadsDirScan = true;
+  }
 
-  scanDirForImages(UPLOADS_DIR, '/assets/uploads');
-
-  // Verify every local /assets/uploads/* override exists on disk (self-heal via verified-<id> or exact filename stem match)
-  try {
-    const existingUploads = fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [];
-    const existingLegacy = fs.existsSync(legacyAssetsStaticDir) ? fs.readdirSync(legacyAssetsStaticDir) : [];
-    const existingDistUploads = fs.existsSync(distUploadsStaticDir) ? fs.readdirSync(distUploadsStaticDir) : [];
-    const uploadSet = new Set<string>([...existingUploads, ...existingDistUploads]);
-    const legacySet = new Set<string>(existingLegacy);
-    const stemMap = new Map<string, string>();
-    for (const f of uploadSet) {
-      const m = f.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
-      if (m && !stemMap.has(m[1])) {
-        stemMap.set(m[1], f);
-      }
-    }
-
-    const resolveValidLocalFile = (pid: string, urlStr: string): string | null => {
-      const clean = String(urlStr || '').trim().split('?')[0];
-      if (!clean.startsWith('/assets/uploads/')) return urlStr;
-      const fn = clean.slice('/assets/uploads/'.length);
-      if (uploadSet.has(fn) || legacySet.has(fn)) {
-        return urlStr;
-      }
-      for (const ext of ['webp', 'jpg', 'jpeg', 'png']) {
-        const verifiedName = `verified-${pid}.${ext}`;
-        if (uploadSet.has(verifiedName)) {
-          return `/assets/uploads/${verifiedName}`;
-        }
-      }
-      const m = fn.match(/^(.*)-[0-9a-f]{8,16}\.(webp|jpe?g|png)$/i);
-      if (m && stemMap.has(m[1])) {
-        return `/assets/uploads/${stemMap.get(m[1])}`;
-      }
-      return null;
-    };
-
-    for (const [pid, entry] of Object.entries(defaultState.overrides)) {
-      if (!entry?.primary) continue;
-      const primaryClean = String(entry.primary).split('?')[0];
-      if (!primaryClean.startsWith('/assets/uploads/')) continue;
-      const resolvedPrimary = resolveValidLocalFile(pid, entry.primary);
-      if (!resolvedPrimary) {
-        delete defaultState.overrides[pid];
-        continue;
-      }
-      if (resolvedPrimary !== entry.primary) {
-        entry.primary = resolvedPrimary;
-      }
-      if (Array.isArray(entry.gallery)) {
-        const validGallery = entry.gallery
-          .map(u => resolveValidLocalFile(pid, u))
-          .filter((u): u is string => Boolean(u));
-        entry.gallery = validGallery.length > 0 ? Array.from(new Set([entry.primary, ...validGallery])) : [entry.primary];
-      }
-    }
-  } catch {}
-
+  lastLoadedProductImageDiskSig = computeProductImageDiskSignature(!skipDirectoryScan);
   return defaultState;
 }
 
@@ -14228,18 +14445,20 @@ function permanentlyDeleteReplacedUploadFiles(
   return deletedUrls;
 }
 
-serverProductImageState = loadServerProductImageState();
+// Fast boot: load JSON overrides immediately and defer the 1,800+ file directory scan until after port 3000 opens
+serverProductImageState = loadServerProductImageState(undefined, { skipDirectoryScan: true });
 
 function saveServerProductImageState() {
   ensureUploadsDir();
   try {
     if (Object.keys(serverProductImageState.overrides || {}).length === 0) {
-      serverProductImageState = loadServerProductImageState(serverProductImageState);
+      serverProductImageState = loadServerProductImageState(serverProductImageState, { forceReload: true });
     }
     const serialized = JSON.stringify(serverProductImageState, null, 2);
     // Persist strictly inside public/assets/uploads and public/data (never write into src/ at runtime)
     fs.writeFileSync(IMAGE_OVERRIDES_FILE, serialized, 'utf-8');
     fs.writeFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized, 'utf-8');
+    lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
   }
@@ -14708,16 +14927,27 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
   return pulledCount;
 }
 
-// GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch all product image overrides & server media library
-const handleGetProductImages = (_req: express.Request, res: express.Response) => {
+// GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch product image overrides & media library
+const handleGetProductImages = (req: express.Request, res: express.Response) => {
   void pullNewerManualOverridesFromLiveServer();
-  serverProductImageState = loadServerProductImageState(serverProductImageState);
+  const isAdminRoute = req.path.includes('/admin/') || req.query.includeMedia === '1';
+  serverProductImageState = loadServerProductImageState(serverProductImageState, {
+    skipDirectoryScan: !isAdminRoute && !hasCompletedUploadsDirScan
+  });
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  const responseData = isAdminRoute
+    ? serverProductImageState
+    : {
+        ...serverProductImageState,
+        mediaLibrary: Array.isArray(serverProductImageState.mediaLibrary)
+          ? serverProductImageState.mediaLibrary.slice(0, 30)
+          : []
+      };
   res.json({
     success: true,
-    data: serverProductImageState
+    data: responseData
   });
 };
 app.get('/api/v1/admin/product-images', handleGetProductImages);
@@ -23749,8 +23979,8 @@ async function startServer() {
         res.setHeader('Cache-Control', 'no-cache');
       }
 
-      // For binary files or files > 512KB, stream directly from disk without buffering in gzipCache
-      if (!isCompressible || stat.size > 512 * 1024) {
+      // For binary files or very large files > 12MB, stream directly from disk; compress JS/CSS/JSON/HTML up to 12MB
+      if (!isCompressible || stat.size > 12 * 1024 * 1024) {
         res.setHeader('Content-Length', String(stat.size));
         const stream = fs.createReadStream(filePath);
         stream.on('error', () => {
@@ -23874,6 +24104,7 @@ async function startServer() {
     next();
   });
 
+  let prewarmVite: (() => void) | null = null;
   if (process.env.NODE_ENV !== 'production') {
     let viteMiddleware: any = null;
     let vitePromise: Promise<any> | null = null;
@@ -23899,6 +24130,12 @@ async function startServer() {
       return vitePromise;
     };
 
+    prewarmVite = () => {
+      if (!fs.existsSync(path.join(distPath, 'index.html'))) {
+        void getOrCreateVite();
+      }
+    };
+
     app.use(async (req, res, next) => {
       try {
         if (!viteMiddleware) {
@@ -23921,6 +24158,17 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
+    // Defer heavy background media directory indexing & Vite pre-warming until after port 3000 is open
+    setImmediate(() => {
+      try {
+        if (!hasCompletedUploadsDirScan) {
+          serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: false });
+        }
+      } catch {}
+      if (prewarmVite) {
+        prewarmVite();
+      }
+    });
   });
 
   // Real-time WebSocket server for Multi-Identity Admin Buyer Chat (/ws/chat)

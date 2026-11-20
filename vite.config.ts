@@ -12,7 +12,7 @@ export default defineConfig(() => {
       },
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'lucide-react', 'jspdf'],
+      include: ['react', 'react-dom', 'lucide-react'],
       exclude: ['nodemailer'],
     },
     build: {
@@ -25,6 +25,27 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
+              if (
+                id.includes('/jspdf') ||
+                id.includes('/html2canvas/') ||
+                id.includes('/canvg/') ||
+                id.includes('/fflate/') ||
+                id.includes('/qrcode')
+              ) {
+                return 'vendor-pdf';
+              }
+              if (
+                id.includes('/recharts/') ||
+                id.includes('/d3-') ||
+                id.includes('/d3/') ||
+                id.includes('/topojson-client/') ||
+                id.includes('/victory-vendor/')
+              ) {
+                return 'vendor-charts';
+              }
+              if (id.includes('/lucide-react/')) {
+                return 'vendor-icons';
+              }
               return 'vendor';
             }
             if (

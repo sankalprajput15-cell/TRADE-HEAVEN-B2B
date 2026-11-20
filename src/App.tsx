@@ -35,16 +35,7 @@ import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage'
 import { PlatformAnnouncementBanner } from './components/marketplace/PlatformAnnouncementBanner';
 import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
-import { ProductCatalog } from './components/marketplace/ProductCatalog';
-
-// Core High-Traffic Directory Views (Imported directly to prevent dynamic chunk fetch errors in Chrome after deployments)
-import { SuppliersDirectoryView } from './components/services/SuppliersDirectoryView';
-import { BuyLeadsView } from './components/services/BuyLeadsView';
-import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
-import { PremiumServicesView } from './components/services/PremiumServicesView';
-import { BuyerSupplierDashboard } from './components/marketplace/BuyerSupplierDashboard';
-import { VerifiedSupplierDedicatedDashboard } from './components/vendor/VerifiedSupplierDedicatedDashboard';
-import { SupplierMessagesInbox } from './components/vendor/SupplierMessagesInbox';
+// Non-homepage high-traffic views are lazy-loaded via lazyWithRetry below to keep initial homepage load instant
 
 // Helper for retryable lazy loaded views with automatic cache-busting reload and resilient fallback recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -154,8 +145,16 @@ const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
 const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./components/marketplace/SupplierBankWithdrawalLandingPage'), 'SupplierBankWithdrawalLandingPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
-import { TradeAssuranceCertificateView } from './components/services/TradeAssuranceCertificateView';
-import { B2BTrustCertificatePage } from './components/services/B2BTrustCertificatePage';
+const ProductCatalog = lazyWithRetry(() => import('./components/marketplace/ProductCatalog'), 'ProductCatalog');
+const SuppliersDirectoryView = lazyWithRetry(() => import('./components/services/SuppliersDirectoryView'), 'SuppliersDirectoryView');
+const BuyLeadsView = lazyWithRetry(() => import('./components/services/BuyLeadsView'), 'BuyLeadsView');
+const BuyersDirectoryView = lazyWithRetry(() => import('./components/services/BuyersDirectoryView'), 'BuyersDirectoryView');
+const PremiumServicesView = lazyWithRetry(() => import('./components/services/PremiumServicesView'), 'PremiumServicesView');
+const BuyerSupplierDashboard = lazyWithRetry(() => import('./components/marketplace/BuyerSupplierDashboard'), 'BuyerSupplierDashboard');
+const VerifiedSupplierDedicatedDashboard = lazyWithRetry(() => import('./components/vendor/VerifiedSupplierDedicatedDashboard'), 'VerifiedSupplierDedicatedDashboard');
+const SupplierMessagesInbox = lazyWithRetry(() => import('./components/vendor/SupplierMessagesInbox'), 'SupplierMessagesInbox');
+const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
+const B2BTrustCertificatePage = lazyWithRetry(() => import('./components/services/B2BTrustCertificatePage'), 'B2BTrustCertificatePage');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
 const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');

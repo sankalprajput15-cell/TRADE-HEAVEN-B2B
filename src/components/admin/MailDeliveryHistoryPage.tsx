@@ -66,19 +66,39 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     const isSilent = silent === true;
     if (!isSilent) setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/marketing-suite/state');
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.success) {
-          if (Array.isArray(data.history)) {
-            setHistory(data.history);
-            setSelectedEntry((prev) => {
-              if (!prev) return null;
-              return data.history.find((h: CompanyEmailHistoryEntry) => h.id === prev.id || h.trackingId === prev.trackingId) || prev;
-            });
+      let data: any = null;
+      const endpoints = [
+        '/api/v1/admin/marketing-suite/state',
+        '/api/v1/admin/email-history',
+        '/api.php?action=get_email_history'
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { headers: { Accept: 'application/json' } });
+          if (res.ok) {
+            const parsed = await res.json().catch(() => null);
+            if (parsed && parsed.status !== 'fallback' && (Array.isArray(parsed.history) || Array.isArray(parsed.entries))) {
+              data = parsed;
+              break;
+            }
           }
-          if (data.summary) setSummary(data.summary);
+        } catch {
+          // try next endpoint
         }
+      }
+      if (data) {
+        const list: CompanyEmailHistoryEntry[] = Array.isArray(data.history)
+          ? data.history
+          : Array.isArray(data.entries)
+          ? data.entries
+          : [];
+        setHistory(list);
+        setSelectedEntry((prev) => {
+          if (!prev) return null;
+          return list.find((h: CompanyEmailHistoryEntry) => h.id === prev.id || h.trackingId === prev.trackingId) || prev;
+        });
+        const resolvedSummary = data.summary || data.mailSuiteStats || data.analytics;
+        if (resolvedSummary) setSummary(resolvedSummary);
       }
     } catch (err: any) {
       if (!isSilent) {
@@ -94,7 +114,21 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     const interval = setInterval(() => {
       void fetchHistoryAndAnalytics(true);
     }, 6000);
-    return () => clearInterval(interval);
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_admin_email_history_sync');
+        bc.onmessage = () => {
+          void fetchHistoryAndAnalytics(true);
+        };
+      }
+    } catch {}
+    return () => {
+      clearInterval(interval);
+      try {
+        bc?.close();
+      } catch {}
+    };
   }, []);
 
   const handleTriggerSingleTracking = async (entry: CompanyEmailHistoryEntry, eventType: 'OPEN' | 'CLICK') => {

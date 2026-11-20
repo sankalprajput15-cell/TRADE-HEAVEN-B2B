@@ -3751,9 +3751,12 @@ switch ($action) {
         $subject = trim((string)($input['subject'] ?? 'Trade Heaven Global B2B Notification'));
         $recipient_name = trim((string)($input['decisionMakerName'] ?? $input['recipientName'] ?? 'Trade Partner'));
         $company_name = trim((string)($input['companyName'] ?? 'Listed Partner'));
+        $company_id = trim((string)($input['companyId'] ?? ''));
         $intro_msg = trim((string)($input['introMessage'] ?? 'Please log in to your Trade Heaven account to review active buyer trade requests.'));
         $cta_url = trim((string)($input['ctaUrl'] ?? $input['portalUrl'] ?? 'https://www.tradeheaven.net'));
         $cta_text = trim((string)($input['ctaText'] ?? 'Log In to Trade Heaven Account →'));
+        $dispatch_type = strtoupper(trim((string)($input['dispatchType'] ?? 'MANUAL'))) ?: 'MANUAL';
+        $category = strtoupper(trim((string)($input['category'] ?? 'CUSTOM_ADMIN_NOTICE'))) ?: 'CUSTOM_ADMIN_NOTICE';
 
         if (empty($to_email) || !filter_var($to_email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(["status" => "error", "success" => false, "message" => "Valid recipient email is required."]);
@@ -3764,17 +3767,159 @@ switch ($action) {
             ? (string)$input['rawHtmlOverride']
             : "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f8fafc;padding:24px;\"><div style=\"max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #cbd5e1;\"><div style=\"background:#0f172a;color:#ffffff;padding:26px 22px;text-align:center;\"><h2 style=\"margin:0;font-size:20px;\">" . htmlspecialchars($subject) . "</h2><p style=\"margin:6px 0 0;color:#cbd5e1;font-size:13px;\">" . htmlspecialchars($company_name) . "</p></div><div style=\"padding:24px;color:#1e293b;\"><p>Hello <strong>" . htmlspecialchars($recipient_name) . "</strong>,</p><p style=\"line-height:1.6;\">" . nl2br(htmlspecialchars($intro_msg)) . "</p><div style=\"text-align:center;margin:24px 0;\"><a href=\"" . htmlspecialchars($cta_url) . "\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 26px;border-radius:8px;\">" . htmlspecialchars($cta_text) . "</a></div></div></div></body></html>";
 
+        $now_iso = gmdate('Y-m-d\TH:i:s\Z');
+        $tracking_id = trim((string)($input['trackingId'] ?? ''));
+        if ($tracking_id === '') {
+            $tracking_id = 'ms-trk-php-' . dechex(time()) . '-' . substr(md5($to_email . uniqid('', true)), 0, 6);
+        }
+        $message_id = '<php-mail-' . time() . '-' . substr(md5($to_email . $subject . uniqid('', true)), 0, 8) . '@tradeheaven.net>';
+        $encoded_subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
         $headers = [
             'MIME-Version: 1.0',
-            'Content-type: text/html; charset=UTF-8',
+            'Content-Type: text/html; charset=UTF-8',
             'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
             'Reply-To: help@tradeheaven.net',
+            'Message-ID: ' . $message_id,
             'X-Mailer: PHP/' . phpversion()
         ];
         $headers_str = implode("\r\n", $headers);
-        $sent = @mail($to_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+        $sent = @mail($to_email, $encoded_subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
         if (!$sent) {
-            $sent = @mail($to_email, $subject, $html_body, $headers_str);
+            $sent = @mail($to_email, $encoded_subject, $html_body, $headers_str);
+        }
+
+        // Helper closure to persist into assets/uploads/email-history.json
+        $history_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($history_dir)) {
+            @mkdir($history_dir, 0775, true);
+        }
+        $history_file = $history_dir . '/email-history.json';
+        $append_history = function ($entry) use ($history_file) {
+            $existing = [];
+            if (file_exists($history_file)) {
+                $raw = @file_get_contents($history_file);
+                $decoded = json_decode((string)$raw, true);
+                if (is_array($decoded)) {
+                    $existing = $decoded;
+                }
+            }
+            $filtered = [];
+            foreach ($existing as $item) {
+                if (!is_array($item)) continue;
+                $same_id = !empty($entry['id']) && !empty($item['id']) && $item['id'] === $entry['id'];
+                $same_msg = !empty($entry['messageId']) && !empty($item['messageId']) && $item['messageId'] === $entry['messageId'] && strtolower((string)($item['recipient'] ?? '')) === strtolower((string)($entry['recipient'] ?? ''));
+                if (!$same_id && !$same_msg) {
+                    $filtered[] = $item;
+                }
+            }
+            array_unshift($filtered, $entry);
+            if (count($filtered) > 1000) {
+                $filtered = array_slice($filtered, 0, 1000);
+            }
+            @file_put_contents($history_file, json_encode($filtered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        };
+
+        $primary_entry = [
+            'id' => 'eh-php-' . time() . '-' . substr(md5($to_email . uniqid('', true)), 0, 6),
+            'recipient' => $to_email,
+            'recipientEmail' => $to_email,
+            'recipientName' => $recipient_name,
+            'companyName' => $company_name,
+            'companyId' => $company_id !== '' ? $company_id : null,
+            'subject' => $subject,
+            'category' => $category,
+            'dispatchType' => $dispatch_type,
+            'deliveryMode' => 'PHP_MAIL_RELAY',
+            'dispatchedAt' => $now_iso,
+            'success' => (bool)$sent,
+            'messageId' => $message_id,
+            'trackingId' => $tracking_id,
+            'summaryText' => mb_substr(strip_tags($intro_msg), 0, 260),
+            'htmlPreview' => $html_body,
+            'error' => $sent ? null : 'PHP mail() returned false on host MTA',
+            'opened' => false,
+            'openCount' => 0,
+            'clicked' => false,
+            'clickCount' => 0,
+            'mailSuiteStatus' => $sent ? 'DELIVERED' : 'BOUNCED',
+            'trackingEnabled' => true
+        ];
+        $append_history($primary_entry);
+
+        $receipt = [
+            'recipient' => $to_email,
+            'success' => (bool)$sent,
+            'deliveryMode' => 'PHP_MAIL_RELAY',
+            'messageId' => $message_id,
+            'trackingId' => $tracking_id,
+            'dispatchedAt' => $now_iso,
+            'error' => $sent ? null : 'PHP mail() could not relay to ' . $to_email
+        ];
+
+        // Respect explicit sendAdminCopy === true (and never send admin copy if sendAdminCopy === false)
+        $send_admin_copy = false;
+        if (array_key_exists('sendAdminCopy', $input)) {
+            $send_admin_copy = ($input['sendAdminCopy'] === true || $input['sendAdminCopy'] === 'true' || $input['sendAdminCopy'] === 1);
+        } elseif (!empty($input['isMembershipRenewal'])) {
+            $send_admin_copy = true;
+        }
+
+        $admin_copy_receipt = null;
+        if ($send_admin_copy) {
+            $admin_email = normalizeAuthEmail($input['adminCopyEmail'] ?? 'yr943334@gmail.com');
+            if (!empty($admin_email) && filter_var($admin_email, FILTER_VALIDATE_EMAIL) && strtolower($admin_email) !== strtolower($to_email)) {
+                $admin_msg_id = '<php-admin-copy-' . time() . '-' . substr(md5($admin_email . uniqid('', true)), 0, 8) . '@tradeheaven.net>';
+                $admin_tracking_id = 'ms-trk-php-admin-' . dechex(time()) . '-' . substr(md5($admin_email . uniqid('', true)), 0, 6);
+                $admin_headers = [
+                    'MIME-Version: 1.0',
+                    'Content-Type: text/html; charset=UTF-8',
+                    'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
+                    'Reply-To: help@tradeheaven.net',
+                    'Message-ID: ' . $admin_msg_id,
+                    'X-Mailer: PHP/' . phpversion()
+                ];
+                $admin_headers_str = implode("\r\n", $admin_headers);
+                $admin_sent = @mail($admin_email, $encoded_subject, $html_body, $admin_headers_str, "-f noreply@tradeheaven.net");
+                if (!$admin_sent) {
+                    $admin_sent = @mail($admin_email, $encoded_subject, $html_body, $admin_headers_str);
+                }
+                $admin_entry = [
+                    'id' => 'eh-php-adm-' . time() . '-' . substr(md5($admin_email . uniqid('', true)), 0, 6),
+                    'recipient' => $admin_email,
+                    'recipientEmail' => $admin_email,
+                    'recipientName' => 'Admin Copy (' . $admin_email . ') • ' . $recipient_name,
+                    'companyName' => $company_name,
+                    'companyId' => $company_id !== '' ? $company_id : null,
+                    'subject' => $subject,
+                    'category' => $category,
+                    'dispatchType' => $dispatch_type,
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'dispatchedAt' => $now_iso,
+                    'success' => (bool)$admin_sent,
+                    'messageId' => $admin_msg_id,
+                    'trackingId' => $admin_tracking_id,
+                    'summaryText' => mb_substr(strip_tags($intro_msg), 0, 260),
+                    'htmlPreview' => $html_body,
+                    'error' => $admin_sent ? null : 'PHP mail() returned false for admin copy',
+                    'opened' => false,
+                    'openCount' => 0,
+                    'clicked' => false,
+                    'clickCount' => 0,
+                    'mailSuiteStatus' => $admin_sent ? 'DELIVERED' : 'BOUNCED',
+                    'trackingEnabled' => true
+                ];
+                $append_history($admin_entry);
+                $admin_copy_receipt = [
+                    'recipient' => $admin_email,
+                    'success' => (bool)$admin_sent,
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'messageId' => $admin_msg_id,
+                    'trackingId' => $admin_tracking_id,
+                    'dispatchedAt' => $now_iso,
+                    'error' => $admin_sent ? null : 'PHP mail() could not relay admin copy to ' . $admin_email
+                ];
+            }
         }
 
         echo json_encode([
@@ -3782,7 +3927,166 @@ switch ($action) {
             "success" => (bool)$sent,
             "recipient" => $to_email,
             "deliveryMode" => "PHP_MAIL_RELAY",
-            "message" => $sent ? "Custom email sent via Trade Heaven PHP mail() to {$to_email}." : "PHP mail() could not relay to {$to_email}."
+            "messageId" => $message_id,
+            "trackingId" => $tracking_id,
+            "dispatchedAt" => $now_iso,
+            "receipt" => $receipt,
+            "adminCopyReceipt" => $admin_copy_receipt,
+            "message" => $sent
+                ? ("Custom email dispatched via Trade Heaven Mail Server to {$to_email}" . ($admin_copy_receipt && !empty($admin_copy_receipt['success']) ? " and Admin Copy sent to {$admin_copy_receipt['recipient']}" : "") . ".")
+                : "PHP mail() could not relay to {$to_email}."
+        ]);
+        break;
+
+    case 'record_email_history':
+        $history_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($history_dir)) {
+            @mkdir($history_dir, 0775, true);
+        }
+        $history_file = $history_dir . '/email-history.json';
+        $entries_in = [];
+        if (isset($input['entries']) && is_array($input['entries'])) {
+            $entries_in = $input['entries'];
+        } elseif (!empty($input['recipient']) || !empty($input['recipientEmail'])) {
+            $entries_in = [$input];
+        }
+        $existing = [];
+        if (file_exists($history_file)) {
+            $decoded = json_decode((string)@file_get_contents($history_file), true);
+            if (is_array($decoded)) $existing = $decoded;
+        }
+        $added = 0;
+        foreach ($entries_in as $raw_entry) {
+            if (!is_array($raw_entry)) continue;
+            $rec = normalizeAuthEmail($raw_entry['recipient'] ?? $raw_entry['recipientEmail'] ?? '');
+            if ($rec === '') continue;
+            $entry = [
+                'id' => trim((string)($raw_entry['id'] ?? ('eh-sync-' . time() . '-' . substr(md5($rec . uniqid('', true)), 0, 6)))),
+                'recipient' => $rec,
+                'recipientEmail' => $rec,
+                'recipientName' => trim((string)($raw_entry['recipientName'] ?? 'Trade Partner')),
+                'companyName' => trim((string)($raw_entry['companyName'] ?? 'Corporate Entity')),
+                'companyId' => $raw_entry['companyId'] ?? null,
+                'subject' => trim((string)($raw_entry['subject'] ?? 'Trade Heaven Notification')),
+                'category' => strtoupper(trim((string)($raw_entry['category'] ?? 'CUSTOM_ADMIN_NOTICE'))),
+                'dispatchType' => strtoupper(trim((string)($raw_entry['dispatchType'] ?? 'MANUAL'))),
+                'deliveryMode' => trim((string)($raw_entry['deliveryMode'] ?? 'LIVE_SMTP')),
+                'dispatchedAt' => trim((string)($raw_entry['dispatchedAt'] ?? gmdate('Y-m-d\TH:i:s\Z'))),
+                'success' => isset($raw_entry['success']) ? (bool)$raw_entry['success'] : true,
+                'messageId' => $raw_entry['messageId'] ?? null,
+                'trackingId' => $raw_entry['trackingId'] ?? null,
+                'summaryText' => isset($raw_entry['summaryText']) ? mb_substr((string)$raw_entry['summaryText'], 0, 300) : '',
+                'htmlPreview' => isset($raw_entry['htmlPreview']) ? (string)$raw_entry['htmlPreview'] : null,
+                'error' => $raw_entry['error'] ?? null,
+                'opened' => !empty($raw_entry['opened']),
+                'openCount' => intval($raw_entry['openCount'] ?? 0),
+                'clicked' => !empty($raw_entry['clicked']),
+                'clickCount' => intval($raw_entry['clickCount'] ?? 0),
+                'mailSuiteStatus' => trim((string)($raw_entry['mailSuiteStatus'] ?? (!empty($raw_entry['success']) ? 'DELIVERED' : 'BOUNCED'))),
+                'trackingEnabled' => true
+            ];
+            $existing = array_values(array_filter($existing, function ($item) use ($entry) {
+                if (!is_array($item)) return false;
+                if (!empty($entry['id']) && !empty($item['id']) && $item['id'] === $entry['id']) return false;
+                if (!empty($entry['messageId']) && !empty($item['messageId']) && $item['messageId'] === $entry['messageId'] && strtolower((string)($item['recipient'] ?? '')) === strtolower($entry['recipient'])) return false;
+                return true;
+            }));
+            array_unshift($existing, $entry);
+            $added++;
+        }
+        if (count($existing) > 1000) {
+            $existing = array_slice($existing, 0, 1000);
+        }
+        @file_put_contents($history_file, json_encode($existing, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        echo json_encode(["status" => "success", "success" => true, "recorded" => $added, "totalCount" => count($existing)]);
+        break;
+
+    case 'get_email_history':
+    case 'email_history':
+        $history_file = __DIR__ . '/assets/uploads/email-history.json';
+        $all_entries = [];
+        if (file_exists($history_file)) {
+            $decoded = json_decode((string)@file_get_contents($history_file), true);
+            if (is_array($decoded)) $all_entries = $decoded;
+        }
+        $filter_email = strtolower(trim((string)($_GET['email'] ?? $input['email'] ?? '')));
+        $filter_company = strtolower(trim((string)($_GET['companyName'] ?? $input['companyName'] ?? '')));
+        $filter_company_id = strtolower(trim((string)($_GET['companyId'] ?? $input['companyId'] ?? '')));
+        $filter_type = strtoupper(trim((string)($_GET['dispatchType'] ?? $input['dispatchType'] ?? '')));
+
+        $filtered = [];
+        foreach ($all_entries as $item) {
+            if (!is_array($item)) continue;
+            if ($filter_email !== '') {
+                $rec = strtolower((string)($item['recipient'] ?? $item['recipientEmail'] ?? ''));
+                $comp = strtolower((string)($item['companyName'] ?? ''));
+                $cid = strtolower((string)($item['companyId'] ?? ''));
+                $match_email = ($rec === $filter_email);
+                $match_company = ($filter_company !== '' && strpos($comp, $filter_company) !== false);
+                $match_cid = ($filter_company_id !== '' && $cid === $filter_company_id);
+                if (!$match_email && !$match_company && !$match_cid) continue;
+            } elseif ($filter_company !== '' || $filter_company_id !== '') {
+                $comp = strtolower((string)($item['companyName'] ?? ''));
+                $cid = strtolower((string)($item['companyId'] ?? ''));
+                $match_company = ($filter_company !== '' && strpos($comp, $filter_company) !== false);
+                $match_cid = ($filter_company_id !== '' && $cid === $filter_company_id);
+                if (!$match_company && !$match_cid) continue;
+            }
+            if ($filter_type !== '' && $filter_type !== 'ALL') {
+                $dt = strtoupper((string)($item['dispatchType'] ?? 'MANUAL'));
+                if ($dt !== $filter_type) continue;
+            }
+            $filtered[] = $item;
+        }
+
+        usort($filtered, function ($a, $b) {
+            return strtotime((string)($b['dispatchedAt'] ?? '')) <=> strtotime((string)($a['dispatchedAt'] ?? ''));
+        });
+
+        $total_count = count($filtered);
+        $delivered_count = 0;
+        $failed_count = 0;
+        $opened_count = 0;
+        $clicked_count = 0;
+        $manual_count = 0;
+        $automated_count = 0;
+        foreach ($filtered as $it) {
+            if (!empty($it['success'])) $delivered_count++;
+            else $failed_count++;
+            if (!empty($it['opened']) || intval($it['openCount'] ?? 0) > 0) $opened_count++;
+            if (!empty($it['clicked']) || intval($it['clickCount'] ?? 0) > 0) $clicked_count++;
+            if (strtoupper((string)($it['dispatchType'] ?? 'MANUAL')) === 'AUTOMATED') $automated_count++;
+            else $manual_count++;
+        }
+        $open_rate = $delivered_count > 0 ? round(($opened_count / $delivered_count) * 100, 1) : 0;
+        $click_rate = $delivered_count > 0 ? round(($clicked_count / $delivered_count) * 100, 1) : 0;
+
+        $summary = [
+            'totalTracked' => $total_count,
+            'totalDelivered' => $delivered_count,
+            'totalBounced' => $failed_count,
+            'totalOpened' => $opened_count,
+            'totalClicked' => $clicked_count,
+            'openRatePercent' => $open_rate,
+            'clickRatePercent' => $click_rate
+        ];
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "totalCount" => $total_count,
+            "history" => $filtered,
+            "entries" => $filtered,
+            "stats" => [
+                "total" => $total_count,
+                "automatedCount" => $automated_count,
+                "manualCount" => $manual_count,
+                "deliveredCount" => $delivered_count,
+                "failedCount" => $failed_count
+            ],
+            "mailSuiteStats" => $summary,
+            "summary" => $summary,
+            "analytics" => $summary
         ]);
         break;
 

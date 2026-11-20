@@ -394,7 +394,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   };
 
   useEffect(() => {
-    productImageManagerService.syncFromServer(true).then(() => {
+    productImageManagerService.syncFromServer(true, true).then(() => {
       refreshState();
     });
     const handleImagesUpdated = () => {
@@ -3969,7 +3969,7 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
   };
 
   useEffect(() => {
-    productImageManagerService.syncFromServer().then(st => {
+    productImageManagerService.syncFromServer(true, true).then(st => {
       setMediaLibrary(st.mediaLibrary);
     });
     return () => clearGalleryUndoTimers();

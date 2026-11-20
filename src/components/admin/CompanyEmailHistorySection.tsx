@@ -390,8 +390,24 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
         });
         clearTimeout(timeoutId);
 
+        let data: any = null;
         if (res.ok) {
-          const data = await res.json();
+          data = await res.json().catch(() => null);
+        }
+        if (!data || data.status === 'fallback' || !Array.isArray(data?.history)) {
+          const phpParams = new URLSearchParams(params.toString());
+          phpParams.set('action', 'get_email_history');
+          const phpRes = await fetch(`/api.php?${phpParams.toString()}`, {
+            headers: { Accept: 'application/json' }
+          });
+          if (phpRes.ok) {
+            const phpData = await phpRes.json().catch(() => null);
+            if (phpData && Array.isArray(phpData.history)) {
+              data = phpData;
+            }
+          }
+        }
+        if (data) {
           if (Array.isArray(data?.history)) {
             serverEntries = data.history;
           }
@@ -400,7 +416,23 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           }
         }
       } catch {
-        // Fallback silently if offline or request aborted
+        // Fallback to PHP endpoint if Node API timed out or unavailable
+        try {
+          const phpParams = new URLSearchParams(params.toString());
+          phpParams.set('action', 'get_email_history');
+          const phpRes = await fetch(`/api.php?${phpParams.toString()}`, {
+            headers: { Accept: 'application/json' }
+          });
+          if (phpRes.ok) {
+            const phpData = await phpRes.json().catch(() => null);
+            if (phpData && Array.isArray(phpData.history)) {
+              serverEntries = phpData.history;
+              if (phpData.mailSuiteStats) serverStats = phpData.mailSuiteStats;
+            }
+          }
+        } catch {
+          // ignore offline
+        }
       }
 
       if (serverEntries && serverEntries.length > 0) {
@@ -441,8 +473,27 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
       if (typeof document !== 'undefined' && document.hidden) return;
       fetchCompanyHistory(true);
     }, 8000);
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_admin_email_history_sync');
+        bc.onmessage = () => {
+          fetchCompanyHistory(true);
+        };
+      }
+    } catch {}
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'th_admin_dispatched_emails_history') {
+        fetchCompanyHistory(true);
+      }
+    };
+    window.addEventListener('storage', onStorage);
     return () => {
       clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      try {
+        bc?.close();
+      } catch {}
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -534,33 +585,61 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
     setQuickNotice(null);
 
     try {
-      const response = await fetch('/api/v1/admin/send-custom-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          recipientEmail: contactEmail,
-          recipientName: contactName,
-          companyName,
-          contactPhone,
-          loginEmail: contactEmail,
-          portalUrl: 'https://www.tradeheaven.net',
-          subject: quickSubject.trim(),
-          headline: `Account & Inquiry Update for ${companyName}`,
-          subheadline: `Direct Notice from Trade Heaven Administration`,
-          introMessage: quickIntro.trim(),
-          includeCredentialsBox: quickIncludeCreds,
-          includeLoginGuide: quickIncludeCreds,
-          includeEscrowBadge: true
-        })
-      });
+      const quickPayload = {
+        recipientEmail: contactEmail,
+        recipientName: contactName,
+        companyName,
+        companyId,
+        contactPhone,
+        loginEmail: contactEmail,
+        portalUrl: 'https://www.tradeheaven.net',
+        subject: quickSubject.trim(),
+        headline: `Account & Inquiry Update for ${companyName}`,
+        subheadline: `Direct Notice from Trade Heaven Administration`,
+        introMessage: quickIntro.trim(),
+        includeCredentialsBox: quickIncludeCreds,
+        includeLoginGuide: quickIncludeCreds,
+        includeEscrowBadge: true,
+        sendAdminCopy: false
+      };
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        const response = await fetch('/api/v1/admin/send-custom-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(quickPayload)
+        });
+        const parsed = await response.json().catch(() => null);
+        if (response.ok && parsed && parsed.status !== 'fallback') {
+          data = parsed;
+        }
+      } catch {
+        // fall through to PHP relay
+      }
+
+      if (!data) {
+        const phpResponse = await fetch('/api.php?action=send_custom_email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(quickPayload)
+        });
+        data = await phpResponse.json().catch(() => ({ success: false, message: 'Mail server returned invalid response.' }));
+      }
+
       if (data.success) {
         setQuickNotice({
           type: 'success',
-          text: `Email dispatched to ${contactEmail} (Message ID: ${data.receipt?.messageId || 'sent'})`
+          text: `Email dispatched to ${contactEmail} (Message ID: ${data.receipt?.messageId || data.messageId || 'sent'})`
         });
         setShowQuickSend(false);
+        try {
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('th_admin_email_history_sync');
+            bc.postMessage({ type: 'EMAIL_SENT', at: Date.now() });
+            bc.close();
+          }
+        } catch {}
         await fetchCompanyHistory();
       } else {
         setQuickNotice({
