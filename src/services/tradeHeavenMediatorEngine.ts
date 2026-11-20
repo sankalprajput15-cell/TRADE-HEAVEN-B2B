@@ -10,7 +10,9 @@ export type LedgerTransactionType =
   | 'ORDER_LOCK_ESCROW'
   | 'ESCROW_RELEASE'
   | 'PLATFORM_FEE'
-  | 'SUPPLIER_PAYOUT';
+  | 'SUPPLIER_PAYOUT'
+  | 'ADMIN_WALLET_CREDIT'
+  | 'ADMIN_WALLET_DEBIT';
 
 export type MemberPlanStatus = 'VIP' | 'BASIC';
 
@@ -811,6 +813,10 @@ export class TradeHeavenSqlPoolAdapter {
     company_name: string;
     wallet_type: WalletType;
     initial_balance_paise?: number;
+    plan_status?: MemberPlanStatus;
+    country?: string;
+    native_currency?: string;
+    native_symbol?: string;
   }): WalletRecord {
     const existing = this.wallets.find(w => w.entity_id === params.entity_id);
     if (existing) return existing;
@@ -821,13 +827,142 @@ export class TradeHeavenSqlPoolAdapter {
       entity_name: params.entity_name,
       company_name: params.company_name,
       wallet_type: params.wallet_type,
+      plan_status: params.plan_status || 'VIP',
       available_balance: String(params.initial_balance_paise || 0),
       locked_balance: '0',
-      currency: 'INR',
+      currency: params.native_currency || 'USD',
+      country: params.country || 'United States',
+      native_currency: params.native_currency || 'USD',
+      native_symbol: params.native_symbol || '$',
       updated_at: new Date().toISOString()
     };
     this.wallets.push(newWallet);
     return newWallet;
+  }
+
+  hydrateFromSnapshot(snapshot: Partial<{
+    wallets: WalletRecord[];
+    ledgerEntries: LedgerEntryRecord[];
+    orders: MediatedEscrowOrder[];
+    sqlLogs: SqlTransactionLog[];
+  }>) {
+    if (Array.isArray(snapshot.wallets) && snapshot.wallets.length > 0) {
+      this.wallets = snapshot.wallets;
+    }
+    if (Array.isArray(snapshot.ledgerEntries)) {
+      this.ledgerEntries = snapshot.ledgerEntries;
+    }
+    if (Array.isArray(snapshot.orders) && snapshot.orders.length > 0) {
+      this.orders = snapshot.orders;
+    }
+    if (Array.isArray(snapshot.sqlLogs)) {
+      this.sqlLogs = snapshot.sqlLogs;
+    }
+  }
+
+  adjustWalletByAdmin(params: {
+    entityId: string;
+    operation: 'ADD' | 'REMOVE';
+    amountPaise: number;
+    entityName?: string;
+    companyName?: string;
+    walletType?: WalletType;
+    country?: string;
+    nativeCurrency?: string;
+    nativeSymbol?: string;
+    referenceId?: string;
+    reason?: string;
+    balanceTarget?: 'AVAILABLE' | 'LOCKED';
+  }): {
+    wallet: WalletRecord;
+    previousBalancePaise: string;
+    newBalancePaise: string;
+    ledgerEntry: LedgerEntryRecord;
+  } {
+    const cleanEntityId = String(params.entityId || '').trim();
+    if (!cleanEntityId) {
+      throw new Error('Target wallet entityId is required.');
+    }
+    const delta = BigInt(Math.round(Number(params.amountPaise || 0)));
+    if (delta <= 0n) {
+      throw new Error('Adjustment amount must be greater than zero.');
+    }
+
+    let wallet = this.wallets.find(
+      w => w.entity_id.toLowerCase() === cleanEntityId.toLowerCase() || w.id.toLowerCase() === cleanEntityId.toLowerCase()
+    );
+    if (!wallet) {
+      const inferredType: WalletType =
+        params.walletType ||
+        (cleanEntityId.startsWith('comp-') || cleanEntityId.includes('supp') ? 'SUPPLIER' : 'BUYER');
+      wallet = this.createWallet({
+        entity_id: cleanEntityId,
+        entity_name: params.entityName || cleanEntityId,
+        company_name: params.companyName || params.entityName || cleanEntityId,
+        wallet_type: inferredType,
+        initial_balance_paise: 0,
+        country: params.country,
+        native_currency: params.nativeCurrency,
+        native_symbol: params.nativeSymbol
+      });
+    }
+
+    const field = params.balanceTarget === 'LOCKED' ? 'locked_balance' : 'available_balance';
+    const currentVal = BigInt(wallet[field] || '0');
+
+    if (params.operation === 'REMOVE' && currentVal < delta) {
+      throw new Error(
+        `Insufficient ${field === 'locked_balance' ? 'locked escrow' : 'available'} balance to remove requested funds from ${wallet.company_name || wallet.entity_id}.`
+      );
+    }
+
+    const nextVal = params.operation === 'ADD' ? currentVal + delta : currentVal - delta;
+    wallet[field] = nextVal.toString();
+    wallet.updated_at = new Date().toISOString();
+
+    const txType: LedgerTransactionType =
+      params.operation === 'ADD' ? 'ADMIN_WALLET_CREDIT' : 'ADMIN_WALLET_DEBIT';
+    const refId =
+      (params.referenceId || '').trim() ||
+      `ADM-${params.operation === 'ADD' ? 'CR' : 'DR'}-${Date.now().toString().slice(-6)}`;
+    const defaultNote =
+      params.operation === 'ADD'
+        ? `Admin Treasury Credit to ${wallet.company_name || wallet.entity_id}`
+        : `Admin Treasury Debit / Fund Removal from ${wallet.company_name || wallet.entity_id}`;
+
+    const ledgerEntry: LedgerEntryRecord = {
+      id: `led-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      reference_id: refId,
+      source_wallet_id: params.operation === 'REMOVE' ? wallet.id : null,
+      destination_wallet_id: params.operation === 'ADD' ? wallet.id : null,
+      amount: delta.toString(),
+      transaction_type: txType,
+      notes: (params.reason || '').trim() || defaultNote,
+      created_at: new Date().toISOString()
+    };
+
+    this.ledgerEntries.unshift(ledgerEntry);
+    this.sqlLogs.unshift({
+      id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      operation: params.operation === 'ADD' ? 'adminCreditWallet' : 'adminDebitWallet',
+      isolationLevel: 'SERIALIZABLE',
+      queries: [
+        'BEGIN ISOLATION LEVEL SERIALIZABLE;',
+        `SELECT id, ${field} FROM wallets WHERE id = '${wallet.id}' FOR UPDATE;`,
+        `UPDATE wallets SET ${field} = '${nextVal.toString()}', updated_at = NOW() WHERE id = '${wallet.id}';`,
+        `INSERT INTO ledger_entries (reference_id, amount, transaction_type, notes) VALUES ('${refId}', ${delta.toString()}, '${txType}', ...);`,
+        'COMMIT;'
+      ],
+      status: 'COMMITTED',
+      timestamp: new Date().toISOString()
+    });
+
+    return {
+      wallet: { ...wallet },
+      previousBalancePaise: currentVal.toString(),
+      newBalancePaise: nextVal.toString(),
+      ledgerEntry
+    };
   }
 
   async connect() {
@@ -1116,12 +1251,64 @@ export interface MediationSystemState {
   sqlLogs: SqlTransactionLog[];
 }
 
+const WALLET_STATE_STORAGE_KEY = 'th_mediation_admin_state_v1';
+
+const saveLocalMediationSnapshot = (state: MediationSystemState) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(WALLET_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+};
+
+const readLocalMediationSnapshot = (): MediationSystemState | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(WALLET_STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.wallets)) return parsed as MediationSystemState;
+  } catch {}
+  return null;
+};
+
 const notifyMediationStateUpdated = (state: MediationSystemState): MediationSystemState => {
+  saveLocalMediationSnapshot(state);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('tradeheaven_mediation_updated', { detail: state }));
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('th_mediation_wallet_sync');
+        bc.postMessage({ type: 'MEDIATION_UPDATED', at: Date.now() });
+        bc.close();
+      }
+    } catch {}
   }
   return state;
 };
+
+export interface AdminWalletAdjustmentParams {
+  entityId: string;
+  operation: 'ADD' | 'REMOVE';
+  amountPaise: number;
+  entityName?: string;
+  companyName?: string;
+  walletType?: WalletType;
+  country?: string;
+  nativeCurrency?: string;
+  nativeSymbol?: string;
+  referenceId?: string;
+  reason?: string;
+  balanceTarget?: 'AVAILABLE' | 'LOCKED';
+}
+
+export interface AdminWalletAdjustmentResult {
+  success: boolean;
+  wallet: WalletRecord;
+  previousBalancePaise: string;
+  newBalancePaise: string;
+  ledgerEntry: LedgerEntryRecord;
+  state: MediationSystemState;
+}
 
 export const tradeHeavenMediationService = {
   isBasicPlanStatus,
@@ -1130,13 +1317,35 @@ export const tradeHeavenMediationService = {
 
   async getState(): Promise<MediationSystemState> {
     try {
-      const res = await fetch('/api/v1/mediation/state');
+      const res = await fetch('/api/v1/mediation/state', { cache: 'no-store' });
       if (res.ok) {
-        const data = await res.json();
-        if (data && data.wallets) return data;
+        const data = await res.json().catch(() => null);
+        if (data && Array.isArray(data.wallets) && data.wallets.length > 0) {
+          saveLocalMediationSnapshot(data);
+          localPool.hydrateFromSnapshot(data);
+          return data;
+        }
       }
     } catch {
-      // Fallback to local engine
+      // Fall through to PHP endpoint
+    }
+    try {
+      const phpRes = await fetch('/api.php?action=mediation_state', { cache: 'no-store' });
+      if (phpRes.ok) {
+        const phpData = await phpRes.json().catch(() => null);
+        if (phpData && Array.isArray(phpData.wallets) && phpData.wallets.length > 0) {
+          saveLocalMediationSnapshot(phpData);
+          localPool.hydrateFromSnapshot(phpData);
+          return phpData;
+        }
+      }
+    } catch {
+      // Fallback to local engine / cached snapshot
+    }
+    const cached = readLocalMediationSnapshot();
+    if (cached && cached.wallets.length > 0) {
+      localPool.hydrateFromSnapshot(cached);
+      return cached;
     }
     return {
       wallets: [...localPool.getWallets()],
@@ -1144,6 +1353,69 @@ export const tradeHeavenMediationService = {
       orders: [...localPool.getOrders()],
       payouts: [...localBankRails.getPayouts()],
       sqlLogs: [...localPool.getSqlLogs()]
+    };
+  },
+
+  async adminAdjustWallet(params: AdminWalletAdjustmentParams): Promise<AdminWalletAdjustmentResult> {
+    try {
+      const res = await fetch('/api/v1/mediation/admin-adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(params)
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && data?.state) {
+        localPool.hydrateFromSnapshot(data.state);
+        notifyMediationStateUpdated(data.state);
+        return data as AdminWalletAdjustmentResult;
+      }
+      if (res.status >= 400 && res.status < 500 && data?.error) {
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      if (err?.message && !err.message.toLowerCase().includes('fetch') && !err.message.toLowerCase().includes('network')) {
+        throw err;
+      }
+    }
+
+    // Fallback to PHP backend (Apache / live hosting)
+    try {
+      const phpRes = await fetch('/api.php?action=mediation_admin_adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(params)
+      });
+      const phpData = await phpRes.json().catch(() => null);
+      if (phpRes.ok && phpData?.success && phpData?.state) {
+        localPool.hydrateFromSnapshot(phpData.state);
+        notifyMediationStateUpdated(phpData.state);
+        return phpData as AdminWalletAdjustmentResult;
+      }
+      if (phpRes.status >= 400 && phpRes.status < 500 && phpData?.error) {
+        throw new Error(phpData.error);
+      }
+    } catch (err: any) {
+      if (err?.message && !err.message.toLowerCase().includes('fetch') && !err.message.toLowerCase().includes('network')) {
+        throw err;
+      }
+    }
+
+    // Final offline/local fallback
+    const cached = readLocalMediationSnapshot();
+    if (cached) localPool.hydrateFromSnapshot(cached);
+    const adjusted = localPool.adjustWalletByAdmin(params);
+    const updatedState: MediationSystemState = {
+      wallets: [...localPool.getWallets()],
+      ledgerEntries: [...localPool.getLedgerEntries()],
+      orders: [...localPool.getOrders()],
+      payouts: [...localBankRails.getPayouts()],
+      sqlLogs: [...localPool.getSqlLogs()]
+    };
+    notifyMediationStateUpdated(updatedState);
+    return {
+      success: true,
+      ...adjusted,
+      state: updatedState
     };
   },
 

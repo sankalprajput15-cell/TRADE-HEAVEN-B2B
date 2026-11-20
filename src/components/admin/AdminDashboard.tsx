@@ -38,6 +38,7 @@ import {
   PlatformAuthEventItem
 } from './ActiveUsersPanel';
 import { AdminBuyerChatDeskModule } from './AdminBuyerChatDeskModule';
+import { AdminWalletManagerModule } from './AdminWalletManagerModule';
 import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
@@ -76,13 +77,15 @@ import {
   Server,
   Megaphone,
   Contrast,
-  MessagesSquare
+  MessagesSquare,
+  Wallet
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
   | 'ADMIN_MENU_OVERVIEW'
   | 'ACTIVE_USERS'
   | 'BUYER_CHAT_DESK'
+  | 'WALLET_MANAGER'
   | 'CLIENT_LISTING_OFFER_STUDIO'
   | 'OFFERS_ANNOUNCEMENTS'
   | 'MASTER_UPLOADS_VAULT'
@@ -141,6 +144,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           'ADMIN_MENU_OVERVIEW',
           'ACTIVE_USERS',
           'BUYER_CHAT_DESK',
+          'WALLET_MANAGER',
           'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
@@ -153,6 +157,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         // Direct match
         if (validTabs.includes(normalized)) {
           return normalized as AdminDashboardTabId;
+        }
+        if (
+          normalized === 'FINANCIAL_MANAGEMENT' ||
+          normalized === 'FINANCIAL' ||
+          normalized === 'FINANCE' ||
+          normalized === 'WALLET' ||
+          normalized === 'WALLET_ADJUST'
+        ) {
+          return 'WALLET_MANAGER';
         }
 
         // Legacy & common aliases
@@ -232,7 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
         
         const validTabs: string[] = [
-          'ADMIN_MENU_OVERVIEW', 'ACTIVE_USERS', 'BUYER_CHAT_DESK', 'CLIENT_LISTING_OFFER_STUDIO',
+          'ADMIN_MENU_OVERVIEW', 'ACTIVE_USERS', 'BUYER_CHAT_DESK', 'WALLET_MANAGER', 'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
@@ -247,6 +260,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
 
         // Aliases
+        if (
+          normalized === 'FINANCIAL_MANAGEMENT' ||
+          normalized === 'FINANCIAL' ||
+          normalized === 'FINANCE' ||
+          normalized === 'WALLET' ||
+          normalized === 'WALLET_ADJUST' ||
+          normalized === 'ESCROW_WALLET' ||
+          normalized === 'WALLET_FUNDS'
+        ) {
+          setActiveTab('WALLET_MANAGER');
+          return;
+        }
         if (normalized === 'USERS' || normalized === 'RBAC_USERS' || normalized === 'USER_REGISTRATION') {
           setActiveTab('DATABASE');
           return;
@@ -598,6 +623,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }> = [
     { id: 'ADMIN_MENU_OVERVIEW', label: '🏠 Admin Menu & Live Users', icon: Layout },
     { id: 'ACTIVE_USERS', label: '🟢 Active Users', icon: Users },
+    { id: 'WALLET_MANAGER', label: '💰 Financial Management', icon: Wallet },
     { id: 'BUYER_CHAT_DESK', label: '💬 Buyer Identities & Live Chat Desk', icon: MessagesSquare },
     { id: 'CLIENT_LISTING_OFFER_STUDIO', label: '➕ Client, Listing & Offer Studio', icon: Plus },
     { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
@@ -1174,6 +1200,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onRefresh={() => void fetchLiveActiveUsers()}
               onToggleAuthEmailAlerts={() => void handleToggleAuthEmailAlerts()}
             />
+          </div>
+        )}
+
+        {activeTab === 'WALLET_MANAGER' && (
+          <div className="space-y-4">
+            <AdminWalletManagerModule />
           </div>
         )}
 

@@ -17323,6 +17323,8 @@ app.post('/api/v1/admin/audit-logs/clear', (req, res) => {
   });
 });
 
+const MEDIATION_STATE_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'mediation-wallet-state.json');
+
 const serverMediationPool = new TradeHeavenSqlPoolAdapter();
 const serverBankRails = new TradeHeavenBankRailsClient([
   {
@@ -17341,6 +17343,15 @@ const serverBankRails = new TradeHeavenBankRailsClient([
     createdAt: new Date(Date.now() - 3600 * 1000 * 4).toISOString()
   }
 ]);
+try {
+  if (fs.existsSync(MEDIATION_STATE_FILE)) {
+    const savedMed = JSON.parse(fs.readFileSync(MEDIATION_STATE_FILE, 'utf-8'));
+    if (savedMed && Array.isArray(savedMed.wallets) && savedMed.wallets.length > 0) {
+      serverMediationPool.hydrateFromSnapshot(savedMed);
+    }
+  }
+} catch {}
+
 const serverMediatorEngine = new TradeHeavenMediatorEngine(serverMediationPool, serverBankRails);
 
 const getServerMediationState = () => ({
@@ -17351,9 +17362,77 @@ const getServerMediationState = () => ({
   sqlLogs: serverMediationPool.getSqlLogs()
 });
 
+const persistServerMediationState = () => {
+  try {
+    const dir = path.dirname(MEDIATION_STATE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(MEDIATION_STATE_FILE, JSON.stringify(getServerMediationState(), null, 2), 'utf-8');
+  } catch {}
+};
+
 // GET /api/v1/mediation/state - Get live wallets, double-entry ledger, escrow orders, and bank payouts
 app.get('/api/v1/mediation/state', (_req, res) => {
   res.json(getServerMediationState());
+});
+
+// POST /api/v1/mediation/admin-adjust - Admin direct Add/Remove wallet funds (credit or debit any client wallet)
+app.post('/api/v1/mediation/admin-adjust', (req, res) => {
+  try {
+    const {
+      entityId,
+      operation,
+      amountPaise,
+      entityName,
+      companyName,
+      walletType,
+      country,
+      nativeCurrency,
+      nativeSymbol,
+      referenceId,
+      reason,
+      balanceTarget
+    } = req.body || {};
+
+    if (!entityId || !amountPaise || Number(amountPaise) <= 0) {
+      return res.status(400).json({ error: 'Valid entityId and positive amountPaise are required.' });
+    }
+    const op = String(operation || 'ADD').toUpperCase() === 'REMOVE' ? 'REMOVE' : 'ADD';
+    const result = serverMediationPool.adjustWalletByAdmin({
+      entityId: String(entityId),
+      operation: op,
+      amountPaise: Math.round(Number(amountPaise)),
+      entityName,
+      companyName,
+      walletType,
+      country,
+      nativeCurrency,
+      nativeSymbol,
+      referenceId,
+      reason,
+      balanceTarget: balanceTarget === 'LOCKED' ? 'LOCKED' : 'AVAILABLE'
+    });
+    persistServerMediationState();
+    const actorRole =
+      result.wallet.wallet_type === 'PLATFORM_REVENUE'
+        ? 'ADMIN'
+        : result.wallet.wallet_type;
+    logServerActivity(
+      req,
+      op === 'ADD' ? 'ADMIN_WALLET_CREDIT' : 'ADMIN_WALLET_DEBIT',
+      String(entityId),
+      actorRole,
+      '/api/v1/mediation/admin-adjust',
+      `${op === 'ADD' ? 'Credited +' : 'Removed -'}${Math.round(Number(amountPaise))} paise on wallet ${result.wallet.company_name || entityId} (${reason || 'Admin Treasury Adjustment'})`,
+      'SUCCESS'
+    );
+    return res.json({
+      success: true,
+      ...result,
+      state: getServerMediationState()
+    });
+  } catch (err: any) {
+    return res.status(400).json({ error: err?.message || 'Failed to adjust wallet balance.' });
+  }
 });
 
 function resolveServerEntityPlan(entityId?: string, explicitPlan?: string): string | undefined {

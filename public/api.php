@@ -1119,6 +1119,10 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'get_email_history';
     } elseif (strpos($clean_route, 'admin/send-custom-email') !== false) {
         $raw_action = 'send_custom_email';
+    } elseif (strpos($clean_route, 'mediation/admin-adjust') !== false) {
+        $raw_action = 'mediation_admin_adjust';
+    } elseif (strpos($clean_route, 'mediation/state') !== false) {
+        $raw_action = 'mediation_state';
     } elseif (strpos($clean_route, 'admin/users') !== false || strpos($clean_route, 'get-users') !== false) {
         $raw_action = 'get_users';
     } elseif (strpos($clean_route, 'deployment/health') !== false) {
@@ -1191,6 +1195,10 @@ if (empty($raw_action)) {
             $raw_action = 'get_email_history';
         } elseif (strpos($sub, 'admin/send-custom-email') !== false) {
             $raw_action = 'send_custom_email';
+        } elseif (strpos($sub, 'mediation/admin-adjust') !== false) {
+            $raw_action = 'mediation_admin_adjust';
+        } elseif (strpos($sub, 'mediation/state') !== false) {
+            $raw_action = 'mediation_state';
         } elseif (strpos($sub, 'admin/users') !== false) {
             $raw_action = 'get_users';
         } else {
@@ -4563,6 +4571,235 @@ switch ($action) {
             "mailSuiteStats" => $summary,
             "summary" => $summary,
             "analytics" => $summary
+        ]);
+        break;
+
+    case 'mediation_state':
+    case 'mediation_admin_adjust':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $med_file = $uploads_dir . '/mediation-wallet-state.json';
+        $default_med_state = [
+            'wallets' => [
+                [
+                    'id' => 'wal-buyer-titan',
+                    'entity_id' => 'buyer-titan-01',
+                    'entity_name' => 'Marcus Vance',
+                    'company_name' => 'Titan Global Construction & Infrastructure LLC',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '185000000',
+                    'locked_balance' => '92000000',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-buyer-euro',
+                    'entity_id' => 'buyer-euro-02',
+                    'entity_name' => 'Elena Rostova',
+                    'company_name' => 'EuroMed Hospital Procurement GmbH',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '340000000',
+                    'locked_balance' => '64000000',
+                    'currency' => 'EUR',
+                    'country' => 'Germany',
+                    'native_currency' => 'EUR',
+                    'native_symbol' => '€',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-buyer-girlsenberries',
+                    'entity_id' => 'buyer-girlsenberries-01',
+                    'entity_name' => 'Donald Sorkin',
+                    'company_name' => 'Girlsenberries',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '2000000000000',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-melissa',
+                    'entity_id' => 'comp-melissa-mpcommodity',
+                    'entity_name' => 'Melissa Prezios',
+                    'company_name' => 'MP Commodity Brokers Australia Pty Ltd',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '424000000',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-shenzhen',
+                    'entity_id' => 'comp-shenzhen-solar',
+                    'entity_name' => 'Chen Wei',
+                    'company_name' => 'Shenzhen Lumina New Energy Tech Co., Ltd.',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '162000000',
+                    'locked_balance' => '0',
+                    'currency' => 'CNY',
+                    'country' => 'China',
+                    'native_currency' => 'CNY',
+                    'native_symbol' => '¥',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-bharat',
+                    'entity_id' => 'comp-bharat-steel',
+                    'entity_name' => 'Vikramaditya Singh',
+                    'company_name' => 'Bharat Precision Forgings & Alloys Ltd.',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '95000000',
+                    'locked_balance' => '0',
+                    'currency' => 'INR',
+                    'country' => 'India',
+                    'native_currency' => 'INR',
+                    'native_symbol' => '₹',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-zac',
+                    'entity_id' => 'comp-zac-importation-fadetech',
+                    'entity_name' => 'Zachary Aldin',
+                    'company_name' => 'IMPORTATION FADE-TECH (OTEC LTD)',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '0',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'Australia',
+                    'native_currency' => 'AUD',
+                    'native_symbol' => 'A$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-atlantic-power',
+                    'entity_id' => 'comp-atlantic-power-equip',
+                    'entity_name' => 'Mark Johnson (President)',
+                    'company_name' => 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '0',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-platform-rev',
+                    'entity_id' => 'trade-heaven-treasury',
+                    'entity_name' => 'Trade Heaven Treasury',
+                    'company_name' => 'Trade Heaven Global Operations & Mediation Vault',
+                    'wallet_type' => 'PLATFORM_REVENUE',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '18450000',
+                    'locked_balance' => '0',
+                    'currency' => 'INR',
+                    'country' => 'United Kingdom',
+                    'native_currency' => 'GBP',
+                    'native_symbol' => '£',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ]
+            ],
+            'ledgerEntries' => [],
+            'orders' => [],
+            'payouts' => [],
+            'sqlLogs' => []
+        ];
+        $med_state = $default_med_state;
+        if (file_exists($med_file)) {
+            $decoded_med = json_decode((string)@file_get_contents($med_file), true);
+            if (is_array($decoded_med) && !empty($decoded_med['wallets'])) {
+                $med_state = array_merge($default_med_state, $decoded_med);
+            }
+        }
+        if ($action === 'mediation_state') {
+            echo json_encode($med_state);
+            break;
+        }
+        $adj_entity_id = trim((string)($input['entityId'] ?? ''));
+        $adj_op = strtoupper(trim((string)($input['operation'] ?? 'ADD'))) === 'REMOVE' ? 'REMOVE' : 'ADD';
+        $adj_paise = round(floatval($input['amountPaise'] ?? 0));
+        $adj_target = (string)($input['balanceTarget'] ?? 'AVAILABLE') === 'LOCKED' ? 'locked_balance' : 'available_balance';
+        if ($adj_entity_id === '' || $adj_paise <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Valid entityId and positive amountPaise are required.']);
+            break;
+        }
+        $found_idx = -1;
+        foreach ($med_state['wallets'] as $idx => $w) {
+            if (strtolower((string)($w['entity_id'] ?? '')) === strtolower($adj_entity_id) || strtolower((string)($w['id'] ?? '')) === strtolower($adj_entity_id)) {
+                $found_idx = $idx;
+                break;
+            }
+        }
+        if ($found_idx < 0) {
+            $inferred_type = trim((string)($input['walletType'] ?? ((strpos($adj_entity_id, 'comp-') === 0 || strpos($adj_entity_id, 'supp') !== false) ? 'SUPPLIER' : 'BUYER')));
+            $med_state['wallets'][] = [
+                'id' => 'wal-' . strtolower($inferred_type) . '-' . substr((string)time(), -5),
+                'entity_id' => $adj_entity_id,
+                'entity_name' => trim((string)($input['entityName'] ?? $adj_entity_id)),
+                'company_name' => trim((string)($input['companyName'] ?? ($input['entityName'] ?? $adj_entity_id))),
+                'wallet_type' => $inferred_type,
+                'plan_status' => 'VIP',
+                'available_balance' => '0',
+                'locked_balance' => '0',
+                'currency' => trim((string)($input['nativeCurrency'] ?? 'USD')),
+                'country' => trim((string)($input['country'] ?? 'United States')),
+                'native_currency' => trim((string)($input['nativeCurrency'] ?? 'USD')),
+                'native_symbol' => trim((string)($input['nativeSymbol'] ?? '$')),
+                'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+            ];
+            $found_idx = count($med_state['wallets']) - 1;
+        }
+        $cur_bal = floatval($med_state['wallets'][$found_idx][$adj_target] ?? '0');
+        if ($adj_op === 'REMOVE' && $cur_bal < $adj_paise) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Insufficient wallet balance to remove requested funds.']);
+            break;
+        }
+        $new_bal = $adj_op === 'ADD' ? ($cur_bal + $adj_paise) : ($cur_bal - $adj_paise);
+        $med_state['wallets'][$found_idx][$adj_target] = sprintf('%.0f', $new_bal);
+        $med_state['wallets'][$found_idx]['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
+        $wallet_row = $med_state['wallets'][$found_idx];
+        $ref_id = trim((string)($input['referenceId'] ?? '')) ?: ('ADM-' . ($adj_op === 'ADD' ? 'CR-' : 'DR-') . substr((string)time(), -6));
+        $ledger_entry = [
+            'id' => 'led-' . time() . '-' . rand(100, 999),
+            'reference_id' => $ref_id,
+            'source_wallet_id' => $adj_op === 'REMOVE' ? $wallet_row['id'] : null,
+            'destination_wallet_id' => $adj_op === 'ADD' ? $wallet_row['id'] : null,
+            'amount' => sprintf('%.0f', $adj_paise),
+            'transaction_type' => $adj_op === 'ADD' ? 'ADMIN_WALLET_CREDIT' : 'ADMIN_WALLET_DEBIT',
+            'notes' => trim((string)($input['reason'] ?? '')) ?: ($adj_op === 'ADD' ? 'Admin Treasury Credit' : 'Admin Treasury Debit'),
+            'created_at' => gmdate('Y-m-d\TH:i:s\Z')
+        ];
+        array_unshift($med_state['ledgerEntries'], $ledger_entry);
+        @file_put_contents($med_file, json_encode($med_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        echo json_encode([
+            'success' => true,
+            'wallet' => $wallet_row,
+            'previousBalancePaise' => sprintf('%.0f', $cur_bal),
+            'newBalancePaise' => sprintf('%.0f', $new_bal),
+            'ledgerEntry' => $ledger_entry,
+            'state' => $med_state
         ]);
         break;
 
