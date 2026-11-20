@@ -37,7 +37,7 @@ export const SuppliersByRegionBar: React.FC<SuppliersByRegionBarProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-extrabold text-amber-600 uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
             <span>Trending on Trade Heaven</span>
           </h3>
           <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">

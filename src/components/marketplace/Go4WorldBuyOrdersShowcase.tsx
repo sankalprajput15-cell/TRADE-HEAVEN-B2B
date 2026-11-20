@@ -363,7 +363,7 @@ export const Go4WorldBuyOrdersShowcase: React.FC<Go4WorldBuyOrdersShowcaseProps>
                   <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/70">
                     <span className="text-slate-400 block text-[10px]">Quantity Required</span>
                     <span className="font-mono font-extrabold text-slate-900">
-                      {order.targetQuantity.toLocaleString()} {order.quantityUnit}
+                      {Number(order?.targetQuantity || 0).toLocaleString()} {order?.quantityUnit || 'Units'}
                     </span>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/70">

@@ -173,9 +173,9 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
             const displayPrice = product.priceRangeUsd
               ? product.priceRangeUsd
               : product.fobPriceUsd
-              ? `$${product.fobPriceUsd.toLocaleString()} / ${productUnitSingular}`
+              ? `$${Number(product.fobPriceUsd || 0).toLocaleString()} / ${productUnitSingular}`
               : product.priceTiers && product.priceTiers.length > 0
-              ? `$${product.priceTiers[product.priceTiers.length - 1].priceUsd.toLocaleString()} - $${product.priceTiers[0].priceUsd.toLocaleString()}`
+              ? `$${Number(product.priceTiers[product.priceTiers.length - 1]?.priceUsd || 0).toLocaleString()} - $${Number(product.priceTiers[0]?.priceUsd || 0).toLocaleString()}`
               : null;
 
             return (

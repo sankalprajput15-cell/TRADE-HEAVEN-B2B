@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Incoterm, RfqRequirement, Currency, PaymentTerms } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
@@ -65,6 +65,20 @@ export const RfqCreationModal: React.FC<Props> = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [autoVisualImages, setAutoVisualImages] = useState<string[]>([]);
   const [isAutoMatchedImages, setIsAutoMatchedImages] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const raw = sessionStorage.getItem('th_quick_rfq_prefill');
+      if (raw) {
+        sessionStorage.removeItem('th_quick_rfq_prefill');
+        const parsed = JSON.parse(raw);
+        if (parsed.productName) setProductName(String(parsed.productName));
+        if (parsed.targetQuantity) setTargetQuantity(Number(parsed.targetQuantity) || 500);
+        if (parsed.quantityUnit) setQuantityUnit(String(parsed.quantityUnit));
+      }
+    } catch {}
+  }, [isOpen]);
 
   const manualImageUrls = attachedFiles
     .map(f => f.previewUrl)

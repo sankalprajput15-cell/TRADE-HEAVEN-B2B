@@ -1,44 +1,36 @@
 import React from 'react';
-import { Product, Currency, CompanyProfile, RfqRequirement, ActiveView, AuthUser } from '../../types';
-import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_RFQS } from '../../data/mockData';
+import { Product, Currency, RfqRequirement, ActiveView, AuthUser } from '../../types';
+import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_RFQS, MOCK_PRODUCTS } from '../../data/mockData';
 import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
 import { HeroSection } from './HeroSection';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
-import { LiveGlobalTradeFeed } from './LiveGlobalTradeFeed';
 import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
 import { CountryFlag } from '../common/CountryFlag';
 import { PlatformAnnouncementBanner } from './PlatformAnnouncementBanner';
-import { 
-  ShieldCheck, 
-  Award, 
-  Building2, 
-  ArrowRight, 
-  Globe2, 
-  Package, 
-  Truck, 
-  CheckCircle2, 
-  PlusCircle, 
-  TrendingUp, 
-  FileText, 
-  Calendar,
+import heroLogisticsBanner from '../../assets/images/b2b_global_logistics_hero_1795156803921.jpg';
+import {
+  ShieldCheck,
+  Award,
+  Building2,
+  ArrowRight,
+  Package,
+  PlusCircle,
+  FileText,
   Clock,
   MessageCircle,
   ExternalLink,
   Lock,
   Headphones,
-  Home,
-  Search,
-  LayoutDashboard,
-  X
+  Mail
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { securityService } from '../../services/securityService';
-import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
+import { isPaidMemberUser } from '../../services/freeLeadService';
 import { productImageManagerService } from '../../services/productImageManagerService';
 
 interface Props {
@@ -81,12 +73,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const { t, tText } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
-  const [mobileSearchQuery, setMobileSearchQuery] = React.useState('');
-  const [mobileSearchMode, setMobileSearchMode] = React.useState<'PRODUCTS' | 'RFQS' | 'SUPPLIERS'>('PRODUCTS');
-  const [activeMobileNav, setActiveMobileNav] = React.useState<'HOME' | 'SEARCH' | 'RFQS' | 'DASHBOARD'>('HOME');
-  const mobileSearchInputRef = React.useRef<HTMLInputElement>(null);
-
   const [imageSyncVersion, setImageSyncVersion] = React.useState(0);
 
   React.useEffect(() => {
@@ -105,6 +91,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   }, []);
 
   const isUserPaidMember = isPaidMemberUser(currentUser);
+
   const allHomeRfqsPool = React.useMemo(() => {
     const rawPool = (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r =>
       securityService.gateRfqRequirement(r, currentUser)
@@ -137,24 +124,49 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       return 0;
     });
   }, [rfqs, currentUser, imageSyncVersion]);
-  const activeRfqsPool = React.useMemo(
-    () => allHomeRfqsPool.slice(0, 40),
-    [allHomeRfqsPool]
-  );
-  const displayedRfqs = React.useMemo(() => activeRfqsPool.slice(0, 12), [activeRfqsPool]);
+
+  const activeRfqsPool = React.useMemo(() => allHomeRfqsPool.slice(0, 40), [allHomeRfqsPool]);
+  const displayedRfqs = React.useMemo(() => activeRfqsPool.slice(0, 8), [activeRfqsPool]);
+
+  const featuredProducts = React.useMemo(() => {
+    const source = products && products.length > 0 ? products : MOCK_PRODUCTS;
+    const synced = productImageManagerService.sortProductsLatestUploadedFirst(
+      productImageManagerService.applyOverridesToProductList(source)
+    );
+    const filtered = selectedCategory
+      ? synced.filter(
+          p => p && (p.category || '').toLowerCase().includes(selectedCategory.toLowerCase())
+        )
+      : synced;
+    return (filtered.length > 0 ? filtered : synced).slice(0, 8);
+  }, [products, selectedCategory, imageSyncVersion]);
+
   const displayedCompanies = React.useMemo(
-    () => (showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6)).map(c => securityService.gateCompanyProfile(c, currentUser)),
+    () =>
+      (showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6)).map(c =>
+        securityService.gateCompanyProfile(c, currentUser)
+      ),
     [currentUser, showAllSuppliers]
   );
 
-  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
+  const curr =
+    (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
+    CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
-    const converted = usd * curr.rateToUSD;
-    return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const safeUsd = Number(usd);
+    const converted = (Number.isFinite(safeUsd) ? safeUsd : 0) * (curr?.rateToUSD || 1);
+    return `${curr?.symbol || '$'}${converted.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
-  const handleHeroSearch = (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => {
+  const handleHeroSearch = (
+    query: string,
+    category: string,
+    targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS'
+  ) => {
     if (category) {
       setSelectedCategory(category);
     }
@@ -164,57 +176,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       onNavigateToRfqs(query);
     } else if (onNavigateToCategory) {
       onNavigateToCategory(category || 'ALL', query);
-    }
-  };
-
-  const handleMobileQuickSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = mobileSearchQuery.trim();
-    setIsMobileSearchOpen(false);
-    if (mobileSearchMode === 'RFQS') {
-      if (onNavigateToRfqs) {
-        onNavigateToRfqs(trimmed);
-      } else {
-        onNavigate('BUY_LEADS');
-      }
-      return;
-    }
-    if (mobileSearchMode === 'SUPPLIERS') {
-      if (onNavigateToSuppliers) {
-        onNavigateToSuppliers(trimmed);
-      } else {
-        onNavigate('SUPPLIERS_DIRECTORY');
-      }
-      return;
-    }
-    if (onNavigateToCategory) {
-      onNavigateToCategory(selectedCategory || 'ALL', trimmed);
-    } else {
-      onNavigate('PRODUCT_DIRECTORY');
-    }
-  };
-
-  const handleMobileSearchTabClick = () => {
-    setActiveMobileNav('SEARCH');
-    setIsMobileSearchOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setTimeout(() => {
-          mobileSearchInputRef.current?.focus();
-        }, 60);
-      }
-      return next;
-    });
-  };
-
-  const handleFocusHeroSearchInput = () => {
-    setIsMobileSearchOpen(false);
-    const heroInput = document.getElementById('hero-search-input') as HTMLInputElement | null;
-    if (heroInput) {
-      heroInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => heroInput.focus(), 300);
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -229,8 +190,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   };
 
   return (
-    <div id="tradewheel-homepage-root" className="space-y-8 sm:space-y-10 pb-20 md:pb-0">
-      {/* 1. HERO SECTION */}
+    <div id="tradewheel-homepage-root" className="space-y-6 sm:space-y-8 pb-20 md:pb-4">
+      {/* 1. TRADEWHEEL-STYLE 3-COLUMN PORTAL HERO & OMNIBAR */}
       <HeroSection
         onSearch={handleHeroSearch}
         onOpenCreateRfq={onOpenCreateRfq}
@@ -248,39 +209,55 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 1.5 ADMIN-PUBLISHED STOREFRONT BANNERS & ANNOUNCEMENTS */}
       <PlatformAnnouncementBanner variant="hero-banner" onNavigate={onNavigate} />
 
-      {/* 2. RECENT BUY LEADS FEED (Positioned Above Top International Procurement Sectors) */}
-      <div id="recent-rfqs-section" className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      {/* 2. LATEST BUY OFFERS & GLOBAL RFQS FEED */}
+      <section
+        id="recent-rfqs-section"
+        className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 space-y-5 shadow-2xs"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
           <div>
-            <h3 className="text-xl font-black text-slate-900">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-[#EA580C]">
+              Live Global Demand · Importer Buy Leads
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#0F294D] mt-0.5">
               {t('recentBuyLeads')}
-            </h3>
-            <p className="text-xs text-slate-500">
-              Verified buyers seeking direct factory quotations. Exporters can submit binding bids directly.
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Verified international buyers seeking direct factory quotations. Submit competitive bids directly.
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigate('BUY_LEADS')}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 transition-colors shrink-0 cursor-pointer"
-          >
-            <span>{t('viewAllRfqs')} ({activeRfqsPool.length})</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={onOpenCreateRfq}
+              className="px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Post Buying Request</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('BUY_LEADS')}
+              className="px-4 py-2 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums"
+            >
+              <span>{t('viewAllRfqs')} ({activeRfqsPool.length})</span>
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+            </button>
+          </div>
         </div>
 
         {displayedRfqs && displayedRfqs.length > 0 ? (
           <div className="space-y-4">
-            {/* 3x4 / 4x3 Responsive RFQ Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {displayedRfqs.map((rfq: any) => (
-                <div
+                <article
                   key={rfq.id}
-                  onClick={() => onSelectRfq ? onSelectRfq(rfq) : onNavigate('BUY_LEADS')}
-                  className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-2.5 flex flex-col justify-between h-full"
+                  onClick={() => (onSelectRfq ? onSelectRfq(rfq) : onNavigate('BUY_LEADS'))}
+                  className="bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
                 >
-                  <div className="space-y-1.5">
-                    <div className="relative h-28 rounded-lg overflow-hidden border border-slate-200 bg-white mb-2">
+                  <div>
+                    <div className="aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
                       <SafeImage
                         src={rfq.resolvedPhotoUrl || rfq.rawPhotoUrl}
                         fallbackSrc={rfq.rawPhotoUrl}
@@ -291,181 +268,290 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                         type="rfq"
                         isThumbnail={true}
                         disableLiveUpload={true}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <div className="flex items-start justify-between gap-1.5">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                            {rfq.id}
-                          </span>
-                          <span className="text-[9px] text-blue-700 font-semibold flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/80">
-                            <Clock className="w-2.5 h-2.5 text-blue-500" />
-                            <span>{getFreshRfqDate(rfq)}</span>
+
+                    <div className="p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 tabular-nums">
+                        <span className="font-mono font-bold text-slate-700 truncate">
+                          {rfq.id}
+                        </span>
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span>{getFreshRfqDate(rfq)}</span>
+                          <span className="text-slate-300">·</span>
+                          <span className="font-bold text-emerald-700">{rfq.quotesCount} Bids</span>
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#0F294D] transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
+                        {rfq.productName}
+                      </h3>
+
+                      <div className="space-y-1 text-[11px] pt-2 border-t border-slate-100">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500">Quantity:</span>
+                          <span className="font-semibold text-slate-900 tabular-nums truncate">
+                            {Number(rfq?.targetQuantity || 0).toLocaleString()} {rfq?.quantityUnit || 'Units'}
                           </span>
                         </div>
-                        <h4 className="font-bold text-xs text-slate-900 mt-1 line-clamp-2 leading-snug">
-                          {rfq.productName}
-                        </h4>
-                      </div>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                        {rfq.quotesCount} Bids
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 text-[11px] p-2 bg-white rounded-lg border border-slate-200">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-500">Volume:</span>
-                        <span className="font-mono font-bold text-slate-900">
-                          {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-500">Port:</span>
-                        <span className="font-bold text-slate-800 truncate max-w-[90px]">
-                          {rfq.destinationPort}
-                        </span>
-                      </div>
-                      <div className="pt-1 border-t border-slate-100 flex justify-between items-center text-[10px]">
-                        <span className="text-slate-500">{rfq.preferredIncoterm}:</span>
-                        <span className="font-semibold text-slate-800 inline-flex items-center gap-1">
-                          <span>Confidential Target</span>
-                          <Lock className="w-2.5 h-2.5 text-amber-600" />
-                        </span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500">Destination:</span>
+                          <span className="font-semibold text-slate-800 truncate">
+                            {rfq.destinationPort}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500">{rfq.preferredIncoterm}:</span>
+                          <span className="font-semibold text-slate-700 inline-flex items-center gap-1 shrink-0">
+                            <Lock className="w-2.5 h-2.5 text-amber-600" />
+                            <span>Target Open</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-1.5 border-t border-slate-200 space-y-1.5">
-                    <div className="text-[10px] text-slate-700 flex items-center justify-between gap-1">
-                      <span className="truncate max-w-[130px] font-semibold inline-flex items-center gap-1.5">
-                        <CountryFlag country={rfq.buyerCountry} size="xs" />
-                        <span className="truncate">{rfq.buyerCountry}</span>
-                      </span>
-                      <span className="text-blue-600 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
-                        <span>Quote</span>
-                        <ArrowRight className="w-2.5 h-2.5" />
-                      </span>
-                    </div>
-
-                    {/* Direct Buyer Contact Bar */}
-                    <div className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-between gap-1 text-[9px]">
-                      <span className="truncate text-slate-600 font-semibold">
-                        Direct Buyer Contact
-                      </span>
-                    </div>
+                  <div className="px-3.5 py-2.5 bg-[#F8FAFC] border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1.5 min-w-0 font-semibold text-slate-700">
+                      <CountryFlag country={rfq.buyerCountry} size="xs" />
+                      <span className="truncate">{rfq.buyerCountry}</span>
+                    </span>
+                    <span className="text-[#EA580C] font-bold inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
+                      <span>Quote</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
 
-            {/* Bottom Navigation Controls */}
-            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs w-full">
-              <div className="text-slate-600 font-medium text-center sm:text-left">
-                Showing <strong className="text-slate-900 font-bold">{Math.min(12, activeRfqsPool.length)}</strong> recent requests of{' '}
-                <strong className="text-slate-900 font-bold">{activeRfqsPool.length}</strong> active buyer RFQs
+            {/* Tell Us Your Buying Requirement Bottom Strip */}
+            <div className="p-4 rounded-xl bg-[#0F294D] text-white flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-center sm:text-left">
+                <div className="text-xs sm:text-sm font-bold text-white">
+                  Cannot find the exact specification? Broadcast a custom Buying Request to 12,500+ factories.
+                </div>
+                <div className="text-[11px] text-slate-300 mt-0.5 tabular-nums">
+                  Showing {displayedRfqs.length} featured buy offers of {activeRfqsPool.length} active international requests
+                </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => onNavigate('BUY_LEADS')}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold inline-flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
-              >
-                <span>Explore Full RFQ Directory</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={onOpenCreateRfq}
+                  className="px-4 py-2 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  Post Buying Request
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('BUY_LEADS')}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                >
+                  <span>Full RFQ Directory</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-center space-y-3">
+          <div className="p-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-center space-y-3">
             <div className="text-sm font-bold text-slate-800">No active buying requirements posted yet</div>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
               Post the first request for quotation (RFQ) and start receiving direct quotes from verified global manufacturers.
             </p>
             <button
+              type="button"
               onClick={onOpenCreateRfq}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white font-bold text-xs transition-colors cursor-pointer whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Post New RFQ Now</span>
             </button>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* 3. VERIFIED SECTORS & MEGA DIRECTORY */}
+      {/* 3. FEATURED WHOLESALE PRODUCTS SHOWCASE */}
+      <section
+        id="featured-products-section"
+        className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 space-y-5 shadow-2xs"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+              Factory Direct Wholesale Catalog
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#0F294D] mt-0.5">
+              {selectedCategory ? `${tText(selectedCategory)} — Featured Products` : 'Featured Wholesale Products'}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Compare FOB unit prices, minimum order quantities (MOQ), and verified exporter capabilities.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            {selectedCategory && (
+              <button
+                type="button"
+                onClick={() => setSelectedCategory(null)}
+                className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+              >
+                Show All Sectors ×
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onNavigate('PRODUCT_DIRECTORY')}
+              className="px-4 py-2 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Package className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('viewAllProducts')}</span>
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+            </button>
+          </div>
+        </div>
+
+        {isLoadingProducts ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map(idx => (
+              <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 h-72 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {featuredProducts.map(prod => {
+              const tiers = Array.isArray(prod.priceTiers) ? prod.priceTiers : [];
+              const firstTier = tiers[0];
+              const lastTier = tiers[tiers.length - 1];
+              const fallbackPrice = Number((prod as any).fobPriceUsd || (prod as any).price || 0);
+              const minPrice = Number(lastTier?.priceUsd ?? fallbackPrice) || 0;
+              const maxPrice = Number(firstTier?.priceUsd ?? fallbackPrice) || 0;
+              const safeMoq = Number(prod.moq ?? (prod as any).minOrder ?? 1) || 1;
+              const imgUrl = prod.images && prod.images[0] ? prod.images[0] : (prod as any).imageUrl || '';
+              const unitLabel = prod.moqUnit || (prod as any).unit || 'Units';
+
+              return (
+                <article
+                  key={prod.id}
+                  onClick={() => onSelectProduct(prod)}
+                  className="bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
+                >
+                  <div>
+                    <div className="aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
+                      <SafeImage
+                        src={imgUrl}
+                        alt={prod.title}
+                        productId={prod.id}
+                        productTitle={prod.title}
+                        category={prod.category}
+                        type="product"
+                        isThumbnail={true}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+
+                    <div className="p-3.5 space-y-2">
+                      <div className="text-[11px] font-semibold text-blue-700 truncate">
+                        {tText(prod.category)}
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0F294D] transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
+                        {prod.title}
+                      </h3>
+
+                      <div className="pt-1">
+                        <div className="text-base font-black text-[#0F294D] tabular-nums">
+                          {minPrice > 0 && maxPrice > minPrice
+                            ? `${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`
+                            : maxPrice > 0
+                            ? formatPrice(maxPrice)
+                            : 'Request Quote'}
+                          <span className="text-[11px] font-medium text-slate-500"> / {unitLabel}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
+                          MOQ: <strong className="text-slate-800">{safeMoq.toLocaleString()} {unitLabel}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-2.5 bg-[#F8FAFC] border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="inline-flex items-center gap-1.5 min-w-0 text-[11px] text-slate-600 font-semibold">
+                      <CountryFlag country={prod.supplierCountry} size="xs" />
+                      <span className="truncate">{prod.supplierName || prod.supplierCountry}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        onContactSupplier(prod);
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-white hover:bg-[#EA580C] text-[#0F294D] hover:text-white border border-slate-300 hover:border-[#EA580C] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1"
+                    >
+                      <Mail className="w-3 h-3 shrink-0" />
+                      <span>Inquire</span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* 4. VERIFIED B2B INDUSTRIES & CATEGORY SHOWCASE */}
       <CategoryMegaMenu
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategoryFromMenu}
-        onNavigateToCategory={onNavigateToCategory || ((cat, sub) => {
-          setSelectedCategory(cat);
-          onNavigate('PRODUCT_DIRECTORY');
-        })}
+        onNavigateToCategory={
+          onNavigateToCategory ||
+          (cat => {
+            setSelectedCategory(cat);
+            onNavigate('PRODUCT_DIRECTORY');
+          })
+        }
         onNavigateToSuppliers={onNavigateToSuppliers || (() => onNavigate('SUPPLIERS_DIRECTORY'))}
         onNavigateToRfqs={onNavigateToRfqs || (() => onNavigate('BUY_LEADS'))}
         onNavigate={onNavigate}
         onOpenCreateRfq={onOpenCreateRfq}
       />
 
-      {/* 3.5 LIVE GLOBAL TRADE FEED */}
-      <div className="pt-1 pb-2">
-        <LiveGlobalTradeFeed 
-          onSelectLead={(lead) => {
-            if (onNavigateToRfqs) {
-              onNavigateToRfqs(lead.product);
-            } else {
-              onNavigate('BUY_LEADS');
-            }
-          }}
-        />
-      </div>
-
-      {/* 4. FEATURED PRODUCTS CATALOG LINK BAR */}
-      <div id="featured-products-section" className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <button
-            onClick={() => onNavigate('PRODUCT_DIRECTORY')}
-            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0 cursor-pointer"
-          >
-            <span>{t('viewAllProducts')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* 4. VERIFIED FACTORY EXPORTERS SHOWCASE */}
-      <div className="bg-slate-50/90 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-10 space-y-6 relative overflow-hidden border border-slate-200 shadow-sm">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 5. AUDITED GLOBAL MANUFACTURERS & SUPPLIERS SHOWCASE */}
+      <section className="bg-[#F8FAFC] text-slate-900 rounded-2xl p-5 sm:p-8 space-y-6 border border-slate-200 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 mb-2">
-              <Award className="w-3.5 h-3.5 text-blue-600" />
-              <span>Audited Global Manufacturers (ISO 9001, CE, TÜV)</span>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 inline-flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-[#EA580C]" />
+              <span>ISO 9001 · CE · TÜV Verified Exporters</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+            <h2 className="text-lg sm:text-xl font-black text-[#0F294D] mt-0.5">
               {t('auditedSuppliersHeading')}
-            </h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-xl">
-              Inspect on-site factory audit certificates, production line capacity, and trade protection limits of premier export partners.
+            </h2>
+            <p className="text-xs text-slate-600 mt-0.5 max-w-2xl">
+              Inspect on-site factory audit credentials, production capacity, and verified trade protection coverage.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 shadow-sm cursor-pointer"
+            className="px-4 py-2.5 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-bold flex items-center gap-2 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
             <span>{t('exploreAllSuppliers')}</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5 shrink-0" />
           </button>
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {displayedCompanies.map((company, index) => {
-            return (
-            <div
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {displayedCompanies.map((company, index) => (
+            <article
               key={company.id || index}
               onClick={() => onOpenStorefront(company.id)}
-              className="bg-white hover:bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-xs hover:shadow-md"
+              className="bg-white border border-slate-200 hover:border-[#0F294D] rounded-xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-2xs hover:shadow-md"
             >
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -474,191 +560,214 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                     alt={company.companyName}
                     type="logo"
                     isThumbnail={true}
-                    className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 shrink-0"
+                    className="w-12 h-12 rounded-lg border border-slate-200 bg-slate-50 shrink-0"
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                        {company.tier}
-                      </span>
-                      <span className="text-[10px] text-slate-600 font-mono inline-flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
+                      <span className="font-bold uppercase text-[#0F294D]">{company.tier}</span>
+                      <span className="text-slate-300">·</span>
+                      <span className="inline-flex items-center gap-1 truncate">
                         <CountryFlag country={company.country} size="xs" />
-                        <span>{tText(company.country)}</span>
+                        <span className="truncate">{tText(company.country)}</span>
                       </span>
                     </div>
-                    <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
+                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#0F294D] transition-colors truncate mt-0.5">
                       {company.companyName}
-                    </div>
+                    </h3>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                   {company.description}
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs tabular-nums">
                   <div>
-                    <span className="text-[10px] text-slate-500">{t('tradeAssurance')}:</span>
-                    <div className="font-mono font-bold text-emerald-600">
-                      ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
+                    <div className="text-[10px] text-slate-500">{t('tradeAssurance')}</div>
+                    <div className="font-mono font-bold text-emerald-700">
+                      ${(Number(company?.tradeAssuranceLimitUsd || 0) / 1000).toFixed(0)}k USD
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500">{t('factorySize')}:</span>
+                    <div className="text-[10px] text-slate-500">{t('factorySize')}</div>
                     <div className="font-bold text-slate-800">
-                      {company.factorySizeSqM && company.factorySizeSqM > 0 
-                        ? `${company.factorySizeSqM.toLocaleString()} m²` 
-                        : 'Trading/Desk'}
+                      {Number(company?.factorySizeSqM || 0) > 0
+                        ? `${Number(company.factorySizeSqM).toLocaleString()} m²`
+                        : 'Trading Desk'}
                     </div>
                   </div>
                 </div>
-
-                {/* Gated Contact Status Bar */}
-                <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-[10px]">
-                  <span className="text-slate-600 font-semibold truncate">
-                    {isUserPaidMember
-                      ? (company.contactPerson ? `Liaison: ${company.contactPerson}` : 'Direct Factory Contact')
-                      : 'Direct Contact & Address'}
-                  </span>
-                </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
-                <span>{t('viewFactoryAudit')}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-500 truncate pr-2">
+                  {isUserPaidMember
+                    ? company.contactPerson
+                      ? `Liaison: ${company.contactPerson}`
+                      : 'Direct Factory Contact'
+                    : 'Verified Factory Profile'}
+                </span>
+                <span className="text-[#EA580C] font-bold inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
+                  <span>{t('viewFactoryAudit')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
               </div>
-            </div>
-            );
-          })}
+            </article>
+          ))}
         </div>
 
-        {/* Section 4 Footer Toggle */}
-        <div className="relative z-10 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <span className="text-slate-500 text-xs">
-            Showing <strong className="text-slate-900 font-bold">{displayedCompanies.length}</strong> of <strong className="text-slate-900 font-bold">{MOCK_COMPANIES.length}</strong> audited supplier profiles
+        <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500 tabular-nums">
+            Showing <strong className="text-slate-900">{displayedCompanies.length}</strong> of{' '}
+            <strong className="text-slate-900">{MOCK_COMPANIES.length}</strong> audited supplier profiles
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={() => setShowAllSuppliers(!showAllSuppliers)}
-              className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
             >
-              {showAllSuppliers ? 'Show Top 6 Featured Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
+              {showAllSuppliers ? 'Show Top 6 Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
             </button>
             <button
               type="button"
               onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             >
               <span>{t('fullSupplierDirectory')}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-200 shadow-sm text-slate-900 relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+      {/* 6. PARTNER ONBOARDING BANNER */}
+      <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 max-w-2xl text-center sm:text-left">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-slate-200/80 bg-white">
+            <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-200 bg-slate-100">
               <EditableImage
                 contentKey="homepage.onboardingBannerImage"
-                defaultSrc="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=320&auto=format&fit=crop&q=75"
+                defaultSrc={heroLogisticsBanner}
                 alt="Trade Heaven Verified Global Partner Network"
                 targetWidth={320}
                 className="w-full h-full"
                 imgClassName="w-full h-full object-cover"
               />
             </div>
-            <div className="space-y-2.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>100% Free Registration • Verified Partner Vetting</span>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>Free Registration · Verified Partner Network</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight"><EditableText contentKey="homepage.onboardingBannerTitle" defaultText="Ready to Board with Us? Connect with" /> <span className="text-blue-600"><EditableText contentKey="homepage.onboardingBannerHighlight" defaultText="Audited Factories & Verified Buyers" /></span></h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss trade protection protection, and direct wholesale pricing." /></p>
+              <h2 className="text-xl sm:text-2xl font-black text-[#0F294D] leading-tight">
+                <EditableText
+                  contentKey="homepage.onboardingBannerTitle"
+                  defaultText="Ready to Board with Us? Connect with"
+                />{' '}
+                <span className="text-[#EA580C]">
+                  <EditableText
+                    contentKey="homepage.onboardingBannerHighlight"
+                    defaultText="Audited Factories & Verified Buyers"
+                  />
+                </span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <EditableText
+                  contentKey="homepage.onboardingBannerDesc"
+                  defaultText="Register as an international importer or audited factory to access global buyer RFQs, Trade Assurance protection, and direct wholesale pricing."
+                />
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full lg:w-auto">
             <button
+              type="button"
               onClick={() => onNavigate('ONBOARD_WITH_US')}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-lg bg-[#0F294D] hover:bg-blue-900 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span><EditableText contentKey="homepage.btnOnboard" defaultText="Onboard / Work With Us" /></span>
-              <ArrowRight className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span>
+                <EditableText contentKey="homepage.btnOnboard" defaultText="Onboard / Work With Us" />
+              </span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
             <button
+              type="button"
               onClick={() => onNavigate('POST_BUY_REQUIREMENT')}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-300 shadow-xs transition-all cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <span><EditableText contentKey="homepage.btnPostRfq" defaultText="Post Free Buy RFQ" /></span>
+              <span>
+                <EditableText contentKey="homepage.btnPostRfq" defaultText="Post Free Buy RFQ" />
+              </span>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 6. DYNAMIC FAQS ACCORDION */}
+      {/* 7. DYNAMIC FAQS ACCORDION */}
       <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
 
-      {/* 7. TRADE HEAVEN TRUST & trade protection RAIL INFRASTRUCTURE */}
-      <div className="bg-gradient-to-b from-slate-50 via-slate-50/80 to-blue-50/30 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-12 space-y-8 shadow-sm border border-slate-200 relative overflow-hidden">
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>trade protection &amp; Compliance Guarantee</span>
+      {/* 8. WHY CHOOSE TRADE HEAVEN & DIRECT DESK */}
+      <section className="bg-white text-slate-900 rounded-2xl p-6 sm:p-9 space-y-7 border border-slate-200 shadow-2xs">
+        <div className="max-w-3xl space-y-2">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Trade Assurance &amp; Compliance Standard</span>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F294D]">
             Why Enterprise Importers &amp; Factories Choose Trade Heaven
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Eliminating international trade risk through certified multi-currency trade protection vaults, third-party SGS factory inspections, and automated Proforma Invoice (P/I) reconciliation.
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Reducing cross-border procurement risk with verified supplier KYC checks, pre-shipment inspections, and transparent Incoterms reconciliation.
           </p>
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="p-5 bg-[#F8FAFC] rounded-xl border border-slate-200 space-y-2.5">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-slate-900">100% trade protection Protection</h4>
-            <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Buyer deposits are held in neutral Swiss trade protection vaults and only released upon certified Bill of Lading (B/L) and SGS pre-shipment sign-off.
+            <h3 className="font-bold text-sm text-[#0F294D]">Trade Assurance Protection</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Structured payment milestones aligned with verified Bills of Lading (B/L) and third-party SGS pre-shipment inspections.
             </p>
           </div>
 
-          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold">
+          <div className="p-5 bg-[#F8FAFC] rounded-xl border border-slate-200 space-y-2.5">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 text-[#0F294D] flex items-center justify-center">
               <Building2 className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-slate-900">Factory On-Site Audits</h4>
-            <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Every Gold and VIP supplier undergoes strict legal KYC registration, environmental compliance, and physical manufacturing capacity verification.
+            <h3 className="font-bold text-sm text-[#0F294D]">Factory On-Site Audits</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Gold and VIP exporters undergo legal business verification, ISO compliance checks, and production capacity reviews.
             </p>
           </div>
 
-          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center font-bold">
+          <div className="p-5 bg-[#F8FAFC] rounded-xl border border-slate-200 space-y-2.5">
+            <div className="w-10 h-10 rounded-lg bg-orange-50 border border-orange-200 text-[#EA580C] flex items-center justify-center">
               <Headphones className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-slate-900">Dedicated Trade Managers</h4>
-            <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Human-to-Human (H2H) trade specialists assist with Incoterms 2020 compliance, sea freight container booking, and customs clearance mediation.
+            <h3 className="font-bold text-sm text-[#0F294D]">Dedicated Trade Specialists</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Procurement specialists support Incoterms 2020 structuring, container freight coordination, and buyer-supplier mediation.
             </p>
           </div>
         </div>
 
-        {/* WhatsApp & Sourcing Assistance Strip */}
-        <div className="relative z-10 p-5 bg-white rounded-2xl border border-emerald-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="p-4 sm:p-5 bg-[#F8FAFC] rounded-xl border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-md">
-              <MessageCircle className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0">
+              <MessageCircle className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-bold text-sm text-slate-900">Need Urgent Sourcing or Factory Matchmaking?</div>
-              <div className="text-xs text-emerald-700 font-semibold mt-0.5">Connect directly with our senior trade desk on WhatsApp: +91 8532934479</div>
+              <div className="font-bold text-sm text-slate-900">
+                Need Urgent Sourcing or Factory Matchmaking?
+              </div>
+              <div className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
+                Connect directly with our senior trade desk on WhatsApp: +91 8532934479
+              </div>
             </div>
           </div>
 
@@ -666,17 +775,17 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             href={OFFICIAL_WHATSAPP_DATA.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md shrink-0"
+            className="px-5 py-2.5 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap"
           >
             <span>Chat on WhatsApp</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
-      </div>
+      </section>
 
-      {/* 8. SUPPLIERS BY REGION FOOTER BAR (TradeWheel Directory Ecosystem) */}
+      {/* 9. GLOBAL BUYERS & SUPPLIERS BY REGION BAR */}
       <SuppliersByRegionBar
-        onSelectCountry={(countryId) => {
+        onSelectCountry={() => {
           onNavigate('COUNTRY_HUB');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
