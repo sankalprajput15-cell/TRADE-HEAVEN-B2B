@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { SiteContent, DEFAULT_SITE_CONTENT } from '../data/defaultSiteContent';
+import { SiteContent, DEFAULT_SITE_CONTENT, DEFAULT_HOMEPAGE_DISPLAY_CONFIG } from '../data/defaultSiteContent';
 import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, UserRole } from '../types';
 import { useAuth, isStrictVerifiedRootAdmin } from './AuthContext';
 import { api } from '../services/apiService';
@@ -125,8 +125,20 @@ const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 const HERO_TANKER_IMAGE = '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
 
 function normalizeHeroImage(content: SiteContent): SiteContent {
-  if (!content?.homepage) return content;
-  const currentBg = content.homepage.heroBgImage;
+  const mergedDisplayConfig = {
+    ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
+    ...(content?.homepageDisplayConfig || {}),
+    sectionVisibility: {
+      ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
+      ...(content?.homepageDisplayConfig?.sectionVisibility || {})
+    }
+  };
+  const nextContent: SiteContent = {
+    ...content,
+    homepageDisplayConfig: mergedDisplayConfig
+  };
+  if (!nextContent?.homepage) return nextContent;
+  const currentBg = nextContent.homepage.heroBgImage;
   if (
     !currentBg ||
     currentBg === 'vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034.jpg' ||
@@ -135,14 +147,14 @@ function normalizeHeroImage(content: SiteContent): SiteContent {
     currentBg.includes('1578575437130')
   ) {
     return {
-      ...content,
+      ...nextContent,
       homepage: {
-        ...content.homepage,
+        ...nextContent.homepage,
         heroBgImage: HERO_TANKER_IMAGE
       }
     };
   }
-  return content;
+  return nextContent;
 }
 
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
@@ -296,8 +308,35 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     }
     loadServerContent();
+
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setSiteContent(normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed }));
+        } catch {}
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_site_content_sync');
+        bc.onmessage = (event) => {
+          if (event.data && typeof event.data === 'object') {
+            setSiteContent(normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...event.data }));
+          }
+        };
+      }
+    } catch {}
+
+    window.addEventListener('storage', handleStorageSync);
     return () => {
       isMounted = false;
+      window.removeEventListener('storage', handleStorageSync);
+      if (bc) {
+        try { bc.close(); } catch {}
+      }
     };
   }, []);
 
@@ -380,6 +419,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     hasLocalSiteMutationRef.current = true;
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(content));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('th_site_content_sync');
+        bc.postMessage(content);
+        bc.close();
+      }
     } catch {}
 
     setSaveStatus('saving');

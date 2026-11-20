@@ -299,6 +299,9 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   const [testScenarioRunning, setTestScenarioRunning] = useState(false);
   const [mediationState, setMediationState] = useState<MediationSystemState | null>(null);
 
+  const { user: authUser, currentUser: contextUser } = useAuth();
+  const effectiveUser = contextUser || authUser || currentUser;
+
   useEffect(() => {
     const fetchMediation = async () => {
       try {
@@ -307,12 +310,49 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       } catch (err) {}
     };
     fetchMediation();
-    window.addEventListener('tradeheaven_mediation_updated', fetchMediation);
-    return () => window.removeEventListener('tradeheaven_mediation_updated', fetchMediation);
-  }, []);
 
-  const { user: authUser, currentUser: contextUser } = useAuth();
-  const effectiveUser = contextUser || authUser || currentUser;
+    const handleMediationUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<MediationSystemState>;
+      if (customEvent.detail && customEvent.detail.wallets) {
+        setMediationState(customEvent.detail);
+      } else {
+        fetchMediation();
+      }
+    };
+
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'th_mediation_admin_state_v1') {
+        fetchMediation();
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_mediation_wallet_sync');
+        bc.onmessage = (event) => {
+          const payload = event.data as MediationSystemState | null;
+          if (payload && Array.isArray(payload.wallets)) {
+            setMediationState(payload);
+          } else {
+            fetchMediation();
+          }
+        };
+      }
+    } catch {
+      // ignore unsupported BroadcastChannel
+    }
+
+    window.addEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+    window.addEventListener('storage', handleStorageSync);
+    return () => {
+      window.removeEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+      window.removeEventListener('storage', handleStorageSync);
+      if (bc) {
+        try { bc.close(); } catch {}
+      }
+    };
+  }, [currentUser?.id, currentUser?.email, effectiveUser?.id, effectiveUser?.email]);
 
   const currentTier = useMemo(() => {
     return String(

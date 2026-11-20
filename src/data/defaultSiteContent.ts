@@ -74,6 +74,50 @@ export interface CategoryItemCMS {
   productCount: string;
 }
 
+export interface HomepageDisplayConfig {
+  featuredProductsMode: 'AUTO_LATEST' | 'PINNED_FIRST' | 'PINNED_ONLY';
+  pinnedProductIds: string[];
+  hiddenProductIds: string[];
+  featuredRfqsMode: 'AUTO_LATEST' | 'PINNED_FIRST' | 'PINNED_ONLY';
+  pinnedRfqIds: string[];
+  hiddenRfqIds: string[];
+  pinnedSupplierIds: string[];
+  hiddenSupplierIds: string[];
+  sectionVisibility: {
+    announcementBanner: boolean;
+    recentRfqs: boolean;
+    featuredProducts: boolean;
+    categoryShowcase: boolean;
+    verifiedSuppliers: boolean;
+    onboardingBanner: boolean;
+    faqSection: boolean;
+    whyChooseSection: boolean;
+    regionBar: boolean;
+  };
+}
+
+export const DEFAULT_HOMEPAGE_DISPLAY_CONFIG: HomepageDisplayConfig = {
+  featuredProductsMode: 'PINNED_FIRST',
+  pinnedProductIds: [],
+  hiddenProductIds: [],
+  featuredRfqsMode: 'PINNED_FIRST',
+  pinnedRfqIds: [],
+  hiddenRfqIds: [],
+  pinnedSupplierIds: [],
+  hiddenSupplierIds: [],
+  sectionVisibility: {
+    announcementBanner: true,
+    recentRfqs: true,
+    featuredProducts: true,
+    categoryShowcase: true,
+    verifiedSuppliers: true,
+    onboardingBanner: true,
+    faqSection: true,
+    whyChooseSection: true,
+    regionBar: true
+  }
+};
+
 export interface SiteContent {
   brand: {
     siteName: string;
@@ -128,7 +172,12 @@ export interface SiteContent {
     testimonialsHeading: string;
     testimonialsSubheading: string;
     testimonials: TestimonialCMS[];
+    onboardingBannerImage?: string;
+    onboardingBannerTitle?: string;
+    onboardingBannerHighlight?: string;
+    onboardingBannerDesc?: string;
   };
+  homepageDisplayConfig?: HomepageDisplayConfig;
   productsPage: {
     title: string;
     subtitle: string;
@@ -557,5 +606,6 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     footerSupportEmail: "support@tradeheaven.net",
     footerSupportPhone: "+91 93685 02627 / help@tradeheaven.net",
     footerHeadquarters: "Tradeheaven ECOM Solution LLP, B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, UP - 206244, India"
-  }
+  },
+  homepageDisplayConfig: { ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG }
 };

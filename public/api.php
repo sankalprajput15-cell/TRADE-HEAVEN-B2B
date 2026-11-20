@@ -4576,11 +4576,14 @@ switch ($action) {
 
     case 'mediation_state':
     case 'mediation_admin_adjust':
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
         $uploads_dir = __DIR__ . '/assets/uploads';
         if (!is_dir($uploads_dir)) {
             @mkdir($uploads_dir, 0775, true);
         }
         $med_file = $uploads_dir . '/mediation-wallet-state.json';
+        $med_file_fallback = __DIR__ . '/mediation-wallet-state.json';
         $default_med_state = [
             'wallets' => [
                 [
@@ -4635,7 +4638,7 @@ switch ($action) {
                     'company_name' => 'MP Commodity Brokers Australia Pty Ltd',
                     'wallet_type' => 'SUPPLIER',
                     'plan_status' => 'BASIC',
-                    'available_balance' => '424000000',
+                    'available_balance' => '0',
                     'locked_balance' => '0',
                     'currency' => 'USD',
                     'country' => 'United States',
@@ -4719,18 +4722,65 @@ switch ($action) {
                     'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
                 ]
             ],
-            'ledgerEntries' => [],
+            'ledgerEntries' => [
+                [
+                    'id' => 'led-melissa-return-50k',
+                    'reference_id' => 'TH-WAL-301239',
+                    'source_wallet_id' => 'wal-supp-melissa',
+                    'destination_wallet_id' => null,
+                    'amount' => '424000000',
+                    'transaction_type' => 'ADMIN_WALLET_DEBIT',
+                    'notes' => 'Return Back — $50,000.00 USD Removed from Melissa Prezios Wallet (Updated Balance: $0.00 USD)',
+                    'created_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ]
+            ],
             'orders' => [],
             'payouts' => [],
-            'sqlLogs' => []
+            'sqlLogs' => [],
+            'stateUpdatedAt' => 0
         ];
+
         $med_state = $default_med_state;
-        if (file_exists($med_file)) {
-            $decoded_med = json_decode((string)@file_get_contents($med_file), true);
-            if (is_array($decoded_med) && !empty($decoded_med['wallets'])) {
-                $med_state = array_merge($default_med_state, $decoded_med);
+        $loaded_from_storage = false;
+
+        // 1. Prefer MySQL persistent storage on live hosting
+        if ($db_connected && $pdo) {
+            try {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS wallet_mediation_state (
+                    id INT PRIMARY KEY,
+                    state_json LONGTEXT NOT NULL,
+                    state_updated_at BIGINT DEFAULT 0,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                $stmt_med = $pdo->query("SELECT state_json, state_updated_at FROM wallet_mediation_state WHERE id = 1 LIMIT 1");
+                $row_med = $stmt_med ? $stmt_med->fetch() : null;
+                if ($row_med && !empty($row_med['state_json'])) {
+                    $decoded_db = json_decode((string)$row_med['state_json'], true);
+                    if (is_array($decoded_db) && !empty($decoded_db['wallets'])) {
+                        $med_state = array_merge($default_med_state, $decoded_db);
+                        $med_state['stateUpdatedAt'] = intval($row_med['state_updated_at'] ?? ($decoded_db['stateUpdatedAt'] ?? 0));
+                        $loaded_from_storage = true;
+                    }
+                }
+            } catch (Exception $e) {
+                // Fall back to file storage
             }
         }
+
+        // 2. Fall back to JSON file storage
+        if (!$loaded_from_storage) {
+            foreach ([$med_file, $med_file_fallback] as $candidate_file) {
+                if (file_exists($candidate_file)) {
+                    $decoded_med = json_decode((string)@file_get_contents($candidate_file), true);
+                    if (is_array($decoded_med) && !empty($decoded_med['wallets'])) {
+                        $med_state = array_merge($default_med_state, $decoded_med);
+                        $loaded_from_storage = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         if ($action === 'mediation_state') {
             echo json_encode($med_state);
             break;
@@ -4792,7 +4842,23 @@ switch ($action) {
             'created_at' => gmdate('Y-m-d\TH:i:s\Z')
         ];
         array_unshift($med_state['ledgerEntries'], $ledger_entry);
-        @file_put_contents($med_file, json_encode($med_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        $state_ts = (int)round(microtime(true) * 1000);
+        $med_state['stateUpdatedAt'] = $state_ts;
+        $encoded_med = json_encode($med_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // Save to MySQL first (most reliable on live hosting)
+        if ($db_connected && $pdo) {
+            try {
+                $stmt_save_med = $pdo->prepare("INSERT INTO wallet_mediation_state (id, state_json, state_updated_at) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE state_json = VALUES(state_json), state_updated_at = VALUES(state_updated_at)");
+                $stmt_save_med->execute([$encoded_med, $state_ts]);
+            } catch (Exception $e) {
+                // Continue to file fallback
+            }
+        }
+        // Save to both JSON paths
+        @file_put_contents($med_file, $encoded_med, LOCK_EX);
+        @file_put_contents($med_file_fallback, $encoded_med, LOCK_EX);
+
         echo json_encode([
             'success' => true,
             'wallet' => $wallet_row,

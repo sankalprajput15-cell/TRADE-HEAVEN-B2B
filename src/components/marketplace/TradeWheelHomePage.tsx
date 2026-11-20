@@ -32,6 +32,8 @@ import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { securityService } from '../../services/securityService';
 import { isPaidMemberUser } from '../../services/freeLeadService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { useSiteContent } from '../../context/SiteContentContext';
+import { DEFAULT_HOMEPAGE_DISPLAY_CONFIG } from '../../data/defaultSiteContent';
 
 interface Props {
   products: Product[];
@@ -71,6 +73,12 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onOpenRegisterFree
 }) => {
   const { t, tText } = useLanguage();
+  const { siteContent } = useSiteContent();
+  const displayConfig = siteContent?.homepageDisplayConfig || DEFAULT_HOMEPAGE_DISPLAY_CONFIG;
+  const sectionVisibility = {
+    ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
+    ...(displayConfig.sectionVisibility || {})
+  };
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
   const [imageSyncVersion, setImageSyncVersion] = React.useState(0);
@@ -125,29 +133,78 @@ export const TradeWheelHomePage: React.FC<Props> = ({
     });
   }, [rfqs, currentUser, imageSyncVersion]);
 
-  const activeRfqsPool = React.useMemo(() => allHomeRfqsPool.slice(0, 40), [allHomeRfqsPool]);
-  const displayedRfqs = React.useMemo(() => activeRfqsPool.slice(0, 8), [activeRfqsPool]);
+  const activeRfqsPool = React.useMemo(() => {
+    const hiddenSet = new Set(displayConfig.hiddenRfqIds || []);
+    return allHomeRfqsPool.filter(r => !hiddenSet.has(r.id)).slice(0, 40);
+  }, [allHomeRfqsPool, displayConfig.hiddenRfqIds]);
+
+  const displayedRfqs = React.useMemo(() => {
+    const pinnedIds = displayConfig.pinnedRfqIds || [];
+    const mode = displayConfig.featuredRfqsMode || 'PINNED_FIRST';
+    if (mode !== 'AUTO_LATEST' && pinnedIds.length > 0) {
+      const byId = new Map(activeRfqsPool.map(r => [r.id, r]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof activeRfqsPool;
+      if (mode === 'PINNED_ONLY' && pinned.length > 0) {
+        return pinned.slice(0, 8);
+      }
+      const pinnedSet = new Set(pinned.map(r => r.id));
+      const rest = activeRfqsPool.filter(r => !pinnedSet.has(r.id));
+      return [...pinned, ...rest].slice(0, 8);
+    }
+    return activeRfqsPool.slice(0, 8);
+  }, [activeRfqsPool, displayConfig.pinnedRfqIds, displayConfig.featuredRfqsMode]);
 
   const featuredProducts = React.useMemo(() => {
     const source = products && products.length > 0 ? products : MOCK_PRODUCTS;
     const synced = productImageManagerService.sortProductsLatestUploadedFirst(
       productImageManagerService.applyOverridesToProductList(source)
     );
+    const hiddenSet = new Set(displayConfig.hiddenProductIds || []);
+    const visibleSynced = synced.filter(p => p && !hiddenSet.has(p.id));
     const filtered = selectedCategory
-      ? synced.filter(
+      ? visibleSynced.filter(
           p => p && (p.category || '').toLowerCase().includes(selectedCategory.toLowerCase())
         )
-      : synced;
-    return (filtered.length > 0 ? filtered : synced).slice(0, 8);
-  }, [products, selectedCategory, imageSyncVersion]);
+      : visibleSynced;
+    const pool = filtered.length > 0 ? filtered : visibleSynced;
 
-  const displayedCompanies = React.useMemo(
-    () =>
-      (showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6)).map(c =>
-        securityService.gateCompanyProfile(c, currentUser)
-      ),
-    [currentUser, showAllSuppliers]
-  );
+    const pinnedIds = displayConfig.pinnedProductIds || [];
+    const mode = displayConfig.featuredProductsMode || 'PINNED_FIRST';
+    if (!selectedCategory && mode !== 'AUTO_LATEST' && pinnedIds.length > 0) {
+      const byId = new Map(pool.map(p => [p.id, p]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as Product[];
+      if (mode === 'PINNED_ONLY' && pinned.length > 0) {
+        return pinned.slice(0, 8);
+      }
+      const pinnedSet = new Set(pinned.map(p => p.id));
+      const rest = pool.filter(p => !pinnedSet.has(p.id));
+      return [...pinned, ...rest].slice(0, 8);
+    }
+    return pool.slice(0, 8);
+  }, [
+    products,
+    selectedCategory,
+    imageSyncVersion,
+    displayConfig.pinnedProductIds,
+    displayConfig.hiddenProductIds,
+    displayConfig.featuredProductsMode
+  ]);
+
+  const displayedCompanies = React.useMemo(() => {
+    const hiddenSet = new Set(displayConfig.hiddenSupplierIds || []);
+    const visible = MOCK_COMPANIES.filter(c => !hiddenSet.has(c.id));
+    const pinnedIds = displayConfig.pinnedSupplierIds || [];
+    let ordered = visible;
+    if (pinnedIds.length > 0) {
+      const byId = new Map(visible.map(c => [c.id, c]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof visible;
+      const pinnedSet = new Set(pinned.map(c => c.id));
+      ordered = [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))];
+    }
+    return (showAllSuppliers ? ordered : ordered.slice(0, 6)).map(c =>
+      securityService.gateCompanyProfile(c, currentUser)
+    );
+  }, [currentUser, showAllSuppliers, displayConfig.pinnedSupplierIds, displayConfig.hiddenSupplierIds]);
 
   const curr =
     (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
@@ -207,9 +264,12 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       />
 
       {/* 1.5 ADMIN-PUBLISHED STOREFRONT BANNERS & ANNOUNCEMENTS */}
-      <PlatformAnnouncementBanner variant="hero-banner" onNavigate={onNavigate} />
+      {sectionVisibility.announcementBanner && (
+        <PlatformAnnouncementBanner variant="hero-banner" onNavigate={onNavigate} />
+      )}
 
       {/* 2. LATEST BUY OFFERS & GLOBAL RFQS FEED */}
+      {sectionVisibility.recentRfqs && (
       <section
         id="recent-rfqs-section"
         className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 space-y-5 shadow-2xs"
@@ -373,8 +433,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         )}
       </section>
+      )}
 
       {/* 3. FEATURED WHOLESALE PRODUCTS SHOWCASE */}
+      {sectionVisibility.featuredProducts && (
       <section
         id="featured-products-section"
         className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 space-y-5 shadow-2xs"
@@ -502,8 +564,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         )}
       </section>
+      )}
 
       {/* 4. VERIFIED B2B INDUSTRIES & CATEGORY SHOWCASE */}
+      {sectionVisibility.categoryShowcase && (
       <CategoryMegaMenu
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategoryFromMenu}
@@ -519,8 +583,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onNavigate={onNavigate}
         onOpenCreateRfq={onOpenCreateRfq}
       />
+      )}
 
       {/* 5. AUDITED GLOBAL MANUFACTURERS & SUPPLIERS SHOWCASE */}
+      {sectionVisibility.verifiedSuppliers && (
       <section className="bg-[#F8FAFC] text-slate-900 rounded-2xl p-5 sm:p-8 space-y-6 border border-slate-200 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
@@ -640,8 +706,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* 6. PARTNER ONBOARDING BANNER */}
+      {sectionVisibility.onboardingBanner && (
       <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 max-w-2xl text-center sm:text-left">
@@ -705,11 +773,15 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* 7. DYNAMIC FAQS ACCORDION */}
-      <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
+      {sectionVisibility.faqSection && (
+        <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
+      )}
 
       {/* 8. WHY CHOOSE TRADE HEAVEN & DIRECT DESK */}
+      {sectionVisibility.whyChooseSection && (
       <section className="bg-white text-slate-900 rounded-2xl p-6 sm:p-9 space-y-7 border border-slate-200 shadow-2xs">
         <div className="max-w-3xl space-y-2">
           <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
@@ -782,8 +854,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </a>
         </div>
       </section>
+      )}
 
       {/* 9. GLOBAL BUYERS & SUPPLIERS BY REGION BAR */}
+      {sectionVisibility.regionBar && (
       <SuppliersByRegionBar
         onSelectCountry={() => {
           onNavigate('COUNTRY_HUB');
@@ -794,6 +868,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
+      )}
     </div>
   );
 };

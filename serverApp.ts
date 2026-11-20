@@ -17343,11 +17343,13 @@ const serverBankRails = new TradeHeavenBankRailsClient([
     createdAt: new Date(Date.now() - 3600 * 1000 * 4).toISOString()
   }
 ]);
+let serverMediationUpdatedAt = 0;
 try {
   if (fs.existsSync(MEDIATION_STATE_FILE)) {
     const savedMed = JSON.parse(fs.readFileSync(MEDIATION_STATE_FILE, 'utf-8'));
     if (savedMed && Array.isArray(savedMed.wallets) && savedMed.wallets.length > 0) {
       serverMediationPool.hydrateFromSnapshot(savedMed);
+      serverMediationUpdatedAt = Number(savedMed.stateUpdatedAt || Date.now());
     }
   }
 } catch {}
@@ -17359,10 +17361,12 @@ const getServerMediationState = () => ({
   ledgerEntries: serverMediationPool.getLedgerEntries(),
   orders: serverMediationPool.getOrders(),
   payouts: serverBankRails.getPayouts(),
-  sqlLogs: serverMediationPool.getSqlLogs()
+  sqlLogs: serverMediationPool.getSqlLogs(),
+  stateUpdatedAt: serverMediationUpdatedAt
 });
 
 const persistServerMediationState = () => {
+  serverMediationUpdatedAt = Date.now();
   try {
     const dir = path.dirname(MEDIATION_STATE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -17372,6 +17376,7 @@ const persistServerMediationState = () => {
 
 // GET /api/v1/mediation/state - Get live wallets, double-entry ledger, escrow orders, and bank payouts
 app.get('/api/v1/mediation/state', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.json(getServerMediationState());
 });
 

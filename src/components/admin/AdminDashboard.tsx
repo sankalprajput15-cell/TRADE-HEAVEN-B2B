@@ -39,6 +39,7 @@ import {
 } from './ActiveUsersPanel';
 import { AdminBuyerChatDeskModule } from './AdminBuyerChatDeskModule';
 import { AdminWalletManagerModule } from './AdminWalletManagerModule';
+import { WholeSitePageControlCenter } from './WholeSitePageControlCenter';
 import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
@@ -83,6 +84,7 @@ import {
 
 export type AdminDashboardTabId = 
   | 'ADMIN_MENU_OVERVIEW'
+  | 'WHOLE_SITE_MANAGER'
   | 'ACTIVE_USERS'
   | 'BUYER_CHAT_DESK'
   | 'WALLET_MANAGER'
@@ -142,6 +144,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         // Define all valid tabs for strict validation
         const validTabs: string[] = [
           'ADMIN_MENU_OVERVIEW',
+          'WHOLE_SITE_MANAGER',
           'ACTIVE_USERS',
           'BUYER_CHAT_DESK',
           'WALLET_MANAGER',
@@ -157,6 +160,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         // Direct match
         if (validTabs.includes(normalized)) {
           return normalized as AdminDashboardTabId;
+        }
+        if (
+          normalized === 'WHOLE_SITE' ||
+          normalized === 'SITE_PAGES' ||
+          normalized === 'PAGE_MANAGER' ||
+          normalized === 'PAGES' ||
+          normalized === 'HOMEPAGE_MANAGER'
+        ) {
+          return 'WHOLE_SITE_MANAGER';
         }
         if (
           normalized === 'FINANCIAL_MANAGEMENT' ||
@@ -245,7 +257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
         
         const validTabs: string[] = [
-          'ADMIN_MENU_OVERVIEW', 'ACTIVE_USERS', 'BUYER_CHAT_DESK', 'WALLET_MANAGER', 'CLIENT_LISTING_OFFER_STUDIO',
+          'ADMIN_MENU_OVERVIEW', 'WHOLE_SITE_MANAGER', 'ACTIVE_USERS', 'BUYER_CHAT_DESK', 'WALLET_MANAGER', 'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
@@ -260,6 +272,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
 
         // Aliases
+        if (
+          normalized === 'WHOLE_SITE' ||
+          normalized === 'SITE_PAGES' ||
+          normalized === 'PAGE_MANAGER' ||
+          normalized === 'PAGES' ||
+          normalized === 'HOMEPAGE_MANAGER'
+        ) {
+          setActiveTab('WHOLE_SITE_MANAGER');
+          return;
+        }
         if (
           normalized === 'FINANCIAL_MANAGEMENT' ||
           normalized === 'FINANCIAL' ||
@@ -622,6 +644,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     icon: any;
   }> = [
     { id: 'ADMIN_MENU_OVERVIEW', label: '🏠 Admin Menu & Live Users', icon: Layout },
+    { id: 'WHOLE_SITE_MANAGER', label: '🗺️ Whole Site Page Manager', icon: Globe },
     { id: 'ACTIVE_USERS', label: '🟢 Active Users', icon: Users },
     { id: 'WALLET_MANAGER', label: '💰 Financial Management', icon: Wallet },
     { id: 'BUYER_CHAT_DESK', label: '💬 Buyer Identities & Live Chat Desk', icon: MessagesSquare },
@@ -1184,6 +1207,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               isTogglingAuthAlerts={isTogglingAuthAlerts}
               onRefresh={() => void fetchLiveActiveUsers()}
               onToggleAuthEmailAlerts={() => void handleToggleAuthEmailAlerts()}
+            />
+          </div>
+        )}
+
+        {activeTab === 'WHOLE_SITE_MANAGER' && (
+          <div className="space-y-4" data-testid="admin-whole-site-manager-section">
+            <WholeSitePageControlCenter
+              currentUser={effectiveAdminUser}
+              onNavigate={onNavigate}
+              onOpenAdminTab={tabId => handleSelectSidebarTab(tabId)}
             />
           </div>
         )}

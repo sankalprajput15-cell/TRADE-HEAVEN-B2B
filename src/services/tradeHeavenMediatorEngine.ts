@@ -535,7 +535,7 @@ export class TradeHeavenSqlPoolAdapter {
         company_name: 'MP Commodity Brokers Australia Pty Ltd',
         wallet_type: 'SUPPLIER',
         plan_status: 'BASIC',
-        available_balance: '424000000', // $50,000.00 USD (at 1 USD = 84.80 INR, 4,240,000 INR = 424,000,000 paise)
+        available_balance: '0', // $0.00 USD — $50,000.00 USD Returned Back (Ref: TH-WAL-301239)
         locked_balance: '0',
         currency: 'USD',
         country: 'United States',
@@ -636,6 +636,16 @@ export class TradeHeavenSqlPoolAdapter {
     ];
 
     this.ledgerEntries = [
+      {
+        id: 'led-melissa-return-50k',
+        reference_id: 'TH-WAL-301239',
+        source_wallet_id: 'wal-supp-melissa',
+        destination_wallet_id: null,
+        amount: '424000000',
+        transaction_type: 'ADMIN_WALLET_DEBIT',
+        notes: 'Return Back — $50,000.00 USD Removed from Melissa Prezios Wallet (Updated Balance: $0.00 USD)',
+        created_at: new Date(Date.now() - 3600 * 1000 * 1).toISOString()
+      },
       {
         id: 'led-melissa-topup-50k',
         reference_id: 'DEP-USD-50000-MELISSA',
@@ -1249,14 +1259,21 @@ export interface MediationSystemState {
   orders: MediatedEscrowOrder[];
   payouts: BankPayoutRecord[];
   sqlLogs: SqlTransactionLog[];
+  stateUpdatedAt?: number;
 }
 
 const WALLET_STATE_STORAGE_KEY = 'th_mediation_admin_state_v1';
+const WALLET_STATE_SCHEMA_VERSION = 2;
 
 const saveLocalMediationSnapshot = (state: MediationSystemState) => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(WALLET_STATE_STORAGE_KEY, JSON.stringify(state));
+    const payload = {
+      ...state,
+      stateUpdatedAt: Number(state.stateUpdatedAt || 0),
+      schemaVersion: WALLET_STATE_SCHEMA_VERSION
+    };
+    localStorage.setItem(WALLET_STATE_STORAGE_KEY, JSON.stringify(payload));
   } catch {}
 };
 
@@ -1266,24 +1283,34 @@ const readLocalMediationSnapshot = (): MediationSystemState | null => {
     const raw = localStorage.getItem(WALLET_STATE_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.wallets)) return parsed as MediationSystemState;
+    if (
+      parsed &&
+      Array.isArray(parsed.wallets) &&
+      parsed.schemaVersion === WALLET_STATE_SCHEMA_VERSION
+    ) {
+      return parsed as MediationSystemState;
+    }
   } catch {}
   return null;
 };
 
 const notifyMediationStateUpdated = (state: MediationSystemState): MediationSystemState => {
-  saveLocalMediationSnapshot(state);
+  const stamped: MediationSystemState = {
+    ...state,
+    stateUpdatedAt: Number(state.stateUpdatedAt || Date.now())
+  };
+  saveLocalMediationSnapshot(stamped);
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('tradeheaven_mediation_updated', { detail: state }));
+    window.dispatchEvent(new CustomEvent('tradeheaven_mediation_updated', { detail: stamped }));
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('th_mediation_wallet_sync');
-        bc.postMessage({ type: 'MEDIATION_UPDATED', at: Date.now() });
+        bc.postMessage({ type: 'MEDIATION_UPDATED', at: stamped.stateUpdatedAt });
         bc.close();
       }
     } catch {}
   }
-  return state;
+  return stamped;
 };
 
 export interface AdminWalletAdjustmentParams {
@@ -1316,33 +1343,55 @@ export const tradeHeavenMediationService = {
   assertVipForDirectSiteTransfer,
 
   async getState(): Promise<MediationSystemState> {
+    const cached = readLocalMediationSnapshot();
+    const cachedTs = Number(cached?.stateUpdatedAt || 0);
+    let serverData: MediationSystemState | null = null;
+    const bust = `t=${Date.now()}`;
+
     try {
-      const res = await fetch('/api/v1/mediation/state', { cache: 'no-store' });
+      const res = await fetch(`/api/v1/mediation/state?${bust}`, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
       if (res.ok) {
         const data = await res.json().catch(() => null);
-        if (data && Array.isArray(data.wallets) && data.wallets.length > 0) {
-          saveLocalMediationSnapshot(data);
-          localPool.hydrateFromSnapshot(data);
-          return data;
+        if (data && Array.isArray(data.wallets) && data.wallets.length > 0 && data.status !== 'fallback') {
+          serverData = data;
         }
       }
     } catch {
       // Fall through to PHP endpoint
     }
-    try {
-      const phpRes = await fetch('/api.php?action=mediation_state', { cache: 'no-store' });
-      if (phpRes.ok) {
-        const phpData = await phpRes.json().catch(() => null);
-        if (phpData && Array.isArray(phpData.wallets) && phpData.wallets.length > 0) {
-          saveLocalMediationSnapshot(phpData);
-          localPool.hydrateFromSnapshot(phpData);
-          return phpData;
+
+    if (!serverData) {
+      try {
+        const phpRes = await fetch(`/api.php?action=mediation_state&${bust}`, {
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        });
+        if (phpRes.ok) {
+          const phpData = await phpRes.json().catch(() => null);
+          if (phpData && Array.isArray(phpData.wallets) && phpData.wallets.length > 0) {
+            serverData = phpData;
+          }
         }
+      } catch {
+        // Fallback to local engine / cached snapshot
       }
-    } catch {
-      // Fallback to local engine / cached snapshot
     }
-    const cached = readLocalMediationSnapshot();
+
+    if (serverData) {
+      const serverTs = Number(serverData.stateUpdatedAt || 0);
+      // Only overwrite a locally persisted adjustment if the server has a real equal/newer timestamp
+      if (cached && cachedTs > 0 && serverTs < cachedTs) {
+        localPool.hydrateFromSnapshot(cached);
+        return cached;
+      }
+      saveLocalMediationSnapshot(serverData);
+      localPool.hydrateFromSnapshot(serverData);
+      return serverData;
+    }
+
     if (cached && cached.wallets.length > 0) {
       localPool.hydrateFromSnapshot(cached);
       return cached;
@@ -1352,7 +1401,8 @@ export const tradeHeavenMediationService = {
       ledgerEntries: [...localPool.getLedgerEntries()],
       orders: [...localPool.getOrders()],
       payouts: [...localBankRails.getPayouts()],
-      sqlLogs: [...localPool.getSqlLogs()]
+      sqlLogs: [...localPool.getSqlLogs()],
+      stateUpdatedAt: 0
     };
   },
 
@@ -1361,13 +1411,18 @@ export const tradeHeavenMediationService = {
       const res = await fetch('/api/v1/mediation/admin-adjust', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify(params)
       });
       const data = await res.json().catch(() => null);
-      if (res.ok && data?.success && data?.state) {
-        localPool.hydrateFromSnapshot(data.state);
-        notifyMediationStateUpdated(data.state);
-        return data as AdminWalletAdjustmentResult;
+      if (res.ok && data?.success && data?.state && data?.status !== 'fallback') {
+        const stampedState: MediationSystemState = {
+          ...data.state,
+          stateUpdatedAt: Number(data.state.stateUpdatedAt || Date.now())
+        };
+        localPool.hydrateFromSnapshot(stampedState);
+        notifyMediationStateUpdated(stampedState);
+        return { ...data, state: stampedState } as AdminWalletAdjustmentResult;
       }
       if (res.status >= 400 && res.status < 500 && data?.error) {
         throw new Error(data.error);
@@ -1383,13 +1438,18 @@ export const tradeHeavenMediationService = {
       const phpRes = await fetch('/api.php?action=mediation_admin_adjust', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify(params)
       });
       const phpData = await phpRes.json().catch(() => null);
       if (phpRes.ok && phpData?.success && phpData?.state) {
-        localPool.hydrateFromSnapshot(phpData.state);
-        notifyMediationStateUpdated(phpData.state);
-        return phpData as AdminWalletAdjustmentResult;
+        const stampedState: MediationSystemState = {
+          ...phpData.state,
+          stateUpdatedAt: Number(phpData.state.stateUpdatedAt || Date.now())
+        };
+        localPool.hydrateFromSnapshot(stampedState);
+        notifyMediationStateUpdated(stampedState);
+        return { ...phpData, state: stampedState } as AdminWalletAdjustmentResult;
       }
       if (phpRes.status >= 400 && phpRes.status < 500 && phpData?.error) {
         throw new Error(phpData.error);
@@ -1409,7 +1469,8 @@ export const tradeHeavenMediationService = {
       ledgerEntries: [...localPool.getLedgerEntries()],
       orders: [...localPool.getOrders()],
       payouts: [...localBankRails.getPayouts()],
-      sqlLogs: [...localPool.getSqlLogs()]
+      sqlLogs: [...localPool.getSqlLogs()],
+      stateUpdatedAt: Date.now()
     };
     notifyMediationStateUpdated(updatedState);
     return {

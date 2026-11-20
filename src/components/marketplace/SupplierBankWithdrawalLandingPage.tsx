@@ -155,18 +155,48 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
     loadState(true);
     const handleMediationUpdated = (e: Event) => {
       const customEvent = e as CustomEvent<MediationSystemState>;
-      if (customEvent.detail) {
+      if (customEvent.detail && customEvent.detail.wallets) {
         setState(customEvent.detail);
       } else {
         loadState(true);
       }
       setSavedBanks(getSavedSupplierBanks());
     };
+
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'th_mediation_admin_state_v1') {
+        loadState(true);
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_mediation_wallet_sync');
+        bc.onmessage = (event) => {
+          const payload = event.data as MediationSystemState | null;
+          if (payload && Array.isArray(payload.wallets)) {
+            setState(payload);
+            setSavedBanks(getSavedSupplierBanks());
+          } else {
+            loadState(true);
+          }
+        };
+      }
+    } catch {
+      // ignore unsupported BroadcastChannel
+    }
+
     window.addEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+    window.addEventListener('storage', handleStorageSync);
     return () => {
       window.removeEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+      window.removeEventListener('storage', handleStorageSync);
+      if (bc) {
+        try { bc.close(); } catch {}
+      }
     };
-  }, []);
+  }, [currentUser?.id, currentUser?.email]);
 
   const activeWallet: WalletRecord = useMemo(() => {
     const wallets = state?.wallets || [];

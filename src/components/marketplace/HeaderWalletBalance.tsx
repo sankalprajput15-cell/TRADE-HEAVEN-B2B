@@ -73,11 +73,43 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
       setTimeout(() => setPulseHighlight(false), 1200);
     };
 
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'th_mediation_admin_state_v1') {
+        loadWalletState(true);
+        setPulseHighlight(true);
+        setTimeout(() => setPulseHighlight(false), 1200);
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_mediation_wallet_sync');
+        bc.onmessage = (event) => {
+          const payload = event.data as MediationSystemState | null;
+          if (payload && Array.isArray(payload.wallets)) {
+            setState(payload);
+          } else {
+            loadWalletState(true);
+          }
+          setPulseHighlight(true);
+          setTimeout(() => setPulseHighlight(false), 1200);
+        };
+      }
+    } catch {
+      // ignore unsupported BroadcastChannel
+    }
+
     window.addEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+    window.addEventListener('storage', handleStorageSync);
     return () => {
       window.removeEventListener('tradeheaven_mediation_updated', handleMediationUpdated);
+      window.removeEventListener('storage', handleStorageSync);
+      if (bc) {
+        try { bc.close(); } catch {}
+      }
     };
-  }, []);
+  }, [currentUser.id, currentUser.email]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -105,7 +137,15 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
       if (companyLower && (wcomp === companyLower || wcomp.includes(companyLower) || companyLower.includes(wcomp))) return true;
       if (userNameLower && (wname === userNameLower || wname.includes(userNameLower))) return true;
       if (userEmailLower.includes('zac@otec.ltd') && eid.includes('zac')) return true;
-      if (userEmailLower.includes('melissa') && eid.includes('melissa')) return true;
+      if (
+        (userEmailLower.includes('melissa') ||
+          userIdLower.includes('melissa') ||
+          userNameLower.includes('melissa') ||
+          companyLower.includes('mp commodity')) &&
+        (eid.includes('melissa') || eid.includes('mpcommodity') || w.id === 'wal-supp-melissa')
+      ) {
+        return true;
+      }
       return false;
     });
     if (matched) return matched;
@@ -192,7 +232,15 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
         {/* Compact Toggle Pill Button */}
         <button
           type="button"
-          onClick={() => setPopoverOpen(prev => !prev)}
+          onClick={() => {
+            setPopoverOpen(prev => {
+              const next = !prev;
+              if (next) {
+                loadWalletState(true);
+              }
+              return next;
+            });
+          }}
           className={`h-8 sm:h-9 p-1 sm:pr-2.5 rounded-full border flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer shadow-2xs group active:scale-95 bg-white ${
             pulseHighlight
               ? 'border-emerald-500 ring-2 ring-emerald-500/20'
