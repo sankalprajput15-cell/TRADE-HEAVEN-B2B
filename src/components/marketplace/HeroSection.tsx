@@ -776,6 +776,26 @@ export const HeroSection: React.FC<Props> = ({
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('searchSuppliersTab')}</span>
               </button>
+
+              <button
+                role="button"
+                type="button"
+                onClick={() => {
+                  setSearchTargetMode('RFQS');
+                  setActiveFilter('RFQS');
+                  setIsSearchPopoverOpen(false);
+                  if (onNavigate) {
+                    onNavigate('RFQ_HUB');
+                  } else {
+                    onOpenCreateRfq();
+                  }
+                }}
+                className="px-3 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 text-emerald-700 bg-emerald-50/90 hover:bg-emerald-600 hover:text-white border border-emerald-200/80"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span>Verified Buyers</span>
+                <ArrowRight className="w-3 h-3 shrink-0" />
+              </button>
             </div>
 
             <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-600">
