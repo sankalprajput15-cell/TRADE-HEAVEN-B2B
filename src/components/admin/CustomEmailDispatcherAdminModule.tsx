@@ -1153,7 +1153,8 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       if (resolvedEntries.length === 0) {
         try {
           const phpRes = await fetch('/api.php?action=get_email_history', {
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
           });
           if (phpRes.ok) {
             const phpData = await phpRes.json().catch(() => null);
@@ -1162,6 +1163,25 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
               if (phpData.mailSuiteStats || phpData.analytics) {
                 resolvedStats = phpData.mailSuiteStats || phpData.analytics;
               }
+            }
+          }
+        } catch {
+          // ignore offline
+        }
+      }
+
+      // 3. Static mailsuite telemetry fallback (ensures all 200+ emails appear in Chrome even if PHP/Node API is unreachable)
+      if (resolvedEntries.length === 0) {
+        try {
+          const staticRes = await fetch(`/assets/uploads/mailsuite-telemetry-state.json?t=${Date.now()}`, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+          });
+          if (staticRes.ok) {
+            const staticData = await staticRes.json().catch(() => null);
+            const staticList = staticData?.emailHistoryLog || staticData?.history || [];
+            if (Array.isArray(staticList) && staticList.length > 0) {
+              resolvedEntries = staticList;
             }
           }
         } catch {
@@ -1987,7 +2007,10 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         }
         setHistory(prev => [...itemsToAdd, ...prev]);
 
-        // Notify other open Chrome windows / tabs immediately
+        // Notify other open Chrome windows / tabs AND same-tab email dashboards immediately
+        try {
+          window.dispatchEvent(new Event('tradeheaven_email_history_updated'));
+        } catch {}
         try {
           if (typeof BroadcastChannel !== 'undefined') {
             const bc = new BroadcastChannel('th_admin_email_history_sync');

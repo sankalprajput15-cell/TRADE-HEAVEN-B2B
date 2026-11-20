@@ -1103,6 +1103,22 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'forgot_password';
     } elseif (strpos($clean_route, 'auth/reset-password') !== false) {
         $raw_action = 'reset_password';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/state') !== false) {
+        $raw_action = 'marketing_suite_state';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/automation-rules') !== false) {
+        $raw_action = 'marketing_suite_rules';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/trigger-campaign') !== false) {
+        $raw_action = 'marketing_suite_trigger';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/simulate-tracking') !== false || strpos($clean_route, 'admin/mailsuite/simulate-batch') !== false) {
+        $raw_action = 'marketing_suite_simulate';
+    } elseif (strpos($clean_route, 'admin/mailsuite/analytics') !== false) {
+        $raw_action = 'mailsuite_analytics';
+    } elseif (strpos($clean_route, 'admin/mailsuite/simulate-event') !== false || strpos($clean_route, 'admin/mailsuite/webhook') !== false || strpos($clean_route, 'webhooks/smtp-delivery') !== false) {
+        $raw_action = 'mailsuite_webhook';
+    } elseif (strpos($clean_route, 'admin/email-history') !== false) {
+        $raw_action = 'get_email_history';
+    } elseif (strpos($clean_route, 'admin/send-custom-email') !== false) {
+        $raw_action = 'send_custom_email';
     } elseif (strpos($clean_route, 'admin/users') !== false || strpos($clean_route, 'get-users') !== false) {
         $raw_action = 'get_users';
     } elseif (strpos($clean_route, 'deployment/health') !== false) {
@@ -1159,6 +1175,22 @@ if (empty($raw_action)) {
             $raw_action = 'flash_deals';
         } elseif (strpos($sub, 'stats') !== false) {
             $raw_action = 'stats';
+        } elseif (strpos($sub, 'admin/marketing-suite/state') !== false) {
+            $raw_action = 'marketing_suite_state';
+        } elseif (strpos($sub, 'admin/marketing-suite/automation-rules') !== false) {
+            $raw_action = 'marketing_suite_rules';
+        } elseif (strpos($sub, 'admin/marketing-suite/trigger-campaign') !== false) {
+            $raw_action = 'marketing_suite_trigger';
+        } elseif (strpos($sub, 'admin/marketing-suite/simulate-tracking') !== false || strpos($sub, 'admin/mailsuite/simulate-batch') !== false) {
+            $raw_action = 'marketing_suite_simulate';
+        } elseif (strpos($sub, 'admin/mailsuite/analytics') !== false) {
+            $raw_action = 'mailsuite_analytics';
+        } elseif (strpos($sub, 'admin/mailsuite/simulate-event') !== false || strpos($sub, 'admin/mailsuite/webhook') !== false || strpos($sub, 'webhooks/smtp-delivery') !== false) {
+            $raw_action = 'mailsuite_webhook';
+        } elseif (strpos($sub, 'admin/email-history') !== false) {
+            $raw_action = 'get_email_history';
+        } elseif (strpos($sub, 'admin/send-custom-email') !== false) {
+            $raw_action = 'send_custom_email';
         } elseif (strpos($sub, 'admin/users') !== false) {
             $raw_action = 'get_users';
         } else {
@@ -4003,12 +4035,478 @@ switch ($action) {
 
     case 'get_email_history':
     case 'email_history':
-        $history_file = __DIR__ . '/assets/uploads/email-history.json';
-        $all_entries = [];
-        if (file_exists($history_file)) {
-            $decoded = json_decode((string)@file_get_contents($history_file), true);
-            if (is_array($decoded)) $all_entries = $decoded;
+    case 'mailsuite_analytics':
+    case 'marketing_suite_state':
+    case 'marketing_suite_rules':
+    case 'marketing_suite_trigger':
+    case 'marketing_suite_simulate':
+    case 'mailsuite_webhook':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
         }
+        $history_file = $uploads_dir . '/email-history.json';
+        $telemetry_file = $uploads_dir . '/mailsuite-telemetry-state.json';
+        $rules_file = $uploads_dir . '/marketing-suite-rules.json';
+
+        $load_telemetry = function () use ($history_file, $telemetry_file) {
+            $combined = [];
+            $seen = [];
+            $webhook_logs = [];
+
+            $push_entry = function ($item) use (&$combined, &$seen) {
+                if (!is_array($item)) return;
+                $rec = strtolower(trim((string)($item['recipient'] ?? $item['recipientEmail'] ?? '')));
+                if ($rec === '') return;
+                if (empty($item['recipient'])) $item['recipient'] = $rec;
+                if (empty($item['recipientEmail'])) $item['recipientEmail'] = $rec;
+                $id_key = !empty($item['id']) ? ('id:' . strtolower((string)$item['id'])) : '';
+                $trk_key = !empty($item['trackingId']) ? ('trk:' . strtolower((string)$item['trackingId'])) : '';
+                $msg_key = !empty($item['messageId']) ? ('msg:' . strtolower((string)$item['messageId']) . '|' . $rec) : '';
+                if (($id_key && isset($seen[$id_key])) || ($trk_key && isset($seen[$trk_key])) || ($msg_key && isset($seen[$msg_key]))) {
+                    return;
+                }
+                if ($id_key) $seen[$id_key] = true;
+                if ($trk_key) $seen[$trk_key] = true;
+                if ($msg_key) $seen[$msg_key] = true;
+                $combined[] = $item;
+            };
+
+            if (file_exists($history_file)) {
+                $decoded = json_decode((string)@file_get_contents($history_file), true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $row) $push_entry($row);
+                }
+            }
+            if (file_exists($telemetry_file)) {
+                $t_decoded = json_decode((string)@file_get_contents($telemetry_file), true);
+                if (is_array($t_decoded)) {
+                    $log_list = $t_decoded['emailHistoryLog'] ?? $t_decoded['history'] ?? $t_decoded['entries'] ?? [];
+                    if (is_array($log_list)) {
+                        foreach ($log_list as $row) $push_entry($row);
+                    }
+                    if (!empty($t_decoded['smtpWebhookLogs']) && is_array($t_decoded['smtpWebhookLogs'])) {
+                        $webhook_logs = $t_decoded['smtpWebhookLogs'];
+                    }
+                }
+            }
+
+            usort($combined, function ($a, $b) {
+                return strtotime((string)($b['dispatchedAt'] ?? '')) <=> strtotime((string)($a['dispatchedAt'] ?? ''));
+            });
+
+            return ['history' => $combined, 'webhookLogs' => $webhook_logs];
+        };
+
+        $compute_summary = function ($list) {
+            $total_sent = count($list);
+            $delivered = 0;
+            $failed = 0;
+            $opened = 0;
+            $total_opens = 0;
+            $clicked = 0;
+            $total_clicks = 0;
+            $recent_events = [];
+            foreach ($list as $it) {
+                $is_ok = !empty($it['success']) && strtoupper((string)($it['mailSuiteStatus'] ?? '')) !== 'BOUNCED';
+                if ($is_ok) $delivered++;
+                else $failed++;
+                $oc = intval($it['openCount'] ?? 0);
+                if (!empty($it['opened']) || $oc > 0) {
+                    $opened++;
+                    $total_opens += max(1, $oc);
+                }
+                $cc = intval($it['clickCount'] ?? 0);
+                if (!empty($it['clicked']) || $cc > 0) {
+                    $clicked++;
+                    $total_clicks += max(1, $cc);
+                }
+                if (count($recent_events) < 25) {
+                    $recent_events[] = [
+                        'id' => (string)($it['id'] ?? ''),
+                        'trackingId' => (string)($it['trackingId'] ?? ''),
+                        'recipient' => (string)($it['recipient'] ?? ''),
+                        'type' => (!empty($it['clicked']) || $cc > 0) ? 'CLICK' : ((!empty($it['opened']) || $oc > 0) ? 'OPEN' : ($is_ok ? 'DELIVERED' : 'BOUNCED')),
+                        'timestamp' => (string)($it['lastClickedAt'] ?? $it['lastOpenedAt'] ?? $it['dispatchedAt'] ?? gmdate('Y-m-d\TH:i:s\Z'))
+                    ];
+                }
+            }
+            $denom = max(1, $delivered);
+            $open_rate = $delivered > 0 ? round(($opened / $denom) * 100, 1) : 0;
+            $click_rate = $delivered > 0 ? round(($clicked / $denom) * 100, 1) : 0;
+            $ctor = $opened > 0 ? round(($clicked / max(1, $opened)) * 100, 1) : 0;
+
+            return [
+                'totalSent' => $total_sent,
+                'totalTracked' => $total_sent,
+                'totalDelivered' => $delivered,
+                'totalBounced' => $failed,
+                'totalOpened' => $opened,
+                'unopenedCount' => max(0, $delivered - $opened),
+                'openRatePercent' => $open_rate,
+                'totalOpensCount' => $total_opens,
+                'totalClicked' => $clicked,
+                'clickRatePercent' => $click_rate,
+                'clickThroughRatePercent' => $click_rate,
+                'clickToOpenRatePercent' => $ctor,
+                'totalClicksCount' => $total_clicks,
+                'recentEvents' => $recent_events
+            ];
+        };
+
+        $default_failed_ad_users = [
+            [
+                'id' => 'fad-zac-otec-001',
+                'recipientName' => 'Zachary Aldin (Zac)',
+                'decisionMakerName' => 'Zachary Aldin (Zac)',
+                'email' => 'zac@otec.ltd',
+                'companyName' => 'IMPORTATION FADE-TECH (OTEC LTD)',
+                'country' => 'Australia',
+                'address' => '42a Bassett street hurstville, New South Wales 2220, Australia',
+                'phone' => '+61 424 854 899',
+                'invoiceRef' => 'TRD-INV-27-0004',
+                'currentPlanName' => 'Free Tier Member (Reverted from Partial $400 Basic Plan)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990 Diwali Offer) / VIP Upgrade',
+                'amountPaidUsd' => 400,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 590,
+                'failedCampaignId' => 'ADS-COAL-AU-2026',
+                'failedCampaignName' => 'Global Coal Buyer Acquisition & Sponsored Banner Campaign (GAR 6000-6500 kcal/kg)',
+                'failureReason' => 'Moved to Free Tier Member pending clearance of $590.00 USD Basic Plan balance payment (Ref: TRD-INV-27-0004)',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 1500),
+                'accountStatus' => 'FOLLOWUP_SENT',
+                'followUpCount' => 2,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 120),
+                'lastTrackingId' => 'ms-trk-zac-balance-fund-live-2026',
+                'recommendedTemplateId' => 'tpl-failed-ads-diwali-combo'
+            ],
+            [
+                'id' => 'fad-ali-ace-002',
+                'recipientName' => 'Ali Charley Ezekiah',
+                'decisionMakerName' => 'Ali Charley Ezekiah',
+                'email' => 'ezekiahali355@gmail.com',
+                'companyName' => 'ACE Intermediary',
+                'country' => 'United States',
+                'address' => '1241 Hackberry Avenue Corsicana Texas 75110',
+                'phone' => '+1 (903) 555-0141',
+                'invoiceRef' => 'TRD-INV-27-0018',
+                'currentPlanName' => 'Basic Business Plan (Renewal Pending)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990/yr Diwali Offer)',
+                'amountPaidUsd' => 0,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 990,
+                'failedCampaignId' => 'ADS-US-COMMODITY-2026',
+                'failedCampaignName' => 'North American Wholesale Commodity Spotlight & Buyer RFQ Broadcast',
+                'failureReason' => 'Annual Basic Plan Renewal Pending: Sponsored ad slot paused until $990/yr Diwali Offer settlement',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 5700),
+                'accountStatus' => 'FOLLOWUP_SENT',
+                'followUpCount' => 1,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 2520),
+                'lastTrackingId' => 'ms-trk-ace-renewal-2026',
+                'recommendedTemplateId' => 'tpl-diwali-festival-offer'
+            ],
+            [
+                'id' => 'fad-mark-atlantic-003',
+                'recipientName' => 'Mark Johnson (President)',
+                'decisionMakerName' => 'Mark Johnson (President)',
+                'email' => 'mjohnson@atlanticpowerequip.com',
+                'companyName' => 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+                'country' => 'United States',
+                'address' => 'P.O. Box 1176, Marmora, New Jersey 08223, USA',
+                'phone' => '+1-609-374-5131',
+                'invoiceRef' => 'TRD-INV-27-0029',
+                'currentPlanName' => 'Basic Business Plan',
+                'targetFullPlanName' => 'VIP Business Plan ($5,490/yr Diwali Offer — 100% Advance Leads)',
+                'amountPaidUsd' => 1100,
+                'standardPlanUsd' => 6100,
+                'diwaliOfferPlanUsd' => 5490,
+                'remainingBalanceUsd' => 4390,
+                'failedCampaignId' => 'ADS-CA-10GEN-VIP-2026',
+                'failedCampaignName' => '10 Units CAT Diesel Generators to Canada (VIP 100% Advance Buyer Campaign)',
+                'failureReason' => 'Tier Restriction: Basic Plan cannot run VIP 100% Advance Payment Generator Ad Campaign',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 10800),
+                'accountStatus' => 'AD_HALTED',
+                'followUpCount' => 1,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 7200),
+                'recommendedTemplateId' => 'tpl-subscription-upsell-vip'
+            ],
+            [
+                'id' => 'fad-donald-berries-004',
+                'recipientName' => 'Donald Sorkin',
+                'decisionMakerName' => 'Donald Sorkin',
+                'email' => 'sorkindon@gmail.com',
+                'companyName' => 'Girlsenberries',
+                'country' => 'United States',
+                'address' => 'California Agricultural Export Zone, USA',
+                'phone' => '+1 (559) 555-0182',
+                'invoiceRef' => 'TRD-INV-27-0041',
+                'currentPlanName' => 'Basic Starter Deposit ($350 Paid)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990 Diwali 10% OFF)',
+                'amountPaidUsd' => 350,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 640,
+                'failedCampaignId' => 'ADS-AGRI-BERRIES-2026',
+                'failedCampaignName' => 'Global Frozen & Dried Berries Importer Matching Ad Campaign (#INQ-2026-US-8942)',
+                'failureReason' => 'Insufficient Plan Balance: $350 partial deposit paid; $640 balance required for Full Plan ad launch',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 14400),
+                'accountStatus' => 'PAUSE_WARNING_48H',
+                'followUpCount' => 0,
+                'recommendedTemplateId' => 'tpl-failed-ads-diwali-combo'
+            ]
+        ];
+
+        $default_marketing_templates = [
+            [
+                'id' => 'tpl-failed-ads-diwali-combo',
+                'name' => 'Failed Ad Launch + Full Plan Balance + Diwali Max Benefit',
+                'category' => 'FAILED_AD_RECOVERY',
+                'badge' => 'PRIMARY WORKFLOW • ZAC ($400 PAID)',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Urgent: Ads Campaign Failed (Insufficient Plan Balance — ${{amountPaidUsd}} Paid) • Complete Full Plan + Diwali Max Benefit Offer for {{companyName}}',
+                'description' => 'Notifies users whose sponsored ads campaign failed due to partial plan payment. Explains the 48-hour account pause policy and offers the Diwali 10% OFF Max Benefit ($590 net balance after $400 credit).',
+                'highlights' => [
+                    'Diagnostic breakdown of why Sponsored Ads Campaign halted',
+                    '100% credit of partial payment ($400 Paid) + Flat 10% Diwali Discount (Code: DIWALI10)',
+                    'Clear 48-hour Account Pause warning if Full Plan balance ($590 USD) is not settled',
+                    'Direct 1-click checkout CTA + MailSuite 1x1 pixel & link click tracking'
+                ],
+                'ctaLabel' => 'Complete Full Plan (${{remainingBalanceUsd}} USD with Diwali Offer) & Relaunch Ads →'
+            ],
+            [
+                'id' => 'tpl-diwali-festival-offer',
+                'name' => 'Diwali Maha Utsav Festival Offer (Flat 10% OFF + Priority Ad Boost)',
+                'category' => 'DIWALI_OFFER',
+                'badge' => 'FESTIVAL CAMPAIGN • CODE: DIWALI10',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Diwali Maha Utsav Special Offer (Flat 10% OFF — Code: DIWALI10): Unlock Maximum Buyer Leads & Resume Sponsored Ads for {{companyName}}',
+                'description' => 'High-converting festive promotion offering Flat 10% OFF across Basic ($990/yr), Premium ($1,890/yr), and VIP ($5,490/yr) annual plans with complimentary Sponsored Ad Banner impressions.',
+                'highlights' => [
+                    'Flat 10% Festival Discount across all annual membership tiers (Code: DIWALI10)',
+                    'Complimentary 2x Marketplace Banner Ads + Priority Buyer RFQ Matching',
+                    'Full credit of any prior deposit toward annual plan settlement',
+                    'Instant activation of verified buyer inquiry routing'
+                ],
+                'ctaLabel' => 'Claim Diwali 10% OFF Offer (Code: DIWALI10) & Activate Ads →'
+            ],
+            [
+                'id' => 'tpl-subscription-upsell-vip',
+                'name' => 'Subscription Upsell: Basic / Partial Plan → Full VIP Business Plan',
+                'category' => 'SUBSCRIPTION_UPSELL',
+                'badge' => 'VIP UPSELL • 100% ADVANCE BUYERS',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Upgrade {{companyName}} to VIP Business Plan (10% Diwali Offer) — Unlock 4x Sponsored Ad Campaigns & 100% Advance Payment Buyer Leads',
+                'description' => 'Upsells Basic or partial-plan suppliers to the Full VIP Business Plan ($5,490/yr with DIWALI10 vs $6,100/yr), unlocking 60+ verified buyers/month and 4x Sponsored Ads.',
+                'highlights' => [
+                    'Unlock 60+ Verified International Buyer Orders/Month with Advance Payment terms',
+                    '4x Marketplace Spotlight Banner Ads + Dedicated International Export Manager (IEM)',
+                    'Enable Direct On-Site Buyer Funds Receiving & Mediation Escrow Wallet',
+                    'Save $610 USD immediately with Diwali Code DIWALI10 + prior deposit credit'
+                ],
+                'ctaLabel' => 'Upgrade to Full VIP Plan & Unlock 100% Advance Buyers →'
+            ],
+            [
+                'id' => 'tpl-account-pause-prevention',
+                'name' => 'Final 48-Hour Account Pause Warning & Ad Reactivation Notice',
+                'category' => 'PAUSE_PREVENTION',
+                'badge' => 'URGENT COMPLIANCE • 48H HOLD NOTICE',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'FINAL NOTICE: {{companyName}} Storefront & Ad Campaign Scheduled for Account Pause — Settle ${{remainingBalanceUsd}} USD Balance Now',
+                'description' => 'Urgent compliance follow-up for accounts with halted ad campaigns offering a final 48-hour window with Diwali discount protection.',
+                'highlights' => [
+                    'Urgent 48-hour countdown before supplier storefront and RFQ routing are paused',
+                    'Itemized invoice ledger showing amount paid vs. net balance due',
+                    'Preserves Diwali 10% OFF rate ($990/yr Basic Plan) if settled before pause deadline',
+                    'Immediate automated ad campaign reactivation upon payment confirmation'
+                ],
+                'ctaLabel' => 'Prevent Account Pause & Settle ${{remainingBalanceUsd}} USD Balance →'
+            ]
+        ];
+
+        $default_rules = [
+            'autoTriggerOnFailedAdLaunch' => true,
+            'autoAttachDiwaliPromo' => true,
+            'requireAdminDemoFirst' => true,
+            'defaultTemplateId' => 'tpl-failed-ads-diwali-combo',
+            'sendAdminCopyOnLiveDispatch' => true,
+            'adminNotificationEmail' => 'yr943334@gmail.com',
+            'webhookTrackingEnabled' => true,
+            'pixelTrackingEnabled' => true
+        ];
+        if (file_exists($rules_file)) {
+            $saved_rules = json_decode((string)@file_get_contents($rules_file), true);
+            if (is_array($saved_rules)) {
+                $default_rules = array_merge($default_rules, $saved_rules);
+            }
+        }
+
+        if ($action === 'marketing_suite_rules') {
+            if (is_array($input) && !empty($input)) {
+                $default_rules = array_merge($default_rules, $input);
+                $default_rules['updatedAt'] = gmdate('Y-m-d\TH:i:s\Z');
+                @file_put_contents($rules_file, json_encode($default_rules, JSON_PRETTY_PRINT), LOCK_EX);
+            }
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'automationRules' => $default_rules,
+                'message' => 'Automation rules updated.'
+            ]);
+            break;
+        }
+
+        if ($action === 'marketing_suite_trigger') {
+            $user_ids = isset($input['userIds']) && is_array($input['userIds']) ? $input['userIds'] : ['fad-zac-otec-001'];
+            $is_demo = !empty($input['isDemoOnAdmin']);
+            $demo_email = normalizeAuthEmail($input['demoAdminEmail'] ?? 'yr943334@gmail.com');
+            $tpl_id = trim((string)($input['templateId'] ?? 'tpl-failed-ads-diwali-combo'));
+            $tpl = $default_marketing_templates[0];
+            foreach ($default_marketing_templates as $t_item) {
+                if ($t_item['id'] === $tpl_id) { $tpl = $t_item; break; }
+            }
+            $existing_hist = [];
+            if (file_exists($history_file)) {
+                $dec = json_decode((string)@file_get_contents($history_file), true);
+                if (is_array($dec)) $existing_hist = $dec;
+            }
+            $sent_count = 0;
+            foreach ($default_failed_ad_users as $u) {
+                if (!in_array($u['id'], $user_ids, true) && !in_array($u['email'], $user_ids, true)) continue;
+                $target_email = $is_demo ? $demo_email : $u['email'];
+                $subj = str_replace(
+                    ['{{companyName}}', '{{amountPaidUsd}}', '{{remainingBalanceUsd}}'],
+                    [$u['companyName'], (string)$u['amountPaidUsd'], (string)$u['remainingBalanceUsd']],
+                    $tpl['subjectTemplate']
+                );
+                if ($is_demo) $subj = '[ADMIN DEMO] ' . $subj;
+                $body_html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;"><h2 style="color:#0f294d;margin-top:0;">' . htmlspecialchars($tpl['name'], ENT_QUOTES, 'UTF-8') . '</h2><p>Dear ' . htmlspecialchars($u['recipientName'], ENT_QUOTES, 'UTF-8') . ' (' . htmlspecialchars($u['companyName'], ENT_QUOTES, 'UTF-8') . '),</p><p>' . htmlspecialchars($tpl['description'], ENT_QUOTES, 'UTF-8') . '</p><p><strong>Amount Paid:</strong> $' . intval($u['amountPaidUsd']) . ' USD &bull; <strong>Remaining Balance (Code ' . htmlspecialchars($tpl['promoCode'], ENT_QUOTES, 'UTF-8') . '):</strong> $' . intval($u['remainingBalanceUsd']) . ' USD</p><p><a href="https://www.tradeheaven.net" style="display:inline-block;padding:12px 20px;background:#0f294d;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">' . htmlspecialchars(str_replace('{{remainingBalanceUsd}}', (string)$u['remainingBalanceUsd'], $tpl['ctaLabel']), ENT_QUOTES, 'UTF-8') . '</a></p></div></body></html>';
+                $hdrs = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Trade Heaven Global B2B <noreply@tradeheaven.net>\r\nReply-To: help@tradeheaven.net";
+                $ok = @mail($target_email, '=?UTF-8?B?' . base64_encode($subj) . '?=', $body_html, $hdrs, '-f noreply@tradeheaven.net');
+                if (!$ok) $ok = @mail($target_email, '=?UTF-8?B?' . base64_encode($subj) . '?=', $body_html, $hdrs);
+                array_unshift($existing_hist, [
+                    'id' => 'eh-php-cmp-' . time() . '-' . substr(md5($target_email . uniqid('', true)), 0, 6),
+                    'trackingId' => 'ms-trk-php-cmp-' . dechex(time()) . '-' . substr(md5($target_email . uniqid('', true)), 0, 6),
+                    'recipient' => $target_email,
+                    'recipientEmail' => $target_email,
+                    'recipientName' => $is_demo ? ('Admin Demo (' . $u['recipientName'] . ')') : $u['recipientName'],
+                    'companyName' => $u['companyName'],
+                    'subject' => $subj,
+                    'category' => 'CAMPAIGN',
+                    'dispatchType' => 'AUTOMATED',
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'dispatchedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                    'success' => (bool)$ok,
+                    'summaryText' => $tpl['description'],
+                    'htmlPreview' => $body_html,
+                    'opened' => false,
+                    'openCount' => 0,
+                    'clicked' => false,
+                    'clickCount' => 0,
+                    'mailSuiteStatus' => $ok ? 'DELIVERED' : 'BOUNCED',
+                    'trackingEnabled' => true
+                ]);
+                $sent_count++;
+            }
+            @file_put_contents($history_file, json_encode(array_slice($existing_hist, 0, 1000), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+            $tel = $load_telemetry();
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'message' => 'Triggered campaign for ' . $sent_count . ' recipient(s) via Trade Heaven Mail Server.',
+                'failedAdUsers' => $default_failed_ad_users,
+                'templates' => $default_marketing_templates,
+                'campaigns' => [],
+                'summary' => $compute_summary($tel['history']),
+                'history' => $tel['history'],
+                'webhookLogs' => $tel['webhookLogs']
+            ]);
+            break;
+        }
+
+        $tel = $load_telemetry();
+        $all_entries = $tel['history'];
+        $webhook_logs = $tel['webhookLogs'];
+
+        if ($action === 'marketing_suite_simulate' || $action === 'mailsuite_webhook') {
+            $sim_action = strtoupper(trim((string)($input['action'] ?? $input['eventType'] ?? 'BATCH_OPENS')));
+            $target_trk = trim((string)($input['trackingId'] ?? ''));
+            $now_ts = gmdate('Y-m-d\TH:i:s\Z');
+            $affected = 0;
+            $updated_hist = $all_entries;
+            foreach ($updated_hist as &$row) {
+                if ($target_trk !== '' && (string)($row['trackingId'] ?? '') !== $target_trk && (string)($row['id'] ?? '') !== $target_trk) {
+                    continue;
+                }
+                if ($sim_action === 'OPENED' || $sim_action === 'OPEN' || $sim_action === 'BATCH_OPENS') {
+                    $row['opened'] = true;
+                    $row['openCount'] = intval($row['openCount'] ?? 0) + 1;
+                    $row['lastOpenedAt'] = $now_ts;
+                    $row['mailSuiteStatus'] = !empty($row['clicked']) ? 'CLICKED' : 'OPENED';
+                    $affected++;
+                } elseif ($sim_action === 'CLICKED' || $sim_action === 'CLICK' || $sim_action === 'BATCH_CLICKS') {
+                    $row['opened'] = true;
+                    $row['openCount'] = max(1, intval($row['openCount'] ?? 0));
+                    $row['clicked'] = true;
+                    $row['clickCount'] = intval($row['clickCount'] ?? 0) + 1;
+                    $row['lastClickedAt'] = $now_ts;
+                    $row['mailSuiteStatus'] = 'CLICKED';
+                    $affected++;
+                } elseif ($sim_action === 'BOUNCED' || $sim_action === 'SIMULATE_BOUNCE') {
+                    $row['success'] = false;
+                    $row['mailSuiteStatus'] = 'BOUNCED';
+                    $affected++;
+                } elseif ($sim_action === 'ALL_DELIVERED' || $sim_action === 'DELIVERED') {
+                    $row['success'] = true;
+                    if (empty($row['opened']) && empty($row['clicked'])) $row['mailSuiteStatus'] = 'DELIVERED';
+                    $affected++;
+                } elseif ($sim_action === 'RESET_ALL') {
+                    $row['opened'] = false;
+                    $row['openCount'] = 0;
+                    $row['clicked'] = false;
+                    $row['clickCount'] = 0;
+                    $row['mailSuiteStatus'] = !empty($row['success']) ? 'DELIVERED' : 'BOUNCED';
+                    $affected++;
+                }
+                if ($target_trk === '' && $affected >= 5 && in_array($sim_action, ['BATCH_OPENS', 'BATCH_CLICKS', 'SIMULATE_BOUNCE'], true)) {
+                    break;
+                }
+            }
+            unset($row);
+            @file_put_contents($history_file, json_encode(array_slice($updated_hist, 0, 1000), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'message' => 'Recorded tracking event ' . $sim_action . ' (' . $affected . ' updated).',
+                'affectedCount' => $affected,
+                'summary' => $compute_summary($updated_hist),
+                'history' => $updated_hist,
+                'webhookLogs' => $webhook_logs,
+                'campaigns' => []
+            ]);
+            break;
+        }
+
+        if ($action === 'marketing_suite_state') {
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'failedAdUsers' => $default_failed_ad_users,
+                'templates' => $default_marketing_templates,
+                'automationRules' => $default_rules,
+                'campaigns' => [],
+                'summary' => $compute_summary($all_entries),
+                'history' => $all_entries,
+                'webhookLogs' => $webhook_logs
+            ]);
+            break;
+        }
+
         $filter_email = strtolower(trim((string)($_GET['email'] ?? $input['email'] ?? '')));
         $filter_company = strtolower(trim((string)($_GET['companyName'] ?? $input['companyName'] ?? '')));
         $filter_company_id = strtolower(trim((string)($_GET['companyId'] ?? $input['companyId'] ?? '')));
@@ -4039,37 +4537,14 @@ switch ($action) {
             $filtered[] = $item;
         }
 
-        usort($filtered, function ($a, $b) {
-            return strtotime((string)($b['dispatchedAt'] ?? '')) <=> strtotime((string)($a['dispatchedAt'] ?? ''));
-        });
-
         $total_count = count($filtered);
-        $delivered_count = 0;
-        $failed_count = 0;
-        $opened_count = 0;
-        $clicked_count = 0;
         $manual_count = 0;
         $automated_count = 0;
         foreach ($filtered as $it) {
-            if (!empty($it['success'])) $delivered_count++;
-            else $failed_count++;
-            if (!empty($it['opened']) || intval($it['openCount'] ?? 0) > 0) $opened_count++;
-            if (!empty($it['clicked']) || intval($it['clickCount'] ?? 0) > 0) $clicked_count++;
             if (strtoupper((string)($it['dispatchType'] ?? 'MANUAL')) === 'AUTOMATED') $automated_count++;
             else $manual_count++;
         }
-        $open_rate = $delivered_count > 0 ? round(($opened_count / $delivered_count) * 100, 1) : 0;
-        $click_rate = $delivered_count > 0 ? round(($clicked_count / $delivered_count) * 100, 1) : 0;
-
-        $summary = [
-            'totalTracked' => $total_count,
-            'totalDelivered' => $delivered_count,
-            'totalBounced' => $failed_count,
-            'totalOpened' => $opened_count,
-            'totalClicked' => $clicked_count,
-            'openRatePercent' => $open_rate,
-            'clickRatePercent' => $click_rate
-        ];
+        $summary = $compute_summary($filtered);
 
         echo json_encode([
             "status" => "success",
@@ -4077,12 +4552,13 @@ switch ($action) {
             "totalCount" => $total_count,
             "history" => $filtered,
             "entries" => $filtered,
+            "webhookLogs" => $webhook_logs,
             "stats" => [
                 "total" => $total_count,
                 "automatedCount" => $automated_count,
                 "manualCount" => $manual_count,
-                "deliveredCount" => $delivered_count,
-                "failedCount" => $failed_count
+                "deliveredCount" => $summary['totalDelivered'],
+                "failedCount" => $summary['totalBounced']
             ],
             "mailSuiteStats" => $summary,
             "summary" => $summary,

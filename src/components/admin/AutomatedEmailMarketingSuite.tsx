@@ -106,6 +106,285 @@ interface AutomatedEmailMarketingSuiteProps {
   onSwitchToCustomDispatcher?: () => void;
 }
 
+const DEFAULT_FAILED_AD_USERS: FailedAdLaunchAccountItem[] = [
+  {
+    id: 'fad-zac-otec-001',
+    recipientName: 'Zachary Aldin (Zac)',
+    decisionMakerName: 'Zachary Aldin (Zac)',
+    email: 'zac@otec.ltd',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    country: 'Australia',
+    address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+    phone: '+61 424 854 899',
+    invoiceRef: 'TRD-INV-27-0004',
+    currentPlanName: 'Free Tier Member (Reverted from Partial $400 Basic Plan)',
+    targetFullPlanName: 'Full Basic Business Plan ($990 Diwali Offer) / VIP Upgrade',
+    amountPaidUsd: 400,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 590,
+    failedCampaignId: 'ADS-COAL-AU-2026',
+    failedCampaignName: 'Global Coal Buyer Acquisition & Sponsored Banner Campaign (GAR 6000–6500 kcal/kg)',
+    failureReason: 'Moved to Free Tier Member pending clearance of $590.00 USD Basic Plan balance payment (Ref: TRD-INV-27-0004)',
+    failedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    accountStatus: 'FOLLOWUP_SENT',
+    followUpCount: 2,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    lastTrackingId: 'ms-trk-zac-balance-fund-live-2026',
+    recommendedTemplateId: 'tpl-failed-ads-diwali-combo'
+  },
+  {
+    id: 'fad-ali-ace-002',
+    recipientName: 'Ali Charley Ezekiah',
+    decisionMakerName: 'Ali Charley Ezekiah',
+    email: 'ezekiahali355@gmail.com',
+    companyName: 'ACE Intermediary',
+    country: 'United States',
+    address: '1241 Hackberry Avenue Corsicana Texas 75110',
+    phone: '+1 (903) 555-0141',
+    invoiceRef: 'TRD-INV-27-0018',
+    currentPlanName: 'Basic Business Plan (Renewal Pending)',
+    targetFullPlanName: 'Full Basic Business Plan ($990/yr Diwali Offer)',
+    amountPaidUsd: 0,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 990,
+    failedCampaignId: 'ADS-US-COMMODITY-2026',
+    failedCampaignName: 'North American Wholesale Commodity Spotlight & Buyer RFQ Broadcast',
+    failureReason: 'Annual Basic Plan Renewal Pending: Sponsored ad slot paused until $990/yr Diwali Offer settlement',
+    failedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+    accountStatus: 'FOLLOWUP_SENT',
+    followUpCount: 1,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+    lastTrackingId: 'ms-trk-ace-renewal-2026',
+    recommendedTemplateId: 'tpl-diwali-festival-offer'
+  },
+  {
+    id: 'fad-mark-atlantic-003',
+    recipientName: 'Mark Johnson (President)',
+    decisionMakerName: 'Mark Johnson (President)',
+    email: 'mjohnson@atlanticpowerequip.com',
+    companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    country: 'United States',
+    address: 'P.O. Box 1176, Marmora, New Jersey 08223, USA',
+    phone: '+1-609-374-5131',
+    invoiceRef: 'TRD-INV-27-0029',
+    currentPlanName: 'Basic Business Plan',
+    targetFullPlanName: 'VIP Business Plan ($5,490/yr Diwali Offer — 100% Advance Leads)',
+    amountPaidUsd: 1100,
+    standardPlanUsd: 6100,
+    diwaliOfferPlanUsd: 5490,
+    remainingBalanceUsd: 4390,
+    failedCampaignId: 'ADS-CA-10GEN-VIP-2026',
+    failedCampaignName: '10 Units CAT Diesel Generators to Canada (VIP 100% Advance Buyer Campaign)',
+    failureReason: 'Tier Restriction: Basic Plan cannot run VIP 100% Advance Payment Generator Ad Campaign',
+    failedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    accountStatus: 'AD_HALTED',
+    followUpCount: 1,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    recommendedTemplateId: 'tpl-subscription-upsell-vip'
+  },
+  {
+    id: 'fad-donald-berries-004',
+    recipientName: 'Donald Sorkin',
+    decisionMakerName: 'Donald Sorkin',
+    email: 'sorkindon@gmail.com',
+    companyName: 'Girlsenberries',
+    country: 'United States',
+    address: 'California Agricultural Export Zone, USA',
+    phone: '+1 (559) 555-0182',
+    invoiceRef: 'TRD-INV-27-0041',
+    currentPlanName: 'Basic Starter Deposit ($350 Paid)',
+    targetFullPlanName: 'Full Basic Business Plan ($990 Diwali 10% OFF)',
+    amountPaidUsd: 350,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 640,
+    failedCampaignId: 'ADS-AGRI-BERRIES-2026',
+    failedCampaignName: 'Global Frozen & Dried Berries Importer Matching Ad Campaign (#INQ-2026-US-8942)',
+    failureReason: 'Insufficient Plan Balance: $350 partial deposit paid; $640 balance required for Full Plan ad launch',
+    failedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    accountStatus: 'PAUSE_WARNING_48H',
+    followUpCount: 0,
+    recommendedTemplateId: 'tpl-failed-ads-diwali-combo'
+  }
+];
+
+const DEFAULT_MARKETING_TEMPLATES: AutomatedMarketingTemplateItem[] = [
+  {
+    id: 'tpl-failed-ads-diwali-combo',
+    name: '⚠️ Failed Ad Launch + Full Plan Balance + 🪔 Diwali Max Benefit',
+    category: 'FAILED_AD_RECOVERY',
+    badge: 'PRIMARY WORKFLOW • ZAC ($400 PAID)',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      "Urgent: Today's Ads Campaign Failed (Insufficient Plan Balance — ${{amountPaidUsd}} Paid) • Complete Full Plan + Diwali Max Benefit Offer for {{companyName}}",
+    description:
+      'Notifies users whose sponsored ads campaign failed due to partial plan payment. Explains the 48-hour account pause policy and offers the Diwali 10% OFF Max Benefit ($590 net balance after $400 credit).',
+    highlights: [
+      'Diagnostic breakdown of why today’s Sponsored Ads Campaign halted',
+      '100% credit of partial payment ($400 Paid) + Flat 10% Diwali Discount (Code: DIWALI10)',
+      'Clear 48-hour Account Pause warning if Full Plan balance ($590 USD) is not settled',
+      'Direct 1-click checkout CTA + MailSuite 1x1 pixel & link click tracking'
+    ],
+    ctaLabel: 'Complete Full Plan (${{remainingBalanceUsd}} USD with Diwali Offer) & Relaunch Ads →'
+  },
+  {
+    id: 'tpl-diwali-festival-offer',
+    name: '🪔 Diwali Maha Utsav Festival Offer (Flat 10% OFF + Priority Ad Boost)',
+    category: 'DIWALI_OFFER',
+    badge: 'FESTIVAL CAMPAIGN • CODE: DIWALI10',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      'Diwali Maha Utsav Special Offer (Flat 10% OFF — Code: DIWALI10): Unlock Maximum Buyer Leads & Resume Sponsored Ads for {{companyName}}',
+    description:
+      'High-converting festive promotion offering Flat 10% OFF across Basic ($990/yr), Premium ($1,890/yr), and VIP ($5,490/yr) annual plans with complimentary Sponsored Ad Banner impressions.',
+    highlights: [
+      'Flat 10% Festival Discount across all annual membership tiers (Code: DIWALI10)',
+      'Complimentary 2x Marketplace Banner Ads + Priority Buyer RFQ Matching',
+      'Full credit of any prior deposit toward annual plan settlement',
+      'Instant activation of verified buyer inquiry routing'
+    ],
+    ctaLabel: 'Claim Diwali 10% OFF Offer (Code: DIWALI10) & Activate Ads →'
+  },
+  {
+    id: 'tpl-subscription-upsell-vip',
+    name: '🚀 Subscription Upsell: Basic / Partial Plan → Full VIP Business Plan',
+    category: 'SUBSCRIPTION_UPSELL',
+    badge: 'VIP UPSELL • 100% ADVANCE BUYERS',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      'Upgrade {{companyName}} to VIP Business Plan (10% Diwali Offer) — Unlock 4x Sponsored Ad Campaigns & 100% Advance Payment Buyer Leads',
+    description:
+      'Upsells Basic or partial-plan suppliers to the Full VIP Business Plan ($5,490/yr with DIWALI10 vs $6,100/yr), unlocking 60+ verified buyers/month and 4x Sponsored Ads.',
+    highlights: [
+      'Unlock 60+ Verified International Buyer Orders/Month with Advance Payment terms',
+      '4x Marketplace Spotlight Banner Ads + Dedicated International Export Manager (IEM)',
+      'Enable Direct On-Site Buyer Funds Receiving & Mediation Escrow Wallet',
+      'Save $610 USD immediately with Diwali Code DIWALI10 + prior deposit credit'
+    ],
+    ctaLabel: 'Upgrade to Full VIP Plan & Unlock 100% Advance Buyers →'
+  },
+  {
+    id: 'tpl-account-pause-prevention',
+    name: '⏳ Final 48-Hour Account Pause Warning & Ad Reactivation Notice',
+    category: 'PAUSE_PREVENTION',
+    badge: 'URGENT COMPLIANCE • 48H HOLD NOTICE',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      'FINAL NOTICE: {{companyName}} Storefront & Ad Campaign Scheduled for Account Pause — Settle ${{remainingBalanceUsd}} USD Balance Now',
+    description:
+      'Urgent compliance follow-up for accounts with halted ad campaigns offering a final 48-hour window with Diwali discount protection.',
+    highlights: [
+      'Urgent 48-hour countdown before supplier storefront and RFQ routing are paused',
+      'Itemized invoice ledger showing amount paid vs. net balance due',
+      'Preserves Diwali 10% OFF rate ($990/yr Basic Plan) if settled before pause deadline',
+      'Immediate automated ad campaign reactivation upon payment confirmation'
+    ],
+    ctaLabel: 'Prevent Account Pause & Settle ${{remainingBalanceUsd}} USD Balance →'
+  }
+];
+
+function readLocalDispatchedEmails(): CompanyEmailHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem('th_admin_dispatched_emails_history');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item: any) => item && (item.recipientEmail || item.recipient))
+      .map((item: any): CompanyEmailHistoryEntry => ({
+        id: item.id || `eh-loc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        trackingId: item.trackingId || item.id,
+        recipient: item.recipient || item.recipientEmail || '',
+        recipientName: item.recipientName || 'Trade Partner',
+        companyName: item.companyName || 'Corporate Entity',
+        companyId: item.companyId,
+        subject: item.subject || 'Trade Heaven Notification',
+        dispatchType: item.dispatchType || 'MANUAL',
+        category: item.category || 'CUSTOM_ADMIN',
+        sender: item.sender || '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+        success: item.success !== false,
+        messageId: item.messageId,
+        dispatchedAt: item.dispatchedAt || item.sentAt || new Date().toISOString(),
+        enforcedDelayMs: item.enforcedDelayMs || 0,
+        summaryText: item.summaryText || '',
+        htmlPreview: item.htmlPreview,
+        opened: Boolean(item.opened || (item.openCount || 0) > 0),
+        openCount: Number(item.openCount || 0),
+        clicked: Boolean(item.clicked || (item.clickCount || 0) > 0),
+        clickCount: Number(item.clickCount || 0),
+        mailSuiteStatus: item.mailSuiteStatus || (item.success === false ? 'BOUNCED' : 'DELIVERED')
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function mergeUniqueEmailHistory(...lists: CompanyEmailHistoryEntry[][]): CompanyEmailHistoryEntry[] {
+  const map = new Map<string, CompanyEmailHistoryEntry>();
+  for (const list of lists) {
+    for (const item of list || []) {
+      if (!item || !item.recipient) continue;
+      const key =
+        (item.id && `id:${String(item.id).toLowerCase()}`) ||
+        (item.trackingId && `trk:${String(item.trackingId).toLowerCase()}`) ||
+        `rec:${String(item.recipient).toLowerCase()}|${String(item.subject || '').toLowerCase()}|${String(item.dispatchedAt || '').slice(0, 16)}`;
+      if (!map.has(key)) {
+        map.set(key, item);
+      }
+    }
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.dispatchedAt || 0).getTime() - new Date(a.dispatchedAt || 0).getTime()
+  );
+}
+
+function computeMailSuiteSummary(entries: CompanyEmailHistoryEntry[]): MailSuiteAnalyticsSummary {
+  const totalSent = entries.length;
+  let totalDelivered = 0;
+  let totalOpened = 0;
+  let totalOpensCount = 0;
+  let totalClicked = 0;
+  let totalClicksCount = 0;
+
+  for (const e of entries) {
+    const ok = e.success !== false && e.mailSuiteStatus !== 'BOUNCED';
+    if (ok) totalDelivered++;
+    const oc = Number(e.openCount || 0);
+    if (e.opened || oc > 0) {
+      totalOpened++;
+      totalOpensCount += Math.max(1, oc);
+    }
+    const cc = Number(e.clickCount || 0);
+    if (e.clicked || cc > 0) {
+      totalClicked++;
+      totalClicksCount += Math.max(1, cc);
+    }
+  }
+  const openRatePercent = totalDelivered > 0 ? Math.round((totalOpened / totalDelivered) * 1000) / 10 : 0;
+  const clickThroughRatePercent = totalDelivered > 0 ? Math.round((totalClicked / totalDelivered) * 1000) / 10 : 0;
+  const clickToOpenRatePercent = totalOpened > 0 ? Math.round((totalClicked / totalOpened) * 1000) / 10 : 0;
+
+  return {
+    totalSent,
+    totalDelivered,
+    totalOpened,
+    unopenedCount: Math.max(0, totalDelivered - totalOpened),
+    openRatePercent,
+    totalOpensCount,
+    totalClicked,
+    clickThroughRatePercent,
+    clickToOpenRatePercent,
+    totalClicksCount,
+    recentEvents: []
+  };
+}
+
 export const AutomatedEmailMarketingSuite: React.FC<AutomatedEmailMarketingSuiteProps> = ({
   onOpenPaymentCheckout,
   onSwitchToCustomDispatcher
@@ -114,8 +393,8 @@ export const AutomatedEmailMarketingSuite: React.FC<AutomatedEmailMarketingSuite
     'FAILED_ADS_QUEUE' | 'PREBUILT_TEMPLATES' | 'TRACKING_SERVICE' | 'WEBHOOK_LOGS'
   >('FAILED_ADS_QUEUE');
 
-  const [failedAdUsers, setFailedAdUsers] = useState<FailedAdLaunchAccountItem[]>([]);
-  const [templates, setTemplates] = useState<AutomatedMarketingTemplateItem[]>([]);
+  const [failedAdUsers, setFailedAdUsers] = useState<FailedAdLaunchAccountItem[]>(DEFAULT_FAILED_AD_USERS);
+  const [templates, setTemplates] = useState<AutomatedMarketingTemplateItem[]>(DEFAULT_MARKETING_TEMPLATES);
   const [campaigns, setCampaigns] = useState<AutomatedMarketingCampaignItem[]>([]);
   const [summary, setSummary] = useState<MailSuiteAnalyticsSummary>({
     totalSent: 0,
@@ -220,27 +499,117 @@ export const AutomatedEmailMarketingSuite: React.FC<AutomatedEmailMarketingSuite
     [showNotification]
   );
 
-  const fetchSuiteState = useCallback(async () => {
+  const fetchSuiteState = useCallback(async (): Promise<number> => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/marketing-suite/state', {
-        headers: { Accept: 'application/json' }
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data?.success) {
-        if (Array.isArray(data.failedAdUsers)) setFailedAdUsers(data.failedAdUsers);
-        if (Array.isArray(data.templates)) setTemplates(data.templates);
-        if (Array.isArray(data.campaigns)) setCampaigns(data.campaigns);
-        if (data.summary) setSummary(data.summary);
-        if (Array.isArray(data.history)) setHistory(data.history);
-        if (Array.isArray(data.webhookLogs)) setWebhookLogs(data.webhookLogs);
-        if (data.automationRules) {
-          setAutomationRules((prev) => ({ ...prev, ...data.automationRules }));
+      let resolvedHistory: CompanyEmailHistoryEntry[] = [];
+      let resolvedWebhooks: SmtpWebhookEventLog[] = [];
+      let resolvedFailedAds: FailedAdLaunchAccountItem[] | null = null;
+      let resolvedTemplates: AutomatedMarketingTemplateItem[] | null = null;
+      let resolvedCampaigns: AutomatedMarketingCampaignItem[] | null = null;
+      let resolvedSummary: MailSuiteAnalyticsSummary | null = null;
+
+      // 1. Try primary Node/Apache-rewritten marketing-suite endpoint & PHP actions
+      const endpoints = [
+        '/api/v1/admin/marketing-suite/state',
+        '/api.php?action=marketing_suite_state',
+        '/api.php?action=get_email_history'
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+          });
+          if (!res.ok) continue;
+          const data = await res.json().catch(() => null);
+          if (!data || data.status === 'fallback') continue;
+
+          if (Array.isArray(data.failedAdUsers) && data.failedAdUsers.length > 0) {
+            resolvedFailedAds = data.failedAdUsers;
+          }
+          if (Array.isArray(data.templates) && data.templates.length > 0) {
+            resolvedTemplates = data.templates;
+          }
+          if (Array.isArray(data.campaigns)) {
+            resolvedCampaigns = data.campaigns;
+          }
+          if (data.automationRules) {
+            setAutomationRules((prev) => ({ ...prev, ...data.automationRules }));
+          }
+          if (Array.isArray(data.webhookLogs) && data.webhookLogs.length > 0) {
+            resolvedWebhooks = data.webhookLogs;
+          }
+          const incomingList: CompanyEmailHistoryEntry[] = Array.isArray(data.history)
+            ? data.history
+            : Array.isArray(data.entries)
+            ? data.entries
+            : [];
+          if (incomingList.length > 0) {
+            resolvedHistory = mergeUniqueEmailHistory(resolvedHistory, incomingList);
+            if (data.summary && typeof data.summary.totalSent === 'number') {
+              resolvedSummary = data.summary;
+            }
+            break;
+          }
+        } catch {
+          // try next endpoint
         }
       }
+
+      // 2. Direct static telemetry JSON fallback (works on static/Apache Chrome hosting even if PHP is lagging)
+      if (resolvedHistory.length === 0) {
+        try {
+          const staticRes = await fetch(`/assets/uploads/mailsuite-telemetry-state.json?t=${Date.now()}`, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+          });
+          if (staticRes.ok) {
+            const staticData = await staticRes.json().catch(() => null);
+            if (staticData && typeof staticData === 'object') {
+              const staticEmails: CompanyEmailHistoryEntry[] = Array.isArray(staticData.emailHistoryLog)
+                ? staticData.emailHistoryLog
+                : Array.isArray(staticData.history)
+                ? staticData.history
+                : [];
+              if (staticEmails.length > 0) {
+                resolvedHistory = mergeUniqueEmailHistory(resolvedHistory, staticEmails);
+              }
+              if (resolvedWebhooks.length === 0 && Array.isArray(staticData.smtpWebhookLogs)) {
+                resolvedWebhooks = staticData.smtpWebhookLogs;
+              }
+            }
+          }
+        } catch {
+          // ignore static fallback error
+        }
+      }
+
+      // 3. Always merge locally dispatched Chrome window emails
+      const localEntries = readLocalDispatchedEmails();
+      const mergedHistory = mergeUniqueEmailHistory(localEntries, resolvedHistory);
+
+      setFailedAdUsers(resolvedFailedAds && resolvedFailedAds.length > 0 ? resolvedFailedAds : DEFAULT_FAILED_AD_USERS);
+      setTemplates(resolvedTemplates && resolvedTemplates.length > 0 ? resolvedTemplates : DEFAULT_MARKETING_TEMPLATES);
+      if (resolvedCampaigns) setCampaigns(resolvedCampaigns);
+      if (resolvedWebhooks.length > 0) setWebhookLogs(resolvedWebhooks);
+      setHistory(mergedHistory);
+
+      if (resolvedSummary && mergedHistory.length === resolvedHistory.length && resolvedSummary.totalSent > 0) {
+        setSummary(resolvedSummary);
+      } else {
+        setSummary(computeMailSuiteSummary(mergedHistory));
+      }
+
+      return mergedHistory.length;
     } catch {
-      // ignore transient error
+      const localEntries = readLocalDispatchedEmails();
+      if (localEntries.length > 0) {
+        setHistory(localEntries);
+        setSummary(computeMailSuiteSummary(localEntries));
+      }
+      return localEntries.length;
     } finally {
       setIsLoading(false);
     }
@@ -248,13 +617,46 @@ export const AutomatedEmailMarketingSuite: React.FC<AutomatedEmailMarketingSuite
 
   useEffect(() => {
     void fetchSuiteState();
+
+    const handleStorageOrCustom = (ev?: StorageEvent) => {
+      if (!ev || ev.key === 'th_admin_dispatched_emails_history' || ev.key === null) {
+        void fetchSuiteState();
+      }
+    };
+    const handleCustomEvent = () => {
+      void fetchSuiteState();
+    };
+    window.addEventListener('storage', handleStorageOrCustom);
+    window.addEventListener('tradeheaven_email_history_updated', handleCustomEvent);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('th_admin_email_history_sync');
+        bc.onmessage = () => {
+          void fetchSuiteState();
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener('storage', handleStorageOrCustom);
+      window.removeEventListener('tradeheaven_email_history_updated', handleCustomEvent);
+      try {
+        bc?.close();
+      } catch {}
+    };
   }, [fetchSuiteState]);
 
   const handleManualRefreshLedger = async () => {
     setIsLoading(true);
     try {
-      await fetchSuiteState();
-      showNotification('success', `Successfully refreshed Email Tracking Activity ledger (${history.length} emails up to date).`, 'Ledger Refreshed');
+      const latestCount = await fetchSuiteState();
+      showNotification(
+        'success',
+        `Successfully refreshed Email Tracking Activity ledger (${latestCount} emails up to date).`,
+        'Ledger Refreshed'
+      );
     } catch (err: any) {
       showNotification('error', `Failed to refresh tracking ledger: ${err?.message || 'Connection error'}`, 'Refresh Failed');
     } finally {

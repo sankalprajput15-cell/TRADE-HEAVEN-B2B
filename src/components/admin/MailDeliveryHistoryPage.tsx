@@ -67,38 +67,133 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     if (!isSilent) setIsLoading(true);
     try {
       let data: any = null;
+      let serverList: CompanyEmailHistoryEntry[] = [];
       const endpoints = [
         '/api/v1/admin/marketing-suite/state',
         '/api/v1/admin/email-history',
+        '/api.php?action=marketing_suite_state',
         '/api.php?action=get_email_history'
       ];
       for (const ep of endpoints) {
         try {
-          const res = await fetch(ep, { headers: { Accept: 'application/json' } });
+          const res = await fetch(ep, { headers: { Accept: 'application/json' }, cache: 'no-store' });
           if (res.ok) {
             const parsed = await res.json().catch(() => null);
-            if (parsed && parsed.status !== 'fallback' && (Array.isArray(parsed.history) || Array.isArray(parsed.entries))) {
-              data = parsed;
-              break;
+            if (parsed && parsed.status !== 'fallback') {
+              const incoming: CompanyEmailHistoryEntry[] = Array.isArray(parsed.history)
+                ? parsed.history
+                : Array.isArray(parsed.entries)
+                ? parsed.entries
+                : [];
+              if (incoming.length > 0) {
+                data = parsed;
+                serverList = incoming;
+                break;
+              }
             }
           }
         } catch {
           // try next endpoint
         }
       }
-      if (data) {
-        const list: CompanyEmailHistoryEntry[] = Array.isArray(data.history)
-          ? data.history
-          : Array.isArray(data.entries)
-          ? data.entries
-          : [];
-        setHistory(list);
+
+      if (serverList.length === 0) {
+        try {
+          const staticRes = await fetch(`/assets/uploads/mailsuite-telemetry-state.json?t=${Date.now()}`, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+          });
+          if (staticRes.ok) {
+            const staticData = await staticRes.json().catch(() => null);
+            const staticList = staticData?.emailHistoryLog || staticData?.history || [];
+            if (Array.isArray(staticList) && staticList.length > 0) {
+              serverList = staticList;
+            }
+          }
+        } catch {
+          // ignore static fallback error
+        }
+      }
+
+      // Merge locally dispatched Chrome window emails
+      let localList: CompanyEmailHistoryEntry[] = [];
+      try {
+        const rawLocal = localStorage.getItem('th_admin_dispatched_emails_history');
+        if (rawLocal) {
+          const parsedLocal = JSON.parse(rawLocal);
+          if (Array.isArray(parsedLocal)) {
+            localList = parsedLocal
+              .filter((item: any) => item && (item.recipientEmail || item.recipient))
+              .map((item: any): CompanyEmailHistoryEntry => ({
+                id: item.id || `eh-loc-${Date.now()}`,
+                trackingId: item.trackingId || item.id,
+                recipient: item.recipient || item.recipientEmail || '',
+                recipientName: item.recipientName || 'Trade Partner',
+                companyName: item.companyName || 'Corporate Entity',
+                companyId: item.companyId,
+                subject: item.subject || 'Trade Heaven Notification',
+                dispatchType: item.dispatchType || 'MANUAL',
+                category: item.category || 'CUSTOM_ADMIN',
+                sender: item.sender || '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+                success: item.success !== false,
+                messageId: item.messageId,
+                dispatchedAt: item.dispatchedAt || item.sentAt || new Date().toISOString(),
+                enforcedDelayMs: item.enforcedDelayMs || 0,
+                summaryText: item.summaryText || '',
+                htmlPreview: item.htmlPreview,
+                opened: Boolean(item.opened || (item.openCount || 0) > 0),
+                openCount: Number(item.openCount || 0),
+                clicked: Boolean(item.clicked || (item.clickCount || 0) > 0),
+                clickCount: Number(item.clickCount || 0),
+                mailSuiteStatus: item.mailSuiteStatus || (item.success === false ? 'BOUNCED' : 'DELIVERED')
+              }));
+          }
+        }
+      } catch {}
+
+      const seen = new Set<string>();
+      const merged: CompanyEmailHistoryEntry[] = [];
+      for (const item of [...localList, ...serverList]) {
+        if (!item || !item.recipient) continue;
+        const key =
+          (item.id && `id:${String(item.id).toLowerCase()}`) ||
+          (item.trackingId && `trk:${String(item.trackingId).toLowerCase()}`) ||
+          `rec:${String(item.recipient).toLowerCase()}|${String(item.subject || '').toLowerCase()}|${String(item.dispatchedAt || '').slice(0, 16)}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          merged.push(item);
+        }
+      }
+      merged.sort((a, b) => new Date(b.dispatchedAt || 0).getTime() - new Date(a.dispatchedAt || 0).getTime());
+
+      if (merged.length > 0 || data) {
+        setHistory(merged);
         setSelectedEntry((prev) => {
           if (!prev) return null;
-          return list.find((h: CompanyEmailHistoryEntry) => h.id === prev.id || h.trackingId === prev.trackingId) || prev;
+          return merged.find((h: CompanyEmailHistoryEntry) => h.id === prev.id || h.trackingId === prev.trackingId) || prev;
         });
-        const resolvedSummary = data.summary || data.mailSuiteStats || data.analytics;
-        if (resolvedSummary) setSummary(resolvedSummary);
+        const resolvedSummary = data?.summary || data?.mailSuiteStats || data?.analytics;
+        if (resolvedSummary && merged.length === serverList.length) {
+          setSummary(resolvedSummary);
+        } else {
+          const totalSent = merged.length;
+          const totalDelivered = merged.filter((e) => e.success !== false && e.mailSuiteStatus !== 'BOUNCED').length;
+          const totalOpened = merged.filter((e) => e.opened || (e.openCount || 0) > 0).length;
+          const totalClicked = merged.filter((e) => e.clicked || (e.clickCount || 0) > 0).length;
+          setSummary({
+            totalSent,
+            totalDelivered,
+            totalOpened,
+            unopenedCount: Math.max(0, totalDelivered - totalOpened),
+            openRatePercent: totalDelivered > 0 ? Math.round((totalOpened / totalDelivered) * 1000) / 10 : 0,
+            totalOpensCount: merged.reduce((acc, e) => acc + Math.max(e.opened ? 1 : 0, Number(e.openCount || 0)), 0),
+            totalClicked,
+            clickThroughRatePercent: totalDelivered > 0 ? Math.round((totalClicked / totalDelivered) * 1000) / 10 : 0,
+            clickToOpenRatePercent: totalOpened > 0 ? Math.round((totalClicked / totalOpened) * 1000) / 10 : 0,
+            totalClicksCount: merged.reduce((acc, e) => acc + Math.max(e.clicked ? 1 : 0, Number(e.clickCount || 0)), 0),
+            recentEvents: []
+          });
+        }
       }
     } catch (err: any) {
       if (!isSilent) {
@@ -114,6 +209,11 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     const interval = setInterval(() => {
       void fetchHistoryAndAnalytics(true);
     }, 6000);
+    const handleStorageOrCustom = () => {
+      void fetchHistoryAndAnalytics(true);
+    };
+    window.addEventListener('storage', handleStorageOrCustom);
+    window.addEventListener('tradeheaven_email_history_updated', handleStorageOrCustom);
     let bc: BroadcastChannel | null = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
@@ -125,6 +225,8 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     } catch {}
     return () => {
       clearInterval(interval);
+      window.removeEventListener('storage', handleStorageOrCustom);
+      window.removeEventListener('tradeheaven_email_history_updated', handleStorageOrCustom);
       try {
         bc?.close();
       } catch {}

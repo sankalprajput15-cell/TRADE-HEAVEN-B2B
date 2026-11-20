@@ -386,6 +386,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
 
         const res = await fetch(`/api/v1/admin/email-history?${params.toString()}`, {
           headers: { Accept: 'application/json' },
+          cache: 'no-store',
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -398,7 +399,8 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           const phpParams = new URLSearchParams(params.toString());
           phpParams.set('action', 'get_email_history');
           const phpRes = await fetch(`/api.php?${phpParams.toString()}`, {
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
           });
           if (phpRes.ok) {
             const phpData = await phpRes.json().catch(() => null);
@@ -421,7 +423,8 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           const phpParams = new URLSearchParams(params.toString());
           phpParams.set('action', 'get_email_history');
           const phpRes = await fetch(`/api.php?${phpParams.toString()}`, {
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
           });
           if (phpRes.ok) {
             const phpData = await phpRes.json().catch(() => null);
@@ -432,6 +435,43 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           }
         } catch {
           // ignore offline
+        }
+      }
+
+      if (!serverEntries || serverEntries.length === 0) {
+        try {
+          const staticRes = await fetch(`/assets/uploads/mailsuite-telemetry-state.json?t=${Date.now()}`, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+          });
+          if (staticRes.ok) {
+            const staticData = await staticRes.json().catch(() => null);
+            const rawList: any[] = Array.isArray(staticData?.emailHistoryLog)
+              ? staticData.emailHistoryLog
+              : Array.isArray(staticData?.history)
+              ? staticData.history
+              : [];
+            const targetEmail = (contactEmail || '').trim().toLowerCase();
+            const targetCompany = (companyName || '').trim().toLowerCase();
+            const targetCompanyId = (companyId || '').trim().toLowerCase();
+            const filtered = rawList.filter((item) => {
+              if (!targetEmail && !targetCompany && !targetCompanyId) return true;
+              const rec = String(item.recipient || item.recipientEmail || '').toLowerCase();
+              const comp = String(item.companyName || '').toLowerCase();
+              const cid = String(item.companyId || '').toLowerCase();
+              const subj = String(item.subject || '').toLowerCase();
+              return (
+                (targetEmail && rec.includes(targetEmail)) ||
+                (targetCompany && (comp.includes(targetCompany) || subj.includes(targetCompany))) ||
+                (targetCompanyId && cid === targetCompanyId)
+              );
+            });
+            if (filtered.length > 0) {
+              serverEntries = filtered as CompanyEmailHistoryEntry[];
+            }
+          }
+        } catch {
+          // ignore static fallback errors
         }
       }
 
@@ -487,10 +527,15 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
         fetchCompanyHistory(true);
       }
     };
+    const onCustomSync = () => {
+      fetchCompanyHistory(true);
+    };
     window.addEventListener('storage', onStorage);
+    window.addEventListener('tradeheaven_email_history_updated', onCustomSync);
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener('tradeheaven_email_history_updated', onCustomSync);
       try {
         bc?.close();
       } catch {}
