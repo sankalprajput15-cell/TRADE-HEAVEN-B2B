@@ -274,6 +274,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const discardDraft = () => {
     try {
       localStorage.removeItem(SITE_CONTENT_DRAFT_STORAGE_KEY);
+      localStorage.removeItem('th_whole_site_draft_v1');
     } catch {}
     setDraftRecord(null);
   };
