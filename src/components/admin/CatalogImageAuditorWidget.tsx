@@ -1038,52 +1038,127 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     if (isRunningFix) return;
     setIsRunningFix(true);
     setAlertMessage(null);
+    lastLocalMutationAtRef.current = Date.now();
 
     try {
       const result = await runCatalogImageAuditAndCleanup({
         dryRun: false,
+        includeCatalog: true,
         catalogItems: buildCompactCatalogPayload()
       });
 
+      lastLocalMutationAtRef.current = Date.now();
       setSummary(result);
-      const nextRows = mapLogToUnifiedRows(result.audit_log || []);
-      setAuditRows(nextRows);
+      const rawNextRows = mapLogToUnifiedRows(result.audit_log || []);
+      const normalizedNextRows: UnifiedAuditRow[] = rawNextRows.map(r =>
+        r.status === 'FIXED'
+          ? {
+              ...r,
+              issue_type: 'HEALTHY',
+              issue_reason:
+                r.record_type === 'CATEGORY'
+                  ? 'Auto-fixed — live in Homepage Procurement Sectors'
+                  : 'Auto-fixed — unique verified asset saved to catalog',
+              updatedAt: result.timestamp || new Date().toISOString()
+            }
+          : r
+      );
+
+      const newlyFixedRows = normalizedNextRows.filter(r => r.status === 'FIXED');
+      const remainingFlaggedRows = normalizedNextRows.filter(r => r.status === 'FLAGGED');
+
+      setAuditRows(normalizedNextRows);
+      setSearchTerm('');
       setShowWorkbench(true);
-      if (nextRows.length > 0) {
-        setSelectedRecordId(nextRows[0].record_id);
-        setActiveFilter('FIXED');
-        setCurrentPage(1);
-        const fixedSnapshotEntries = nextRows
-          .filter(r => r.status === 'FIXED' && r.new_image_url && r.new_image_url !== '(pending audit fix)')
+      setCurrentPage(1);
+
+      const incomingCleanRecords = Array.isArray(result.catalog_records) ? result.catalog_records : [];
+      const mergedCleanById = new Map<string, CatalogScannedCleanRecord>();
+      for (const rec of incomingCleanRecords) {
+        if (rec?.record_id) mergedCleanById.set(rec.record_id, rec);
+      }
+      for (const fixedRow of newlyFixedRows) {
+        mergedCleanById.set(fixedRow.record_id, {
+          record_id: fixedRow.record_id,
+          record_type: fixedRow.record_type,
+          title: fixedRow.title,
+          category: fixedRow.category,
+          current_image_url: fixedRow.new_image_url,
+          previous_image_url: fixedRow.old_image_url !== '(empty)' ? fixedRow.old_image_url : fixedRow.new_image_url,
+          updated_at: fixedRow.updatedAt || result.timestamp || new Date().toISOString(),
+          status: 'FIXED'
+        });
+      }
+      const finalCleanList = Array.from(mergedCleanById.values());
+      if (finalCleanList.length > 0) {
+        setCleanRecords(finalCleanList);
+        setCleanLoaded(true);
+      }
+
+      if (newlyFixedRows.length > 0) {
+        const fixedSnapshotEntries = newlyFixedRows
+          .filter(r => r.new_image_url && r.new_image_url !== '(pending audit fix)')
           .map(r => ({
             id: r.record_id,
             url: r.new_image_url,
             previousUrl: r.old_image_url !== '(empty)' ? r.old_image_url : undefined,
-            updatedAt: result.timestamp,
+            updatedAt: result.timestamp || new Date().toISOString(),
             updatedBy: 'catalog-image-auditor'
           }));
         if (fixedSnapshotEntries.length > 0) {
           productImageManagerService.applyServerOverrideSnapshot(fixedSnapshotEntries);
         }
+        setActiveFilter('FIXED');
+        setSelectedRecordId(newlyFixedRows[0].record_id);
+      } else if (remainingFlaggedRows.length > 0) {
+        setActiveFilter('ALL_ISSUES');
+        setSelectedRecordId(remainingFlaggedRows[0].record_id);
+      } else {
+        const firstCatalogFixed = finalCleanList.find(c => c.status === 'FIXED');
+        if (firstCatalogFixed) {
+          setActiveFilter('FIXED');
+          setSelectedRecordId(firstCatalogFixed.record_id);
+        } else {
+          setActiveFilter('ALL_SCANNED');
+          if (finalCleanList[0]) {
+            setSelectedRecordId(finalCleanList[0].record_id);
+          }
+        }
       }
 
       await syncMarketplaceImageListeners();
 
-      const dupCount = Number(result.duplicates_detected || 0);
-      const mismatchCount = Number(result.mismatched_detected || 0);
-      const fixedCount = Number(result.records_fixed || 0);
+      const dupFixed = Number(
+        result.duplicates_fixed ?? rawNextRows.filter(r => r.status === 'FIXED' && r.issue_type === 'DUPLICATE').length
+      );
+      const misFixed = Number(
+        result.mismatched_fixed ?? rawNextRows.filter(r => r.status === 'FIXED' && r.issue_type !== 'DUPLICATE').length
+      );
+      const newlyFixedTotal = Number(result.newly_fixed_count ?? newlyFixedRows.length);
+      const remainingTotal = remainingFlaggedRows.length;
 
-      if (fixedCount > 0) {
+      if (newlyFixedTotal > 0) {
         setAlertMessage({
           type: 'success',
-          title: `Audit Complete: Cleaned ${dupCount} Duplicate(s) & Fixed ${mismatchCount} Mismatched/Placeholder Photo(s)`,
-          detail: `Scanned ${result.total_scanned} catalog records. Assigned ${fixedCount} unique photos—click any record below to view Before vs. After or manually upload a replacement.`
+          title: `Auto-Fix Complete: Fixed ${newlyFixedTotal.toLocaleString()} Flagged Image${newlyFixedTotal === 1 ? '' : 's'} (${dupFixed} Duplicate${dupFixed === 1 ? '' : 's'}, ${misFixed} Mismatched/Broken)`,
+          detail:
+            remainingTotal > 0
+              ? `Scanned ${result.total_scanned.toLocaleString()} catalog records. ${remainingTotal} item(s) still require a manual upload or URL selection.`
+              : `Scanned ${result.total_scanned.toLocaleString()} catalog records. All flagged items now have unique verified assets — inspect Before vs. After below or upload custom photos anytime.`,
+          actionRow: newlyFixedRows[0]
+        });
+      } else if (remainingTotal > 0) {
+        setAlertMessage({
+          type: 'info',
+          title: `${remainingTotal.toLocaleString()} Flagged Record${remainingTotal === 1 ? '' : 's'} Ready for Manual Fix`,
+          detail: `Scanned ${result.total_scanned.toLocaleString()} catalog records. Use Fix Now, Upload, or Inspect on any row below to assign an exact product photo.`,
+          actionRow: remainingFlaggedRows[0]
         });
       } else {
         setAlertMessage({
           type: 'info',
-          title: `Catalog Verified Clean: 0 Duplicates & 0 Mismatched Photos Across ${result.total_scanned} Records`,
-          detail: 'Every product and RFQ currently has a unique, verified product photo. Click Total Scanned to inspect or upload custom images for any item.'
+          title: `Catalog Verified Clean: 0 Duplicates & 0 Mismatched Photos Across ${result.total_scanned.toLocaleString()} Records`,
+          detail: `All ${result.total_scanned.toLocaleString()} products, sectors, and RFQs have unique verified photos (${Number(result.records_fixed || 0).toLocaleString()} saved fixes shown in Fixed Changes).`
         });
       }
 

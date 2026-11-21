@@ -7460,6 +7460,35 @@ switch ($action) {
             }
         }
 
+        $newly_fixed_dup = 0;
+        $newly_fixed_mis = 0;
+        $remaining_dup = 0;
+        $remaining_mis = 0;
+        foreach ($audit_log as $alog_item) {
+            $is_dup = (($alog_item['issue_type'] ?? '') === 'DUPLICATE');
+            if (($alog_item['status'] ?? '') === 'FIXED') {
+                if ($is_dup) $newly_fixed_dup++;
+                else $newly_fixed_mis++;
+                if ($include_catalog) {
+                    $catalog_records_aud[] = [
+                        'record_id' => $alog_item['record_id'],
+                        'record_type' => $alog_item['record_type'],
+                        'title' => $alog_item['title'],
+                        'category' => $alog_item['category'],
+                        'current_image_url' => $alog_item['new_image_url'],
+                        'previous_image_url' => $alog_item['old_image_url'],
+                        'updated_at' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'status' => 'FIXED'
+                    ];
+                }
+            } else {
+                if ($is_dup) $remaining_dup++;
+                else $remaining_mis++;
+            }
+        }
+        $out_dup_detected = $dry_run ? $duplicates_detected : $remaining_dup;
+        $out_mis_detected = $dry_run ? $mismatched_detected : $remaining_mis;
+
         $audit_resp = [
             "status" => "success",
             "success" => true,
@@ -7468,10 +7497,13 @@ switch ($action) {
             "products_scanned" => $products_scanned,
             "rfqs_scanned" => $rfqs_scanned,
             "categories_scanned" => $categories_scanned,
-            "duplicates_detected" => $duplicates_detected,
-            "mismatched_detected" => $mismatched_detected,
+            "duplicates_detected" => $out_dup_detected,
+            "mismatched_detected" => $out_mis_detected,
+            "duplicates_fixed" => $newly_fixed_dup,
+            "mismatched_fixed" => $newly_fixed_mis,
+            "newly_fixed_count" => $newly_fixed_dup + $newly_fixed_mis,
             "records_fixed" => $records_fixed,
-            "healthy_records" => max(0, $total_scanned - ($dry_run ? ($duplicates_detected + $mismatched_detected) : 0)),
+            "healthy_records" => max(0, $total_scanned - ($out_dup_detected + $out_mis_detected)),
             "timestamp" => gmdate('c'),
             "audit_log" => $audit_log
         ];

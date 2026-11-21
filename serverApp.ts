@@ -23519,7 +23519,7 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
         .resize(800, 600, { fit: 'cover', position: 'centre' })
         .modulate({ brightness: modBright })
         .composite([{ input: badgeSvg, top: 0, left: 0 }])
-        .webp({ quality: 86 })
+        .webp({ quality: 82, effort: 1 })
         .toBuffer();
 
       if (outBuf && outBuf.length > 2000) {
@@ -23553,7 +23553,7 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
     </svg>`
   );
 
-  const fallbackBuf = await sharp(fullSvg).webp({ quality: 88 }).toBuffer();
+  const fallbackBuf = await sharp(fullSvg).webp({ quality: 82, effort: 1 }).toBuffer();
   fs.writeFileSync(filePath, fallbackBuf);
   return localUrl;
 }
@@ -23567,6 +23567,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   usedUrls: Set<string>;
   allowLiveGeminiNetwork?: boolean;
   geminiTimeoutMs?: number;
+  wallDeadlineMs?: number;
+  maxMirrorAttempts?: number;
   preindexedFiles?: IndexedUploadFileEntry[];
 }): Promise<{
   newImageUrl: string;
@@ -23578,6 +23580,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, params.specifications);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
   const timeoutMs = typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0 ? params.geminiTimeoutMs : 9500;
+  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : params.wallDeadlineMs ? 2 : 5;
+  const withinNetworkDeadline = () => !params.wallDeadlineMs || Date.now() < params.wallDeadlineMs;
 
   // 1. Check cached >10 Gemini Google Search Grounding pool first
   if (!serverProductImageCacheMap.has(normalizedKey)) {
@@ -23587,7 +23591,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const cached = serverProductImageCacheMap.get(normalizedKey);
   if (cached && Array.isArray(cached.images) && cached.images.length > 0) {
     poolCandidates = fisherYatesShuffle([...cached.images]);
-  } else if (params.allowLiveGeminiNetwork !== false) {
+  } else if (params.allowLiveGeminiNetwork !== false && withinNetworkDeadline()) {
     // Run live Gemini Google Search Grounding visual product search with a bounded timeout so interactive Fix Now never stalls
     try {
       const searchPromise = handleVisualProductImageSearch({
@@ -23611,6 +23615,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   }
 
   // Try to pick a unique, unused image from the Gemini Grounded pool
+  let mirrorAttempts = 0;
   for (const cand of poolCandidates) {
     const rawCandUrl = String(cand?.url || '').trim();
     if (!rawCandUrl) continue;
@@ -23619,13 +23624,20 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     );
 
     if (/^https?:\/\//i.test(resolvedLocal) && params.allowLiveGeminiNetwork !== false) {
-      const mirrored = await mirrorExternalProductImageToLocalUploads({
-        externalUrl: resolvedLocal,
-        productId: params.recordId,
-        productName: cleanName,
-        category: cleanCategory,
-        flushNow: false
-      });
+      if (mirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
+        continue;
+      }
+      mirrorAttempts++;
+      const mirrored = await Promise.race([
+        mirrorExternalProductImageToLocalUploads({
+          externalUrl: resolvedLocal,
+          productId: params.recordId,
+          productName: cleanName,
+          category: cleanCategory,
+          flushNow: false
+        }),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), params.wallDeadlineMs ? 2200 : 5000))
+      ]);
       if (mirrored) resolvedLocal = normalizeAuditImageUrl(mirrored);
     }
 
@@ -23739,7 +23751,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   const dryRun = Boolean(options?.dryRun);
   const includeCatalog = Boolean(options?.includeCatalog);
   const auditStartedAt = Date.now();
-  const LIVE_NETWORK_WALL_DEADLINE_MS = 12000;
+  const LIVE_NETWORK_WALL_DEADLINE_MS = 6000;
+  const networkWallDeadline = auditStartedAt + LIVE_NETWORK_WALL_DEADLINE_MS;
   const seenUrls = new Map<string, { id: string; title: string; type: string }>();
   const usedUrlsSet = new Set<string>(
     dryRun ? [] : Array.from(collectAllUsedCatalogImageUrls().keys())
@@ -23763,9 +23776,75 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let categoriesScanned = 0;
   let duplicatesDetected = 0;
   let mismatchedDetected = 0;
+  let fixedDuplicatesCount = 0;
+  let fixedMismatchedCount = 0;
+  let newlyFixedCount = 0;
   let recordsFixed = 0;
-  let liveNetworkBudget = dryRun ? 0 : 4;
+  let liveNetworkBudget = dryRun ? 0 : 3;
   const preindexedFiles = dryRun ? undefined : buildPreindexedLocalUploadFiles();
+
+  const recordNewlyFixedOverride = (args: {
+    id: string;
+    recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
+    title: string;
+    category: string;
+    issueType: CatalogAuditLogEntry['issue_type'];
+    issueReason: string;
+    oldUrl: string;
+    newUrl: string;
+    queryUsed: string;
+  }) => {
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    ensureUploadedUrlInMediaLibrary(args.newUrl);
+    clearConflictingTitleOverridesForProductId(args.id, args.newUrl);
+    (serverProductImageState.overrides[args.id] as any) = {
+      ...(serverProductImageState.overrides[args.id] || {}),
+      primary: args.newUrl,
+      previousPrimary: args.oldUrl && args.oldUrl !== '(empty)' && args.oldUrl !== args.newUrl ? args.oldUrl : undefined,
+      gallery: [args.newUrl],
+      format: (path.extname(args.newUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
+      updatedAt: nowIso,
+      imageUpdatedAt: nowMs,
+      updatedBy: 'catalog-image-auditor'
+    };
+    recordServerProductActivityTimestamp(args.id, nowMs);
+    if (args.recordType === 'CATEGORY' || args.id.startsWith('cat-')) {
+      syncCategoryHeaderUrlIntoSiteContent(args.id, args.title, args.newUrl);
+    }
+    snapshotUpdates.push({ id: args.id, imageUrl: args.newUrl, gallery: [args.newUrl] });
+    seenUrls.set(args.newUrl, { id: args.id, title: args.title, type: args.recordType });
+    usedUrlsSet.add(args.newUrl);
+    recordsFixed++;
+    newlyFixedCount++;
+    if (args.issueType === 'DUPLICATE') fixedDuplicatesCount++;
+    else fixedMismatchedCount++;
+
+    auditLog.push({
+      record_id: args.id,
+      record_type: args.recordType,
+      title: args.title,
+      category: args.category,
+      issue_type: args.issueType,
+      issue_reason: args.issueReason,
+      old_image_url: args.oldUrl || '(empty)',
+      new_image_url: args.newUrl,
+      query_used: args.queryUsed,
+      status: 'FIXED'
+    });
+    if (includeCatalog) {
+      catalogRecords.push({
+        record_id: args.id,
+        record_type: args.recordType,
+        title: args.title,
+        category: args.category,
+        current_image_url: args.newUrl,
+        previous_image_url: args.oldUrl || args.newUrl,
+        updated_at: nowIso,
+        status: 'FIXED'
+      });
+    }
+  };
 
   const scannedIds = new Set<string>();
 
@@ -23881,7 +23960,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
+    const useLive = liveNetworkBudget > 0 && Date.now() < networkWallDeadline;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: lid,
@@ -23891,28 +23970,24 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       specifications: String(listing.description || ''),
       usedUrls: usedUrlsSet,
       allowLiveGeminiNetwork: useLive,
-      geminiTimeoutMs: 2500,
+      geminiTimeoutMs: 2200,
+      wallDeadlineMs: networkWallDeadline,
+      maxMirrorAttempts: 2,
       preindexedFiles
     });
 
     listing.image_url = resolved.newImageUrl;
     listing.images = [resolved.newImageUrl];
-    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
-    snapshotUpdates.push({ id: lid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
-    seenUrls.set(resolved.newImageUrl, { id: lid, title, type: 'PRODUCT' });
-    recordsFixed++;
-
-    auditLog.push({
-      record_id: lid,
-      record_type: 'PRODUCT',
+    recordNewlyFixedOverride({
+      id: lid,
+      recordType: 'PRODUCT',
       title,
       category,
-      issue_type: check.issueType!,
-      issue_reason: check.reason || 'Flagged by catalog image auditor',
-      old_image_url: currentImg || '(empty)',
-      new_image_url: resolved.newImageUrl,
-      query_used: resolved.queryUsed,
-      status: 'FIXED'
+      issueType: check.issueType!,
+      issueReason: check.reason || 'Flagged by catalog image auditor',
+      oldUrl: currentImg,
+      newUrl: resolved.newImageUrl,
+      queryUsed: resolved.queryUsed
     });
   }
 
@@ -23993,7 +24068,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
+    const useLive = liveNetworkBudget > 0 && Date.now() < networkWallDeadline;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: pid,
@@ -24003,29 +24078,25 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       specifications: String(prod.description || ''),
       usedUrls: usedUrlsSet,
       allowLiveGeminiNetwork: useLive,
-      geminiTimeoutMs: 2500,
+      geminiTimeoutMs: 2200,
+      wallDeadlineMs: networkWallDeadline,
+      maxMirrorAttempts: 2,
       preindexedFiles
     });
 
     prod.image = resolved.newImageUrl;
     prod.image_url = resolved.newImageUrl;
     prod.images = [resolved.newImageUrl];
-    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
-    snapshotUpdates.push({ id: pid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
-    seenUrls.set(resolved.newImageUrl, { id: pid, title, type: 'PRODUCT' });
-    recordsFixed++;
-
-    auditLog.push({
-      record_id: pid,
-      record_type: 'PRODUCT',
+    recordNewlyFixedOverride({
+      id: pid,
+      recordType: 'PRODUCT',
       title,
       category,
-      issue_type: check.issueType!,
-      issue_reason: check.reason || 'Flagged by catalog image auditor',
-      old_image_url: currentImg || '(empty)',
-      new_image_url: resolved.newImageUrl,
-      query_used: resolved.queryUsed,
-      status: 'FIXED'
+      issueType: check.issueType!,
+      issueReason: check.reason || 'Flagged by catalog image auditor',
+      oldUrl: currentImg,
+      newUrl: resolved.newImageUrl,
+      queryUsed: resolved.queryUsed
     });
   }
 
@@ -24106,7 +24177,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
+    const useLive = liveNetworkBudget > 0 && Date.now() < networkWallDeadline;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: rid,
@@ -24116,29 +24187,25 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       specifications: String(rfq.specifications || rfq.message || ''),
       usedUrls: usedUrlsSet,
       allowLiveGeminiNetwork: useLive,
-      geminiTimeoutMs: 2500,
+      geminiTimeoutMs: 2200,
+      wallDeadlineMs: networkWallDeadline,
+      maxMirrorAttempts: 2,
       preindexedFiles
     });
 
     rfq.image = resolved.newImageUrl;
     rfq.image_url = resolved.newImageUrl;
     rfq.images = [resolved.newImageUrl];
-    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
-    snapshotUpdates.push({ id: rid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
-    seenUrls.set(resolved.newImageUrl, { id: rid, title, type: 'RFQ' });
-    recordsFixed++;
-
-    auditLog.push({
-      record_id: rid,
-      record_type: 'RFQ',
+    recordNewlyFixedOverride({
+      id: rid,
+      recordType: 'RFQ',
       title,
       category,
-      issue_type: check.issueType!,
-      issue_reason: check.reason || 'Flagged by catalog image auditor',
-      old_image_url: currentImg || '(empty)',
-      new_image_url: resolved.newImageUrl,
-      query_used: resolved.queryUsed,
-      status: 'FIXED'
+      issueType: check.issueType!,
+      issueReason: check.reason || 'Flagged by catalog image auditor',
+      oldUrl: currentImg,
+      newUrl: resolved.newImageUrl,
+      queryUsed: resolved.queryUsed
     });
   }
 
@@ -24226,7 +24293,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       continue;
     }
 
-    const useLive = liveNetworkBudget > 0 && Date.now() - auditStartedAt < LIVE_NETWORK_WALL_DEADLINE_MS;
+    const useLive = liveNetworkBudget > 0 && Date.now() < networkWallDeadline;
     if (useLive) liveNetworkBudget--;
     const resolved = await resolveUniqueVerifiedCatalogImage({
       recordId: cid,
@@ -24235,29 +24302,25 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       category,
       usedUrls: usedUrlsSet,
       allowLiveGeminiNetwork: useLive,
-      geminiTimeoutMs: 2500,
+      geminiTimeoutMs: 2200,
+      wallDeadlineMs: networkWallDeadline,
+      maxMirrorAttempts: 2,
       preindexedFiles
     });
-    if (recordsFixed % 25 === 0) {
+    if (newlyFixedCount % 20 === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }
 
-    ensureUploadedUrlInMediaLibrary(resolved.newImageUrl);
-    snapshotUpdates.push({ id: cid, imageUrl: resolved.newImageUrl, gallery: [resolved.newImageUrl] });
-    seenUrls.set(resolved.newImageUrl, { id: cid, title, type: rType });
-    recordsFixed++;
-
-    auditLog.push({
-      record_id: cid,
-      record_type: rType,
+    recordNewlyFixedOverride({
+      id: cid,
+      recordType: rType,
       title,
       category,
-      issue_type: check.issueType!,
-      issue_reason: check.reason || 'Flagged by catalog image auditor',
-      old_image_url: currentImg || '(empty)',
-      new_image_url: resolved.newImageUrl,
-      query_used: resolved.queryUsed,
-      status: 'FIXED'
+      issueType: check.issueType!,
+      issueReason: check.reason || 'Flagged by catalog image auditor',
+      oldUrl: currentImg,
+      newUrl: resolved.newImageUrl,
+      queryUsed: resolved.queryUsed
     });
   }
 
@@ -24340,6 +24403,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     scheduleSaveOverridesState(true);
   }
 
+  const remainingDuplicates = dryRun ? duplicatesDetected : Math.max(0, duplicatesDetected - fixedDuplicatesCount);
+  const remainingMismatched = dryRun ? mismatchedDetected : Math.max(0, mismatchedDetected - fixedMismatchedCount);
+
   return {
     status: 'success',
     success: true,
@@ -24348,10 +24414,13 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     products_scanned: productsScanned,
     rfqs_scanned: rfqsScanned,
     categories_scanned: categoriesScanned,
-    duplicates_detected: duplicatesDetected,
-    mismatched_detected: mismatchedDetected,
+    duplicates_detected: remainingDuplicates,
+    mismatched_detected: remainingMismatched,
+    duplicates_fixed: fixedDuplicatesCount,
+    mismatched_fixed: fixedMismatchedCount,
+    newly_fixed_count: newlyFixedCount,
     records_fixed: recordsFixed,
-    healthy_records: Math.max(0, totalScanned - (dryRun ? duplicatesDetected + mismatchedDetected : 0)),
+    healthy_records: Math.max(0, totalScanned - (remainingDuplicates + remainingMismatched)),
     timestamp: new Date().toISOString(),
     audit_log: auditLog,
     ...(includeCatalog ? { catalog_records: catalogRecords } : {})

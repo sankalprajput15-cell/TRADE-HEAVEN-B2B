@@ -1113,6 +1113,9 @@ export interface CatalogImageAuditSummary {
   categories_scanned?: number;
   duplicates_detected: number;
   mismatched_detected?: number;
+  duplicates_fixed?: number;
+  mismatched_fixed?: number;
+  newly_fixed_count?: number;
   records_fixed: number;
   healthy_records?: number;
   timestamp?: string;
@@ -1595,7 +1598,11 @@ async function runClientFallbackCatalogImageAudit(options: {
   }
 
   const totalScanned = productsScanned + rfqsScanned + categoriesScanned;
-  const flaggedCount = auditLog.filter(r => r.status === 'FLAGGED').length;
+  const remainingFlaggedDup = auditLog.filter(r => r.status === 'FLAGGED' && r.issue_type === 'DUPLICATE').length;
+  const remainingFlaggedMis = auditLog.filter(r => r.status === 'FLAGGED' && r.issue_type !== 'DUPLICATE').length;
+  const newlyFixedDup = auditLog.filter(r => r.status === 'FIXED' && r.issue_type === 'DUPLICATE').length;
+  const newlyFixedMis = auditLog.filter(r => r.status === 'FIXED' && r.issue_type !== 'DUPLICATE').length;
+  const flaggedCount = remainingFlaggedDup + remainingFlaggedMis;
   return {
     status: 'success',
     success: true,
@@ -1604,8 +1611,11 @@ async function runClientFallbackCatalogImageAudit(options: {
     products_scanned: productsScanned,
     rfqs_scanned: rfqsScanned,
     categories_scanned: categoriesScanned,
-    duplicates_detected: duplicatesDetected,
-    mismatched_detected: mismatchedDetected,
+    duplicates_detected: options.dryRun ? duplicatesDetected : remainingFlaggedDup,
+    mismatched_detected: options.dryRun ? mismatchedDetected : remainingFlaggedMis,
+    duplicates_fixed: newlyFixedDup,
+    mismatched_fixed: newlyFixedMis,
+    newly_fixed_count: newlyFixedDup + newlyFixedMis,
     records_fixed: recordsFixed,
     healthy_records: Math.max(0, totalScanned - flaggedCount),
     timestamp: nowIso,
@@ -1648,6 +1658,7 @@ export async function runCatalogImageAuditAndCleanup(options?: {
     const fallbackQuery = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
     const primaryRes = await fetch(`/api/v1/admin/audit-and-fix-catalog-images${fallbackQuery}`, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(bodyPayload)
     });
@@ -1662,6 +1673,7 @@ export async function runCatalogImageAuditAndCleanup(options?: {
   try {
     const res = await fetch(`/api.php?action=audit_and_fix_catalog_images${querySuffix}`, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(bodyPayload)
     });
