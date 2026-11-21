@@ -7060,6 +7060,24 @@ switch ($action) {
         $categories_scanned = 0;
         $scanned_ids_aud = [];
 
+        $is_verified_override_php = function ($ov_rec, $cur_img) use (&$seen_urls_aud) {
+            if (!is_array($ov_rec) || trim((string)$cur_img) === '') return false;
+            $updater = strtolower(trim((string)($ov_rec['updatedBy'] ?? '')));
+            $clean_u = trim(explode('?', (string)$cur_img)[0]);
+            if ($clean_u === '') return false;
+            $lower_u = strtolower($clean_u);
+            foreach (['picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'unsplash.com', 'pexels.com', 'pixabay.com', 'shutterstock.com', 'istockphoto.com', 'vecteezy_'] as $bad_host) {
+                if (strpos($lower_u, $bad_host) !== false) return false;
+            }
+            if (in_array($updater, ['admin-manual', 'admin-upload', 'manual'], true)) {
+                return true;
+            }
+            if (in_array($updater, ['catalog-image-auditor', 'system-repair'], true)) {
+                return !isset($seen_urls_aud[$clean_u]);
+            }
+            return false;
+        };
+
         // A. Scan MySQL listings table safely using SELECT *
         if ($db_connected && $pdo) {
             try {
@@ -7073,7 +7091,9 @@ switch ($action) {
                     $products_scanned++;
                     $ov_rec = $ov_state_aud['overrides'][$lid] ?? null;
                     $cur_img = trim((string)($ov_rec['primary'] ?? $lr['image_url'] ?? $lr['image'] ?? ''));
-                    $chk = $check_issue_php($lid, 'PRODUCT', (string)($lr['title'] ?? $lid), (string)($lr['category'] ?? 'General'), $cur_img);
+                    $chk = $is_verified_override_php($ov_rec, $cur_img)
+                        ? ['flagged' => false]
+                        : $check_issue_php($lid, 'PRODUCT', (string)($lr['title'] ?? $lid), (string)($lr['category'] ?? 'General'), $cur_img);
                     if (!$chk['flagged']) {
                         $clean_c = trim(explode('?', $cur_img)[0]);
                         $seen_urls_aud[$clean_c] = ['id' => $lid, 'title' => (string)($lr['title'] ?? $lid)];
@@ -7195,7 +7215,9 @@ switch ($action) {
                     $rfqs_scanned++;
                     $ov_rec = $ov_state_aud['overrides'][$rid] ?? null;
                     $cur_img = trim((string)($ov_rec['primary'] ?? $rr['image_url'] ?? $rr['image'] ?? ''));
-                    $chk = $check_issue_php($rid, 'RFQ', $rTitle, (string)($rr['category'] ?? 'Global Sourcing'), $cur_img);
+                    $chk = $is_verified_override_php($ov_rec, $cur_img)
+                        ? ['flagged' => false]
+                        : $check_issue_php($rid, 'RFQ', $rTitle, (string)($rr['category'] ?? 'Global Sourcing'), $cur_img);
                     if (!$chk['flagged']) {
                         $clean_c = trim(explode('?', $cur_img)[0]);
                         $seen_urls_aud[$clean_c] = ['id' => $rid, 'title' => $rTitle];
@@ -7323,7 +7345,9 @@ switch ($action) {
 
                 $ov_rec = $ov_state_aud['overrides'][$cid] ?? null;
                 $cur_img = trim((string)($ov_rec['primary'] ?? $ci['image_url'] ?? ''));
-                $chk = $check_issue_php($cid, $ctype, $ctitle, $ccat, $cur_img);
+                $chk = $is_verified_override_php($ov_rec, $cur_img)
+                    ? ['flagged' => false]
+                    : $check_issue_php($cid, $ctype, $ctitle, $ccat, $cur_img);
                 if (!$chk['flagged']) {
                     $clean_c = trim(explode('?', $cur_img)[0]);
                     $seen_urls_aud[$clean_c] = ['id' => $cid, 'title' => $ctitle];

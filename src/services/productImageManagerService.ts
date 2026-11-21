@@ -374,19 +374,26 @@ class ProductImageManagerService {
         } catch {}
       }
 
+      // Cross-window fallback ping via localStorage storage event (fires across all Chrome windows on same origin)
+      window.addEventListener('storage', (ev: StorageEvent) => {
+        if (ev.key === 'tradeheaven_product_images_sync_ping' && this.inFlightWriteCount === 0) {
+          this.syncFromServer(true).catch(() => {});
+        }
+      });
+
       // Automatically sync when tab becomes visible or window gains focus (never interrupting active manual writes)
       window.addEventListener('focus', () => {
-        if (this.inFlightWriteCount === 0 && Date.now() - this.lastServerSyncAt > 2000) {
-          this.syncFromServer(false).catch(() => {});
+        if (this.inFlightWriteCount === 0 && Date.now() - this.lastServerSyncAt > 1500) {
+          this.syncFromServer(true).catch(() => {});
         }
       });
       document.addEventListener('visibilitychange', () => {
         if (
           document.visibilityState === 'visible' &&
           this.inFlightWriteCount === 0 &&
-          Date.now() - this.lastServerSyncAt > 2000
+          Date.now() - this.lastServerSyncAt > 1500
         ) {
-          this.syncFromServer(false).catch(() => {});
+          this.syncFromServer(true).catch(() => {});
         }
       });
     }
@@ -819,12 +826,19 @@ class ProductImageManagerService {
 
       const actionName = String(context?.action || '');
       if (
-        this.syncChannel &&
         actionName !== 'sync_from_server' &&
         actionName !== 'idb_hydrated'
       ) {
+        if (this.syncChannel) {
+          try {
+            this.syncChannel.postMessage({ type: 'sync', ts: this.lastEmitTimestamp });
+          } catch {}
+        }
         try {
-          this.syncChannel.postMessage({ type: 'sync', ts: this.lastEmitTimestamp });
+          window.localStorage?.setItem(
+            'tradeheaven_product_images_sync_ping',
+            `${this.lastEmitTimestamp}:${context?.productId || ''}`
+          );
         } catch {}
       }
     } catch (err) {
@@ -1013,18 +1027,28 @@ class ProductImageManagerService {
           ...DEFAULT_BUILTIN_OVERRIDES
         };
 
-        // Server overrides take priority over built-in defaults while honoring manual precedence and timestamps
+        // Server overrides take priority over built-in defaults while honoring manual/auditor precedence and timestamps
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
           if (this.locallyDeletedIds.has(pid)) continue;
           const existing = mergedOverrides[pid];
           const srvIsManual = this.isManualEntry(srvEntry);
+          const srvIsAuditFixed =
+            srvIsManual ||
+            srvEntry.updatedBy === 'catalog-image-auditor' ||
+            srvEntry.updatedBy === 'system-repair';
           const existingIsManual = this.isManualEntry(existing);
-          const srvTime = Date.parse(srvEntry.updatedAt || '') || 0;
-          const existingTime = Date.parse(existing?.updatedAt || '') || 0;
-          if (existingIsManual && !srvIsManual && existingTime >= srvTime) {
+          const srvTime = Math.max(
+            this.parseTimestampMs(srvEntry.imageUpdatedAt),
+            this.parseTimestampMs(srvEntry.updatedAt)
+          );
+          const existingTime = Math.max(
+            this.parseTimestampMs(existing?.imageUpdatedAt),
+            this.parseTimestampMs(existing?.updatedAt)
+          );
+          if (existingIsManual && !srvIsAuditFixed && existingTime >= srvTime) {
             continue;
           }
-          if (!existing || srvIsManual || !existingIsManual || srvTime >= existingTime) {
+          if (!existing || srvIsManual || srvIsAuditFixed || !existingIsManual || srvTime >= existingTime) {
             mergedOverrides[pid] = srvEntry;
           }
         }

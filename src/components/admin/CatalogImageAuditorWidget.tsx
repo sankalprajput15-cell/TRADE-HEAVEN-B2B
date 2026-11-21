@@ -94,7 +94,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [isRunningFix, setIsRunningFix] = useState<boolean>(false);
   const [fixingRecordIds, setFixingRecordIds] = useState<Record<string, boolean>>({});
   const [uploadingRecordIds, setUploadingRecordIds] = useState<Record<string, boolean>>({});
-  const [sessionTouchedIds, setSessionTouchedIds] = useState<Record<string, boolean>>({});
 
   const [alertMessage, setAlertMessage] = useState<{
     type: 'success' | 'info' | 'error';
@@ -208,6 +207,17 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const rowFileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadTargetRowRef = useRef<UnifiedAuditRow | null>(null);
   const inspectorPaneRef = useRef<HTMLDivElement | null>(null);
+  const lastLocalMutationAtRef = useRef<number>(0);
+  const activeFilterRef = useRef<AuditorFilterTab>(activeFilter);
+  activeFilterRef.current = activeFilter;
+  const filteredRowsRef = useRef<UnifiedAuditRow[]>([]);
+  const isInspectorModalOpenRef = useRef<boolean>(isInspectorModalOpen);
+  isInspectorModalOpenRef.current = isInspectorModalOpen;
+  const isBusyMutatingRef = useRef<boolean>(false);
+  isBusyMutatingRef.current =
+    isRunningFix ||
+    Object.values(fixingRecordIds).some(Boolean) ||
+    Object.values(uploadingRecordIds).some(Boolean);
 
   const buildCompactCatalogPayload = useCallback(() => {
     const prodItems = (productsRef.current || []).map(p => ({
@@ -286,10 +296,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           return res;
         });
 
-        if (opts?.clearSessionTouched) {
-          setSessionTouchedIds({});
-        }
-
         setAuditRows(prevRows => {
           if (opts?.clearSessionTouched) {
             return incomingRows;
@@ -361,6 +367,47 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       void fetchPreviewStats({ includeCatalog: true });
     }
   }, [fetchPreviewStats, products.length]);
+
+  // Cross-window Chrome synchronization: when another window saves an image edit or this window regains focus, refresh audit queues from server
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let refreshTimer: number | null = null;
+    const scheduleCrossWindowRefresh = () => {
+      if (isBusyMutatingRef.current) return;
+      if (Date.now() - lastLocalMutationAtRef.current < 2500) return;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        if (isBusyMutatingRef.current) return;
+        void fetchPreviewStats({ includeCatalog: true, clearSessionTouched: true });
+      }, 350);
+    };
+
+    const handleStorage = (ev: StorageEvent) => {
+      if (ev.key === 'tradeheaven_product_images_sync_ping') {
+        scheduleCrossWindowRefresh();
+      }
+    };
+    const handleFocus = () => {
+      if (Date.now() - lastLocalMutationAtRef.current > 4000) {
+        scheduleCrossWindowRefresh();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastLocalMutationAtRef.current > 4000) {
+        scheduleCrossWindowRefresh();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchPreviewStats]);
 
   const combinedSourceRows = useMemo<UnifiedAuditRow[]>(() => {
     const mapById = new Map<string, UnifiedAuditRow>();
@@ -434,9 +481,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     const list = combinedSourceRows.filter(row => {
-      const keepSessionFixedVisible = Boolean(sessionTouchedIds[row.record_id]);
       if (activeFilter === 'DUPLICATE') {
-        if (row.issue_type !== 'DUPLICATE' || (row.status === 'FIXED' && !keepSessionFixedVisible)) {
+        if (row.issue_type !== 'DUPLICATE' || row.status !== 'FLAGGED') {
           return false;
         }
       } else if (activeFilter === 'MISMATCHED') {
@@ -444,7 +490,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           row.issue_type === 'MISMATCHED' ||
           row.issue_type === 'PLACEHOLDER_OR_MISSING' ||
           row.issue_type === 'BROKEN_ASSET';
-        if (!isMismatchType || (row.status === 'FIXED' && !keepSessionFixedVisible)) {
+        if (!isMismatchType || row.status !== 'FLAGGED') {
           return false;
         }
       } else if (activeFilter === 'CATEGORIES') {
@@ -452,7 +498,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       } else if (activeFilter === 'FIXED') {
         if (row.status !== 'FIXED') return false;
       } else if (activeFilter === 'ALL_ISSUES') {
-        if (row.status === 'CLEAN') return false;
+        if (row.status !== 'FLAGGED') return false;
       }
 
       if (!q) return true;
@@ -476,7 +522,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     }
 
     return list;
-  }, [combinedSourceRows, activeFilter, searchTerm, sessionTouchedIds]);
+  }, [combinedSourceRows, activeFilter, searchTerm]);
+
+  filteredRowsRef.current = filteredRows;
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -486,14 +534,25 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   }, [filteredRows, safePage]);
 
   const selectedRecord = useMemo(() => {
+    const isFlaggedQueue =
+      activeFilter === 'ALL_ISSUES' || activeFilter === 'DUPLICATE' || activeFilter === 'MISMATCHED';
     if (!selectedRecordId) return paginatedRows[0] || filteredRows[0] || null;
+    if (isFlaggedQueue) {
+      return (
+        filteredRows.find(r => r.record_id === selectedRecordId) ||
+        paginatedRows[0] ||
+        filteredRows[0] ||
+        null
+      );
+    }
     return (
+      filteredRows.find(r => r.record_id === selectedRecordId) ||
       combinedSourceRows.find(r => r.record_id === selectedRecordId) ||
       paginatedRows[0] ||
       filteredRows[0] ||
       null
     );
-  }, [selectedRecordId, combinedSourceRows, paginatedRows, filteredRows]);
+  }, [selectedRecordId, activeFilter, combinedSourceRows, paginatedRows, filteredRows]);
 
   const handleLoadVisualCandidates = useCallback(
     async (row: UnifiedAuditRow, forceRefresh = false, customQuery?: string) => {
@@ -568,6 +627,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       selectedRecord.new_image_url && selectedRecord.new_image_url !== '(pending audit fix)'
         ? selectedRecord.new_image_url
         : '';
+    setCandidateSearchQuery(cleanProductSearchSubject(selectedRecord.title) || selectedRecord.title);
     setStagedPreviewUrl(currentResolved);
     setCustomUrlInput(
       currentResolved ||
@@ -575,13 +635,19 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           ? selectedRecord.old_image_url
           : '')
     );
+    if (
+      isInspectorModalOpenRef.current &&
+      !candidatesByRecord[selectedRecord.record_id]?.length &&
+      loadingCandidatesFor !== selectedRecord.record_id
+    ) {
+      void handleLoadVisualCandidates(selectedRecord);
+    }
   }, [selectedRecord?.record_id]);
 
   const handleFilterCardClick = (tab: AuditorFilterTab) => {
     setActiveFilter(tab);
     setCurrentPage(1);
     setShowWorkbench(true);
-    setSessionTouchedIds({});
     if ((tab === 'ALL_SCANNED' || tab === 'FIXED' || tab === 'CATEGORIES') && !cleanLoaded) {
       void fetchPreviewStats({ includeCatalog: true });
     }
@@ -601,14 +667,39 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     ) => {
       const wasFlagged = targetRow.status === 'FLAGGED';
       const nowFixed = res.status === 'FIXED';
-      const ts = res.updatedAt || String(Date.now());
+      const ts = res.updatedAt || new Date().toISOString();
+      lastLocalMutationAtRef.current = Date.now();
 
-      setSessionTouchedIds(prev => ({ ...prev, [targetRow.record_id]: true }));
+      // Determine next unfixed record BEFORE removing targetRow from flagged queue
+      const curFilter = activeFilterRef.current;
+      const isFlaggedQueue =
+        curFilter === 'ALL_ISSUES' || curFilter === 'DUPLICATE' || curFilter === 'MISMATCHED';
+      let nextFlaggedRow: UnifiedAuditRow | null = null;
+      if (nowFixed && isFlaggedQueue) {
+        const curList = filteredRowsRef.current;
+        const curIdx = curList.findIndex(r => r.record_id === targetRow.record_id);
+        const remaining = curList.filter(r => r.record_id !== targetRow.record_id && r.status === 'FLAGGED');
+        if (remaining.length > 0) {
+          if (curIdx >= 0) {
+            nextFlaggedRow =
+              curList.slice(curIdx + 1).find(r => r.record_id !== targetRow.record_id && r.status === 'FLAGGED') ||
+              remaining[0];
+          } else {
+            nextFlaggedRow = remaining[0];
+          }
+        }
+      }
 
       setAuditRows(prev => {
         const exists = prev.some(r => r.record_id === targetRow.record_id);
         const updatedEntry: UnifiedAuditRow = {
           ...targetRow,
+          issue_type: nowFixed ? 'HEALTHY' : targetRow.issue_type,
+          issue_reason: nowFixed
+            ? targetRow.record_type === 'CATEGORY'
+              ? 'Fixed — live in Homepage Procurement Sectors'
+              : 'Fixed — saved and verified in catalog'
+            : targetRow.issue_reason,
           old_image_url: res.old_image_url || targetRow.old_image_url,
           new_image_url: nowFixed ? res.new_image_url : '(pending audit fix)',
           status: nowFixed ? 'FIXED' : 'FLAGGED',
@@ -620,19 +711,23 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         return prev.map(r => (r.record_id === targetRow.record_id ? updatedEntry : r));
       });
 
-      setCleanRecords(prev =>
-        prev.map(c =>
-          c.record_id === targetRow.record_id
-            ? {
-                ...c,
-                previous_image_url: res.old_image_url || c.current_image_url,
-                current_image_url: res.new_image_url,
-                updated_at: ts,
-                status: nowFixed ? 'FIXED' : 'FLAGGED'
-              }
-            : c
-        )
-      );
+      setCleanRecords(prev => {
+        const idx = prev.findIndex(c => c.record_id === targetRow.record_id);
+        const nextRec: CatalogScannedCleanRecord = {
+          record_id: targetRow.record_id,
+          record_type: targetRow.record_type,
+          title: targetRow.title,
+          category: targetRow.category,
+          previous_image_url: res.old_image_url || targetRow.old_image_url,
+          current_image_url: res.new_image_url,
+          updated_at: ts,
+          status: nowFixed ? 'FIXED' : 'FLAGGED'
+        };
+        if (idx === -1) {
+          return nowFixed ? [nextRec, ...prev] : prev;
+        }
+        return prev.map((c, i) => (i === idx ? { ...c, ...nextRec } : c));
+      });
 
       setSummary(prev => {
         if (!prev) return prev;
@@ -658,13 +753,33 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         };
       });
 
-      setSelectedRecordId(targetRow.record_id);
-      if (nowFixed) {
-        setStagedPreviewUrl(res.new_image_url);
-        setCustomUrlInput(res.new_image_url);
+      if (nowFixed && isFlaggedQueue) {
+        if (nextFlaggedRow) {
+          setSelectedRecordId(nextFlaggedRow.record_id);
+          setCandidateSearchQuery(cleanProductSearchSubject(nextFlaggedRow.title) || nextFlaggedRow.title);
+          setStagedPreviewUrl('');
+          setCustomUrlInput(
+            nextFlaggedRow.old_image_url && nextFlaggedRow.old_image_url !== '(empty)'
+              ? nextFlaggedRow.old_image_url
+              : ''
+          );
+        } else {
+          setSelectedRecordId(null);
+          setStagedPreviewUrl('');
+          setCustomUrlInput('');
+          if (isInspectorModalOpenRef.current) {
+            setIsInspectorModalOpen(false);
+          }
+        }
       } else {
-        setStagedPreviewUrl('');
-        setCustomUrlInput(res.old_image_url !== '(empty)' ? res.old_image_url : '');
+        setSelectedRecordId(targetRow.record_id);
+        if (nowFixed) {
+          setStagedPreviewUrl(res.new_image_url);
+          setCustomUrlInput(res.new_image_url);
+        } else {
+          setStagedPreviewUrl('');
+          setCustomUrlInput(res.old_image_url !== '(empty)' ? res.old_image_url : '');
+        }
       }
     },
     []
@@ -933,7 +1048,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       setSummary(result);
       const nextRows = mapLogToUnifiedRows(result.audit_log || []);
       setAuditRows(nextRows);
-      setSessionTouchedIds({});
       setShowWorkbench(true);
       if (nextRows.length > 0) {
         setSelectedRecordId(nextRows[0].record_id);
@@ -1942,39 +2056,61 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                     )}
 
                     {selectedCandidates.length > 0 ? (
-                      <div className="grid grid-cols-4 gap-2">
-                        {selectedCandidates.slice(0, 8).map((cand, i) => {
-                          const isChosen = stagedPreviewUrl === cand.url;
-                          return (
-                            <button
-                              key={`${cand.url}-${i}`}
-                              type="button"
-                              onClick={() => {
-                                setStagedPreviewUrl(cand.url);
-                                setCustomUrlInput(cand.url);
-                              }}
-                              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-slate-100 ${
-                                isChosen
-                                  ? 'border-blue-600 ring-2 ring-blue-500/30'
-                                  : 'border-slate-200 hover:border-blue-400'
-                              }`}
-                              title="Click to preview in Before/After viewer"
-                            >
-                              <SafeImage
-                                src={cand.thumbnailUrl || cand.url}
-                                alt={cand.title || selectedRecord.title}
-                                isThumbnail={true}
-                                disableLiveUpload={true}
-                                className="w-full h-full object-cover"
-                              />
-                              {isChosen && (
-                                <span className="absolute top-1 right-1 w-4 h-4 rounded bg-blue-600 text-white flex items-center justify-center">
-                                  <Check className="w-3 h-3" />
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-4 gap-2">
+                          {selectedCandidates.slice(0, 8).map((cand, i) => {
+                            const isChosen = stagedPreviewUrl === cand.url;
+                            return (
+                              <button
+                                key={`${cand.url}-${i}`}
+                                type="button"
+                                onClick={() => {
+                                  setStagedPreviewUrl(cand.url);
+                                  setCustomUrlInput(cand.url);
+                                }}
+                                onDoubleClick={() =>
+                                  void handleFixSingleRecord(selectedRecord, {
+                                    customImageUrl: cand.url
+                                  })
+                                }
+                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-slate-100 ${
+                                  isChosen
+                                    ? 'border-blue-600 ring-2 ring-blue-500/30'
+                                    : 'border-slate-200 hover:border-blue-400'
+                                }`}
+                                title="Click to preview, double-click to save immediately"
+                              >
+                                <SafeImage
+                                  src={cand.thumbnailUrl || cand.url}
+                                  alt={cand.title || selectedRecord.title}
+                                  isThumbnail={true}
+                                  disableLiveUpload={true}
+                                  className="w-full h-full object-cover"
+                                />
+                                {isChosen && (
+                                  <span className="absolute top-1 right-1 w-4 h-4 rounded bg-blue-600 text-white flex items-center justify-center">
+                                    <Check className="w-3 h-3" />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {hasUnsavedStagedChange && stagedPreviewUrl && (
+                          <button
+                            type="button"
+                            disabled={selectedIsFixing}
+                            onClick={() =>
+                              void handleFixSingleRecord(selectedRecord, {
+                                customImageUrl: stagedPreviewUrl
+                              })
+                            }
+                            className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{selectedIsFixing ? 'Saving Photo...' : 'Apply & Save Selected Photo'}</span>
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <p className="text-[11px] text-slate-500">
@@ -2322,39 +2458,63 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                 )}
 
                 {selectedCandidates.length > 0 ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-                    {selectedCandidates.slice(0, 12).map((cand, i) => {
-                      const isChosen = stagedPreviewUrl === cand.url;
-                      return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                      {selectedCandidates.slice(0, 12).map((cand, i) => {
+                        const isChosen = stagedPreviewUrl === cand.url;
+                        return (
+                          <button
+                            key={`modal-cand-${cand.url}-${i}`}
+                            type="button"
+                            onClick={() => {
+                              setStagedPreviewUrl(cand.url);
+                              setCustomUrlInput(cand.url);
+                            }}
+                            onDoubleClick={() =>
+                              void handleFixSingleRecord(selectedRecord, {
+                                customImageUrl: cand.url
+                              })
+                            }
+                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-white ${
+                              isChosen
+                                ? 'border-blue-600 ring-2 ring-blue-500/30'
+                                : 'border-slate-200 hover:border-blue-400'
+                            }`}
+                            title="Click to preview, double-click to save immediately"
+                          >
+                            <SafeImage
+                              src={cand.thumbnailUrl || cand.url}
+                              alt={cand.title || selectedRecord.title}
+                              isThumbnail={true}
+                              disableLiveUpload={true}
+                              className="w-full h-full object-cover"
+                            />
+                            {isChosen && (
+                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-3 h-3" />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {hasUnsavedStagedChange && stagedPreviewUrl && (
+                      <div className="flex items-center justify-end pt-1">
                         <button
-                          key={`modal-cand-${cand.url}-${i}`}
                           type="button"
-                          onClick={() => {
-                            setStagedPreviewUrl(cand.url);
-                            setCustomUrlInput(cand.url);
-                          }}
-                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-white ${
-                            isChosen
-                              ? 'border-blue-600 ring-2 ring-blue-500/30'
-                              : 'border-slate-200 hover:border-blue-400'
-                          }`}
-                          title={cand.title || selectedRecord.title}
+                          disabled={selectedIsFixing}
+                          onClick={() =>
+                            void handleFixSingleRecord(selectedRecord, {
+                              customImageUrl: stagedPreviewUrl
+                            })
+                          }
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
                         >
-                          <SafeImage
-                            src={cand.thumbnailUrl || cand.url}
-                            alt={cand.title || selectedRecord.title}
-                            isThumbnail={true}
-                            disableLiveUpload={true}
-                            className="w-full h-full object-cover"
-                          />
-                          {isChosen && (
-                            <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                              <Check className="w-3 h-3" />
-                            </span>
-                          )}
+                          <Check className="w-4 h-4" />
+                          <span>{selectedIsFixing ? 'Saving Photo...' : 'Apply & Save Selected Photo'}</span>
                         </button>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-xs text-slate-500 py-2">

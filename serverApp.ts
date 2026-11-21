@@ -14019,24 +14019,41 @@ function normalizeServerAssetUrl(url: string | undefined | null, explicitVersion
 function isManualOverrideEntry(entry?: ProductImageOverrideEntry | null): boolean {
   if (!entry || !entry.primary) return false;
   const updater = String(entry.updatedBy || '').toLowerCase();
-  if (updater === 'admin-manual' || updater === 'admin-upload' || updater === 'manual') {
-    return true;
-  }
-  const cleanPrimary = String(entry.primary).trim().split('?')[0];
-  if (cleanPrimary.startsWith('/assets/uploads/')) {
-    const base = path.basename(cleanPrimary);
-    if (!base.startsWith('auto-')) {
-      return true;
-    }
-  }
-  return false;
+  return updater === 'admin-manual' || updater === 'admin-upload' || updater === 'manual';
 }
 
 function isAuditVerifiedOverrideEntry(entry?: ProductImageOverrideEntry | null): boolean {
   if (!entry || !entry.primary) return false;
   if (isManualOverrideEntry(entry)) return true;
   const updater = String(entry.updatedBy || '').toLowerCase();
-  return updater === 'catalog-image-auditor';
+  return updater === 'catalog-image-auditor' || updater === 'system-repair';
+}
+
+function isSafeExternalImageUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (
+      !host ||
+      host === 'localhost' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal') ||
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^169\.254\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      /^fc00:|^fe80:|^fd/i.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const FULL_CATALOG_SNAPSHOT_PATH = path.join(process.cwd(), 'public', 'data', 'fullCatalogSnapshot.json');
@@ -14270,15 +14287,23 @@ function loadServerProductImageState(
           };
         } else {
           const existingIsManual = isManualOverrideEntry(existing);
+          const existingIsAuditVerified = isAuditVerifiedOverrideEntry(existing);
+          const incomingIsAuditVerified = isAuditVerifiedOverrideEntry(entry);
           const existingTime = Math.max(
             parseServerTimestampMs(existing.imageUpdatedAt),
             parseServerTimestampMs(existing.updatedAt)
           );
           const incomingTime = entryTs;
-          if (existingIsManual && !incomingIsManual) {
+          // Only keep an older manual entry over a non-verified background auto-upload
+          if (existingIsManual && !incomingIsAuditVerified && existingTime >= incomingTime) {
             continue;
           }
-          if ((incomingIsManual && !existingIsManual) || incomingTime >= existingTime) {
+          if (
+            (incomingIsManual && !existingIsManual && incomingTime >= existingTime) ||
+            (incomingIsAuditVerified && !existingIsAuditVerified && incomingTime >= existingTime) ||
+            incomingTime > existingTime ||
+            (incomingTime === existingTime && (incomingIsManual || (incomingIsAuditVerified && !existingIsManual)))
+          ) {
             defaultState.overrides[pid] = {
               ...entry,
               ...(typeof entry.imageUpdatedAt === 'number' && entry.imageUpdatedAt > 0
@@ -22368,6 +22393,7 @@ function bindAutoSavedImageOverride(params: {
     const existingPidEntry = serverProductImageState.overrides[pid];
     const existingIsProtected =
       !params.isManual &&
+      !params.forceOverwrite &&
       isManualOverrideEntry(existingPidEntry) &&
       (!existingPidEntry.primary.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(existingPidEntry.primary));
     if (!existingIsProtected && (params.isManual || params.forceOverwrite || shouldBindOverrideForKey(pid))) {
@@ -22400,7 +22426,7 @@ function bindAutoSavedImageOverride(params: {
   // Update persisted serverProductsStore / serverRfqsStore entries if they match pid
   if (pid) {
     const existingPidEntry = serverProductImageState.overrides[pid];
-    const isProtected = !params.isManual && isManualOverrideEntry(existingPidEntry);
+    const isProtected = !params.isManual && !params.forceOverwrite && isManualOverrideEntry(existingPidEntry);
     if (!isProtected) {
       let prodUpdated = false;
       serverProductsStore = serverProductsStore.map(p => {
@@ -23707,6 +23733,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
 }) {
   const FULL_CATALOG_SNAPSHOT_FILE = path.join(process.cwd(), 'public', 'data', 'fullCatalogSnapshot.json');
 
+  // Always refresh in-memory override state from disk before auditing so multi-window edits are reflected immediately
+  serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
+
   const dryRun = Boolean(options?.dryRun);
   const includeCatalog = Boolean(options?.includeCatalog);
   const auditStartedAt = Date.now();
@@ -23770,7 +23799,6 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     }
     if (isManualOverrideEntry(ov)) return true;
     if (isAuditVerifiedOverrideEntry(ov)) {
-      // Already fixed/verified by the Catalog Image Auditor: only flag if a duplicate claims it first
       return !seenUrls.has(currentImg);
     }
     return false;
@@ -23794,6 +23822,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: lid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
+      if (wasExplicitlyFixed) recordsFixed++;
       if (includeCatalog) {
         catalogRecords.push({
           record_id: lid,
@@ -23803,7 +23833,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
         });
       }
       continue;
@@ -23904,6 +23934,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: pid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
+      const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
+      if (wasExplicitlyFixed) recordsFixed++;
       if (includeCatalog) {
         catalogRecords.push({
           record_id: pid,
@@ -23913,7 +23945,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
         });
       }
       continue;
@@ -24015,6 +24047,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: rid, title, type: 'RFQ' });
       usedUrlsSet.add(currentImg);
+      const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
+      if (wasExplicitlyFixed) recordsFixed++;
       if (includeCatalog) {
         catalogRecords.push({
           record_id: rid,
@@ -24024,7 +24058,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
         });
       }
       continue;
@@ -24133,6 +24167,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (isVerifiedCleanOverride(ov, currentImg)) {
       seenUrls.set(currentImg, { id: cid, title, type: rType });
       usedUrlsSet.add(currentImg);
+      const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
+      if (wasExplicitlyFixed) recordsFixed++;
       if (includeCatalog) {
         catalogRecords.push({
           record_id: cid,
@@ -24142,7 +24178,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
         });
       }
       continue;
@@ -24466,7 +24502,13 @@ async function fixSingleCatalogImageRecord(params: {
       ensureUploadedUrlInMediaLibrary(resolvedCustom, outBuf.length);
     } else {
       resolvedCustom = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+      if (resolvedCustom.includes('..') || /^(javascript|vbscript):/i.test(resolvedCustom)) {
+        throw new Error('Invalid image URL provided.');
+      }
       if (/^https?:\/\//i.test(resolvedCustom)) {
+        if (!isSafeExternalImageUrl(resolvedCustom)) {
+          throw new Error('External image URL must use a public HTTP(S) host.');
+        }
         const mirrored = await mirrorExternalProductImageToLocalUploads({
           externalUrl: resolvedCustom,
           productId: cleanId,
@@ -24475,12 +24517,9 @@ async function fixSingleCatalogImageRecord(params: {
           flushNow: true,
           isManual: true
         });
-        if (!mirrored) {
-          throw new Error(
-            'Could not download and import that external image URL into the server media library. Please upload the image file manually instead.'
-          );
+        if (mirrored) {
+          resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
         }
-        resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
       }
     }
 
@@ -24519,17 +24558,33 @@ async function fixSingleCatalogImageRecord(params: {
     ensureUploadedUrlInMediaLibrary(finalImageUrl);
     clearConflictingTitleOverridesForProductId(cleanId, finalImageUrl);
     updateFullCatalogSnapshotRecords([{ id: cleanId, imageUrl: finalImageUrl, gallery: [finalImageUrl] }]);
+    if (resolvedType === 'CATEGORY' || cleanId.startsWith('cat-')) {
+      syncCategoryHeaderUrlIntoSiteContent(cleanId, resolvedTitle, finalImageUrl);
+    }
   }
 
-  if (finalImageUrl && serverProductImageState.overrides[cleanId]) {
+  if (finalImageUrl && !params.revert) {
+    const resolvedUpdater = requestedCustomUrl ? 'admin-manual' : 'catalog-image-auditor';
     (serverProductImageState.overrides[cleanId] as any) = {
-      ...serverProductImageState.overrides[cleanId],
+      ...(serverProductImageState.overrides[cleanId] || {}),
+      primary: finalImageUrl,
+      gallery: [finalImageUrl],
+      format: (path.extname(finalImageUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
       previousPrimary:
         oldImageUrl && oldImageUrl !== finalImageUrl
           ? oldImageUrl
           : existingOverride?.previousPrimary,
       updatedAt: nowIso,
-      ...(!params.revert ? { imageUpdatedAt: activityMs } : {})
+      imageUpdatedAt: activityMs,
+      updatedBy: resolvedUpdater
+    };
+  } else if (finalImageUrl && params.revert && serverProductImageState.overrides[cleanId]) {
+    (serverProductImageState.overrides[cleanId] as any) = {
+      ...serverProductImageState.overrides[cleanId],
+      primary: finalImageUrl,
+      gallery: [finalImageUrl],
+      updatedAt: nowIso,
+      updatedBy: 'auto-site-upload'
     };
   }
 
@@ -24598,6 +24653,7 @@ async function fixSingleCatalogImageRecord(params: {
 }
 
 app.get('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
     const dryRun = req.query.dry_run === '1' || req.query.mode === 'preview';
     const includeCatalog = req.query.include_catalog === '1';
@@ -24613,6 +24669,7 @@ app.get('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
 });
 
 app.post('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
     const body = req.body || {};
     const dryRun = Boolean(body.dry_run || body.dryRun || req.query.dry_run === '1' || req.query.mode === 'preview');
@@ -24636,6 +24693,7 @@ app.post('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
 });
 
 app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
     const body = req.body || {};
     const result = await fixSingleCatalogImageRecord({

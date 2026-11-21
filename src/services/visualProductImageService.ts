@@ -1459,13 +1459,30 @@ async function runClientFallbackCatalogImageAudit(options: {
     const ov = overrides[item.id];
     const currentUrl = String(ov?.primary || item.baseUrl || '').trim();
     const prevUrl = String(ov?.previousPrimary || item.baseUrl || '').trim();
-    const issue = classifyClientAuditIssue(item.id, item.title, item.category, currentUrl, seenUrls);
+    const cleanCurrent = currentUrl.split('?')[0];
+    const isManualFixed = Boolean(
+      ov &&
+      cleanCurrent &&
+      (ov.updatedBy === 'admin-manual' || ov.updatedBy === 'admin-upload' || ov.updatedBy === 'manual') &&
+      !isGenericOrPlaceholderImageUrl(cleanCurrent)
+    );
+    const isAuditorFixed = Boolean(
+      ov &&
+      cleanCurrent &&
+      (ov.updatedBy === 'catalog-image-auditor' || ov.updatedBy === 'system-repair') &&
+      !isGenericOrPlaceholderImageUrl(cleanCurrent) &&
+      !seenUrls.has(cleanCurrent)
+    );
+    const issue =
+      isManualFixed || isAuditorFixed
+        ? { flagged: false as const, type: 'MISMATCHED' as const, reason: '' }
+        : classifyClientAuditIssue(item.id, item.title, item.category, currentUrl, seenUrls);
 
     if (!issue.flagged) {
-      const cleanU = currentUrl.split('?')[0];
+      const cleanU = cleanCurrent;
       if (cleanU) seenUrls.set(cleanU, { id: item.id, title: item.title });
       const wasRecentlyFixed = Boolean(
-        ov && (ov.updatedBy === 'admin-manual' || ov.updatedBy === 'catalog-image-auditor' || ov.updatedBy === 'system-repair')
+        ov && (ov.updatedBy === 'admin-manual' || ov.updatedBy === 'admin-upload' || ov.updatedBy === 'manual' || ov.updatedBy === 'catalog-image-auditor' || ov.updatedBy === 'system-repair')
       );
       if (wasRecentlyFixed) recordsFixed++;
       if (options.includeCatalog) {
