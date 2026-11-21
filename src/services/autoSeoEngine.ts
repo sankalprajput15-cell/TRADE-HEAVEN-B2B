@@ -1,6 +1,12 @@
 import { Product } from '../types';
 import { generateProductAlt } from '../utils/imageSeo';
 import { ALL_COUNTRY_ITEMS, COUNTRIES_DATA } from '../data/countriesData';
+import {
+  matchesMetadataSubstring,
+  matchesProductKeywordClient,
+  sanitizeSearchKeyword,
+  scoreMetadataMatch
+} from './rfqMarketDemandService';
 
 export type SeoProductInput = Omit<Partial<Product>, 'moq' | 'price'> & {
   imageUrl?: string;
@@ -1336,13 +1342,7 @@ class AutoSeoEngineService {
    * comes on TOP in the search bar for B2B portal and export searches!
    */
   public rankProductsForSearch(query: string, products: Product[], limit = 50): Product[] {
-    const cleanQ = (query || '')
-      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
-      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
-      .trim()
-      .toLowerCase();
-    const q = cleanQ;
-    const tokens = q.split(/\s+/).filter(Boolean);
+    const q = sanitizeSearchKeyword(query).toLowerCase();
     const isGenericB2BExportSearch =
       q === 'b2b' ||
       q === 'export' ||
@@ -1352,37 +1352,12 @@ class AutoSeoEngineService {
       q === 'top' ||
       q === 'verified';
 
-    const genericModifierStopwords = new Set([
-      'b2b',
-      'export',
-      'wholesale',
-      'trade',
-      'heaven',
-      'fob',
-      'cif',
-      'bulk',
-      'buy',
-      'supplier',
-      'suppliers',
-      'manufacturer',
-      'manufacturers'
-    ]);
-    const meaningfulTokens = tokens.filter(tk => !genericModifierStopwords.has(tk));
-    const requiredTokens = meaningfulTokens.length > 0 ? meaningfulTokens : tokens;
-
     const scored: { product: Product; score: number }[] = [];
 
     for (const p of products) {
       const pid = String(p.id);
       const seoRec = this.getProductSeoRecord(pid);
       const isUploadedBoosted = this.isProductTopSeoBoosted(pid);
-
-      const titleLower = (p.title || '').toLowerCase();
-      const catLower = (p.category || '').toLowerCase();
-      const subCatLower = (p.subCategory || '').toLowerCase();
-      const supLower = (p.supplierName || '').toLowerCase();
-      const originLower = (p.supplierCountry || (p as any).origin || '').toLowerCase();
-      const tagsLower = ((p as any).tags || []).join(' ').toLowerCase();
 
       if (!q) {
         // When query is empty, still surface uploaded/SEO boosted items first
@@ -1397,29 +1372,41 @@ class AutoSeoEngineService {
         continue;
       }
 
-      const coreProductHaystack = `${titleLower} ${catLower} ${subCatLower} ${supLower} ${originLower} ${tagsLower}`;
-      const allRequiredTokensMatch = requiredTokens.every(tk => coreProductHaystack.includes(tk));
-      if (!allRequiredTokensMatch) {
+      if (!matchesProductKeywordClient(p, query)) {
         continue;
       }
 
-      let matchScore = 100;
+      const specs = p.specifications
+        ? typeof p.specifications === 'object'
+          ? Array.isArray(p.specifications)
+            ? p.specifications.map((s: any) => `${s?.name || ''} ${s?.value || ''}`).join(' ')
+            : Object.entries(p.specifications)
+                .map(([k, v]) => `${k} ${v}`)
+                .join(' ')
+          : String(p.specifications)
+        : '';
 
-      // Exact or prefix title match
-      if (titleLower === q) matchScore += 600;
-      else if (titleLower.startsWith(q)) matchScore += 450;
-      else if (titleLower.includes(q)) matchScore += 320;
-
-      // Category / supplier / origin match
-      if (catLower.includes(q)) matchScore += 220;
-      if (supLower.includes(q)) matchScore += 180;
-      if (originLower.includes(q)) matchScore += 160;
-      if (tagsLower.includes(q)) matchScore += 200;
-
-      for (const tk of requiredTokens) {
-        if (titleLower.includes(tk)) matchScore += 90;
-        else matchScore += 45;
-      }
+      const matchScore = scoreMetadataMatch(
+        {
+          title: p.title,
+          category: p.category,
+          subCategory: p.subCategory,
+          supplierName: p.supplierName,
+          description: p.description,
+          extraFields: [
+            p.supplierCountry,
+            (p as any).origin,
+            specs,
+            p.packagingDetails,
+            p.portOfDispatch,
+            Array.isArray(p.certifications) ? p.certifications.join(' ') : '',
+            Array.isArray((p as any).tags) ? (p as any).tags.join(' ') : '',
+            (p as any).hsCode,
+            p.id
+          ]
+        },
+        query
+      );
 
       if (matchScore > 0) {
         const seoBoost = isUploadedBoosted ? (seoRec?.searchPriorityBoost || 1500) : (seoRec ? 300 : 0);
@@ -1442,31 +1429,25 @@ class AutoSeoEngineService {
    * Searches uploaded & SEO-indexed B2B Articles for the search bar dropdown & Insights page
    */
   public searchArticles(query: string, limit = 6): UploadedB2BArticle[] {
-    const q = (query || '')
-      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
-      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
-      .trim()
-      .toLowerCase();
+    const q = sanitizeSearchKeyword(query).toLowerCase();
     if (!q) return this.articles.slice(0, limit);
 
-    const tokens = q.split(/\s+/).filter(Boolean);
     const scored: { article: UploadedB2BArticle; score: number }[] = [];
 
     for (const art of this.articles) {
       const seoRec = art.seoRecordId ? this.records[art.seoRecordId] : undefined;
-      const hay = `${art.title} ${art.excerpt} ${art.category} ${art.tags.join(' ')}`.toLowerCase();
-      if (!tokens.every(tk => hay.includes(tk))) continue;
+      const articleFields = {
+        title: art.title,
+        category: art.category,
+        description: art.excerpt,
+        extraFields: art.tags
+      };
+      if (!matchesMetadataSubstring(articleFields, query)) continue;
 
-      let score = 100;
-      if (art.title.toLowerCase().includes(q)) score += 500;
-      if (hay.includes(q)) score += 300;
-      for (const tk of tokens) {
-        if (hay.includes(tk)) score += 100;
-      }
-
+      const relevanceScore = scoreMetadataMatch(articleFields, query);
       scored.push({
         article: art,
-        score: score + (seoRec?.searchPriorityBoost || 1000)
+        score: relevanceScore + (seoRec?.searchPriorityBoost || 1000)
       });
     }
 

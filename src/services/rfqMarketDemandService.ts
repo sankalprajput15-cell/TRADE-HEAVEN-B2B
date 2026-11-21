@@ -1,4 +1,4 @@
-import { AuthUser, MarketDemandInsight, RfqRequirement } from '../types';
+import { AuthUser, MarketDemandInsight, Product, RfqRequirement } from '../types';
 import { apiClient } from './apiClient';
 import { api } from './apiService';
 import { securityService } from './securityService';
@@ -41,6 +41,76 @@ export function sortRfqsRealFirst(list: RfqRequirement[]): RfqRequirement[] {
   });
 }
 
+export const SEARCH_STOP_WORDS: ReadonlySet<string> = new Set([
+  // Common English filler / function words
+  'a', 'an', 'the', 'and', 'or', 'of', 'for', 'in', 'on', 'at', 'to', 'from', 'by',
+  'with', 'without', 'about', 'as', 'into', 'is', 'are', 'was', 'were', 'be', 'been',
+  'this', 'that', 'these', 'those', 'it', 'its', 'we', 'our', 'you', 'your', 'my',
+  'need', 'needed', 'looking', 'want', 'wanted', 'find', 'search', 'get', 'buy', 'buying',
+  'purchase', 'order', 'sourcing', 'import', 'importing', 'quote', 'quotes', 'rfq', 'rfqs',
+  'inquiry', 'enquiry', 'lead', 'leads',
+  // Non-essential generic B2B / trade modifiers
+  'bulk', 'wholesale', 'export', 'exports', 'exporter', 'exporters',
+  'supplier', 'suppliers', 'manufacturer', 'manufacturers', 'factory', 'direct',
+  'oem', 'odm', 'b2b', 'trade', 'heaven', 'tradeheaven', 'portal',
+  'global', 'international', 'best', 'top', 'good', 'high', 'quality', 'grade',
+  'premium', 'pure', 'natural', 'genuine', 'original', 'verified', 'certified',
+  'price', 'prices', 'cost', 'rate', 'rates', 'cheap', 'low', 'sale', 'offer', 'offers',
+  'supply', 'product', 'products', 'item', 'items', 'goods', 'unit', 'units', 'pcs', 'pieces',
+  'fob', 'cif', 'cfr', 'exw', 'ddp', 'moq', 'urgent', 'requirement', 'requirements'
+]);
+
+const SEARCH_COMPOUND_NORMALIZATIONS: ReadonlyArray<[RegExp, string]> = [
+  [/\bsun\s+flower(s)?\b/gi, 'sunflower$1'],
+  [/\bsoy(?:a)?\s+bean(s)?\b/gi, 'soybean$1'],
+  [/\bground\s+nut(s)?\b/gi, 'groundnut$1'],
+  [/\bpea\s+nut(s)?\b/gi, 'peanut$1'],
+  [/\bcoco\s+nut(s)?\b/gi, 'coconut$1'],
+  [/\bpine\s+apple(s)?\b/gi, 'pineapple$1'],
+  [/\bwater\s+melon(s)?\b/gi, 'watermelon$1'],
+  [/\bsugar\s+cane(s)?\b/gi, 'sugarcane$1'],
+  [/\bchick\s+pea(s)?\b/gi, 'chickpea$1'],
+  [/\bcotton\s+seed(s)?\b/gi, 'cottonseed$1'],
+  [/\bflax\s+seed(s)?\b/gi, 'flaxseed$1'],
+  [/\bcarda\s+mom\b/gi, 'cardamom'],
+  [/\bcorn\s+starch\b/gi, 'cornstarch'],
+  [/\bsea\s+food\b/gi, 'seafood'],
+  [/\bgear\s+box(es)?\b/gi, 'gearbox$1'],
+  [/\bhand\s+bag(s)?\b/gi, 'handbag$1'],
+  [/\bback\s+pack(s)?\b/gi, 'backpack$1'],
+  [/\bfoot\s+wear\b/gi, 'footwear'],
+  [/\brain\s+coat(s)?\b/gi, 'raincoat$1'],
+  [/\bbed\s+sheet(s)?\b/gi, 'bedsheet$1'],
+  [/\btooth\s+brush(es)?\b/gi, 'toothbrush$1'],
+  [/\btooth\s+paste\b/gi, 'toothpaste'],
+  [/\bhead\s+phone(s)?\b/gi, 'headphone$1'],
+  [/\bear\s+bud(s)?\b/gi, 'earbud$1'],
+  [/\bsmart\s+watch(es)?\b/gi, 'smartwatch$1'],
+  [/\bpower\s+bank(s)?\b/gi, 'powerbank$1'],
+  [/\bfork\s+lift(s)?\b/gi, 'forklift$1'],
+  [/\bbull\s+dozer(s)?\b/gi, 'bulldozer$1'],
+  [/\bply\s+wood\b/gi, 'plywood'],
+  [/\bcard\s+board\b/gi, 'cardboard']
+];
+
+function normalizeSearchCompoundTerms(input: string): string {
+  let out = String(input || '');
+  for (const [pattern, replacement] of SEARCH_COMPOUND_NORMALIZATIONS) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
+function normalizeSearchableText(raw?: string | number | null): string {
+  const str = String(raw ?? '').trim();
+  if (!str) return '';
+  return normalizeSearchCompoundTerms(str)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function sanitizeSearchKeyword(raw?: string | null): string {
   let clean = String(raw || '').trim();
   if (!clean) return '';
@@ -53,34 +123,241 @@ export function sanitizeSearchKeyword(raw?: string | null): string {
   return clean.replace(/\s+/g, ' ');
 }
 
+/**
+ * Extracts cleaned, deduplicated search tokens by stripping prefixes, punctuation,
+ * normalizing common split compound terms, and removing non-essential stop words.
+ * Falls back to all normalized tokens if the query contains only stop words.
+ */
+export function extractCleanSearchTokens(raw?: string | null): string[] {
+  const sanitized = sanitizeSearchKeyword(raw);
+  if (!sanitized) return [];
+  const normalized = normalizeSearchableText(sanitized);
+  if (!normalized) return [];
+
+  const allTokens = Array.from(new Set(normalized.split(/\s+/).filter(Boolean)));
+  const meaningful = allTokens.filter(tk => tk.length >= 2 && !SEARCH_STOP_WORDS.has(tk));
+  if (meaningful.length > 0) return meaningful;
+
+  const fallback = allTokens.filter(tk => tk.length >= 2);
+  return fallback.length > 0 ? fallback : allTokens;
+}
+
+/**
+ * Returns a cleaned search keyword string with prefixes, punctuation, and
+ * non-essential stop words stripped for high-relevance matching.
+ */
+export function cleanSearchKeyword(raw?: string | null): string {
+  return extractCleanSearchTokens(raw).join(' ');
+}
+
+/**
+ * Generates lightweight singular/plural stem variants so substring searches
+ * match both singular and plural product/RFQ terms (e.g. "seeds" <-> "seed").
+ */
+export function getSearchTokenVariants(token: string): string[] {
+  const t = token.toLowerCase().trim();
+  if (!t) return [];
+  const variants = new Set<string>([t]);
+  if (t.length > 4) {
+    if (t.endsWith('ies')) {
+      variants.add(`${t.slice(0, -3)}y`);
+    } else if (t.endsWith('y') && /[^aeiou]y$/.test(t)) {
+      variants.add(`${t.slice(0, -1)}ies`);
+    } else if (t.endsWith('es') && /(?:ch|sh|x|z|ss)es$/.test(t)) {
+      variants.add(t.slice(0, -2));
+    } else if (t.endsWith('s') && !t.endsWith('ss')) {
+      variants.add(t.slice(0, -1));
+    }
+  } else if (t.length === 4 && t.endsWith('s') && !t.endsWith('ss')) {
+    variants.add(t.slice(0, -1));
+  }
+  return Array.from(variants).filter(v => v.length >= 2);
+}
+
+export interface SearchableMetadataFields {
+  title?: string | null;
+  productName?: string | null;
+  category?: string | null;
+  subCategory?: string | null;
+  supplierName?: string | null;
+  description?: string | null;
+  extraFields?: Array<string | number | null | undefined>;
+}
+
+/**
+ * Performs cleaned substring matching across all key metadata fields
+ * (title, category, sub-category, supplier name, description, and optional extras)
+ * instead of strict exact matching, ignoring non-essential stop words.
+ */
+export function matchesMetadataSubstring(
+  fields: SearchableMetadataFields,
+  keyword: string
+): boolean {
+  const tokens = extractCleanSearchTokens(keyword);
+  if (tokens.length === 0) return true;
+
+  const parts = [
+    fields.title,
+    fields.productName,
+    fields.category,
+    fields.subCategory,
+    fields.supplierName,
+    fields.description,
+    ...(fields.extraFields || [])
+  ]
+    .filter(v => v !== undefined && v !== null && String(v).trim() !== '')
+    .map(v => String(v));
+
+  if (parts.length === 0) return false;
+
+  const rawJoined = parts.join(' ').toLowerCase();
+  const normalizedHaystack = normalizeSearchableText(rawJoined);
+  const compactHaystack = normalizedHaystack.replace(/\s+/g, '');
+
+  return tokens.every(token => {
+    const variants = getSearchTokenVariants(token);
+    return variants.some(
+      variant =>
+        normalizedHaystack.includes(variant) ||
+        rawJoined.includes(variant) ||
+        (variant.length >= 4 && compactHaystack.includes(variant))
+    );
+  });
+}
+
+/**
+ * Computes a relevance score for a product or RFQ against a cleaned search query.
+ * Returns 0 when the metadata does not match the cleaned query tokens.
+ */
+export function scoreMetadataMatch(
+  fields: SearchableMetadataFields,
+  keyword: string
+): number {
+  const tokens = extractCleanSearchTokens(keyword);
+  if (tokens.length === 0) return 1;
+  if (!matchesMetadataSubstring(fields, keyword)) return 0;
+
+  const cleanPhrase = tokens.join(' ');
+  const titleNorm = normalizeSearchableText(`${fields.title || ''} ${fields.productName || ''}`);
+  const catNorm = normalizeSearchableText(fields.category || '');
+  const subCatNorm = normalizeSearchableText(fields.subCategory || '');
+  const supplierNorm = normalizeSearchableText(fields.supplierName || '');
+  const descNorm = normalizeSearchableText(fields.description || '');
+
+  let score = 100;
+
+  if (titleNorm === cleanPhrase) score += 600;
+  else if (titleNorm.startsWith(cleanPhrase)) score += 450;
+  else if (titleNorm.includes(cleanPhrase)) score += 320;
+
+  if (catNorm.includes(cleanPhrase)) score += 220;
+  if (subCatNorm.includes(cleanPhrase)) score += 200;
+  if (supplierNorm.includes(cleanPhrase)) score += 180;
+  if (descNorm.includes(cleanPhrase)) score += 120;
+
+  for (const token of tokens) {
+    const variants = getSearchTokenVariants(token);
+    if (variants.some(v => titleNorm.includes(v))) score += 90;
+    else if (variants.some(v => catNorm.includes(v) || subCatNorm.includes(v))) score += 65;
+    else if (variants.some(v => supplierNorm.includes(v))) score += 55;
+    else if (variants.some(v => descNorm.includes(v))) score += 40;
+    else score += 25;
+  }
+
+  return score;
+}
+
+function flattenProductSpecifications(specs: Product['specifications']): string {
+  if (!specs) return '';
+  if (Array.isArray(specs)) {
+    return specs.map(s => `${s?.name || ''} ${s?.value || ''}`).join(' ');
+  }
+  if (typeof specs === 'object') {
+    return Object.entries(specs)
+      .map(([k, v]) => `${k} ${v}`)
+      .join(' ');
+  }
+  return String(specs);
+}
+
+/**
+ * Matches a Product using cleaned substring matching across title, category,
+ * sub-category, supplier name, description, specifications, origin, and tags.
+ */
+export function matchesProductKeywordClient(product: Product, keyword: string): boolean {
+  if (!product) return false;
+  const extraTags = Array.isArray((product as any).tags)
+    ? ((product as any).tags as string[]).join(' ')
+    : '';
+  const certs = Array.isArray(product.certifications) ? product.certifications.join(' ') : '';
+  return matchesMetadataSubstring(
+    {
+      title: product.title,
+      category: product.category,
+      subCategory: product.subCategory,
+      supplierName: product.supplierName,
+      description: product.description,
+      extraFields: [
+        product.supplierCountry,
+        (product as any).origin,
+        flattenProductSpecifications(product.specifications),
+        product.packagingDetails,
+        product.portOfDispatch,
+        certs,
+        extraTags,
+        product.hsCode,
+        product.id
+      ]
+    },
+    keyword
+  );
+}
+
+/**
+ * Matches an RFQ using cleaned substring matching across title, productName,
+ * category, sub-category, supplier/buyer company name, description, and trade metadata.
+ */
 export function matchesRfqKeywordClient(rfq: RfqRequirement, keyword: string): boolean {
-  const q = sanitizeSearchKeyword(keyword).toLowerCase();
-  if (!q) return true;
-  const tokens = q.split(/\s+/).filter(Boolean);
+  if (!rfq) return false;
   const rawSearchKw = String(rfq.searchKeyword || '');
   const primarySearchKw = rawSearchKw.includes('|')
     ? sanitizeSearchKeyword(rawSearchKw.split('|').pop() || '')
     : sanitizeSearchKeyword(rawSearchKw);
   const cleanTitle = sanitizeSearchKeyword(rfq.productName || rfq.title || '');
-  const searchable = [
-    cleanTitle,
-    rfq.productName,
-    rfq.title,
-    rfq.category,
+  const combinedDescription = [
     rfq.detailedDescription,
     rfq.detailedRequirements,
-    primarySearchKw,
-    rfq.destinationPort,
-    rfq.buyerCountry,
-    rfq.preferredIncoterm,
-    rfq.paymentTerms,
-    rfq.id
+    (rfq as any).description
   ]
     .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+    .join(' ');
 
-  return tokens.every(token => searchable.includes(token));
+  return matchesMetadataSubstring(
+    {
+      title: cleanTitle || rfq.title,
+      productName: rfq.productName,
+      category: rfq.category,
+      subCategory: (rfq as any).subCategory || (rfq as any).sub_category || '',
+      supplierName: (rfq as any).supplierName || rfq.buyerCompany || rfq.buyerName,
+      description: combinedDescription,
+      extraFields: [
+        rfq.title,
+        rfq.buyerCompany,
+        rfq.buyerName,
+        primarySearchKw,
+        rfq.destinationPort,
+        rfq.destinationCity,
+        rfq.destinationCountry,
+        rfq.buyerCountry,
+        rfq.preferredIncoterm,
+        rfq.paymentTerms,
+        rfq.urgency,
+        rfq.targetQuantity ? `${rfq.targetQuantity} ${rfq.quantityUnit || ''}` : '',
+        rfq.id
+      ]
+    },
+    keyword
+  );
 }
 
 export function mergeRfqLists(baseList: RfqRequirement[], incomingList: RfqRequirement[]): RfqRequirement[] {
@@ -398,17 +675,15 @@ export async function checkAndDiscoverRfqsForKeyword(params: {
     return { rfqs: params.currentRfqs, insight: null, triggeredAi: false };
   }
 
-  const normalizedQuery = trimmed.toLowerCase();
-  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const normalizedQuery = cleanSearchKeyword(trimmed) || trimmed.toLowerCase();
   const cleanSearchResults = Array.isArray(params.searchResults)
     ? Array.from(
         new Set(
           params.searchResults
             .map(s => sanitizeSearchKeyword(s))
             .filter(s => {
-              if (s.length < 2 || s.toLowerCase() === normalizedQuery) return false;
-              const lowerItem = s.toLowerCase();
-              return queryTokens.every(tk => lowerItem.includes(tk));
+              if (s.length < 2 || s.toLowerCase() === trimmed.toLowerCase()) return false;
+              return matchesMetadataSubstring({ title: s }, trimmed);
             })
         )
       ).slice(0, 8)
