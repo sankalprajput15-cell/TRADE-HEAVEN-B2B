@@ -698,7 +698,7 @@ export const HeroSection: React.FC<Props> = ({
   return (
     <section
       id="trade-heaven-hero"
-      className="relative bg-white border border-slate-200/90 rounded-2xl shadow-sm p-3 sm:p-4 lg:p-5 space-y-4 overflow-visible"
+      className="relative bg-white border border-slate-200/90 rounded-2xl shadow-sm p-3 sm:p-4 lg:p-5 flex flex-col gap-4 overflow-visible"
     >
       {/* Live Visual Edit Trigger (Strictly Admin / Creator Only) */}
       {isAdmin && isLiveEditMode && (
@@ -713,72 +713,75 @@ export const HeroSection: React.FC<Props> = ({
       )}
 
       {/* TOP B2B PORTAL SEARCH & MODE BAR (TradeWheel Signature Omnibar) */}
-      <div className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-2.5 sm:p-3">
+      <div className="hidden lg:block relative z-20 bg-slate-50/80 border border-slate-200/90 rounded-xl p-2.5 sm:p-3">
         <div ref={containerRef} className="relative w-full">
-          {/* Top Row: Target Tabs + Popular Shortcuts */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div
-              role="tablist"
-              aria-label="Search Target Mode"
-              className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-200/75 border border-slate-200 overflow-x-auto max-w-full"
-            >
-              <button
-                role="tab"
-                aria-selected={searchTargetMode === 'PRODUCTS'}
-                type="button"
-                onClick={() => {
-                  setSearchTargetMode('PRODUCTS');
-                  setActiveFilter('PRODUCTS');
-                }}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-                  searchTargetMode === 'PRODUCTS'
-                    ? 'bg-[#0F294D] text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                }`}
+          {/* Top Row: Segmented Search Modes + Verified Buyers Shortcut + Trending */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div className="flex flex-wrap items-center gap-2 max-w-full">
+              <div
+                role="tablist"
+                aria-label="Search Target Mode"
+                className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-200/70 border border-slate-200/80 overflow-x-auto max-w-full"
               >
-                <Package className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('searchProductsTab')}</span>
-              </button>
+                <button
+                  role="tab"
+                  aria-selected={searchTargetMode === 'PRODUCTS'}
+                  type="button"
+                  onClick={() => {
+                    setSearchTargetMode('PRODUCTS');
+                    setActiveFilter('PRODUCTS');
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    searchTargetMode === 'PRODUCTS'
+                      ? 'bg-[#0F294D] text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-[#0F294D] hover:bg-white/80'
+                  }`}
+                >
+                  <Package className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'PRODUCTS' ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <span>{t('searchProductsTab')}</span>
+                </button>
+
+                <button
+                  role="tab"
+                  aria-selected={searchTargetMode === 'RFQS'}
+                  type="button"
+                  onClick={() => {
+                    setSearchTargetMode('RFQS');
+                    setActiveFilter('RFQS');
+                    setIsSearchPopoverOpen(true);
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    searchTargetMode === 'RFQS'
+                      ? 'bg-[#0F294D] text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-[#0F294D] hover:bg-white/80'
+                  }`}
+                >
+                  <FileText className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'RFQS' ? 'text-emerald-400' : 'text-slate-500'}`} />
+                  <span>{t('searchRfqsTab')}</span>
+                </button>
+
+                <button
+                  role="tab"
+                  aria-selected={searchTargetMode === 'SUPPLIERS'}
+                  type="button"
+                  onClick={() => {
+                    setSearchTargetMode('SUPPLIERS');
+                    setActiveFilter('SUPPLIERS');
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    searchTargetMode === 'SUPPLIERS'
+                      ? 'bg-[#0F294D] text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-[#0F294D] hover:bg-white/80'
+                  }`}
+                >
+                  <Building2 className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'SUPPLIERS' ? 'text-amber-400' : 'text-slate-500'}`} />
+                  <span>{t('searchSuppliersTab')}</span>
+                </button>
+              </div>
+
+              <span className="hidden sm:inline-block h-4 w-px bg-slate-200" aria-hidden="true" />
 
               <button
-                role="tab"
-                aria-selected={searchTargetMode === 'RFQS'}
-                type="button"
-                onClick={() => {
-                  setSearchTargetMode('RFQS');
-                  setActiveFilter('RFQS');
-                  setIsSearchPopoverOpen(true);
-                }}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-                  searchTargetMode === 'RFQS'
-                    ? 'bg-[#0F294D] text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('searchRfqsTab')}</span>
-              </button>
-
-              <button
-                role="tab"
-                aria-selected={searchTargetMode === 'SUPPLIERS'}
-                type="button"
-                onClick={() => {
-                  setSearchTargetMode('SUPPLIERS');
-                  setActiveFilter('SUPPLIERS');
-                }}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-                  searchTargetMode === 'SUPPLIERS'
-                    ? 'bg-[#0F294D] text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('searchSuppliersTab')}</span>
-              </button>
-
-              <button
-                role="button"
                 type="button"
                 onClick={() => {
                   setSearchTargetMode('RFQS');
@@ -790,7 +793,7 @@ export const HeroSection: React.FC<Props> = ({
                     onOpenCreateRfq();
                   }
                 }}
-                className="px-3 py-1 rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 text-emerald-700 bg-emerald-50/90 hover:bg-emerald-600 hover:text-white border border-emerald-200/80"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 text-emerald-800 bg-emerald-50/80 hover:bg-emerald-700 hover:text-white border border-emerald-200/80"
               >
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 <span>Verified Buyers</span>
@@ -798,61 +801,65 @@ export const HeroSection: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-600">
-              <span className="font-semibold text-slate-400">Trending:</span>
-              {POPULAR_SEARCH_CHIPS.slice(0, 5).map((chip, idx) => (
-                <React.Fragment key={chip}>
-                  {idx > 0 && <span className="text-slate-300">·</span>}
-                  <button
-                    type="button"
-                    onClick={() => handleChipClick(chip)}
-                    className="hover:text-[#EA580C] font-medium transition-colors cursor-pointer whitespace-nowrap"
-                  >
-                    {chip}
-                  </button>
-                </React.Fragment>
-              ))}
+            <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-600 min-w-0">
+              <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-400 shrink-0">
+                Trending:
+              </span>
+              <div className="flex items-center gap-1.5 truncate">
+                {POPULAR_SEARCH_CHIPS.slice(0, 5).map((chip, idx) => (
+                  <React.Fragment key={chip}>
+                    {idx > 0 && <span className="text-slate-300" aria-hidden="true">·</span>}
+                    <button
+                      type="button"
+                      onClick={() => handleChipClick(chip)}
+                      className="text-slate-600 hover:text-[#EA580C] hover:underline font-medium transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      {chip}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           </div>
 
           <form onSubmit={handleSearchSubmit} className="relative z-30">
-            <div className="bg-white p-1.5 rounded-xl border-2 border-[#0F294D] flex flex-col sm:flex-row items-center gap-1.5 shadow-xs">
+            <div className="bg-white p-1 rounded-xl border-[1.5px] border-[#0F294D] focus-within:ring-4 focus-within:ring-[#0F294D]/10 flex flex-col sm:flex-row items-stretch gap-1 sm:gap-0 shadow-xs transition-all">
               
               {/* 1. Category Dropdown Trigger (Opens Strictly DOWNWARDS) */}
-              <div ref={categoryDropdownRef} className="relative w-full sm:w-56 shrink-0">
+              <div ref={categoryDropdownRef} className="relative w-full sm:w-52 lg:w-56 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setIsCategoryMenuOpen(!isCategoryMenuOpen);
                     setIsSearchPopoverOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`w-full h-10 sm:h-11 flex items-center justify-between gap-2 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     isCategoryMenuOpen 
-                      ? 'bg-blue-50 text-blue-900 border-blue-400 ring-2 ring-blue-500/20' 
-                      : 'bg-slate-100/90 hover:bg-slate-200/80 text-slate-900 border-slate-200'
+                      ? 'bg-blue-50/90 text-[#0F294D]' 
+                      : 'bg-slate-50/90 hover:bg-slate-100 text-slate-800'
                   }`}
                   aria-haspopup="listbox"
                   aria-expanded={isCategoryMenuOpen}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Filter className="w-3.5 h-3.5 text-[#0F294D] shrink-0" />
                     <span className="truncate">
                       {selectedCat === 'All Categories' ? t('allCategories') : tText(selectedCat)}
                     </span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${isCategoryMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isCategoryMenuOpen ? 'rotate-180 text-[#0F294D]' : ''}`} />
                 </button>
 
                 {/* CATEGORIES DOWNWARD MENU */}
                 {isCategoryMenuOpen && (
                   <div 
                     id="hero-categories-downward-menu"
-                    className="absolute top-full left-0 right-0 sm:right-auto mt-2 z-50 w-full sm:w-80 bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+                    className="absolute top-full left-0 right-0 sm:right-auto mt-2 z-50 w-full sm:w-80 bg-white text-slate-900 border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
                   >
-                    <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
+                    <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
                       <span className="uppercase tracking-wider">{t('categoriesHeading')}</span>
-                      <span className="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold">
-                        {CATEGORIES_TREE.length}
+                      <span className="text-[11px] text-slate-500 font-semibold tabular-nums">
+                        {CATEGORIES_TREE.length} sectors
                       </span>
                     </div>
 
@@ -861,17 +868,17 @@ export const HeroSection: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => handleSelectCategory('All Categories')}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                           selectedCat === 'All Categories'
-                            ? 'bg-blue-600 text-white font-bold'
+                            ? 'bg-[#0F294D] text-white font-semibold'
                             : 'hover:bg-slate-100 text-slate-800'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Layers className={`w-4 h-4 ${selectedCat === 'All Categories' ? 'text-white' : 'text-blue-600'}`} />
+                          <Layers className={`w-4 h-4 ${selectedCat === 'All Categories' ? 'text-amber-400' : 'text-[#0F294D]'}`} />
                           <span>{t('allCategories')}</span>
                         </div>
-                        {selectedCat === 'All Categories' && <CheckCircle2 className="w-4 h-4 text-white" />}
+                        {selectedCat === 'All Categories' && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
                       </button>
 
                       {/* Category Options */}
@@ -882,9 +889,9 @@ export const HeroSection: React.FC<Props> = ({
                             key={cat.id}
                             type="button"
                             onClick={() => handleSelectCategory(cat.name)}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                               isSelected
-                                ? 'bg-blue-600 text-white font-bold'
+                                ? 'bg-[#0F294D] text-white font-semibold'
                                 : 'hover:bg-slate-100 text-slate-800'
                             }`}
                           >
@@ -892,11 +899,11 @@ export const HeroSection: React.FC<Props> = ({
                               <CategoryIcon
                                 icon={cat.icon}
                                 categoryName={cat.name}
-                                className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-blue-600'}`}
+                                className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-amber-400' : 'text-slate-500'}`}
                               />
                               <span className="truncate">{tText(cat.name)}</span>
                             </div>
-                            <span className={`text-[10px] shrink-0 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                            <span className={`text-[10px] shrink-0 tabular-nums ${isSelected ? 'text-slate-200' : 'text-slate-400'}`}>
                               {cat.count.split(' ')[0]}
                             </span>
                           </button>
@@ -907,9 +914,11 @@ export const HeroSection: React.FC<Props> = ({
                 )}
               </div>
 
+              <div className="hidden sm:block w-px my-2 mx-1 bg-slate-200 shrink-0" aria-hidden="true" />
+
               {/* 2. Omnibar Search Input */}
-              <div className="relative flex-1 w-full flex items-center">
-                <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+              <div className="relative flex-1 min-w-0 flex items-center">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   ref={searchInputRef}
                   id="hero-search-input"
@@ -931,7 +940,7 @@ export const HeroSection: React.FC<Props> = ({
                       ? t('searchSupplierPlaceholder')
                       : t('searchOmniPlaceholder')
                   }
-                  className="w-full bg-transparent pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 font-medium placeholder-slate-400 focus:outline-none"
+                  className="w-full h-10 sm:h-11 bg-transparent pl-9 pr-9 text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none"
                   autoComplete="off"
                 />
 
@@ -939,7 +948,7 @@ export const HeroSection: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="absolute right-3 top-2.5 p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                     title="Clear search query"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -950,15 +959,15 @@ export const HeroSection: React.FC<Props> = ({
               {/* 3. Search Submit Button */}
               <button
                 type="submit"
-                className={`w-full sm:w-auto font-bold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg text-sm shrink-0 cursor-pointer flex items-center justify-center gap-2 ${
+                className={`w-full sm:w-auto h-10 sm:h-11 font-bold px-5 sm:px-6 rounded-lg transition-colors shadow-2xs text-xs sm:text-sm shrink-0 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
                   searchTargetMode === 'RFQS'
-                    ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black ring-2 ring-emerald-400/50'
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
                     : searchTargetMode === 'SUPPLIERS'
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-[#0F294D] hover:bg-[#163A6B] text-white'
+                    : 'bg-[#EA580C] hover:bg-[#C2410C] text-white'
                 }`}
               >
-                <Search className="w-4 h-4" />
+                <Search className="w-4 h-4 shrink-0" />
                 <span>
                   {searchTargetMode === 'RFQS'
                     ? t('searchRfqsTab')
@@ -1742,86 +1751,118 @@ export const HeroSection: React.FC<Props> = ({
       </div>
 
       {/* TRADEWHEEL-STYLE 3-COLUMN PORTAL SHOWCASE GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+      <div className="contents lg:grid lg:grid-cols-12 lg:gap-4 lg:items-stretch">
         {/* COLUMN 1: LEFT "ALL CATEGORIES" INTERACTIVE SIDEBAR WITH FLYOUT */}
         <div
-          className="lg:col-span-3 relative bg-white border border-slate-200 rounded-xl flex flex-col justify-between"
+          className="hidden lg:flex lg:col-span-3 relative bg-white border border-slate-200/90 rounded-xl flex-col shadow-2xs"
           onMouseLeave={handlePortalCategoryLeave}
         >
-          <div>
-            <div className="bg-[#0F294D] text-white px-3.5 py-2.5 rounded-t-[10px] flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs font-bold tracking-wide uppercase">
-                <LayoutGrid className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{t('allCategories')}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('category-mega-menu');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  else onNavigate?.('PRODUCT_DIRECTORY');
-                }}
-                className="text-[11px] font-semibold text-amber-300 hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
-              >
-                View All →
-              </button>
+          {/* Sidebar Header */}
+          <div className="bg-[#0F294D] text-white px-3.5 py-2.5 rounded-t-[11px] flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2 text-xs font-bold tracking-wide uppercase min-w-0">
+              <LayoutGrid className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="truncate">{t('allCategories')}</span>
             </div>
+            <span className="text-[11px] font-medium text-slate-300 tabular-nums whitespace-nowrap shrink-0">
+              {CATEGORIES_TREE.length} sectors
+            </span>
+          </div>
 
-            <ul className="divide-y divide-slate-100 py-1">
-              {sidebarCategories.map(cat => {
-                const isHovered = hoveredPortalCatId === cat.id;
-                return (
-                  <li
-                    key={cat.id}
-                    onMouseEnter={() => handlePortalCategoryHover(cat.id)}
+          {/* Balanced Category Directory List (2-col compact on mobile/tablet, full-height list on desktop) */}
+          <ul className="grid grid-cols-2 lg:flex lg:flex-col lg:flex-1 lg:justify-between py-0.5">
+            {sidebarCategories.map(cat => {
+              const isHovered = hoveredPortalCatId === cat.id;
+              const shortCount = (cat.count || '').split(' ')[0];
+              return (
+                <li
+                  key={cat.id}
+                  onMouseEnter={() => handlePortalCategoryHover(cat.id)}
+                  className="border-b border-slate-100/90 odd:border-r lg:odd:border-r-0 lg:last:border-b-0 lg:flex-1 flex"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSearch('', cat.name, 'PRODUCTS');
+                      onNavigate?.('PRODUCT_DIRECTORY');
+                    }}
+                    className={`w-full px-3 py-2 flex items-center justify-between gap-2 text-left text-xs transition-colors cursor-pointer ${
+                      isHovered
+                        ? 'bg-[#0F294D]/[0.05] text-[#0F294D] font-semibold'
+                        : 'text-slate-700 hover:bg-slate-50/90 font-medium'
+                    }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSearch('', cat.name, 'PRODUCTS');
-                        onNavigate?.('PRODUCT_DIRECTORY');
-                      }}
-                      className={`w-full px-3.5 py-2 flex items-center justify-between gap-2 text-left text-xs transition-colors cursor-pointer ${
-                        isHovered
-                          ? 'bg-blue-50/90 text-[#0F294D] font-bold'
-                          : 'text-slate-700 hover:bg-slate-50 font-medium'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2.5 min-w-0">
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                          isHovered
+                            ? 'bg-[#EA580C]/10 text-[#EA580C]'
+                            : 'bg-slate-100/90 text-slate-500'
+                        }`}
+                      >
                         <CategoryIcon
                           icon={cat.icon}
                           categoryName={cat.name}
-                          className={`w-3.5 h-3.5 shrink-0 ${isHovered ? 'text-[#EA580C]' : 'text-slate-500'}`}
+                          className="w-3.5 h-3.5 shrink-0"
                         />
-                        <span className="truncate">{tText(cat.name)}</span>
                       </span>
+                      <span className="truncate">{tText(cat.name)}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      {shortCount && (
+                        <span className="hidden xl:inline text-[10px] font-medium text-slate-400 tabular-nums">
+                          {shortCount}
+                        </span>
+                      )}
                       <ChevronRight
                         className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                           isHovered ? 'text-[#EA580C] translate-x-0.5' : 'text-slate-300'
                         }`}
                       />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
-          {/* Desktop Subcategory Flyout Drawer */}
+          {/* Pinned Directory Footer Strip */}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('category-mega-menu');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              else onNavigate?.('PRODUCT_DIRECTORY');
+            }}
+            className="shrink-0 w-full px-3.5 py-2.5 bg-slate-50/90 hover:bg-slate-100/90 border-t border-slate-200/80 rounded-b-[11px] flex items-center justify-between gap-2 text-xs font-semibold text-[#0F294D] hover:text-[#EA580C] transition-colors cursor-pointer group"
+          >
+            <span className="truncate">Browse All {CATEGORIES_TREE.length} Categories</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#EA580C] shrink-0 transition-transform group-hover:translate-x-0.5" />
+          </button>
+
+          {/* Desktop Subcategory Mega-Flyout Drawer */}
           {activeFlyoutCat && (
             <div
               onMouseEnter={() => handlePortalCategoryHover(activeFlyoutCat.id)}
               onMouseLeave={handlePortalCategoryLeave}
-              className="hidden lg:flex flex-col justify-between absolute top-0 left-full ml-1.5 w-[340px] min-h-full bg-white border border-slate-200 rounded-xl shadow-2xl p-4 z-40"
+              className="hidden lg:flex flex-col justify-between absolute top-0 left-full ml-1.5 w-[460px] min-h-full bg-white border border-slate-200 rounded-xl shadow-2xl p-4 z-40"
             >
-              <div className="space-y-3">
-                <div className="pb-2.5 border-b border-slate-100 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-black text-[#0F294D] truncate">
-                      {tText(activeFlyoutCat.name)}
-                    </h3>
-                    <div className="text-[11px] text-slate-500 font-medium tabular-nums">
-                      {activeFlyoutCat.count}
+              <div className="space-y-3.5">
+                <div className="pb-3 border-b border-slate-100 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-[#0F294D] text-amber-400 flex items-center justify-center shrink-0">
+                      <CategoryIcon
+                        icon={activeFlyoutCat.icon}
+                        categoryName={activeFlyoutCat.name}
+                        className="w-4 h-4"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-[#0F294D] truncate">
+                        {tText(activeFlyoutCat.name)}
+                      </h3>
+                      <div className="text-[11px] text-slate-500 font-medium tabular-nums truncate">
+                        {activeFlyoutCat.count}
+                      </div>
                     </div>
                   </div>
                   <button
@@ -1830,18 +1871,19 @@ export const HeroSection: React.FC<Props> = ({
                       onSearch('', activeFlyoutCat.name, 'PRODUCTS');
                       onNavigate?.('PRODUCT_DIRECTORY');
                     }}
-                    className="text-[11px] font-bold text-[#EA580C] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+                    className="text-[11px] font-bold text-[#EA580C] hover:underline whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1"
                   >
-                    Browse All →
+                    <span>Browse All</span>
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
 
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Key Subcategories
+                    Popular Subcategories
                   </div>
-                  <div className="grid grid-cols-1 gap-1">
-                    {(activeFlyoutCat.subcategories || []).slice(0, 8).map((sub: string) => (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(activeFlyoutCat.subcategories || []).slice(0, 12).map((sub: string) => (
                       <button
                         key={sub}
                         type="button"
@@ -1849,36 +1891,46 @@ export const HeroSection: React.FC<Props> = ({
                           onSearch(sub, activeFlyoutCat.name, 'PRODUCTS');
                           onNavigate?.('PRODUCT_DIRECTORY');
                         }}
-                        className="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left text-xs text-slate-700 hover:text-[#0F294D] font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        className="px-2.5 py-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200/80 text-left text-xs text-slate-700 hover:text-[#0F294D] font-medium flex items-center justify-between gap-1.5 transition-colors cursor-pointer group/sub"
                       >
                         <span className="truncate">{sub}</span>
-                        <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
+                        <ChevronRight className="w-3 h-3 text-slate-300 group-hover/sub:text-[#EA580C] shrink-0 transition-colors" />
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSearch(activeFlyoutCat.name, '', 'SUPPLIERS');
+                      onNavigate?.('SUPPLIERS_DIRECTORY');
+                    }}
+                    className="font-bold text-[#0F294D] hover:text-[#EA580C] transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    Verified Suppliers →
+                  </button>
+                  <span className="text-slate-200" aria-hidden="true">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSearch(activeFlyoutCat.name, '', 'RFQS');
+                      onNavigate?.('BUY_LEADS');
+                    }}
+                    className="font-bold text-emerald-700 hover:underline cursor-pointer whitespace-nowrap"
+                  >
+                    Active Buy Offers →
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    onSearch(activeFlyoutCat.name, '', 'SUPPLIERS');
-                    onNavigate?.('SUPPLIERS_DIRECTORY');
-                  }}
-                  className="text-[11px] font-bold text-[#0F294D] hover:text-[#EA580C] cursor-pointer whitespace-nowrap"
+                  onClick={onOpenCreateRfq}
+                  className="font-bold text-[#EA580C] hover:underline cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  Verified Suppliers →
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSearch(activeFlyoutCat.name, '', 'RFQS');
-                    onNavigate?.('BUY_LEADS');
-                  }}
-                  className="text-[11px] font-bold text-emerald-700 hover:underline cursor-pointer whitespace-nowrap"
-                >
-                  Active Buy Offers →
+                  Post RFQ
                 </button>
               </div>
             </div>
@@ -1886,7 +1938,7 @@ export const HeroSection: React.FC<Props> = ({
         </div>
 
         {/* COLUMN 2: CENTER TRADEWHEEL-STYLE B2B PROMOTIONAL CAROUSEL & SHORTCUT STRIP */}
-        <div className="lg:col-span-6 flex flex-col gap-3 min-w-0">
+        <div className="order-1 lg:order-none lg:col-span-6 flex flex-col gap-3 min-w-0">
           {/* Carousel Banner */}
           <div className="relative flex-1 min-h-[280px] sm:min-h-[325px] rounded-xl overflow-hidden bg-[#0F294D] border border-slate-200 group">
             <img
@@ -2054,7 +2106,7 @@ export const HeroSection: React.FC<Props> = ({
         </div>
 
         {/* COLUMN 3: RIGHT ACCOUNT & "TELL US WHAT YOU NEED" QUICK RFQ DESK */}
-        <div className="lg:col-span-3 flex flex-col gap-3">
+        <div className="order-4 lg:order-none lg:col-span-3 flex flex-col gap-3">
           {/* Account Welcome Card */}
           <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200 space-y-3">
             {effectiveUser ? (
