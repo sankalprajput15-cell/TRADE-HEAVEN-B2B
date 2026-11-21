@@ -60,6 +60,7 @@ interface Props {
   isLoadingProducts?: boolean;
   currentUser?: AuthUser | null;
   onOpenRegisterFree?: () => void;
+  onSelectCountry?: (countryId: string) => void;
 }
 
 export const TradeWheelHomePage: React.FC<Props> = ({
@@ -78,7 +79,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onNavigateToRfqs,
   isLoadingProducts = false,
   currentUser = null,
-  onOpenRegisterFree
+  onOpenRegisterFree,
+  onSelectCountry
 }) => {
   const { t, tText } = useLanguage();
   const { siteContent } = useSiteContent();
@@ -1131,12 +1133,20 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 9. GLOBAL BUYERS & SUPPLIERS BY REGION BAR */}
       {sectionVisibility.regionBar && (
       <SuppliersByRegionBar
-        onSelectCountry={() => {
-          onNavigate('COUNTRY_HUB');
+        onSelectCountry={(countryId) => {
+          if (onSelectCountry) {
+            onSelectCountry(countryId);
+          } else {
+            onNavigate('COUNTRY_HUB');
+          }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-        onKeywordClick={() => {
-          onNavigate('COUNTRY_HUB');
+        onKeywordClick={(keyword) => {
+          if (onNavigateToCategory) {
+            onNavigateToCategory('ALL', keyword);
+          } else {
+            onNavigate('PRODUCT_DIRECTORY');
+          }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />

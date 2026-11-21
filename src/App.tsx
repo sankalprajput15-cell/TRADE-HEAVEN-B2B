@@ -17,7 +17,7 @@ import { api, getDeletedProductIdsSet, markProductIdsDeleted, syncDeletedProduct
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
-import { ALL_COUNTRY_ITEMS } from './data/countriesData';
+import { ALL_COUNTRY_ITEMS, findCountryByUrlSegment, resolveWorldCountryMeta, toCountryUrlSlug } from './data/countriesData';
 import { installGlobalAutoLayoutContainment, runAutoLayoutContainmentPass } from './utils/autoLayoutContainment';
 import { resolveUserStorefrontId } from './utils/storefrontUtils';
 
@@ -385,19 +385,65 @@ const MainApp: React.FC = () => {
   const hasRecordedEmailClickRef = useRef<boolean>(false);
   const [isAppInitialized, setIsAppInitialized] = useState<boolean>(false);
 
-  // Navigation & Currency State - Initialize from URL / Email Link Handler if present
+  // Navigation & Currency State - Initialize from URL / Email Link / Country Slug if present
+  const getInitialCountryHubId = (): string => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const paramCountry = params.get('country');
+      if (paramCountry) {
+        const matched = findCountryByUrlSegment(paramCountry);
+        if (matched) return matched.id;
+      }
+      const pathSeg = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      if (pathSeg && !pathSeg.includes('/')) {
+        const matchedPath = findCountryByUrlSegment(pathSeg);
+        if (matchedPath) return matchedPath.id;
+      }
+    }
+    return 'uk';
+  };
+
   const getInitialView = (): ActiveView => {
     if (typeof window !== 'undefined') {
       const parsed = parseIncomingEmailLinkParams(window.location.search);
       if (parsed.forcedView) {
         return parsed.forcedView;
       }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('country') && findCountryByUrlSegment(params.get('country'))) {
+        return 'COUNTRY_HUB';
+      }
+      const pathSeg = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      if (pathSeg && !pathSeg.includes('/') && findCountryByUrlSegment(pathSeg)) {
+        return 'COUNTRY_HUB';
+      }
     }
     return 'HOMEPAGE';
   };
 
   const [activeView, setActiveView] = useState<ActiveView>(getInitialView());
+  const [selectedCountryHubId, setSelectedCountryHubId] = useState<string>(getInitialCountryHubId());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  const syncCountryHubUrl = useCallback((countryId: string) => {
+    const meta = resolveWorldCountryMeta(countryId);
+    setSelectedCountryHubId(meta.id);
+    if (typeof window !== 'undefined') {
+      const slug = toCountryUrlSlug(meta);
+      const nextUrl = `/?view=COUNTRY_HUB&country=${encodeURIComponent(slug)}`;
+      try {
+        window.history.replaceState({ view: 'COUNTRY_HUB', country: slug }, '', nextUrl);
+      } catch {
+        // Ignore history restrictions in sandboxed iframes
+      }
+    }
+  }, []);
+
+  const handleOpenCountryHub = useCallback((countryId: string) => {
+    syncCountryHubUrl(countryId);
+    setActiveView('COUNTRY_HUB');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [syncCountryHubUrl]);
 
   // Install global automatic layout containment observer across the entire site
   useEffect(() => installGlobalAutoLayoutContainment(), []);
@@ -1760,12 +1806,15 @@ const MainApp: React.FC = () => {
           keywords = 'B2B price negotiation, counter offer supplier room, formal proforma invoice generator, purchase contract drafting, escrow payment milestone tracking, international trade negotiation platform, wholesale order contract terms, trade milestone release, secure supplier messaging, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=NEGOTIATION_ROOM';
           break;
-        case 'COUNTRY_HUB':
-          title = 'Global Country Trade Hubs & Export Corridors | Trade Heaven';
-          description = 'Explore international manufacturing hubs, bilateral export corridors, and country-specific trade tariffs.';
-          keywords = 'country trade hubs, bilateral export corridors, import export directory by country, regional manufacturing clusters, free trade agreement FTAs, tariff rates by country, regional export promotion, cross border trade lanes, Trade Heaven';
-          canonical = 'https://tradeheaven.net/?view=COUNTRY_HUB';
+        case 'COUNTRY_HUB': {
+          const activeCountryMeta = resolveWorldCountryMeta(selectedCountryHubId);
+          const activeCountrySlug = toCountryUrlSlug(activeCountryMeta);
+          title = `${activeCountryMeta.name} B2B Buyers, Suppliers & Wholesale Exporters | Trade Heaven`;
+          description = `Explore verified B2B suppliers, manufacturers, wholesale products, and active import buy offers in ${activeCountryMeta.name} (${activeCountryMeta.port}) on Trade Heaven.`;
+          keywords = `${activeCountryMeta.name} B2B suppliers, ${activeCountryMeta.name} verified buyers, ${activeCountryMeta.name} wholesale exporters, ${activeCountryMeta.name} import buy offers, ${activeCountryMeta.name} manufacturers directory, ${activeCountryMeta.port} trade hub, Trade Heaven`;
+          canonical = `https://tradeheaven.net/?view=COUNTRY_HUB&country=${activeCountrySlug}`;
           break;
+        }
         case 'ABOUT_US':
           title = 'About Trade Heaven | Verified B2B Marketplace';
           description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
@@ -1984,7 +2033,7 @@ const MainApp: React.FC = () => {
         ldScript.remove();
       }
     }
-  }, [activeView, selectedProduct, storefrontCompanyId, selectedRfqForModal, products, siteContent]);
+  }, [activeView, selectedCountryHubId, selectedProduct, storefrontCompanyId, selectedRfqForModal, products, siteContent]);
 
   // Handlers
   const handleSelectProduct = (product: Product) => {
@@ -2816,6 +2865,7 @@ const MainApp: React.FC = () => {
                     isLoadingProducts={isLoadingInitialData && products.length === 0}
                     currentUser={currentUser}
                     onOpenRegisterFree={handleOpenRegisterFree}
+                    onSelectCountry={handleOpenCountryHub}
                   />
                 );
 
@@ -3115,8 +3165,10 @@ const MainApp: React.FC = () => {
               case 'COUNTRY_HUB':
                 return (
                   <CountryTradeHubView
-                    initialCountryId="uk"
+                    initialCountryId={selectedCountryHubId}
                     products={products}
+                    rfqs={rfqs}
+                    onCountryChange={syncCountryHubUrl}
                     onSelectProduct={handleSelectProduct}
                     onOpenProductModal={(title) => {
                       const prod = products.find(p => p && p.title && p.title.toLowerCase().includes((title || '').toLowerCase()));
@@ -3135,6 +3187,11 @@ const MainApp: React.FC = () => {
                     }}
                     onPostRfqForCountry={(req) => {
                       handleOpenCreateRfq();
+                    }}
+                    onViewAllBuyers={(countryName) => {
+                      setCatalogSearch(countryName);
+                      setActiveView('BUY_LEADS');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   />
                 );
@@ -3387,6 +3444,7 @@ const MainApp: React.FC = () => {
                     isLoadingProducts={isLoadingInitialData}
                     currentUser={currentUser}
                     onOpenRegisterFree={handleOpenRegisterFree}
+                    onSelectCountry={handleOpenCountryHub}
                   />
                 );
             }

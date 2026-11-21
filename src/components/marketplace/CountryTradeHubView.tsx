@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { CountryB2bPortalView } from './CountryB2bPortalView';
+import React, { useState, useMemo, useEffect } from 'react';
+import { CountryB2bPortalView, CountryPortalTab } from './CountryB2bPortalView';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
-import { ALL_COUNTRY_ITEMS, getCountryData } from '../../data/countriesData';
+import { getCountryData, resolveWorldCountryMeta } from '../../data/countriesData';
 import { MOCK_PRODUCTS } from '../../data/mockData';
-import { Product } from '../../types';
+import { Product, RfqRequirement } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import {
   Globe2,
@@ -23,11 +23,14 @@ import {
 interface CountryTradeHubViewProps {
   initialCountryId?: string;
   products?: Product[];
+  rfqs?: RfqRequirement[];
+  onCountryChange?: (countryId: string) => void;
   onSelectProduct?: (product: Product) => void;
   onOpenProductModal?: (title: string) => void;
   onOpenRfqModal?: (title: string) => void;
   onOpenContactModal?: (supplierName: string, country: string) => void;
   onPostRfqForCountry?: (reqData: { productName: string; quantity: string; notes: string; country: string }) => void;
+  onViewAllBuyers?: (countryName: string) => void;
 }
 
 interface MapCountryHub {
@@ -177,13 +180,19 @@ interface UnifiedOriginProduct {
 export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
   initialCountryId = 'uk',
   products = MOCK_PRODUCTS,
+  rfqs = [],
+  onCountryChange,
   onSelectProduct,
   onOpenProductModal,
   onOpenRfqModal,
   onOpenContactModal,
-  onPostRfqForCountry
+  onPostRfqForCountry,
+  onViewAllBuyers
 }) => {
-  const [selectedCountryId, setSelectedCountryId] = useState<string>(initialCountryId);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>(
+    () => resolveWorldCountryMeta(initialCountryId).id
+  );
+  const [activePortalTab, setActivePortalTab] = useState<CountryPortalTab>('overview');
   const [hoveredCountryId, setHoveredCountryId] = useState<string | null>(null);
   const [activeCorridorId, setActiveCorridorId] = useState<string | null>(null);
   const [searchTerm, setSearchSearchTerm] = useState<string>('');
@@ -191,12 +200,29 @@ export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
   const [selectedProductCategory, setSelectedProductCategory] = useState<string>('ALL');
   const [showAllOriginsProducts, setShowAllOriginsProducts] = useState<boolean>(false);
 
-  const activeHub = useMemo(
-    () =>
-      MAP_COUNTRY_HUBS.find(h => h.id === selectedCountryId) ||
-      MAP_COUNTRY_HUBS.find(h => h.id === 'uk')!,
-    [selectedCountryId]
-  );
+  // Sync internal country state whenever initialCountryId changes (e.g. URL/homepage flag click)
+  useEffect(() => {
+    const resolved = resolveWorldCountryMeta(initialCountryId).id;
+    setSelectedCountryId(prev => (prev !== resolved ? resolved : prev));
+  }, [initialCountryId]);
+
+  const activeHub = useMemo(() => {
+    const exactMapHub = MAP_COUNTRY_HUBS.find(h => h.id === selectedCountryId);
+    if (exactMapHub) return exactMapHub;
+    const worldMeta = resolveWorldCountryMeta(selectedCountryId);
+    const sameRegionHub =
+      MAP_COUNTRY_HUBS.find(h => h.region === worldMeta.region) ||
+      MAP_COUNTRY_HUBS.find(h => h.id === 'uk')!;
+    return {
+      ...sameRegionHub,
+      id: worldMeta.id,
+      name: worldMeta.name,
+      code: worldMeta.code,
+      flag: worldMeta.flagEmoji,
+      region: worldMeta.region,
+      majorPort: worldMeta.port
+    };
+  }, [selectedCountryId]);
 
   const hoveredHub = useMemo(
     () => (hoveredCountryId ? MAP_COUNTRY_HUBS.find(h => h.id === hoveredCountryId) || null : null),
@@ -245,7 +271,7 @@ export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
           id: prod.id,
           title: prod.title,
           category: prod.category || 'Industrial & Wholesale',
-          image: prod.images?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
+          image: prod.images?.[0] || '',
           countryName: hub.name,
           countryId: hub.id,
           supplierName: prod.supplierName || `${hub.name} Verified Exporter`,
@@ -317,9 +343,13 @@ export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
   }, [selectedRegionFilter]);
 
   const handleSelectCountryOnMap = (countryId: string) => {
-    setSelectedCountryId(countryId);
+    const resolvedId = resolveWorldCountryMeta(countryId).id;
+    setSelectedCountryId(resolvedId);
     setShowAllOriginsProducts(false);
     setSelectedProductCategory('ALL');
+    if (onCountryChange) {
+      onCountryChange(resolvedId);
+    }
   };
 
   // Helper to construct smooth quadratic SVG curve between two map hubs
@@ -336,67 +366,35 @@ export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-      {/* GLOBAL HUB HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2 text-blue-300 text-xs font-semibold tracking-wide uppercase">
-              <Globe2 className="w-4 h-4 text-blue-400" />
-              <span>Trade Heaven Global Country Ecosystem</span>
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              B2B Suppliers &amp; Exporters Directory By Country
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Explore 34+ dedicated national trade portals, inspect active maritime trade corridors on the interactive world map, and click any country to filter verified export products by origin.
-            </p>
-          </div>
+      {/* DEDICATED COUNTRY B2B SUPPLIERS & BUYERS PORTAL (IMMEDIATELY AT TOP OF PAGE) */}
+      <CountryB2bPortalView
+        countryId={selectedCountryId}
+        products={products}
+        rfqs={rfqs}
+        activeTab={activePortalTab}
+        onTabChange={setActivePortalTab}
+        onSelectCountry={(cid) => {
+          handleSelectCountryOnMap(cid);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectProduct={onSelectProduct}
+        onOpenProductModal={onOpenProductModal}
+        onOpenRfqModal={onOpenRfqModal}
+        onOpenContactModal={onOpenContactModal}
+        onPostRfqForCountry={onPostRfqForCountry}
+        onViewAllBuyers={onViewAllBuyers}
+        onOpenAllCountriesDirectory={() => {
+          const el = document.getElementById('all-196-countries-directory');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onNavigateBack={() => {
+          setActivePortalTab('overview');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
-          {/* Quick Search */}
-          <div className="w-full md:w-80 space-y-1.5 shrink-0">
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-              Search Country or Export Product:
-            </label>
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search country, port, or product..."
-                value={searchTerm}
-                onChange={(e) => setSearchSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Country Switcher Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
-          <span className="text-[11px] text-slate-400 font-bold uppercase mr-1">Popular Hubs:</span>
-          {['uk', 'usa', 'india', 'germany', 'uae', 'china', 'brazil', 'australia', 'japan', 'singapore'].map(cid => {
-            const item = ALL_COUNTRY_ITEMS.find(x => x.id === cid);
-            if (!item) return null;
-            const isSelected = selectedCountryId === cid && !showAllOriginsProducts;
-            return (
-              <button
-                key={cid}
-                type="button"
-                onClick={() => handleSelectCountryOnMap(cid)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-amber-400 text-slate-950 shadow-sm'
-                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60'
-                }`}
-              >
-                <span>{item.flag}</span>
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* INTERACTIVE SVG WORLD MAP & ACTIVE TRADE CORRIDORS CONSOLE */}
+      {/* INTERACTIVE SVG WORLD MAP & ACTIVE TRADE CORRIDORS CONSOLE (ON-DEMAND TAB) */}
+      {activePortalTab === 'map' && (
       <section
         id="interactive-world-trade-map-section"
         className="bg-slate-950 text-white rounded-3xl border border-slate-800 shadow-2xl overflow-hidden"
@@ -956,32 +954,23 @@ export const CountryTradeHubView: React.FC<CountryTradeHubViewProps> = ({
           )}
         </div>
       </section>
+      )}
 
-      {/* DYNAMIC PORTAL VIEW FOR SELECTED COUNTRY */}
-      <CountryB2bPortalView
-        countryId={selectedCountryId}
-        onSelectCountry={(cid) => handleSelectCountryOnMap(cid)}
-        onOpenProductModal={onOpenProductModal}
-        onOpenRfqModal={onOpenRfqModal}
-        onOpenContactModal={onOpenContactModal}
-        onPostRfqForCountry={onPostRfqForCountry}
-        onNavigateBack={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
-
-      {/* COMPONENT 1: "SUPPLIERS BY REGION" MULTI-COLUMN FLAG HUB (DARK THEME) */}
-      <SuppliersByRegionBar
-        onSelectCountry={(cid) => {
-          handleSelectCountryOnMap(cid);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onKeywordClick={(keyword) => {
-          if (onOpenProductModal) {
-            onOpenProductModal(keyword);
-          }
-        }}
-      />
+      {/* ALL 196 WORLD COUNTRIES FLAG DIRECTORY */}
+      <div id="all-196-countries-directory">
+        <SuppliersByRegionBar
+          onSelectCountry={(cid) => {
+            handleSelectCountryOnMap(cid);
+            setActivePortalTab('overview');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onKeywordClick={(keyword) => {
+            if (onOpenProductModal) {
+              onOpenProductModal(keyword);
+            }
+          }}
+        />
+      </div>
     </div>
   );
 };

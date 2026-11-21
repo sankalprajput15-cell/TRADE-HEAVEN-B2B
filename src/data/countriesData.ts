@@ -1,3 +1,5 @@
+import { WORLD_COUNTRIES_LIST, WorldCountryMeta } from './worldCountriesAndBuyOrders';
+
 export interface CountrySupplier {
   id: string;
   name: string;
@@ -8,6 +10,20 @@ export interface CountrySupplier {
   verified: boolean;
   mainProduct: string;
   logo?: string;
+  responseRate?: string;
+  yearsActive?: number;
+}
+
+export interface CountryVerifiedBuyer {
+  id: string;
+  companyName: string;
+  city: string;
+  country: string;
+  annualVolume: string;
+  targetProducts: string[];
+  orderFrequency: string;
+  preferredIncoterms: string;
+  verifiedSince: number;
 }
 
 export interface CountryProduct {
@@ -15,6 +31,8 @@ export interface CountryProduct {
   title: string;
   category: string;
   image: string;
+  moq?: string;
+  fobRange?: string;
 }
 
 export interface CountryBuyOffer {
@@ -23,6 +41,8 @@ export interface CountryBuyOffer {
   date: string;
   quantity: string;
   buyerCountry?: string;
+  category?: string;
+  incoterm?: string;
 }
 
 export interface CountryData {
@@ -30,6 +50,11 @@ export interface CountryData {
   name: string;
   code: string;
   flag: string;
+  heroBannerImage?: string;
+  primaryPort?: string;
+  complianceStandards?: string[];
+  tradeCurrency?: string;
+  transitSummary?: string;
   stats: {
     companies: number;
     products: number;
@@ -41,10 +66,28 @@ export interface CountryData {
   latestSuppliers: CountrySupplier[];
   latestProducts: CountryProduct[];
   latestBuyOffers: CountryBuyOffer[];
+  verifiedBuyers?: CountryVerifiedBuyer[];
   seoDescription?: {
     headline: string;
     sections: { title: string; body: string }[];
   };
+}
+
+export interface CountryTradeProfile extends CountryData {
+  slug: string;
+  region: WorldCountryMeta['region'];
+  primaryPort: string;
+  flagUrl: string;
+  flagSvgUrl: string;
+  complianceStandards: string[];
+  tradeCurrency: string;
+  popularIncoterms: string[];
+  transitSummary: string;
+  avgResponseHours: string;
+  escrowCoverageRate: string;
+  verifiedBuyers: CountryVerifiedBuyer[];
+  partnerCountries: WorldCountryMeta[];
+  isCustomized?: boolean;
 }
 
 export const TRENDING_KEYWORDS = [
@@ -543,183 +586,562 @@ export function getSeoCopyForCountry(countryId: string, countryName: string) {
   };
 }
 
-// Helper function to dynamically generate fallback data for any of the 34 countries
+// --- DETERMINISTIC 196-COUNTRY PORTAL RESOLUTION & INTELLIGENCE ENGINE ---
+
+function seededHash(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+export function toCountryUrlSlug(metaOrName: WorldCountryMeta | string): string {
+  const name = typeof metaOrName === 'string' ? metaOrName : metaOrName.name;
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+const COUNTRY_ALIAS_TO_CODE: Record<string, string> = {
+  uk: 'GB',
+  gb: 'GB',
+  britain: 'GB',
+  'great-britain': 'GB',
+  'united-kingdom': 'GB',
+  england: 'GB',
+  usa: 'US',
+  us: 'US',
+  'united-states': 'US',
+  'united-states-of-america': 'US',
+  america: 'US',
+  uae: 'AE',
+  ae: 'AE',
+  'united-arab-emirates': 'AE',
+  dubai: 'AE',
+  turkiye: 'TR',
+  turkey: 'TR',
+  'republic-of-turkiye': 'TR',
+  'south-korea': 'KR',
+  korea: 'KR',
+  'republic-of-korea': 'KR',
+  'czech-republic': 'CZ',
+  czechia: 'CZ',
+  'cote-divoire': 'CI',
+  'ivory-coast': 'CI',
+  'dr-congo': 'CD',
+  drc: 'CD',
+  holland: 'NL',
+  'the-netherlands': 'NL'
+};
+
+export function findCountryByUrlSegment(rawInput?: string | null): WorldCountryMeta | null {
+  if (!rawInput) return null;
+  const cleaned = String(rawInput)
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/^country-/, '');
+  if (!cleaned) return null;
+
+  const aliasCode = COUNTRY_ALIAS_TO_CODE[cleaned];
+  if (aliasCode) {
+    const byAlias = WORLD_COUNTRIES_LIST.find(c => c.code === aliasCode);
+    if (byAlias) return byAlias;
+  }
+
+  // Direct id or ISO-2 code match
+  const direct = WORLD_COUNTRIES_LIST.find(
+    c =>
+      c.id.toLowerCase() === cleaned ||
+      c.code.toLowerCase() === cleaned ||
+      toCountryUrlSlug(c) === cleaned ||
+      c.name.toLowerCase() === cleaned
+  );
+  if (direct) return direct;
+
+  return null;
+}
+
+export function resolveWorldCountryMeta(countryIdOrName?: string | null): WorldCountryMeta {
+  const exact = findCountryByUrlSegment(countryIdOrName);
+  if (exact) return exact;
+
+  if (countryIdOrName) {
+    const norm = String(countryIdOrName).trim().toLowerCase();
+    const partial = WORLD_COUNTRIES_LIST.find(
+      c => c.name.toLowerCase().includes(norm) || norm.includes(c.name.toLowerCase())
+    );
+    if (partial) return partial;
+  }
+
+  return WORLD_COUNTRIES_LIST.find(c => c.code === 'GB') || WORLD_COUNTRIES_LIST[0];
+}
+
+const REGION_TRADE_TEMPLATES: Record<
+  WorldCountryMeta['region'],
+  {
+    exports: string[];
+    imports: string[];
+    compliance: string[];
+    currency: string;
+    transit: string;
+    productCatalog: Array<{ title: string; category: string; moq: string; fobRange: string }>;
+    supplierTypes: Array<{ suffix: string; product: string }>;
+    buyerTypes: Array<{ suffix: string; volume: string; products: string[]; freq: string }>;
+  }
+> = {
+  Europe: {
+    exports: [
+      'Precision CNC Machinery', 'Industrial Valves & Pumps', 'Automotive Components', 'Pharmaceutical APIs',
+      'Specialty Chemicals', 'Recycled Copper & Aluminum Scrap', 'Wood Pellets & Biomass', 'Dairy & Food Ingredients',
+      'Surgical & Medical Devices', 'Electrical Switchgear', 'Stainless Steel Coils', 'Solar Inverters',
+      'Packaging Machinery', 'Marine Hardware', 'Eco Paperboard & Kraft', 'Industrial Lubricants',
+      'Hydraulic Cylinders', 'Polymer Resins (HDPE/LDPE)'
+    ],
+    imports: [
+      'Basmati & Long Grain Rice', 'Cotton Garments & Knitwear', 'Lithium-Ion Battery Cells', 'Organic Spices & Tea',
+      'Natural Rubber & Tyres', 'Solar PV Modules', 'Steel Fasteners & Hardware', 'Leather Goods & Footwear',
+      'Urea 46% Fertilizer', 'Aluminum Extrusions', 'Plastic Injection Moulds', 'Essential Oils & Cosmetics',
+      'Hand Tools & Workshop Gear', 'Frozen Seafood', 'Ceramic Tiles & Sanitaryware'
+    ],
+    compliance: ['CE Marking', 'ISO 9001:2015', 'REACH Compliant', 'EORI Customs Verified'],
+    currency: 'EUR / GBP / USD',
+    transit: '14–26 Days Ocean · 3–5 Days Air Freight',
+    productCatalog: [
+      { title: 'Precision 5-Axis CNC Machined Alloy Components', category: 'Industrial Machinery', moq: '250 Pcs', fobRange: '$18 – $64 / Pc' },
+      { title: 'ENplus A1 Certified Industrial Wood Pellets', category: 'Renewable Energy', moq: '24 MT (1 FCL)', fobRange: '$245 – $285 / MT' },
+      { title: 'Millberry 99.9% Bright Copper Wire Scrap', category: 'Metals & Scrap', moq: '20 MT', fobRange: '$7,850 – $8,320 / MT' },
+      { title: 'ISO 13485 Stainless Surgical Instrument Kits', category: 'Medical & Healthcare', moq: '100 Kits', fobRange: '$42 – $115 / Kit' },
+      { title: 'High-Pressure Flanged Industrial Centrifugal Pumps', category: 'Industrial Machinery', moq: '5 Units', fobRange: '$1,240 – $3,400 / Unit' },
+      { title: 'Virgin & Recycled HDPE Injection Molding Granules', category: 'Chemicals & Polymers', moq: '25 MT', fobRange: '$940 – $1,180 / MT' },
+      { title: 'Food-Grade Kraft Corrugated Export Cartons', category: 'Packaging & Printing', moq: '5,000 Pcs', fobRange: '$0.42 – $1.10 / Pc' },
+      { title: 'Three-Phase Industrial Power Distribution Switchgear', category: 'Electronics & Power', moq: '10 Units', fobRange: '$680 – $2,150 / Unit' }
+    ],
+    supplierTypes: [
+      { suffix: 'Industrial Engineering Ltd', product: 'CNC Precision Parts, Hydraulic Valves & Steel Assemblies' },
+      { suffix: 'EuroMetals & Alloys Group', product: 'Copper Cathodes, Aluminum Ingots & Ferrous Scrap' },
+      { suffix: 'Maritime Logistics & Export Co', product: 'Bulk Cargo Forwarding, Export Consolidation & Customs' },
+      { suffix: 'BioEnergy & Wood Pellets BV', product: 'ENplus A1 Biomass Pellets & Sustainable Timber' },
+      { suffix: 'MedTech Surgical Instruments GmbH', product: 'CE Certified Hospital Equipment & Diagnostic Supplies' },
+      { suffix: 'PolyChem Materials & Resins', product: 'HDPE, LDPE, Polypropylene & Industrial Solvents' },
+      { suffix: 'Continental Food & Beverage Exports', product: 'Milk Powder, Confectionery, Olive Oil & Beverages' },
+      { suffix: 'Apex Packaging & Paperboard Solutions', product: 'Eco Kraft Cartons, Corrugated Pallets & Films' },
+      { suffix: 'Vanguard Automation & Switchgear', product: 'PLC Control Panels, Industrial Sensors & Motors' }
+    ],
+    buyerTypes: [
+      { suffix: 'Wholesale Distribution Group', volume: '$4.8M / yr', products: ['Cotton Apparel', 'Home Textiles', 'Packaging Cartons'], freq: 'Monthly FCL' },
+      { suffix: 'Industrial Procurement Partners', volume: '$11.2M / yr', products: ['Stainless Fasteners', 'CNC Forgings', 'Electric Motors'], freq: 'Bi-Weekly' },
+      { suffix: 'AgriFood Import House', volume: '$6.5M / yr', products: ['1121 Basmati Rice', 'Organic Spices', 'Cashew Kernels'], freq: 'Monthly 40ft' },
+      { suffix: 'GreenGrid Energy Buyers', volume: '$14.0M / yr', products: ['Bifacial Solar Panels', 'LiFePO4 Batteries', 'Inverters'], freq: 'Quarterly Bulk' },
+      { suffix: 'MedSupply Healthcare Imports', volume: '$3.9M / yr', products: ['Nitrile Gloves', 'Surgical Disposables', 'Lab Glassware'], freq: 'Monthly' },
+      { suffix: 'BuildCore Hardware Merchants', volume: '$7.4M / yr', products: ['Ceramic Tiles', 'Sanitary Valves', 'Scaffolding Steel'], freq: 'Bi-Monthly' }
+    ]
+  },
+  'Asia-Pacific': {
+    exports: [
+      '1121 Basmati & Jasmine Rice', 'Cotton Fabrics & Ready-Made Garments', 'Pharmaceutical Formulations',
+      'Solar PV Modules & Lithium Cells', 'Spices, Tea & Coffee Beans', 'Forged Steel & Auto Parts',
+      'LED Lighting & Consumer Electronics', 'Ceramic Tiles & Granite Slabs', 'Leather Footwear & Bags',
+      'Natural Rubber & Palm Oil', 'PP Woven Bags & Flexible Packaging', 'CNC Machine Tools',
+      'Stainless Steel Kitchenware', 'Marine & Frozen Seafood', 'Organic Essential Oils',
+      'PVC Pipes & Fittings', 'Agro Fertilizers & Micronutrients', 'Electric Two-Wheelers & Parts'
+    ],
+    imports: [
+      'Heavy Melting Steel Scrap (HMS 1&2)', 'Copper & Aluminum Scrap', 'Wood Pulp & Waste Paper',
+      'Crude & Refined Petroleum', 'Precision German/Japanese CNC Machines', 'Dairy Milk Powder',
+      'Medical Imaging Systems', 'Industrial Polymers & Resins', 'Semiconductor Wafers',
+      'Raw Cashew & Almonds', 'Coal & Industrial Minerals', 'Laboratory Instruments',
+      'Specialty Agrochemicals', 'Timber Logs & Lumber', 'Aviation & Marine Spare Parts'
+    ],
+    compliance: ['ISO 9001:2015', 'SGS Pre-Shipment Inspected', 'Phytosanitary / CoO', 'Export License Verified'],
+    currency: 'USD / Local Clearing',
+    transit: '12–24 Days Ocean · 2–4 Days Air Express',
+    productCatalog: [
+      { title: 'Export Grade 1121 Steam Basmati Rice (Sortex Clean)', category: 'Agriculture & Food', moq: '25 MT (1x20ft)', fobRange: '$920 – $1,080 / MT' },
+      { title: '550W Monocrystalline Tier-1 Bifacial Solar Modules', category: 'Renewable Energy', moq: '1 Pallet (31 Pcs)', fobRange: '$0.14 – $0.18 / W' },
+      { title: '100% Combed Organic Cotton Knitwear & Apparel', category: 'Textiles & Apparel', moq: '1,000 Pcs', fobRange: '$4.20 – $9.80 / Pc' },
+      { title: 'WHO-GMP Certified Generic Pharmaceutical Tablets', category: 'Medical & Healthcare', moq: '10,000 Boxes', fobRange: '$0.85 – $3.40 / Box' },
+      { title: 'Heavy-Duty CNC Precision Turned Automotive Shafts', category: 'Automotive & Parts', moq: '500 Pcs', fobRange: '$6.50 – $22.00 / Pc' },
+      { title: 'Bulk Whole Spices, Turmeric Fingers & Black Pepper', category: 'Agriculture & Food', moq: '5 MT', fobRange: '$1,850 – $4,600 / MT' },
+      { title: 'Porcelain Vitrified Floor Tiles 600x1200mm Glossy', category: 'Construction & Hardware', moq: '1,400 Sq.m', fobRange: '$6.80 – $11.50 / Sq.m' },
+      { title: 'UV-Stabilized PP Woven Jumbo FIBC Bulk Bags', category: 'Packaging & Printing', moq: '2,000 Bags', fobRange: '$3.20 – $6.90 / Bag' }
+    ],
+    supplierTypes: [
+      { suffix: 'Overseas Exporters Pvt Ltd', product: 'Basmati Rice, Whole Spices, Pulses & Agro Commodities' },
+      { suffix: 'Precision Engineering & Forgings', product: 'Automotive Gears, Fasteners, CNC Machined Parts' },
+      { suffix: 'Textiles & Apparel Mills', product: '100% Cotton Fabrics, Denim, Knitwear & Home Linen' },
+      { suffix: 'Solar & CleanTech Manufacturing', product: 'Solar PV Panels, Lithium Packs & Hybrid Inverters' },
+      { suffix: 'Global Pharma & Lifesciences', product: 'WHO-GMP Formulations, APIs & Surgical Disposables' },
+      { suffix: 'Ceramics, Granite & Building Corp', product: 'Porcelain Tiles, Natural Stone Slabs & Sanitaryware' },
+      { suffix: 'Polymers & Packaging Industries', product: 'FIBC Bulk Bags, BOPP Films & Rigid Containers' },
+      { suffix: 'Marine & ColdChain Exports', product: 'IQF Vannamei Shrimp, Frozen Fish & Seafood' },
+      { suffix: 'Industrial Chemicals & Dyes Ltd', product: 'Textile Dyes, Pigments, Caustic Soda & Solvents' }
+    ],
+    buyerTypes: [
+      { suffix: 'Steel & Scrap Recycling Mills', volume: '$18.5M / yr', products: ['HMS 1&2 Steel Scrap', 'Shredded Aluminum', 'Copper Wire'], freq: 'Weekly Bulk' },
+      { suffix: 'Industrial Automation Importers', volume: '$9.2M / yr', products: ['CNC Lathes', 'PLC Drives', 'Precision Bearings'], freq: 'Monthly' },
+      { suffix: 'PetroChem Raw Material Desk', volume: '$12.4M / yr', products: ['Virgin HDPE/LLDPE', 'Base Oil SN500', 'Methanol'], freq: 'Bi-Weekly FCL' },
+      { suffix: 'Paper & Pulp Converting Group', volume: '$5.6M / yr', products: ['OCC 11 Waste Paper', 'Kraft Linerboard', 'Wood Pulp'], freq: 'Monthly' },
+      { suffix: 'Food & Nut Processing Co', volume: '$6.8M / yr', products: ['Raw In-Shell Almonds', 'Walnuts', 'Skimmed Milk Powder'], freq: 'Monthly' },
+      { suffix: 'Hospital & Diagnostics Supply', volume: '$4.3M / yr', products: ['Ultrasound Systems', 'Dental Units', 'Reagents'], freq: 'Quarterly' }
+    ]
+  },
+  Americas: {
+    exports: [
+      'Yellow Corn & Non-GMO Soybeans', 'Refined Petroleum & LNG', 'ICUMSA 45 White Sugar',
+      'Arabica Coffee Beans & Cocoa', 'Copper Cathodes & Iron Ore', 'Heavy Construction Machinery',
+      'Medical & Dental Instruments', 'Industrial Chemicals & Resins', 'Poultry & Frozen Beef',
+      'Timber, Lumber & Wood Pulp', 'Almonds, Walnuts & Pistachios', 'Aviation & Automotive Parts',
+      'Oilfield Drilling Equipment', 'Recycled Aluminum & Copper Scrap', 'Pharmaceuticals & Nutraceuticals'
+    ],
+    imports: [
+      'Industrial Machinery & Tools', 'Consumer Electronics & Smartphones', 'Ready-Made Apparel & Footwear',
+      'Solar Modules & Energy Storage', 'Furniture & Home Decor', 'Ceramic & Porcelain Tiles',
+      'Automotive Aftermarket Parts', 'Pharmaceutical Generics', 'Packaging Films & Cartons',
+      'Stainless Steel Kitchen Equipment', 'Organic Tea, Coffee & Spices', 'Urea & NPK Fertilizers',
+      'Industrial Valves & Pipe Fittings', 'Rubber Tyres & Conveyor Belts', 'LED Commercial Fixtures'
+    ],
+    compliance: ['ISO 9001:2015', 'FDA / USDA / UL Eligible', 'CBP Customs Verified', 'SGS / Intertek Inspected'],
+    currency: 'USD / CAD / Local',
+    transit: '10–22 Days Ocean · 2–4 Days Air Cargo',
+    productCatalog: [
+      { title: 'ICUMSA 45 Refined White Cane Sugar (50kg PP Bags)', category: 'Agriculture & Food', moq: '125 MT', fobRange: '$460 – $535 / MT' },
+      { title: 'Grade A Yellow Corn & Non-GMO Bulk Soybeans', category: 'Agriculture & Food', moq: '100 MT', fobRange: '$290 – $440 / MT' },
+      { title: 'Grade A Electrolytic Copper Cathodes 99.99%', category: 'Metals & Scrap', moq: '25 MT', fobRange: '$8,450 – $8,920 / MT' },
+      { title: 'Heavy-Duty Hydraulic Excavator & Earthmoving Attachments', category: 'Industrial Machinery', moq: '2 Units', fobRange: '$3,800 – $14,500 / Unit' },
+      { title: 'Specialty Washed Arabica Green Coffee Beans', category: 'Agriculture & Food', moq: '19 MT (1 FCL)', fobRange: '$4,100 – $5,200 / MT' },
+      { title: 'Kiln-Dried Softwood Lumber & Construction Timber', category: 'Construction & Hardware', moq: '40 CBM', fobRange: '$310 – $480 / CBM' },
+      { title: 'API Certified Oilfield Gate Valves & Flanges', category: 'Energy & Petroleum', moq: '20 Units', fobRange: '$490 – $1,950 / Unit' },
+      { title: 'Bulk California/Americas Shelled Almonds & Walnuts', category: 'Agriculture & Food', moq: '10 MT', fobRange: '$5,200 – $6,400 / MT' }
+    ],
+    supplierTypes: [
+      { suffix: 'AgriCommodities Export Corp', product: 'Soybeans, Yellow Corn, ICUMSA 45 Sugar & Pulses' },
+      { suffix: 'Pacific Metals & Mining LLC', product: 'Copper Cathodes, Aluminum Ingots & Ferrous Scrap' },
+      { suffix: 'Industrial Machinery & Energy Inc', product: 'Oilfield Valves, Compressors & Power Generators' },
+      { suffix: 'Continental Timber & Pulp Co', product: 'Kiln-Dried Lumber, Wood Pellets & Kraft Paper' },
+      { suffix: 'BioMed & Clinical Technologies', product: 'Diagnostic Equipment, Lab Instruments & Consumables' },
+      { suffix: 'Specialty Coffee & Agro Traders', product: 'Green Coffee Beans, Cocoa, Nuts & Edible Oils' },
+      { suffix: 'PetroPolymers & Specialty Chem', product: 'LDPE, HDPE, Industrial Lubricants & Solvents' },
+      { suffix: 'FreightLine Port Logistics', product: 'Containerized Ocean Freight, Reefer & Customs Brokerage' },
+      { suffix: 'AutoParts & Heavy Fleet Supply', product: 'OEM Truck Axles, Brake Assemblies & Filters' }
+    ],
+    buyerTypes: [
+      { suffix: 'Wholesale Retail Supply Inc', volume: '$16.4M / yr', products: ['Apparel & Activewear', 'Packaging Cartons', 'Homewares'], freq: 'Weekly FCL' },
+      { suffix: 'Construction & Hardware Group', volume: '$12.8M / yr', products: ['Steel Rebar', 'Porcelain Tiles', 'Hand Tools'], freq: 'Bi-Weekly' },
+      { suffix: 'CleanPower Solar Distributors', volume: '$21.0M / yr', products: ['Tier-1 Solar Panels', 'Battery Inverters', 'Cables'], freq: 'Monthly' },
+      { suffix: 'FoodService Wholesale Importers', volume: '$8.9M / yr', products: ['Basmati Rice', 'Organic Spices', 'Canned Produce'], freq: 'Monthly' },
+      { suffix: 'Industrial Valve & Pipe Corp', volume: '$7.2M / yr', products: ['Stainless Flanges', 'Forged Fittings', 'Bearings'], freq: 'Bi-Monthly' },
+      { suffix: 'AutoFleet Aftermarket Buyers', volume: '$10.5M / yr', products: ['Radial Tyres', 'LED Headlights', 'Brake Pads'], freq: 'Monthly' }
+    ]
+  },
+  'Middle East & Africa': {
+    exports: [
+      'Bitumen 60/70 & Petrochemicals', 'Urea 46% & Phosphate Fertilizers', 'Base Oil SN500 & Lubricants',
+      'Raw Cashew Nuts & Sesame Seeds', 'Aluminum Ingots & Copper Blister', 'Dates, Citrus & Fresh Produce',
+      'Gold, Chrome Ore & Manganese', 'Cocoa Beans & Arabica Coffee', 'Natural Marble & Limestone',
+      'Polyethylene (HDPE/LLDPE) Granules', 'Portland Cement & Clinker', 'Frankincense, Gum Arabic & Resins',
+      'Shea Butter & Organic Oils', 'Frozen Seafood & Fish Meal', 'Refined Diesel EN590 & Jet A1'
+    ],
+    imports: [
+      'Basmati & Parboiled Rice', 'Refined Sunflower & Palm Cooking Oil', 'Heavy Construction Machinery',
+      'Structural Steel, Billets & Rebar', 'Pharmaceuticals & Medical Kits', 'Solar Power & Off-Grid Inverters',
+      'Automotive Spare Parts & Tyres', 'Textiles, Fabrics & Footwear', 'Dairy Milk Powder & Sugar',
+      'Electrical Cables & Transformers', 'Agricultural Tractors & Pumps', 'Packaging Materials & PET Preforms',
+      'Industrial Chemicals & Water Treatment', 'Commercial Kitchen & Hotel Supplies', 'Building Materials & Sanitaryware'
+    ],
+    compliance: ['ISO 9001:2015', 'SGS / Bureau Veritas CoC', 'Halal & Chamber Attested', 'Port Customs Verified'],
+    currency: 'USD / AED / Local',
+    transit: '10–21 Days Ocean · 2–4 Days Air Cargo',
+    productCatalog: [
+      { title: 'Penetration Grade 60/70 Export Bitumen (New Steel Drums)', category: 'Energy & Petroleum', moq: '100 MT', fobRange: '$365 – $420 / MT' },
+      { title: 'Prilled & Granular Urea 46% Nitrogen Fertilizer', category: 'Chemicals & Polymers', moq: '500 MT', fobRange: '$325 – $375 / MT' },
+      { title: 'W320 Export Grade Raw & Processed Cashew Kernels', category: 'Agriculture & Food', moq: '16 MT (1x20ft)', fobRange: '$5,800 – $6,650 / MT' },
+      { title: 'High-Purity 99.7% A7 Aluminum Ingots (LME Standard)', category: 'Metals & Scrap', moq: '25 MT', fobRange: '$2,180 – $2,390 / MT' },
+      { title: 'Hulled & Natural White Sesame Seeds (99.95% Sortex)', category: 'Agriculture & Food', moq: '19 MT', fobRange: '$1,620 – $1,890 / MT' },
+      { title: 'Virgin Film-Grade LLDPE & HDPE Polymer Resins', category: 'Chemicals & Polymers', moq: '24.75 MT', fobRange: '$960 – $1,140 / MT' },
+      { title: 'OPC 42.5N Bulk Portland Cement & Grey Clinker', category: 'Construction & Hardware', moq: '1,000 MT', fobRange: '$58 – $74 / MT' },
+      { title: 'Unrefined Grade-A Organic Raw Shea Butter (25kg Cartons)', category: 'Cosmetics & Personal Care', moq: '5 MT', fobRange: '$2,450 – $3,100 / MT' }
+    ],
+    supplierTypes: [
+      { suffix: 'PetroChem & Bitumen Trading LLC', product: 'Bitumen 60/70, Base Oils, Urea 46% & Polymers' },
+      { suffix: 'AgroExporters & Commodity House', product: 'Sesame Seeds, Raw Cashews, Cocoa & Gum Arabic' },
+      { suffix: 'Gulf & Continental Metals Group', product: 'A7 Aluminum Ingots, Copper Concentrates & Scrap' },
+      { suffix: 'Horizon Cement & Minerals Co', product: 'Portland Cement, Clinker, Gypsum & Natural Marble' },
+      { suffix: 'Oasis Foodstuffs & Dates Exports', product: 'Medjool Dates, Citrus, Edible Oils & Pulses' },
+      { suffix: 'Maritime Trade & Freezone Logistics', product: 'Port Clearance, Bulk Chartering & Bonded Warehousing' },
+      { suffix: 'Natural Botanicals & Shea Co', product: 'Raw Shea Butter, Frankincense Resin & Essential Oils' },
+      { suffix: 'Prime Fertilizers & Chemical Works', product: 'DAP, NPK Fertilizers, Sulfur Granular & Acids' },
+      { suffix: 'RedSea & Atlantic Seafood Exports', product: 'Frozen Pelagic Fish, Cuttlefish & Marine Produce' }
+    ],
+    buyerTypes: [
+      { suffix: 'National Foodstuffs Trading LLC', volume: '$14.6M / yr', products: ['Parboiled & Basmati Rice', 'Sunflower Oil', 'ICUMSA 45 Sugar'], freq: 'Weekly FCL' },
+      { suffix: 'InfraBuild Construction Materials', volume: '$19.2M / yr', products: ['Deformed Steel Rebar', 'Ceramic Tiles', 'Electrical Cables'], freq: 'Bi-Weekly' },
+      { suffix: 'SunGrid Solar & Power Systems', volume: '$8.4M / yr', products: ['550W Solar Panels', 'Hybrid Inverters', 'Tubular Batteries'], freq: 'Monthly' },
+      { suffix: 'MedCare Pharma Distributors', volume: '$6.1M / yr', products: ['Generic Medicines', 'IV Fluids', 'Surgical Gloves'], freq: 'Monthly' },
+      { suffix: 'AutoParts & Heavy Machinery ImpEx', volume: '$9.8M / yr', products: ['Truck Tyres', 'Excavator Spare Parts', 'Diesel Generators'], freq: 'Monthly' },
+      { suffix: 'Textiles & Garment Wholesale Hub', volume: '$5.2M / yr', products: ['Printed Cotton Fabrics', 'Ready-Made Apparel', 'Footwear'], freq: 'Bi-Monthly' }
+    ]
+  }
+};
+
+const COUNTRY_COMPLIANCE_OVERRIDES: Record<string, string[]> = {
+  GB: ['UKCA Certified', 'ISO 9001:2015', 'EORI UK Customs', 'Companies House Verified'],
+  US: ['FDA / UL / ASTM Eligible', 'CBP Importer Verified', 'ISO 9001:2015', 'DUNS Registered'],
+  IN: ['BIS / IEC Certified', 'DGFT IEC Verified', 'FSSAI / APEDA Export', 'ISO 9001:2015'],
+  CN: ['CCC / CIQ Inspected', 'ISO 9001:2015', 'RoHS & CE Export', 'SGS Factory Audited'],
+  DE: ['CE & TÜV Rheinland', 'DIN / ISO 9001', 'EU REACH Compliant', 'EORI Verified'],
+  AE: ['ESMA / MOIAT Approved', 'Dubai Chamber Verified', 'GSO / Halal Ready', 'Jebel Ali Freezone'],
+  SA: ['SASO SABER Certified', 'SFDA Compliant', 'GSO / Halal Approved', 'ISO 9001:2015'],
+  JP: ['JIS / PSE Certified', 'METI Export Verified', 'ISO 9001:2015', 'JAS Compliant'],
+  KR: ['KC Mark Certified', 'KITA Verified Exporter', 'ISO 9001:2015', 'CE / RoHS Export'],
+  AU: ['RCM / Standards Australia', 'ABF Customs Verified', 'ISO 9001:2015', 'DAFF Biosecurity']
+};
+
+function sanitizeUnsplashImage(url?: string): string {
+  if (!url) return '';
+  if (url.includes('images.unsplash.com')) return '';
+  return url;
+}
+
+function extractPrimaryCity(port: string, countryName: string): string {
+  const clean = port
+    .replace(/Port of /gi, '')
+    .replace(/Freeport of /gi, '')
+    .replace(/Port /gi, '')
+    .replace(/\(.*?\)/g, '')
+    .split('/')[0]
+    .split(',')[0]
+    .trim();
+  return clean && clean.length > 2 ? clean : countryName;
+}
+
+function buildCityPool(port: string, countryName: string): string[] {
+  const primary = extractPrimaryCity(port, countryName);
+  const parts = port
+    .replace(/Port of /gi, '')
+    .replace(/Freeport of /gi, '')
+    .replace(/Container Terminals?/gi, '')
+    .replace(/Islamic Port/gi, '')
+    .replace(/Autonomous Port/gi, '')
+    .replace(/\(.*?\)/g, '')
+    .split(/[\/,]/)
+    .map(p => p.trim())
+    .filter(p => p.length > 2);
+
+  const pool = [
+    ...parts,
+    `${primary} Trade Zone`,
+    `${primary} Industrial Park`,
+    `${countryName} Export Hub`
+  ];
+  return Array.from(new Set(pool));
+}
+
+// Helper function to dynamically generate consistent, realistic data for ANY of the 196 world countries
 export function getCountryData(countryId: string): CountryData {
-  if (COUNTRIES_DATA[countryId]) {
-    const rawData = COUNTRIES_DATA[countryId];
+  const meta = resolveWorldCountryMeta(countryId);
+  const curated = COUNTRIES_DATA[meta.id] || COUNTRIES_DATA[countryId];
+  const seed = seededHash(`${meta.code}:${meta.name}`);
+  const tpl = REGION_TRADE_TEMPLATES[meta.region];
+  const cities = buildCityPool(meta.port, meta.name);
+  const slug = toCountryUrlSlug(meta);
+
+  if (curated) {
     return {
-      ...rawData,
-      seoDescription: getSeoCopyForCountry(countryId, rawData.name)
+      ...curated,
+      id: meta.id,
+      name: meta.name,
+      code: meta.code,
+      flag: meta.flagEmoji,
+      premiumSuppliers: curated.premiumSuppliers.map((sup, i) => ({
+        ...sup,
+        responseRate: sup.responseRate || `${96 + ((seed + i) % 4)}%`,
+        yearsActive: sup.yearsActive || 5 + ((seed + i * 3) % 14)
+      })),
+      latestSuppliers: curated.latestSuppliers.map((sup, i) => ({
+        ...sup,
+        responseRate: sup.responseRate || `${94 + ((seed + i) % 5)}%`,
+        yearsActive: sup.yearsActive || 3 + ((seed + i * 2) % 10)
+      })),
+      latestProducts: curated.latestProducts.map((p, i) => ({
+        ...p,
+        image: sanitizeUnsplashImage(p.image),
+        moq: p.moq || tpl.productCatalog[i % tpl.productCatalog.length].moq,
+        fobRange: p.fobRange || tpl.productCatalog[i % tpl.productCatalog.length].fobRange
+      })),
+      seoDescription: getSeoCopyForCountry(meta.id, meta.name)
     };
   }
 
-  const foundItem = ALL_COUNTRY_ITEMS.find(c => c.id === countryId) || {
-    id: countryId,
-    name: countryId.charAt(0).toUpperCase() + countryId.slice(1).replace(/-/g, ' '),
-    code: countryId.slice(0, 2).toUpperCase(),
-    flag: "🌐"
+  const name = meta.name;
+  const companiesCount = 1150 + (seed % 4650);
+  const productsCount = Math.round(companiesCount * (1.28 + ((seed % 45) / 100)));
+  const rfqsCount = Math.round(companiesCount * (0.29 + ((seed % 20) / 100)));
+
+  const rotate = <T,>(arr: T[], offset: number): T[] => {
+    const start = offset % arr.length;
+    return [...arr.slice(start), ...arr.slice(0, start)];
   };
 
-  const name = foundItem.name;
+  const supplierList = rotate(tpl.supplierTypes, seed % tpl.supplierTypes.length);
+  const productList = rotate(tpl.productCatalog, (seed >> 2) % tpl.productCatalog.length);
+  const exportList = rotate(tpl.exports, seed % tpl.exports.length);
+  const importList = rotate(tpl.imports, (seed >> 3) % tpl.imports.length);
+
+  const brandPrefixes = [
+    `${name} Meridian`,
+    `${cities[0]} Apex`,
+    `Global ${name}`,
+    `Pacific-Atlantic ${meta.code}`,
+    `Sovereign ${name}`,
+    `Prime ${cities[0]}`,
+    `Continental ${name}`,
+    `Vanguard ${meta.code}`,
+    `HarborLine ${name}`
+  ];
+
+  const premiumSuppliers: CountrySupplier[] = supplierList.slice(0, 6).map((st, idx) => ({
+    id: `${meta.id}_ps_${idx + 1}`,
+    name: `${brandPrefixes[idx % brandPrefixes.length]} ${st.suffix}`,
+    city: `${cities[idx % cities.length]}, ${name}`,
+    country: name,
+    website: `www.${slug}-${st.suffix.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '')}.com`,
+    tier: idx < 4 ? 'Gold Member' : 'Silver Member',
+    verified: true,
+    mainProduct: st.product,
+    responseRate: `${96 + ((seed + idx) % 4)}%`,
+    yearsActive: 4 + ((seed + idx * 3) % 15)
+  }));
+
+  const latestSuppliers: CountrySupplier[] = supplierList.map((st, idx) => ({
+    id: `${meta.id}_ls_${idx + 1}`,
+    name: `${cities[idx % cities.length]} ${st.suffix}`,
+    city: cities[idx % cities.length],
+    country: name,
+    tier: idx % 2 === 0 ? 'Gold Member' : 'Silver Member',
+    verified: true,
+    mainProduct: st.product,
+    responseRate: `${93 + ((seed + idx) % 6)}%`,
+    yearsActive: 2 + ((seed + idx * 2) % 9)
+  }));
+
+  const latestProducts: CountryProduct[] = productList.map((prod, idx) => ({
+    id: `${meta.id}_lp_${idx + 1}`,
+    title: `${prod.title} — ${name} Export`,
+    category: prod.category,
+    image: '',
+    moq: prod.moq,
+    fobRange: prod.fobRange
+  }));
+
+  const offerQuantities = ['20 MT (1x20ft)', '5,000 Units', '100 MT', '2x40ft HC', '25,000 Pcs', '500 Units', '50 MT', '10,000 Sets'];
+  const offerIncoterms = ['CIF', 'FOB', 'CFR', 'DDP'];
+  const latestBuyOffers: CountryBuyOffer[] = importList.slice(0, 8).map((imp, idx) => ({
+    id: `${meta.id}_bo_${idx + 1}`,
+    title: `Sourcing ${imp} — Verified ${name} Importer (${meta.port.split('/')[0].trim()})`,
+    date: 'Recent',
+    quantity: offerQuantities[(seed + idx) % offerQuantities.length],
+    buyerCountry: name,
+    category: productList[idx % productList.length].category,
+    incoterm: offerIncoterms[(seed + idx) % offerIncoterms.length]
+  }));
 
   return {
-    id: foundItem.id,
-    name: name,
-    code: foundItem.code,
-    flag: foundItem.flag,
+    id: meta.id,
+    name,
+    code: meta.code,
+    flag: meta.flagEmoji,
     stats: {
-      companies: Math.floor(Math.random() * 3000) + 1500,
-      products: Math.floor(Math.random() * 4000) + 2000,
-      rfqs: Math.floor(Math.random() * 1000) + 500
+      companies: companiesCount,
+      products: productsCount,
+      rfqs: rfqsCount
     },
-    topExports: [
-      `${name} Premium Grain & Agriculture`, `${name} Refined Minerals`, `${name} Textiles & Garments`,
-      `${name} Precision Electronics`, `${name} Heavy Machinery Tools`, `${name} Petroleum & Chemicals`,
-      `${name} Medical & Surgical Gear`, `${name} Wood Pellets & Biomass`, `${name} Raw Metals & Copper`,
-      `${name} Industrial Packaging`, `${name} Solar Energy Equipment`, `${name} Processed Foodstuffs`,
-      `${name} Automotive Spare Parts`, `${name} Marine Products`, `${name} Organic Cosmetics`
-    ],
-    topImports: [
-      `Crude Petroleum to ${name}`, `Heavy Industrial Tools to ${name}`, `Computers & Laptops`,
-      `Integrated Circuits`, `Packaged Medicaments`, `Fertilizers Urea 46%`, `Structural Steel & Rebar`,
-      `Vehicles & Auto Components`, `Polymer & Plastics`, `Organic Chemicals`, `Raw Cotton & Yarn`,
-      `Solar Modules`, `Consumer Appliances`, `Telecom Gear`, `Paperboard Packaging`
-    ],
-    premiumSuppliers: [
-      {
-        id: `${foundItem.id}_ps1`,
-        name: `${name} Global Trade Corp Ltd`,
-        city: "Capital Industrial Zone",
-        country: name,
-        website: `www.${foundItem.id}-globaltrade.com`,
-        tier: "Gold Member",
-        verified: true,
-        mainProduct: `Bulk Exports of ${name} Industrial Commodities`
-      },
-      {
-        id: `${foundItem.id}_ps2`,
-        name: `${name} Agro & Mineral Industries`,
-        city: "Port Hub City",
-        country: name,
-        website: `www.${foundItem.id}-agrominerals.com`,
-        tier: "Gold Member",
-        verified: true,
-        mainProduct: `Agricultural Produce & Processed Ores`
-      },
-      {
-        id: `${foundItem.id}_ps3`,
-        name: `${name} Precision Manufacturing Co`,
-        city: "Tech Development Zone",
-        country: name,
-        website: `www.${foundItem.id}-precision.com`,
-        tier: "Silver Member",
-        verified: true,
-        mainProduct: `OEM Machine Components & Electrical Tools`
-      }
-    ],
-    latestSuppliers: [
-      {
-        id: `${foundItem.id}_ls1`,
-        name: `${name} Apex Logistics Ltd`,
-        city: "Central Port",
-        country: name,
-        tier: "Gold Member",
-        verified: true,
-        mainProduct: "Freight Forwarding & Customs Clearance"
-      },
-      {
-        id: `${foundItem.id}_ls2`,
-        name: `${name} National Chemicals & Resins`,
-        city: "Industrial Park",
-        country: name,
-        tier: "Gold Member",
-        verified: true,
-        mainProduct: "Polypropylene & Industrial Solvents"
-      },
-      {
-        id: `${foundItem.id}_ls3`,
-        name: `${name} Textile & Apparel Exporters`,
-        city: "Garment Hub",
-        country: name,
-        tier: "Silver Member",
-        verified: true,
-        mainProduct: "100% Cotton Fabrics & Outerwear"
-      }
-    ],
-    latestProducts: [
-      {
-        id: `${foundItem.id}_lp1`,
-        title: `High Grade Raw Material from ${name}`,
-        category: "Raw Commodities",
-        image: "https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80"
-      },
-      {
-        id: `${foundItem.id}_lp2`,
-        title: `Precision Engineered Equipment - ${name} Standard`,
-        category: "Industrial Equipment",
-        image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80"
-      },
-      {
-        id: `${foundItem.id}_lp3`,
-        title: `Bulk Organic Agricultural Produce from ${name}`,
-        category: "Agro Produce",
-        image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
-      },
-      {
-        id: `${foundItem.id}_lp4`,
-        title: `Heavy Duty Packaging Cartons & Pallets`,
-        category: "Packaging",
-        image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80"
-      },
-      {
-        id: `${foundItem.id}_lp5`,
-        title: `High Output Solar Energy Inverters`,
-        category: "Renewable Energy",
-        image: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80"
-      },
-      {
-        id: `${foundItem.id}_lp6`,
-        title: `Refined Petrochemical Olefins & Resins`,
-        category: "Chemicals",
-        image: "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80"
-      }
-    ],
-    latestBuyOffers: [
-      {
-        id: `${foundItem.id}_bo1`,
-        title: `Inquiry for Wholesale Supply of Industrial Hardware in ${name}`,
-        date: "27 Aug, 2026",
-        quantity: "5,000 Units",
-        buyerCountry: name
-      },
-      {
-        id: `${foundItem.id}_bo2`,
-        title: `Bulk Requirement for Urea 46% Granular Fertilizer`,
-        date: "26 Aug, 2026",
-        quantity: "1,000 MT",
-        buyerCountry: name
-      },
-      {
-        id: `${foundItem.id}_bo3`,
-        title: `Sample Order Request for Stainless Steel Fasteners`,
-        date: "25 Aug, 2026",
-        quantity: "50,000 Pcs",
-        buyerCountry: name
-      }
-    ],
-    seoDescription: {
-      headline: `THE LARGEST B2B MARKETPLACE IN ${name.toUpperCase()} - TRADEHEAVEN.NET`,
-      sections: [
-        {
-          title: `B2B Sourcing Hub in ${name}`,
-          body: `TradeHeaven.net connects manufacturers, suppliers, and foreign buyers in ${name} with global trade partners across 180+ countries.`
-        },
-        {
-          title: "EASY B2B PORTAL ACCESS",
-          body: `Register your company on TradeHeaven.net to publish product catalogs, post RFQs, and negotiate directly with verified suppliers in ${name}.`
-        }
-      ]
-    }
+    topExports: exportList,
+    topImports: importList,
+    premiumSuppliers,
+    latestSuppliers,
+    latestProducts,
+    latestBuyOffers,
+    seoDescription: getSeoCopyForCountry(meta.id, name)
+  };
+}
+
+export function getCountryTradeProfile(countryIdOrSlug: string): CountryTradeProfile {
+  const meta = resolveWorldCountryMeta(countryIdOrSlug);
+  const base = getCountryData(meta.id);
+  const tpl = REGION_TRADE_TEMPLATES[meta.region];
+  const seed = seededHash(`profile:${meta.code}`);
+  const cities = buildCityPool(meta.port, meta.name);
+
+  const rotate = <T,>(arr: T[], offset: number): T[] => {
+    const start = offset % arr.length;
+    return [...arr.slice(start), ...arr.slice(0, start)];
+  };
+
+  const buyerTemplates = rotate(tpl.buyerTypes, seed % tpl.buyerTypes.length);
+  const buyerPrefixes = [
+    `${cities[0]}`,
+    `${meta.name} Sterling`,
+    `Atlas ${meta.code}`,
+    `Crown ${cities[0]}`,
+    `Horizon ${meta.name}`,
+    `Nordic-Global ${meta.code}`
+  ];
+
+  const defaultVerifiedBuyers: CountryVerifiedBuyer[] = buyerTemplates.map((bt, idx) => ({
+    id: `${meta.id}_vb_${idx + 1}`,
+    companyName: `${buyerPrefixes[idx % buyerPrefixes.length]} ${bt.suffix}`,
+    city: `${cities[idx % cities.length]}, ${meta.name}`,
+    country: meta.name,
+    annualVolume: bt.volume,
+    targetProducts: bt.products,
+    orderFrequency: bt.freq,
+    preferredIncoterms: idx % 2 === 0 ? 'CIF / FOB · Escrow' : 'FOB / LC at Sight',
+    verifiedSince: 2019 + ((seed + idx) % 6)
+  }));
+
+  const curatedOverride = COUNTRIES_DATA[meta.id] || COUNTRIES_DATA[countryIdOrSlug];
+  const verifiedBuyers =
+    curatedOverride?.verifiedBuyers && curatedOverride.verifiedBuyers.length > 0
+      ? curatedOverride.verifiedBuyers
+      : defaultVerifiedBuyers;
+
+  // 8 neighboring / regional trade partner hubs (same region first + top global hubs)
+  const sameRegion = WORLD_COUNTRIES_LIST.filter(
+    c => c.region === meta.region && c.code !== meta.code
+  ).slice(0, 5);
+  const majorGlobal = WORLD_COUNTRIES_LIST.filter(
+    c =>
+      ['US', 'GB', 'DE', 'IN', 'CN', 'AE', 'SG', 'JP'].includes(c.code) &&
+      c.code !== meta.code &&
+      !sameRegion.some(s => s.code === c.code)
+  ).slice(0, 3);
+
+  return {
+    ...base,
+    slug: toCountryUrlSlug(meta),
+    region: meta.region,
+    heroBannerImage: curatedOverride?.heroBannerImage || base.heroBannerImage || undefined,
+    primaryPort: curatedOverride?.primaryPort || meta.port,
+    flagUrl: meta.flagUrl,
+    flagSvgUrl: meta.flagSvgUrl,
+    complianceStandards:
+      curatedOverride?.complianceStandards && curatedOverride.complianceStandards.length > 0
+        ? curatedOverride.complianceStandards
+        : COUNTRY_COMPLIANCE_OVERRIDES[meta.code] || tpl.compliance,
+    tradeCurrency: curatedOverride?.tradeCurrency || tpl.currency,
+    popularIncoterms: ['FOB', 'CIF', 'CFR', 'DDP', 'Trade Assurance Escrow'],
+    transitSummary: curatedOverride?.transitSummary || tpl.transit,
+    avgResponseHours: `${2 + (seed % 5)} hrs`,
+    escrowCoverageRate: `${97 + (seed % 3)}.${4 + (seed % 5)}%`,
+    verifiedBuyers,
+    partnerCountries: [...sameRegion, ...majorGlobal],
+    isCustomized: Boolean(curatedOverride)
   };
 }
 
@@ -727,6 +1149,17 @@ export function getCountryData(countryId: string): CountryData {
 const STORAGE_ALL_COUNTRIES_KEY = 'th_admin_all_countries_items_v1';
 const STORAGE_COUNTRIES_DATA_KEY = 'th_admin_countries_data_v1';
 const STORAGE_COUNTRY_SEO_KEY = 'th_admin_country_seo_copy_v1';
+export const COUNTRY_DATA_UPDATED_EVENT = 'th-country-data-updated';
+
+export function emitCountryDataUpdated(countryId?: string) {
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(COUNTRY_DATA_UPDATED_EVENT, { detail: { countryId } }));
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export function saveCountriesToStorage(
   allCountries: typeof ALL_COUNTRY_ITEMS,
@@ -739,9 +1172,53 @@ export function saveCountriesToStorage(
       window.localStorage.setItem(STORAGE_COUNTRIES_DATA_KEY, JSON.stringify(countriesData));
       window.localStorage.setItem(STORAGE_COUNTRY_SEO_KEY, JSON.stringify(seoCopy));
     }
+    emitCountryDataUpdated();
   } catch (err) {
     console.error('Failed to save countries to storage:', err);
   }
+}
+
+export function saveSingleCountryPortalOverride(
+  countryId: string,
+  updatedData: CountryData,
+  seoCopy?: { headline: string; sections: { title: string; body: string }[] }
+) {
+  const normId = countryId.toLowerCase().trim().replace(/\s+/g, '-');
+  COUNTRIES_DATA[normId] = {
+    ...updatedData,
+    id: normId
+  };
+
+  if (seoCopy) {
+    DEDICATED_COUNTRY_SEO_COPY[normId] = seoCopy;
+  } else if (updatedData.seoDescription) {
+    DEDICATED_COUNTRY_SEO_COPY[normId] = updatedData.seoDescription;
+  }
+
+  // Ensure entry exists in ALL_COUNTRY_ITEMS if newly added
+  const idx = ALL_COUNTRY_ITEMS.findIndex(c => c.id === normId);
+  const metaEntry = {
+    id: normId,
+    name: updatedData.name,
+    code: updatedData.code,
+    flag: updatedData.flag || '🌐'
+  };
+  if (idx > -1) {
+    ALL_COUNTRY_ITEMS[idx] = metaEntry;
+  } else {
+    ALL_COUNTRY_ITEMS.push(metaEntry);
+  }
+
+  saveCountriesToStorage([...ALL_COUNTRY_ITEMS], { ...COUNTRIES_DATA }, { ...DEDICATED_COUNTRY_SEO_COPY });
+  emitCountryDataUpdated(normId);
+}
+
+export function resetSingleCountryPortalOverride(countryId: string) {
+  const normId = countryId.toLowerCase().trim().replace(/\s+/g, '-');
+  delete COUNTRIES_DATA[normId];
+  delete DEDICATED_COUNTRY_SEO_COPY[normId];
+  saveCountriesToStorage([...ALL_COUNTRY_ITEMS], { ...COUNTRIES_DATA }, { ...DEDICATED_COUNTRY_SEO_COPY });
+  emitCountryDataUpdated(normId);
 }
 
 export function loadCountriesFromStorage() {
