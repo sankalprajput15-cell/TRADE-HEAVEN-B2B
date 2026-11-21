@@ -1905,6 +1905,7 @@ class ProductImageManagerService {
       filters?: Partial<ImageEditFilters>;
       productId?: string;
       productIds?: string[];
+      productName?: string;
       category?: string;
       applyToAll?: boolean;
       oldUrlToReplace?: string;
@@ -1952,6 +1953,7 @@ class ProductImageManagerService {
         originalSizeBytes: converted.originalSizeBytes,
         productId: options?.appendToGallery ? undefined : options?.productId,
         productIds: options?.productIds,
+        productName: options?.productName,
         category: options?.category,
         applyToAll: options?.applyToAll,
         oldUrlToReplace: cleanOldUrl,

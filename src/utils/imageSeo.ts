@@ -110,7 +110,8 @@ export function generateProductAlt(
     parts.push('Direct Factory Wholesale FOB/CIF Export');
   }
 
-  return parts.join(' | ');
+  const combined = parts.join(' | ');
+  return /trade\s*heaven/i.test(combined) ? combined : `${combined} | Trade Heaven`;
 }
 
 /**
@@ -133,27 +134,29 @@ export function generateLogoAlt(
 
   if (type === 'buyer') {
     const countryContext = options.country ? ` in ${options.country}` : '';
-    return `${name} - Verified Global Importer & Buyer Profile${countryContext}`;
+    return `${name} - Verified Global Importer & Buyer Profile${countryContext} | Trade Heaven`;
   }
 
   if (type === 'avatar') {
-    return `${name} - Verified Trade Member Profile Photo`;
+    return `${name} - Verified Trade Member Profile Photo | Trade Heaven`;
   }
 
   const countrySuffix = options.country ? ` (${options.country})` : '';
-  return `${name}${countrySuffix} - Verified Manufacturer & Global Exporter Official Logo`;
+  return `${name}${countrySuffix} - Verified Manufacturer & Global Exporter Official Logo | Trade Heaven`;
 }
 
 /**
  * Generates alt text for category cards, banners, and mega-menu items.
  * 
  * Examples:
- * - "Chemicals & Petrochemicals - Wholesale Suppliers & B2B Manufacturer Catalog"
+ * - "Chemicals & Petrochemicals - Wholesale Suppliers & B2B Manufacturer Catalog | Trade Heaven"
  */
 export function generateCategoryAlt(categoryName?: string | null): string {
   const cat = sanitizeImageLabel(categoryName);
-  if (!cat) return 'B2B Wholesale Product Categories & Global Supplier Directory';
-  return `${cat} - Wholesale B2B Industrial Suppliers & Factory Catalog`;
+  if (!cat) return 'B2B Wholesale Product Categories & Global Supplier Directory | Trade Heaven';
+  return /trade\s*heaven/i.test(cat)
+    ? `${cat} - Wholesale B2B Industrial Suppliers & Factory Catalog`
+    : `${cat} - Wholesale B2B Industrial Suppliers & Factory Catalog | Trade Heaven`;
 }
 
 /**
@@ -161,9 +164,10 @@ export function generateCategoryAlt(categoryName?: string | null): string {
  */
 export function generateRfqAlt(rfqTitle?: string | null, destinationCountry?: string | null): string {
   const title = sanitizeImageLabel(rfqTitle);
-  if (!title) return 'Active Global Buyer RFQ Tender & Sourcing Lead';
+  if (!title) return 'Active Global Buyer RFQ Tender & Sourcing Lead | Trade Heaven';
   const dest = destinationCountry ? ` for Destination Port: ${destinationCountry}` : '';
-  return `${title} - Verified Buyer Sourcing Tender${dest}`;
+  const combined = `${title} - Verified Buyer Sourcing Tender${dest}`;
+  return /trade\s*heaven/i.test(combined) ? combined : `${combined} | Trade Heaven`;
 }
 
 /**

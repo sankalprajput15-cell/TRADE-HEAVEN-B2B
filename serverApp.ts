@@ -971,6 +971,134 @@ app.get('/sitemap.xml', (req, res) => {
   res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
 });
 
+// Dynamic Google Image Sitemap with Trade Heaven brand attribution in every <image:title> and <image:caption>
+const escapeXmlText = (val: string): string =>
+  String(val || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+
+app.get('/image-sitemap.xml', (req, res) => {
+  try {
+    const baseUrl = 'https://tradeheaven.net';
+    const seenIds = new Set<string>();
+    const entries: Array<{ id: string; title: string; category: string; imageUrl: string }> = [];
+
+    const pushEntry = (rawId: string, rawTitle: string, rawCategory: string, rawImage: string) => {
+      const id = String(rawId || '').trim();
+      if (!id || seenIds.has(id) || serverDeletedProductIds.has(id)) return;
+      const ov = serverProductImageState?.overrides?.[id];
+      const chosenImg = String(ov?.primary || rawImage || '').trim().split('?')[0];
+      if (!chosenImg || chosenImg.startsWith('data:')) return;
+      const absImageUrl = /^https?:\/\//i.test(chosenImg)
+        ? chosenImg
+        : `${baseUrl}${chosenImg.startsWith('/') ? '' : '/'}${chosenImg}`;
+      const cleanTitle = String(rawTitle || 'B2B Wholesale Product').trim();
+      const cleanCat = String(rawCategory || 'Global Wholesale').trim();
+      seenIds.add(id);
+      entries.push({ id, title: cleanTitle, category: cleanCat, imageUrl: absImageUrl });
+    };
+
+    // 1. Live server products store
+    for (const p of serverProductsStore || []) {
+      pushEntry(
+        String(p.id || ''),
+        String(p.title || p.name || ''),
+        String(p.category || 'Global Wholesale'),
+        String(p.images?.[0] || p.image || p.image_url || '')
+      );
+    }
+
+    // 2. Live listings store
+    for (const l of serverListingsStore || []) {
+      pushEntry(
+        `prod-db-${l.id}`,
+        String(l.title || ''),
+        String(l.category || 'Global Wholesale'),
+        String(l.image_url || l.images?.[0] || '')
+      );
+    }
+
+    // 3. Full catalog snapshot (if present on disk)
+    try {
+      if (fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) {
+        const snapRaw = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_PATH, 'utf8'));
+        const snapItems = Array.isArray(snapRaw)
+          ? snapRaw
+          : Array.isArray(snapRaw?.products)
+            ? snapRaw.products
+            : Array.isArray(snapRaw?.items)
+              ? snapRaw.items
+              : [];
+        for (const item of snapItems) {
+          pushEntry(
+            String(item?.id || ''),
+            String(item?.title || item?.name || ''),
+            String(item?.category || 'Global Wholesale'),
+            String(item?.images?.[0] || item?.image || item?.image_url || '')
+          );
+        }
+      }
+    } catch {
+      // ignore snapshot parse issues
+    }
+
+    // 4. Any standalone local uploaded images bound via overrides not yet emitted
+    for (const [ovId, ovVal] of Object.entries(serverProductImageState?.overrides || {})) {
+      if (!ovVal?.primary || seenIds.has(ovId) || serverDeletedProductIds.has(ovId)) continue;
+      if (!String(ovVal.primary).startsWith('/assets/uploads/')) continue;
+      const baseSlug = path
+        .basename(String(ovVal.primary).split('?')[0])
+        .replace(/^(?:trade-heaven|auto|verified)-/i, '')
+        .replace(/-[a-f0-9]{6,16}\.[a-z0-9]+$/i, '')
+        .replace(/-\d{10,14}\.[a-z0-9]+$/i, '')
+        .replace(/[-_]+/g, ' ')
+        .trim();
+      const titleFromFile = baseSlug
+        ? baseSlug.replace(/\b\w/g, ch => ch.toUpperCase())
+        : `Verified B2B Product ${ovId}`;
+      pushEntry(ovId, titleFromFile, 'Global B2B Wholesale', ovVal.primary);
+    }
+
+    const xmlRows = entries.slice(0, 5000).map(item => {
+      const pageUrl = `${baseUrl}/?view=PRODUCT_DETAIL&id=${encodeURIComponent(item.id)}`;
+      const brandedTitle = /trade\s*heaven/i.test(item.title)
+        ? item.title
+        : `${item.title} | Trade Heaven`;
+      const brandedCaption = `${item.title} — Wholesale ${item.category} Export Supplier on Trade Heaven (tradeheaven.net)`;
+      return [
+        '  <url>',
+        `    <loc>${escapeXmlText(pageUrl)}</loc>`,
+        '    <image:image>',
+        `      <image:loc>${escapeXmlText(item.imageUrl)}</image:loc>`,
+        `      <image:title>${escapeXmlText(brandedTitle)}</image:title>`,
+        `      <image:caption>${escapeXmlText(brandedCaption)}</image:caption>`,
+        '      <image:license>https://tradeheaven.net/?view=TERMS_OF_USE</image:license>',
+        '    </image:image>',
+        '  </url>'
+      ].join('\n');
+    });
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+      ...xmlRows,
+      '</urlset>'
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    return res.status(200).send(xml);
+  } catch (err: any) {
+    return res
+      .status(500)
+      .type('application/xml')
+      .send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+  }
+});
+
 // Server environment credentials (Static admin password & legacy JWT secret revoked due to key exposure)
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yr943334@gmail.com').toLowerCase().trim();
 const ADMIN_PASSWORD = crypto.randomBytes(32).toString('hex'); // Static password disabled; Admin login is strictly Email OTP-only
@@ -14563,6 +14691,63 @@ async function checkRemoteUploadExistsOnLiveServer(cleanLocalUrl: string): Promi
   }
 }
 
+let liveSyncBackoffUntilMs = 0;
+let liveSyncConsecutiveNetworkFailures = 0;
+
+async function postJsonToLiveServerWithRetry(
+  url: string,
+  payload: Record<string, any>,
+  timeoutMs = 15000,
+  maxAttempts = 2
+): Promise<{ ok: boolean; status: number; parsed: any; error?: string }> {
+  if (Date.now() < liveSyncBackoffUntilMs) {
+    return { ok: false, status: 0, parsed: null, error: 'live_sync_cooldown' };
+  }
+
+  let lastError = 'network_error';
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'User-Agent': 'TradeHeavenSyncBot/1.0 (+https://tradeheaven.net)',
+          Connection: 'close',
+          'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      const parsed: any = await res.json().catch(() => null);
+      if (res.ok) {
+        liveSyncConsecutiveNetworkFailures = 0;
+        liveSyncBackoffUntilMs = 0;
+        return { ok: true, status: res.status, parsed };
+      }
+      lastError = parsed?.message || `HTTP ${res.status}`;
+      // Retry only on transient 5xx / 429 responses
+      if (attempt < maxAttempts && (res.status >= 500 || res.status === 429)) {
+        await new Promise(r => setTimeout(r, 450 * attempt));
+        continue;
+      }
+      return { ok: false, status: res.status, parsed, error: lastError };
+    } catch (err: any) {
+      lastError = String(err?.cause?.code || err?.message || 'network_error');
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 450 * attempt));
+        continue;
+      }
+    }
+  }
+
+  liveSyncConsecutiveNetworkFailures++;
+  if (liveSyncConsecutiveNetworkFailures >= 3) {
+    liveSyncBackoffUntilMs = Date.now() + 60_000;
+  }
+  return { ok: false, status: 0, parsed: null, error: lastError };
+}
+
 async function ensureLocalImagePresentOnLiveServer(params: {
   localUrl: string;
   base64Data?: string;
@@ -14581,6 +14766,9 @@ async function ensureLocalImagePresentOnLiveServer(params: {
   }
   if (!cleanLocalUrl.startsWith('/assets/uploads/')) {
     return { synced: true, remoteUrl: cleanLocalUrl };
+  }
+  if (Date.now() < liveSyncBackoffUntilMs) {
+    return { synced: false, remoteUrl: cleanLocalUrl, error: 'live_sync_cooldown' };
   }
 
   const hasBindings = Boolean(
@@ -14619,12 +14807,43 @@ async function ensureLocalImagePresentOnLiveServer(params: {
     if (!diskPath) {
       return { synced: false, remoteUrl: cleanLocalUrl, error: `Local file not found on disk: ${cleanLocalUrl}` };
     }
-    const buf = fs.readFileSync(diskPath);
+    let buf: Buffer = fs.readFileSync(diskPath);
     if (!buf || buf.length < 32) {
       return { synced: false, remoteUrl: cleanLocalUrl, error: `Local file empty/corrupt: ${cleanLocalUrl}` };
     }
+    // Keep cross-server JSON payloads compact so upstream LiteSpeed/PHP never drops oversized POST bodies
+    if (buf.length > 1_100_000 && ['webp', 'jpg', 'jpeg', 'png'].includes(effectiveExt)) {
+      try {
+        const compressed = await sharp(buf, { failOn: 'none' })
+          .rotate()
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 78, effort: 3 })
+          .toBuffer();
+        if (compressed && compressed.length > 500 && compressed.length < buf.length) {
+          buf = compressed;
+        }
+      } catch {
+        // keep original buffer
+      }
+    }
     const mime = getMimeTypeForUploadFilename(diskFileName);
     dataUrlToSend = `data:${mime};base64,${buf.toString('base64')}`;
+  } else if (dataUrlToSend.length > 1_500_000 && ['webp', 'jpg', 'jpeg', 'png'].includes(effectiveExt)) {
+    try {
+      const parsedB64 = parseBase64DataUrl(dataUrlToSend);
+      if (parsedB64 && parsedB64.buffer.length > 1_100_000) {
+        const compressed = await sharp(parsedB64.buffer, { failOn: 'none' })
+          .rotate()
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 78, effort: 3 })
+          .toBuffer();
+        if (compressed && compressed.length > 500 && compressed.length < parsedB64.buffer.length) {
+          dataUrlToSend = `data:image/webp;base64,${compressed.toString('base64')}`;
+        }
+      }
+    } catch {
+      // keep original dataUrlToSend
+    }
   }
 
   try {
@@ -14642,18 +14861,15 @@ async function ensureLocalImagePresentOnLiveServer(params: {
       if (params.oldUrlToReplace) payload.oldUrlToReplace = params.oldUrlToReplace;
     }
 
-    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=upload_product_image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(12000)
-    });
-    const parsed: any = await res.json().catch(() => null);
+    const syncRes = await postJsonToLiveServerWithRetry(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=upload_product_image`,
+      payload,
+      15000,
+      2
+    );
+    const parsed = syncRes.parsed;
     const returnedUrl = String(parsed?.url || parsed?.rawUrl || '').trim().split('?')[0];
-    if (res.ok && parsed && (parsed.success === true || parsed.status === 'success') && returnedUrl) {
+    if (syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success') && returnedUrl) {
       liveRemoteUploadUrlCache.set(cleanLocalUrl, returnedUrl);
       console.log(`[CrossServerImageSync] Replicated binary ${cleanLocalUrl} -> ${LIVE_TRADEHEAVEN_API_URL} (${returnedUrl})`);
       return { synced: true, remoteUrl: returnedUrl, uploadedNow: true };
@@ -14661,10 +14877,9 @@ async function ensureLocalImagePresentOnLiveServer(params: {
     return {
       synced: false,
       remoteUrl: cleanLocalUrl,
-      error: parsed?.message || `HTTP ${res.status}`
+      error: syncRes.error || parsed?.message || `HTTP ${syncRes.status}`
     };
   } catch (err: any) {
-    console.warn('[CrossServerImageSync] Failed to upload image to live server:', err?.message || err);
     return { synced: false, remoteUrl: cleanLocalUrl, error: err?.message || 'network_error' };
   }
 }
@@ -14761,23 +14976,19 @@ async function replicateImageOverrideToLiveServer(params: {
       return { synced: true, remoteUrl: resolvedPrimary };
     }
 
-    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=set_product_images`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(10000)
-    });
-    const parsed: any = await res.json().catch(() => null);
-    const ok = Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success'));
+    const syncRes = await postJsonToLiveServerWithRetry(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=set_product_images`,
+      payload,
+      10000,
+      2
+    );
+    const parsed = syncRes.parsed;
+    const ok = Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success'));
     if (ok) {
       console.log(`[CrossServerImageSync] Synced override (${params.productId || params.category || (params.productIds?.length ? `${params.productIds.length} items` : 'batch')}) -> ${LIVE_TRADEHEAVEN_API_URL}`);
     }
-    return { synced: ok, remoteUrl: resolvedPrimary, error: ok ? undefined : (parsed?.message || `HTTP ${res.status}`) };
+    return { synced: ok, remoteUrl: resolvedPrimary, error: ok ? undefined : (syncRes.error || parsed?.message || `HTTP ${syncRes.status}`) };
   } catch (err: any) {
-    console.warn('[CrossServerImageSync] Failed to replicate override to live server:', err?.message || err);
     return { synced: false, error: err?.message || 'network_error' };
   }
 }
@@ -14791,19 +15002,15 @@ async function replicateImageDeletionToLiveServer(params: {
 }): Promise<{ synced: boolean; error?: string }> {
   if (!LIVE_UPSTREAM_PROXY_ENABLED) return { synced: false };
   try {
-    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=delete_product_images`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
-      },
-      body: JSON.stringify(params),
-      signal: AbortSignal.timeout(8000)
-    });
-    const parsed: any = await res.json().catch(() => null);
-    return { synced: Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
+    const syncRes = await postJsonToLiveServerWithRetry(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=delete_product_images`,
+      params as Record<string, any>,
+      8000,
+      2
+    );
+    const parsed = syncRes.parsed;
+    return { synced: Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
   } catch (err: any) {
-    console.warn('[CrossServerImageSync] Failed to replicate deletion to live server:', err?.message || err);
     return { synced: false, error: err?.message || 'network_error' };
   }
 }
@@ -14845,19 +15052,15 @@ async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ 
       await replicateImageOverrideToLiveServer({ fullOverridesMap: categoryOverrideMap });
     }
 
-    const res = await fetch(`${LIVE_TRADEHEAVEN_API_URL}?action=save_content`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-TradeHeaven-Sync-Source': 'express-realtime-replicator'
-      },
-      body: JSON.stringify(cloned),
-      signal: AbortSignal.timeout(10000)
-    });
-    const parsed: any = await res.json().catch(() => null);
-    return { synced: Boolean(res.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
+    const syncRes = await postJsonToLiveServerWithRetry(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=save_content`,
+      cloned,
+      10000,
+      2
+    );
+    const parsed = syncRes.parsed;
+    return { synced: Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
   } catch (err: any) {
-    console.warn('[CrossServerImageSync] Failed to replicate site content to live server:', err?.message || err);
     return { synced: false, error: err?.message || 'network_error' };
   }
 }
@@ -15013,6 +15216,71 @@ function parseBase64DataUrl(
   return { mimeType: detectedMime, buffer };
 }
 
+// Build Trade Heaven-branded SEO image filename (e.g., trade-heaven-monocrystalline-solar-panel-a1b2c3.webp)
+function buildTradeHeavenSeoImageFilename(baseTitle: string, uniqueToken: string, ext: string): string {
+  const cleanExt = String(ext || 'webp').toLowerCase().replace(/[^a-z0-9]/g, '') || 'webp';
+  const normalizedSlug = String(baseTitle || 'product')
+    .toLowerCase()
+    .replace(/^trade[-_\s]*heaven[-_\s]*/i, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 42) || 'b2b-product';
+  return `trade-heaven-${normalizedSlug}-${uniqueToken}.${cleanExt}`;
+}
+
+// Embed Google-readable Trade Heaven EXIF metadata directly inside binary WebP/JPEG/PNG image files
+async function embedTradeHeavenSeoExifBuffer(
+  inputBuffer: Buffer,
+  options: {
+    title?: string;
+    category?: string;
+    ext: string;
+    maxWidth?: number;
+  }
+): Promise<Buffer> {
+  const ext = String(options.ext || 'webp').toLowerCase().replace('.', '');
+  if (!['webp', 'jpg', 'jpeg', 'png'].includes(ext)) {
+    return inputBuffer;
+  }
+
+  const rawTitle = String(options.title || 'Global B2B Wholesale Product')
+    .replace(/^(?:trade[-_\s]*heaven|auto|verified)[-_\s]+/i, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 140) || 'Global B2B Wholesale Product';
+  const rawCategory = String(options.category || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const categoryPart = rawCategory && !rawTitle.toLowerCase().includes(rawCategory.toLowerCase())
+    ? ` - Wholesale ${rawCategory}`
+    : '';
+  const imageDescription = `${rawTitle}${categoryPart} | Trade Heaven Global B2B Wholesale Marketplace (tradeheaven.net)`;
+
+  try {
+    let pipeline = sharp(inputBuffer, { failOn: 'none' }).rotate();
+    if (options.maxWidth && options.maxWidth > 0) {
+      pipeline = pipeline.resize({ width: options.maxWidth, withoutEnlargement: true });
+    }
+    pipeline = pipeline.withExif({
+      IFD0: {
+        Artist: 'Trade Heaven',
+        Copyright: '© Trade Heaven (https://tradeheaven.net) - Global B2B Wholesale Marketplace',
+        ImageDescription: imageDescription,
+        Software: 'Trade Heaven B2B Marketplace (https://tradeheaven.net)'
+      }
+    });
+
+    if (ext === 'webp') {
+      return await pipeline.webp({ quality: 82, effort: 3 }).toBuffer();
+    }
+    if (ext === 'png') {
+      return await pipeline.png({ compressionLevel: 8 }).toBuffer();
+    }
+    return await pipeline.jpeg({ quality: 86, mozjpeg: true }).toBuffer();
+  } catch {
+    return inputBuffer;
+  }
+}
+
 // Shared handler for POST /api/v1/admin/upload-product-image & /api.php?action=upload_product_image
 async function handleUploadProductImageRequest(req: express.Request, res: express.Response, customBody?: any) {
   try {
@@ -15027,6 +15295,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       originalSizeBytes,
       productId,
       productIds,
+      productName,
       category,
       applyToAll,
       oldUrlToReplace
@@ -15067,9 +15336,24 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       .replace(/-+/g, '-')
       .slice(0, 50) || 'product-image';
 
-    const finalFileName = `${baseName}-${Date.now()}.${ext}`;
+    // Resolve descriptive product title for embedded Trade Heaven EXIF metadata & SEO filename
+    let resolvedSeoTitle = String(productName || '').trim();
+    if (!resolvedSeoTitle && productId) {
+      const matchedProd = (serverProductsStore || []).find(p => String(p.id) === String(productId));
+      if (matchedProd?.title) resolvedSeoTitle = String(matchedProd.title);
+    }
+    if (!resolvedSeoTitle) {
+      resolvedSeoTitle = baseName.replace(/[-_]+/g, ' ').trim();
+    }
+
+    const finalFileName = buildTradeHeavenSeoImageFilename(resolvedSeoTitle || baseName, String(Date.now()), ext);
     const filePath = path.join(UPLOADS_DIR, finalFileName);
-    fs.writeFileSync(filePath, buffer);
+    const seoBuffer = await embedTradeHeavenSeoExifBuffer(buffer, {
+      title: resolvedSeoTitle,
+      category: typeof category === 'string' ? category : undefined,
+      ext
+    });
+    fs.writeFileSync(filePath, seoBuffer);
 
     // Pre-warm compressed WebP variants immediately into RAM & disk cache without writing clutter duplicates
     void prewarmSingleImageFile(filePath);
@@ -15083,7 +15367,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       url: uploadedUrl,
       name: finalFileName,
       format: ext.toUpperCase(),
-      sizeBytes: buffer.length,
+      sizeBytes: seoBuffer.length,
       originalSizeBytes: typeof originalSizeBytes === 'number' ? originalSizeBytes : buffer.length,
       losslessCompression: Boolean(autoWebpLossless || losslessCompression),
       uploadedAt: nowIso
@@ -15286,10 +15570,11 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
-    // Real-time cross-server replication: upload binary + bind override on https://tradeheaven.net simultaneously
+    // Real-time cross-server replication: upload SEO-stamped binary + bind override on https://tradeheaven.net simultaneously
+    const replicatedMime = getMimeTypeForUploadFilename(finalFileName) || detectedMime;
     const liveSyncResult = await ensureLocalImagePresentOnLiveServer({
       localUrl: uploadedUrl,
-      base64Data: `data:${detectedMime};base64,${buffer.toString('base64')}`,
+      base64Data: `data:${replicatedMime};base64,${seoBuffer.toString('base64')}`,
       fileName: finalFileName,
       targetFormat: ext,
       productId: productId ? String(productId).trim() : undefined,
@@ -15324,6 +15609,127 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
 }
 
 app.post('/api/v1/admin/upload-product-image', (req, res) => void handleUploadProductImageRequest(req, res));
+
+// Bulk embed Trade Heaven EXIF SEO metadata into existing local product images on disk (in-place, URL-preserving)
+app.post('/api/v1/admin/seo-embed-tradeheaven-images', async (req, res) => {
+  try {
+    ensureUploadsDir();
+    const limit = Math.max(1, Math.min(5000, Number(req.body?.limit || 2000)));
+    const force = Boolean(req.body?.force);
+
+    // Map local upload paths to catalog titles/categories for rich per-image EXIF descriptions
+    const urlTitleMap = new Map<string, { title: string; category?: string }>();
+    for (const p of serverProductsStore || []) {
+      const ov = serverProductImageState?.overrides?.[String(p.id)];
+      const u = String(ov?.primary || p.images?.[0] || p.image || '').split('?')[0];
+      if (u.startsWith('/assets/uploads/')) {
+        urlTitleMap.set(path.basename(u), { title: String(p.title || ''), category: String(p.category || '') });
+      }
+    }
+    try {
+      if (fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) {
+        const snapRaw = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_PATH, 'utf8'));
+        const snapItems = Array.isArray(snapRaw)
+          ? snapRaw
+          : Array.isArray(snapRaw?.products)
+            ? snapRaw.products
+            : Array.isArray(snapRaw?.items)
+              ? snapRaw.items
+              : [];
+        for (const item of snapItems) {
+          const ov = serverProductImageState?.overrides?.[String(item?.id || '')];
+          const u = String(ov?.primary || item?.images?.[0] || item?.image || '').split('?')[0];
+          if (u.startsWith('/assets/uploads/') && !urlTitleMap.has(path.basename(u))) {
+            urlTitleMap.set(path.basename(u), {
+              title: String(item?.title || item?.name || ''),
+              category: String(item?.category || '')
+            });
+          }
+        }
+      }
+    } catch {}
+
+    const allFiles = fs
+      .readdirSync(UPLOADS_DIR)
+      .filter(f => /\.(webp|jpe?g|png)$/i.test(f) && !f.startsWith('.'))
+      .sort();
+
+    let scanned = 0;
+    let newlyEmbedded = 0;
+    let alreadyEmbedded = 0;
+    let skipped = 0;
+    let sampleVerifiedFile: string | null = null;
+
+    for (const fname of allFiles) {
+      if (scanned >= limit) break;
+      const fp = path.join(UPLOADS_DIR, fname);
+      try {
+        const st = fs.statSync(fp);
+        if (!st.isFile() || st.size < 500) {
+          skipped++;
+          continue;
+        }
+        scanned++;
+
+        const meta = await sharp(fp, { failOn: 'none' }).metadata();
+        const existingExif = meta.exif ? meta.exif.toString('latin1') : '';
+        if (!force && existingExif.includes('Trade Heaven')) {
+          alreadyEmbedded++;
+          if (!sampleVerifiedFile) sampleVerifiedFile = `/assets/uploads/${fname}`;
+          continue;
+        }
+
+        const ext = path.extname(fname).replace('.', '').toLowerCase();
+        const catalogInfo = urlTitleMap.get(fname);
+        const derivedTitle =
+          catalogInfo?.title ||
+          fname
+            .replace(/^(?:trade-heaven|auto|verified)-/i, '')
+            .replace(/-[a-f0-9]{6,16}\.[a-z0-9]+$/i, '')
+            .replace(/-\d{10,14}\.[a-z0-9]+$/i, '')
+            .replace(/[-_]+/g, ' ')
+            .replace(/\b\w/g, ch => ch.toUpperCase())
+            .trim() ||
+          'Global B2B Wholesale Product';
+
+        const inputBuf = fs.readFileSync(fp);
+        const stampedBuf = await embedTradeHeavenSeoExifBuffer(inputBuf, {
+          title: derivedTitle,
+          category: catalogInfo?.category,
+          ext
+        });
+
+        if (stampedBuf && stampedBuf.length > 500) {
+          const tmpPath = `${fp}.seo.${process.pid}.${Date.now()}.tmp`;
+          fs.writeFileSync(tmpPath, stampedBuf);
+          fs.renameSync(tmpPath, fp);
+          newlyEmbedded++;
+          if (!sampleVerifiedFile) sampleVerifiedFile = `/assets/uploads/${fname}`;
+        } else {
+          skipped++;
+        }
+      } catch {
+        skipped++;
+      }
+    }
+
+    return res.json({
+      success: true,
+      totalFiles: allFiles.length,
+      scanned,
+      newlyEmbedded,
+      alreadyEmbedded,
+      skipped,
+      sampleVerifiedFile,
+      exifFieldsEmbedded: ['IFD0.Artist: Trade Heaven', 'IFD0.Copyright: © Trade Heaven (https://tradeheaven.net)', 'IFD0.ImageDescription: <Product> | Trade Heaven', 'IFD0.Software: Trade Heaven B2B Marketplace']
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to embed Trade Heaven EXIF metadata into image files.'
+    });
+  }
+});
 
 // -------------------------------------------------------------
 // CLIENT UPLOADED DOCUMENTS & WIRE CONFIRMATION STORAGE
@@ -20497,7 +20903,7 @@ const PRODUCT_STOPWORDS = new Set([
   'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
   'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
   'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
-  'max', 'plus', 'type', 'class', 'model', 'system', 'systems'
+  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'trade', 'heaven', 'tradeheaven'
 ]);
 
 const GENERIC_MODIFIER_WORDS = new Set([
@@ -21992,29 +22398,38 @@ async function mirrorExternalProductImageToLocalUploads(params: {
   const slug =
     cleanProductSearchSubject(params.productName || 'product')
       .toLowerCase()
+      .replace(/^trade[-_\s]*heaven[-_\s]*/i, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 36) || 'product';
-  const fileName = `auto-${slug}-${hash}.webp`;
+  const legacyFileName = `auto-${slug}-${hash}.webp`;
+  const legacyFilePath = path.join(UPLOADS_DIR, legacyFileName);
+  const fileName = buildTradeHeavenSeoImageFilename(slug, hash, 'webp');
   const filePath = path.join(UPLOADS_DIR, fileName);
   const localUrl = `/assets/uploads/${fileName}`;
 
-  if (fs.existsSync(filePath)) {
-    try {
-      const st = fs.statSync(filePath);
-      if (st.size > 1500) {
-        bindAutoSavedImageOverride({
-          localUrl,
-          rawExternalUrl: rawUrl,
-          productId: params.productId,
-          productName: params.productName,
-          flushNow: Boolean(params.flushNow),
-          forceOverwrite: Boolean(params.isManual),
-          isManual: Boolean(params.isManual)
-        });
-        return localUrl;
-      }
-    } catch {}
+  // Reuse existing Trade Heaven or legacy mirrored asset on disk if valid
+  for (const [candidatePath, candidateUrl] of [
+    [filePath, localUrl],
+    [legacyFilePath, `/assets/uploads/${legacyFileName}`]
+  ] as const) {
+    if (fs.existsSync(candidatePath)) {
+      try {
+        const st = fs.statSync(candidatePath);
+        if (st.size > 1500) {
+          bindAutoSavedImageOverride({
+            localUrl: candidateUrl,
+            rawExternalUrl: rawUrl,
+            productId: params.productId,
+            productName: params.productName,
+            flushNow: Boolean(params.flushNow),
+            forceOverwrite: Boolean(params.isManual),
+            isManual: Boolean(params.isManual)
+          });
+          return candidateUrl;
+        }
+      } catch {}
+    }
   }
 
   const finishBind = (resolvedLocalUrl: string) => {
@@ -22078,11 +22493,12 @@ async function mirrorExternalProductImageToLocalUploads(params: {
 
       let outBuffer: Buffer;
       try {
-        outBuffer = await sharp(rawBuffer, { failOn: 'none' })
-          .rotate()
-          .resize({ width: 960, withoutEnlargement: true })
-          .webp({ quality: 82, effort: 3 })
-          .toBuffer();
+        outBuffer = await embedTradeHeavenSeoExifBuffer(rawBuffer, {
+          title: params.productName || slug.replace(/-/g, ' '),
+          category: params.category,
+          ext: 'webp',
+          maxWidth: 960
+        });
       } catch {
         return null;
       }
@@ -22761,9 +23177,9 @@ function detectCatalogImageIssue(
     };
   }
 
-  // Check auto-<slug>-<hash>.webp / verified-<slug>.webp relevance even for 1-word slugs like auto-bricks-...
+  // Check trade-heaven-<slug>-<hash>.webp / auto-<slug>-<hash>.webp / verified-<slug>.webp relevance
   const baseFile = path.basename(cleanUrl);
-  const autoMatch = baseFile.match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i);
+  const autoMatch = baseFile.match(/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i);
   if (autoMatch && targetTokens.length >= 1) {
     const slugTokens = extractMeaningfulAuditTokens(autoMatch[1].replace(/-/g, ' '));
     if (slugTokens.length >= 1) {
@@ -23163,7 +23579,8 @@ function extractMeaningfulAuditTokens(text: string): string[] {
     'commercial', 'industrial', 'product', 'products', 'unit', 'units', 'tons', 'metric',
     'pcs', 'pieces', 'kgs', 'buy', 'lead', 'rfq', 'sourcing', 'tender', 'high', 'pure',
     'natural', 'premium', 'standard', 'global', 'general', 'raw', 'materials', 'machinery',
-    'auto', 'webp', 'jpeg', 'jpg', 'png', 'assets', 'uploads', 'image', 'whatsapp'
+    'auto', 'webp', 'jpeg', 'jpg', 'png', 'assets', 'uploads', 'image', 'whatsapp',
+    'trade', 'heaven', 'tradeheaven'
   ]);
   return String(text || '')
     .toLowerCase()

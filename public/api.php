@@ -3586,8 +3586,9 @@ switch ($action) {
             $finalFileName = $exactFileName;
         } else {
             $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
-            $baseName = substr(trim($baseName, '-'), 0, 50) ?: 'product-image';
-            $finalFileName = $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
+            $baseName = preg_replace('/^trade[-_]*heaven[-_]*/i', '', trim($baseName, '-'));
+            $baseName = substr(trim(strtolower($baseName), '-'), 0, 42) ?: 'b2b-product';
+            $finalFileName = 'trade-heaven-' . $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
         }
         $filePath = $uploads_dir . '/' . $finalFileName;
         @file_put_contents($filePath, $binary);
@@ -6645,15 +6646,22 @@ switch ($action) {
                 $u_ext = strtoupper(pathinfo($clean_local, PATHINFO_EXTENSION) ?: 'WEBP');
             }
         } elseif (preg_match('/^https?:\/\//i', $ext_url)) {
-            $auto_slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($prod_name)), '-'), 0, 36) ?: 'product';
+            $auto_slug = preg_replace('/^trade[-_]*heaven[-_]*/i', '', trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($prod_name)), '-'));
+            $auto_slug = substr(trim($auto_slug, '-'), 0, 36) ?: 'product';
             $u_hash = substr(sha1($ext_url), 0, 12);
             $dl_ext = 'jpg';
             if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_url, $em_ext)) {
                 $dl_ext = strtolower($em_ext[1]);
             }
             $u_ext = strtoupper($dl_ext);
-            $local_fname = "auto-{$auto_slug}-{$u_hash}.{$dl_ext}";
+            $legacy_fname = "auto-{$auto_slug}-{$u_hash}.{$dl_ext}";
+            $legacy_fpath = $uploads_dir_auto . '/' . $legacy_fname;
+            $local_fname = "trade-heaven-{$auto_slug}-{$u_hash}.{$dl_ext}";
             $local_fpath = $uploads_dir_auto . '/' . $local_fname;
+            if (file_exists($legacy_fpath) && filesize($legacy_fpath) > 1500 && !file_exists($local_fpath)) {
+                $local_fname = $legacy_fname;
+                $local_fpath = $legacy_fpath;
+            }
             $local_web_url = '/assets/uploads/' . $local_fname;
             $saved_ok = (file_exists($local_fpath) && filesize($local_fpath) > 1500);
             if (!$saved_ok && function_exists('curl_init')) {
@@ -6881,8 +6889,8 @@ switch ($action) {
                 return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Gemstone photo on unrelated item)'];
             }
             $base_f = basename($lower_u);
-            if (preg_match('/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i', $base_f, $am)) {
-                $aud_stop = ['the','and','for','with','from','export','grade','quality','wholesale','bulk','supply','direct','factory','verified','commercial','industrial','product','products','unit','units','tons','metric','pcs','pieces','kgs','buy','lead','rfq','sourcing','tender','high','pure','natural','premium','standard','global','general','auto','catalog'];
+            if (preg_match('/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i', $base_f, $am)) {
+                $aud_stop = ['the','and','for','with','from','export','grade','quality','wholesale','bulk','supply','direct','factory','verified','commercial','industrial','product','products','unit','units','tons','metric','pcs','pieces','kgs','buy','lead','rfq','sourcing','tender','high','pure','natural','premium','standard','global','general','auto','catalog','trade','heaven','tradeheaven'];
                 $slug_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', str_replace('-', ' ', $am[1])), function($w) use ($aud_stop) {
                     return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $aud_stop, true);
                 }));

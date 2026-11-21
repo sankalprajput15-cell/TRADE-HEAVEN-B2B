@@ -26,12 +26,20 @@ import {
   ExternalLink,
   Lock,
   Headphones,
-  Mail
+  Mail,
+  Wand2,
+  Eye,
+  Upload,
+  X,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { securityService } from '../../services/securityService';
 import { isPaidMemberUser } from '../../services/freeLeadService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { fixSingleCatalogImage } from '../../services/visualProductImageService';
+import { AdminQuickImageInspectorModal } from '../admin/AdminQuickImageInspectorModal';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { DEFAULT_HOMEPAGE_DISPLAY_CONFIG } from '../../data/defaultSiteContent';
 
@@ -82,6 +90,173 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
   const [imageSyncVersion, setImageSyncVersion] = React.useState(0);
+  const [fixingProductIds, setFixingProductIds] = React.useState<Record<string, boolean>>({});
+  const [uploadingProductIds, setUploadingProductIds] = React.useState<Record<string, boolean>>({});
+  const [inspectingProduct, setInspectingProduct] = React.useState<{
+    product: Product;
+    imageUrl: string;
+  } | null>(null);
+  const [adminImageNotice, setAdminImageNotice] = React.useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const quickUploadInputRef = React.useRef<HTMLInputElement | null>(null);
+  const quickUploadTargetRef = React.useRef<{ product: Product; currentUrl: string } | null>(null);
+
+  const isAdminUser = React.useMemo(() => {
+    if (currentUser?.role === 'ADMIN') return true;
+    if (typeof window === 'undefined') return false;
+    try {
+      const raw = window.localStorage.getItem('th_verified_otp_session_v5_strict_admin');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Boolean(
+        parsed &&
+          parsed.role === 'ADMIN' &&
+          parsed.isVerifiedAdmin === true &&
+          parsed.otpVerified === true &&
+          typeof parsed.token === 'string' &&
+          parsed.token.trim().length >= 8
+      );
+    } catch {
+      return false;
+    }
+  }, [currentUser]);
+
+  const broadcastHomeImageChange = React.useCallback(
+    async (prodId: string, newUrl: string, prevUrl: string, updatedAt?: string, imageUpdatedAt?: number) => {
+      const activityMs = imageUpdatedAt || Date.now();
+      productImageManagerService.recordProductActivityTimestamp(prodId, activityMs, false);
+      productImageManagerService.applyServerOverrideSnapshot([
+        {
+          id: prodId,
+          url: newUrl,
+          previousUrl: prevUrl || undefined,
+          updatedAt: updatedAt || new Date(activityMs).toISOString(),
+          updatedBy: 'admin-manual'
+        }
+      ]);
+      try {
+        await productImageManagerService.syncFromServer(true);
+      } catch {
+        // ignore sync errors
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+      }
+      setImageSyncVersion(v => v + 1);
+    },
+    []
+  );
+
+  const handleDirectAdminFix = React.useCallback(
+    async (e: React.MouseEvent, prod: Product, currentUrl: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const pid = prod.id;
+      setFixingProductIds(prev => ({ ...prev, [pid]: true }));
+      setAdminImageNotice(null);
+      try {
+        const res = await fixSingleCatalogImage({
+          recordId: pid,
+          recordType: 'PRODUCT',
+          title: prod.title,
+          category: prod.category,
+          previousImageUrl: currentUrl
+        });
+        await broadcastHomeImageChange(pid, res.new_image_url, currentUrl, res.updatedAt, res.imageUpdatedAt);
+        setAdminImageNotice({
+          type: 'success',
+          text: `Fixed image for "${prod.title}" (${res.new_image_url}).`
+        });
+      } catch (err: any) {
+        setAdminImageNotice({
+          type: 'error',
+          text: err?.message || `Auto-fix failed for "${prod.title}". Click Inspect or Upload to pick a photo.`
+        });
+      } finally {
+        setFixingProductIds(prev => ({ ...prev, [pid]: false }));
+      }
+    },
+    [broadcastHomeImageChange]
+  );
+
+  const handleDirectAdminInspect = React.useCallback(
+    (e: React.MouseEvent, prod: Product, currentUrl: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const resolvedUrl = productImageManagerService.resolveImageSrc({
+        src: currentUrl,
+        productId: prod.id,
+        productTitle: prod.title,
+        category: prod.category
+      });
+      setInspectingProduct({ product: prod, imageUrl: resolvedUrl || currentUrl });
+    },
+    []
+  );
+
+  const handleDirectAdminUploadClick = React.useCallback(
+    (e: React.MouseEvent, prod: Product, currentUrl: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      quickUploadTargetRef.current = { product: prod, currentUrl };
+      if (quickUploadInputRef.current) {
+        quickUploadInputRef.current.value = '';
+        quickUploadInputRef.current.click();
+      }
+    },
+    []
+  );
+
+  const handleQuickCardFileChange = React.useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      const target = quickUploadTargetRef.current;
+      if (!file || !target) return;
+      const { product: prod, currentUrl } = target;
+      const pid = prod.id;
+      setUploadingProductIds(prev => ({ ...prev, [pid]: true }));
+      setAdminImageNotice(null);
+      try {
+        const uploaded = await productImageManagerService.uploadAndAssignImageFile(file, {
+          productId: pid,
+          productName: prod.title,
+          category: prod.category,
+          targetFormat: 'webp',
+          autoWebpLossless: true,
+          oldUrlToReplace: undefined
+        });
+        if (!uploaded?.url || uploaded.url.startsWith('data:')) {
+          throw new Error('Uploaded file could not be persisted to server storage.');
+        }
+        const cleanUrl = uploaded.url.split('?')[0];
+        const res = await fixSingleCatalogImage({
+          recordId: pid,
+          recordType: 'PRODUCT',
+          title: prod.title,
+          category: prod.category,
+          customImageUrl: cleanUrl,
+          previousImageUrl: currentUrl
+        });
+        await broadcastHomeImageChange(pid, res.new_image_url, currentUrl, res.updatedAt, res.imageUpdatedAt);
+        setAdminImageNotice({
+          type: 'success',
+          text: `Uploaded & saved SEO image for "${prod.title}" (${cleanUrl}).`
+        });
+      } catch (err: any) {
+        setAdminImageNotice({
+          type: 'error',
+          text: err?.message || `Upload failed for "${prod.title}".`
+        });
+      } finally {
+        setUploadingProductIds(prev => ({ ...prev, [pid]: false }));
+        if (quickUploadInputRef.current) quickUploadInputRef.current.value = '';
+      }
+    },
+    [broadcastHomeImageChange]
+  );
 
   React.useEffect(() => {
     const handleImageUpdate = () => setImageSyncVersion(v => v + 1);
@@ -476,6 +651,44 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         </div>
 
+        {isAdminUser && (
+          <input
+            ref={quickUploadInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => void handleQuickCardFileChange(e)}
+          />
+        )}
+
+        {isAdminUser && adminImageNotice && (
+          <div
+            role="status"
+            className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 ${
+              adminImageNotice.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {adminImageNotice.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span className="truncate">{adminImageNotice.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAdminImageNotice(null)}
+              className="p-1 rounded hover:bg-black/5 cursor-pointer shrink-0"
+              aria-label="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {isLoadingProducts ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map(idx => (
@@ -494,6 +707,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               const safeMoq = Number(prod.moq ?? (prod as any).minOrder ?? 1) || 1;
               const imgUrl = prod.images && prod.images[0] ? prod.images[0] : (prod as any).imageUrl || '';
               const unitLabel = prod.moqUnit || (prod as any).unit || 'Units';
+              const isCardFixing = Boolean(fixingProductIds[prod.id]);
+              const isCardUploading = Boolean(uploadingProductIds[prod.id]);
 
               return (
                 <article
@@ -503,7 +718,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   className="bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
                 >
                   <div>
-                    <div className="aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
+                    <div className="relative aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
                       <SafeImage
                         src={imgUrl}
                         alt={prod.title}
@@ -514,6 +729,47 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                         isThumbnail={true}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
+
+                      {isAdminUser && (
+                        <div
+                          onClick={e => e.stopPropagation()}
+                          data-testid={`admin-card-image-actions-${prod.id}`}
+                          className="absolute inset-x-1.5 bottom-1.5 z-20 flex items-center justify-center gap-1 rounded-lg bg-slate-950/85 backdrop-blur-xs p-1 shadow-lg border border-white/15"
+                        >
+                          <button
+                            type="button"
+                            disabled={isCardFixing || isCardUploading}
+                            onClick={e => void handleDirectAdminFix(e, prod, imgUrl)}
+                            title="Auto-fix product image"
+                            className="flex-1 px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Wand2 className={`w-3 h-3 shrink-0 ${isCardFixing ? 'animate-spin' : ''}`} />
+                            <span>{isCardFixing ? 'Fixing' : 'Fix'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isCardFixing || isCardUploading}
+                            onClick={e => handleDirectAdminInspect(e, prod, imgUrl)}
+                            title="Inspect image, compare candidates, or crop"
+                            className="flex-1 px-2 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Eye className="w-3 h-3 shrink-0" />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isCardFixing || isCardUploading}
+                            onClick={e => handleDirectAdminUploadClick(e, prod, imgUrl)}
+                            title="Upload replacement image directly"
+                            className="flex-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Upload className={`w-3 h-3 shrink-0 ${isCardUploading ? 'animate-bounce' : ''}`} />
+                            <span>{isCardUploading ? 'Saving' : 'Upload'}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-3.5 space-y-2">
@@ -563,6 +819,21 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               );
             })}
           </div>
+        )}
+
+        {isAdminUser && inspectingProduct && (
+          <AdminQuickImageInspectorModal
+            product={inspectingProduct.product}
+            currentImageUrl={inspectingProduct.imageUrl}
+            onClose={() => setInspectingProduct(null)}
+            onImageUpdated={(_productId, newUrl) => {
+              setImageSyncVersion(v => v + 1);
+              setAdminImageNotice({
+                type: 'success',
+                text: `Updated image for "${inspectingProduct.product.title}" (${newUrl}).`
+              });
+            }}
+          />
         )}
       </section>
       )}

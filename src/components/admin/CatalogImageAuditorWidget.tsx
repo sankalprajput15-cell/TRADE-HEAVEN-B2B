@@ -118,6 +118,36 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [inspectorHighlightPulse, setInspectorHighlightPulse] = useState<boolean>(false);
   const [croppingRowTarget, setCroppingRowTarget] = useState<{ row: UnifiedAuditRow; imageSrc: string } | null>(null);
   const [copiedRecordLinkId, setCopiedRecordLinkId] = useState<string | null>(null);
+  const [isEmbeddingSeo, setIsEmbeddingSeo] = useState<boolean>(false);
+
+  const handleEmbedTradeHeavenSeoImages = useCallback(async () => {
+    setIsEmbeddingSeo(true);
+    setAlertMessage(null);
+    try {
+      const resp = await fetch('/api/v1/admin/seo-embed-tradeheaven-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 3000 })
+      });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || `HTTP ${resp.status}`);
+      }
+      setAlertMessage({
+        type: 'success',
+        title: `Trade Heaven SEO Embedded Directly Inside ${Number(data.newlyEmbedded + data.alreadyEmbedded).toLocaleString()} Image Files`,
+        detail: `${Number(data.newlyEmbedded).toLocaleString()} newly stamped with Google-readable Trade Heaven EXIF metadata (Artist, Copyright, Description & Software), ${Number(data.alreadyEmbedded).toLocaleString()} already stamped, and indexed in /image-sitemap.xml.`
+      });
+    } catch (err: any) {
+      setAlertMessage({
+        type: 'error',
+        title: 'Trade Heaven SEO Image Embedding Failed',
+        detail: err?.message || 'Unable to reach image SEO metadata service.'
+      });
+    } finally {
+      setIsEmbeddingSeo(false);
+    }
+  }, []);
 
   const buildLiveRecordUrl = useCallback((row: UnifiedAuditRow): string => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -743,6 +773,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     try {
       const uploaded = await productImageManagerService.uploadAndAssignImageFile(file, {
         productId: rid,
+        productName: targetRow.title,
+        category: targetRow.category,
         targetFormat: 'webp',
         autoWebpLossless: true,
         oldUrlToReplace: undefined
@@ -822,6 +854,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       );
       const uploaded = await productImageManagerService.uploadAndAssignImageFile(croppedFile, {
         productId: rid,
+        productName: targetRow.title,
+        category: targetRow.category,
         targetFormat: 'webp',
         autoWebpLossless: true,
         oldUrlToReplace: undefined
@@ -1052,6 +1086,18 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isScanningPreview ? 'animate-spin text-blue-600' : ''}`} />
             <span>{isScanningPreview ? 'Scanning...' : 'Re-Scan Stats'}</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isEmbeddingSeo || isRunningFix}
+            onClick={() => void handleEmbedTradeHeavenSeoImages()}
+            data-testid="embed-tradeheaven-seo-btn"
+            className="px-3.5 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            title="Embed Trade Heaven brand EXIF metadata directly inside every local image file for Google Images SEO"
+          >
+            <ShieldCheck className={`w-3.5 h-3.5 ${isEmbeddingSeo ? 'animate-pulse text-emerald-600' : 'text-emerald-600'}`} />
+            <span>{isEmbeddingSeo ? 'Embedding Trade Heaven SEO...' : 'Embed Trade Heaven SEO in Files'}</span>
           </button>
 
           <button

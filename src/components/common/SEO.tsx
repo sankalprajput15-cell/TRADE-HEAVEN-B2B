@@ -110,7 +110,23 @@ export const SEO: React.FC<SEOProps> = ({
         {
           "@type": "Product",
           "name": title,
-          "image": [ogImage],
+          "image": {
+            "@type": "ImageObject",
+            "url": ogImage,
+            "contentUrl": ogImage,
+            "name": `${title} | Trade Heaven`,
+            "caption": resolvedImageAlt,
+            "creditText": "Trade Heaven",
+            "creator": {
+              "@type": "Organization",
+              "name": "Trade Heaven",
+              "url": "https://tradeheaven.net"
+            },
+            "copyrightNotice": "© Trade Heaven (https://tradeheaven.net)",
+            "license": "https://tradeheaven.net/?view=TERMS_OF_USE",
+            "acquireLicensePage": canonicalUrl || "https://tradeheaven.net/?view=PRODUCT_DIRECTORY",
+            "representativeOfPage": true
+          },
           "description": description,
           "sku": productData.retailerItemId || undefined,
           "category": productData.category || undefined,

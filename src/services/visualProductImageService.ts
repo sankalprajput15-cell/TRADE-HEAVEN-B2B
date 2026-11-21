@@ -75,7 +75,8 @@ const MISMATCH_STOPWORDS = new Set([
   'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
   'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
   'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
-  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'equipment', 'machinery', 'machine'
+  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'equipment', 'machinery', 'machine',
+  'trade', 'heaven', 'tradeheaven'
 ]);
 
 function extractTopicTokensClient(text: string): string[] {
@@ -197,7 +198,7 @@ export function isMismatchedProductImageUrl(
 
   // Enforce slug-to-title relevance on auto-generated or verified local upload filenames
   const fileName = lowerUrl.split('/').pop() || '';
-  const autoMatch = fileName.match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i) ||
+  const autoMatch = fileName.match(/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i) ||
     fileName.match(/^(?:verified-belt)-\d+\.(?:webp|jpe?g|png)$/i);
   if (autoMatch) {
     const rawSlug = autoMatch[1] || 'leather-belt';
