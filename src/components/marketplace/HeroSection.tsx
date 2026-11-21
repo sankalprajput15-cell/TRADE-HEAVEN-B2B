@@ -27,7 +27,6 @@ import {
   Zap,
   Loader2,
   RefreshCw,
-  ChevronLeft,
   PlusCircle,
   UserPlus,
   LogIn,
@@ -2013,43 +2012,6 @@ export const HeroSection: React.FC<Props> = ({
                   <span>{activeSlide.secondaryCta}</span>
                 </button>
               </div>
-            </div>
-
-            {/* Carousel Controls */}
-            <div className="absolute bottom-3.5 right-4 z-20 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 mr-1">
-                {HERO_CAROUSEL_SLIDES.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    aria-label={`View slide ${idx + 1}`}
-                    onClick={() => setActiveSlideIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                      idx === activeSlideIndex ? 'w-6 bg-amber-400' : 'w-2 bg-white/45 hover:bg-white/80'
-                    }`}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                aria-label="Previous slide"
-                onClick={() =>
-                  setActiveSlideIndex(
-                    prev => (prev - 1 + HERO_CAROUSEL_SLIDES.length) % HERO_CAROUSEL_SLIDES.length
-                  )
-                }
-                className="w-7 h-7 rounded-md bg-slate-950/60 hover:bg-slate-950/85 text-white flex items-center justify-center border border-white/15 cursor-pointer transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                aria-label="Next slide"
-                onClick={() => setActiveSlideIndex(prev => (prev + 1) % HERO_CAROUSEL_SLIDES.length)}
-                className="w-7 h-7 rounded-md bg-slate-950/60 hover:bg-slate-950/85 text-white flex items-center justify-center border border-white/15 cursor-pointer transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
