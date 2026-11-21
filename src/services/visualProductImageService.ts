@@ -71,7 +71,11 @@ const MISMATCH_STOPWORDS = new Set([
   'new', 'high', 'best', 'commercial', 'industrial', 'product', 'products', 'unit', 'units',
   'tons', 'metric', 'pcs', 'pieces', 'kgs', 'kg', 'ton', 'pure', 'natural', 'premium',
   'standard', 'international', 'global', 'certified', 'genuine', 'original', 'custom',
-  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'auto', 'catalog'
+  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'auto', 'catalog',
+  'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
+  'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
+  'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
+  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'equipment', 'machinery', 'machine'
 ]);
 
 function extractTopicTokensClient(text: string): string[] {
@@ -175,6 +179,18 @@ export function isMismatchedProductImageUrl(
   if (
     lowerUrl.includes('whatsapp_image_') &&
     !/(jade|cabochon|turquoise|gemstone|nephrite|matrix|mineral|stone|jewel|crystal|blackstone|yunnan)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    /(diesel[-_]?generat|genset)/i.test(lowerUrl) &&
+    !/(diesel|generator|genset|cummins|caterpillar|power\s*gen)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    /(solar[-_]?panel|photovoltaic)/i.test(lowerUrl) &&
+    !/(solar|photovoltaic|pv|monocrystalline|polycrystalline|renewable|inverter)/i.test(target)
   ) {
     return true;
   }
@@ -717,7 +733,10 @@ export async function fetchVisualProductImages(params: {
           url: resolveLocalMirroredImageUrl(c.url),
           thumbnailUrl: resolveLocalMirroredImageUrl(c.thumbnailUrl || c.url)
         }));
-      const finalPool = fisherYatesShuffle(healthyPool.length > 0 ? healthyPool : rawPool);
+      const rankedPool = (healthyPool.length > 0 ? healthyPool : rawPool).slice().sort(
+        (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
+      );
+      const finalPool = params.shuffleOnly ? fisherYatesShuffle(rankedPool) : rankedPool;
       const selected = finalPool.slice(0, count);
       return {
         success: Boolean(raw?.success) && selected.length > 0,

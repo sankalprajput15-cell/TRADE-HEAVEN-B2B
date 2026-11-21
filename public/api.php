@@ -6313,20 +6313,27 @@ switch ($action) {
         };
 
         $build_focused_queries_php = function($raw_title, $raw_cat = '') use ($stopwords) {
+            $extra_stop = [
+                'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
+                'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
+                'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
+                'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'equipment', 'machinery', 'machine'
+            ];
+            $all_stop = array_merge($stopwords, $extra_stop);
             $cleaned_q = preg_replace('/\s*&\s*/', ', ', (string)$raw_title);
             $clauses = array_values(array_filter(array_map('trim', preg_split('/[,;\/]+/', $cleaned_q)), function($c) {
                 return strlen($c) >= 3;
             }));
-            $all_toks = array_values(array_unique(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cleaned_q)), function($w) use ($stopwords) {
-                return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stopwords, true);
+            $all_toks = array_values(array_unique(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cleaned_q)), function($w) use ($all_stop) {
+                return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $all_stop, true);
             })));
             $qs = [];
             if (count($all_toks) >= 2 && count($all_toks) <= 4) {
                 $qs[] = implode(' ', $all_toks);
             }
             foreach (array_slice($clauses, 0, 3) as $cl) {
-                $cl_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cl)), function($w) use ($stopwords) {
-                    return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stopwords, true);
+                $cl_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cl)), function($w) use ($all_stop) {
+                    return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $all_stop, true);
                 }));
                 if (count($cl_toks) >= 2) {
                     $qs[] = implode(' ', array_slice($cl_toks, 0, 3));
@@ -6402,8 +6409,9 @@ switch ($action) {
                 $focused[0] ?? trim($p_name),
                 isset($focused[1]) ? ($focused[1] . ' product') : trim($p_name . ' ' . $p_specs . ' wholesale')
             ]))), 0, 2);
-            foreach ($queries as $q_str) {
-                $b_url = 'https://www.bing.com/images/search?q=' . urlencode($q_str) . '&qft=+filterui:photo-photo+filterui:imagesize-large&form=HDRSC2&first=1';
+            foreach ($queries as $q_idx => $q_str) {
+                $filter_part = $q_idx === 0 ? '&qft=+filterui:photo-photo' : '';
+                $b_url = 'https://www.bing.com/images/search?q=' . urlencode($q_str) . $filter_part . '&form=HDRSC2&first=1';
                 $b_html = '';
                 if (function_exists('curl_init')) {
                     $ch = curl_init($b_url);

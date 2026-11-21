@@ -20493,7 +20493,11 @@ const PRODUCT_STOPWORDS = new Set([
   'new', 'high', 'best', 'commercial', 'industrial', 'product', 'products', 'unit', 'units',
   'tons', 'metric', 'pcs', 'pieces', 'kgs', 'kg', 'ton', 'pure', 'natural', 'premium',
   'standard', 'international', 'global', 'certified', 'genuine', 'original', 'custom',
-  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'months', 'month'
+  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'months', 'month',
+  'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
+  'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
+  'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
+  'max', 'plus', 'type', 'class', 'model', 'system', 'systems'
 ]);
 
 const GENERIC_MODIFIER_WORDS = new Set([
@@ -20509,8 +20513,7 @@ const GENERIC_MODIFIER_WORDS = new Set([
   'pharmaceutical', 'cosmetic', 'food', 'edible', 'packaging', 'printed', 'plain',
   'corrugated', 'kraft', 'woven', 'nonwoven', 'knitted', 'stainless', 'carbon', 'alloy',
   'cast', 'forged', 'hot', 'cold', 'rolled', 'galvanized', 'coated', 'painted', 'anodized',
-  'aspheric', 'optical', 'infrared', 'thermal', 'solar', 'inverter', 'window', 'wall',
-  'mounted', 'ceiling', 'floor', 'standing', 'grain', 'electrolytic'
+  'aspheric', 'infrared', 'mounted', 'ceiling', 'floor', 'standing'
 ]);
 
 function getWordStems(word: string): string[] {
@@ -20526,64 +20529,87 @@ function getWordStems(word: string): string[] {
   return Array.from(stems).filter(s => s.length >= 3);
 }
 
-function buildRealPhotoSubjectHints(productName: string, category?: string): {
+function buildRealPhotoSubjectHints(productName: string, _category?: string): {
   primaryQuery: string;
   expandedTokens: string[];
 } {
-  const joined = `${productName || ''} ${category || ''}`.toLowerCase();
-  if (/(automotive|electric vehicle|ev battery|charging station)/i.test(joined)) {
+  // CRITICAL: Match ONLY against productName — NEVER let a broad category like
+  // "Industrial Machinery & Electronics" hijack a specific product (e.g. "Solar Panels 550W") into "cnc milling machine"!
+  const titleLower = String(productName || '').trim().toLowerCase();
+  const isPureCategoryTitle =
+    /^(?:industrial machinery|electronics|automotive|agriculture|chemicals|textiles|renewable energy|medical|building|construction|consumer|food|packaging|metals|minerals)\b/i.test(titleLower) &&
+    titleLower.split(/\s+/).length <= 5;
+
+  if (/(solar\s*panel|photovoltaic|monocrystalline|polycrystalline|\bpv\s*module)/i.test(titleLower)) {
+    const wattMatch = titleLower.match(/\b(\d{2,4}\s*w(?:att)?)\b/i);
+    const wattHint = wattMatch ? ` ${wattMatch[1].replace(/\s+/g, '')}` : '';
+    const monoHint = /monocrystalline/i.test(titleLower) ? 'monocrystalline ' : /polycrystalline/i.test(titleLower) ? 'polycrystalline ' : '';
     return {
-      primaryQuery: 'electric car charging station',
-      expandedTokens: ['electric', 'car', 'vehicle', 'automotive', 'charging', 'ev', 'station']
+      primaryQuery: `${monoHint}solar panel${wattHint}`.trim(),
+      expandedTokens: ['solar', 'panel', 'panels', 'photovoltaic', 'monocrystalline', 'polycrystalline', 'module']
     };
   }
-  if (/(machinery|industrial equipment|cnc|hydraulic press)/i.test(joined)) {
+  if (/(diesel\s*generator|genset|power\s*generator)/i.test(titleLower)) {
     return {
-      primaryQuery: 'cnc milling machine',
-      expandedTokens: ['cnc', 'machinery', 'machine', 'industrial', 'lathe', 'milling', 'factory']
+      primaryQuery: 'industrial diesel generator',
+      expandedTokens: ['diesel', 'generator', 'generators', 'genset', 'cummins', 'caterpillar']
     };
   }
-  if (/(electronics|semiconductor|microcontroller|circuit board)/i.test(joined)) {
-    return {
-      primaryQuery: 'semiconductor silicon wafer',
-      expandedTokens: ['semiconductor', 'electronic', 'circuit', 'board', 'pcb', 'silicon', 'wafer']
-    };
-  }
-  if (/(chemical|polymer|hdpe|petrochemical|laboratory)/i.test(joined)) {
-    return {
-      primaryQuery: 'polymer pellets resin',
-      expandedTokens: ['chemical', 'polymer', 'resin', 'pellet', 'pellets', 'refinery', 'hdpe']
-    };
-  }
-  if (/(textile|garment|leather belt|fabrics)/i.test(joined) && !/belt/i.test(joined)) {
-    return {
-      primaryQuery: 'textile weaving loom',
-      expandedTokens: ['textile', 'fabric', 'garment', 'weaving', 'cotton', 'yarn', 'loom']
-    };
-  }
-  if (/(renewable energy|solar panel|photovoltaic)/i.test(joined)) {
-    return {
-      primaryQuery: 'photovoltaic solar farm',
-      expandedTokens: ['solar', 'photovoltaic', 'panel', 'renewable', 'energy', 'farm']
-    };
-  }
-  if (/(agriculture|agro commodities|wheat|grain|soy)/i.test(joined)) {
-    return {
-      primaryQuery: 'combine wheat field',
-      expandedTokens: ['agriculture', 'wheat', 'grain', 'harvest', 'combine', 'farm', 'crop']
-    };
-  }
-  if (/(medical|diagnostic|hospital equipment)/i.test(joined)) {
-    return {
-      primaryQuery: 'hospital mri scanner',
-      expandedTokens: ['medical', 'diagnostic', 'hospital', 'scanner', 'mri', 'surgical']
-    };
-  }
-  if (/(building|construction materials|rebar|aluminum profile)/i.test(joined)) {
-    return {
-      primaryQuery: 'steel rebar construction',
-      expandedTokens: ['steel', 'rebar', 'construction', 'building', 'aluminum', 'concrete']
-    };
+  if (isPureCategoryTitle) {
+    if (/(automotive|electric vehicle|ev battery|charging station)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'electric car charging station',
+        expandedTokens: ['electric', 'car', 'vehicle', 'automotive', 'charging', 'ev', 'station']
+      };
+    }
+    if (/(machinery|industrial equipment|cnc|hydraulic press)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'cnc milling machine',
+        expandedTokens: ['cnc', 'machinery', 'machine', 'industrial', 'lathe', 'milling', 'factory']
+      };
+    }
+    if (/(electronics|semiconductor|microcontroller|circuit board)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'semiconductor silicon wafer',
+        expandedTokens: ['semiconductor', 'electronic', 'circuit', 'board', 'pcb', 'silicon', 'wafer']
+      };
+    }
+    if (/(chemical|polymer|hdpe|petrochemical|laboratory)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'polymer pellets resin',
+        expandedTokens: ['chemical', 'polymer', 'resin', 'pellet', 'pellets', 'refinery', 'hdpe']
+      };
+    }
+    if (/(textile|garment|fabrics)/i.test(titleLower) && !/belt/i.test(titleLower)) {
+      return {
+        primaryQuery: 'textile weaving loom',
+        expandedTokens: ['textile', 'fabric', 'garment', 'weaving', 'cotton', 'yarn', 'loom']
+      };
+    }
+    if (/(renewable energy)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'photovoltaic solar farm',
+        expandedTokens: ['solar', 'photovoltaic', 'panel', 'renewable', 'energy', 'farm']
+      };
+    }
+    if (/(agriculture|agro commodities)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'combine wheat field',
+        expandedTokens: ['agriculture', 'wheat', 'grain', 'harvest', 'combine', 'farm', 'crop']
+      };
+    }
+    if (/(medical|diagnostic|hospital equipment)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'hospital mri scanner',
+        expandedTokens: ['medical', 'diagnostic', 'hospital', 'scanner', 'mri', 'surgical']
+      };
+    }
+    if (/(building|construction materials)/i.test(titleLower)) {
+      return {
+        primaryQuery: 'steel rebar construction',
+        expandedTokens: ['steel', 'rebar', 'construction', 'building', 'aluminum', 'concrete']
+      };
+    }
   }
   const clean = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
   return { primaryQuery: clean, expandedTokens: [] };
@@ -20591,22 +20617,52 @@ function buildRealPhotoSubjectHints(productName: string, category?: string): {
 
 function buildFocusedVisualSearchQueries(productName: string, category?: string): string[] {
   const cleaned = cleanProductSearchSubject(productName).replace(/\s*&\s*/g, ', ');
+  const hints = buildRealPhotoSubjectHints(productName, category);
   const clauses = cleaned
     .split(/[,;/]+/)
     .map(c => c.trim())
     .filter(c => c.length >= 3);
   const { allTokens, coreNouns } = extractProductKeywordTokens(cleaned);
+  // Extract meaningful technical specs like "550w", "2000kw", "80gsm" to keep product precision
+  const specTokens = cleaned
+    .toLowerCase()
+    .match(/\b\d{2,5}(?:w|kw|mw|v|ah|gsm|mm|cm|ml|kg|ton|hp|rpm)\b/gi) || [];
+  const primarySpec = specTokens[0] ? specTokens[0].toLowerCase() : '';
+
   const queries: string[] = [];
 
-  if (allTokens.length >= 2 && allTokens.length <= 4) {
-    queries.push(allTokens.join(' '));
+  // 1. Lead with exact subject hint if specialized (e.g. "monocrystalline solar panel 550w")
+  if (hints.expandedTokens.length > 0 && hints.primaryQuery) {
+    queries.push(hints.primaryQuery);
   }
+
+  // 2. Core product noun phrase + spec (e.g. "monocrystalline solar panels 550w")
+  if (coreNouns.length >= 2) {
+    const corePhrase = coreNouns.slice(0, 3).join(' ');
+    if (primarySpec && !corePhrase.includes(primarySpec)) {
+      queries.push(`${corePhrase} ${primarySpec}`);
+    }
+    queries.push(corePhrase);
+    if (coreNouns.length >= 3) {
+      queries.push(coreNouns.slice(-2).join(' '));
+    }
+  } else if (coreNouns.length === 1) {
+    queries.push(primarySpec ? `${coreNouns[0]} ${primarySpec}` : coreNouns[0]);
+  }
+
+  // 3. Multi-clause sub-items (e.g. "bamboo toothpicks", "wooden skewers", "ice cream sticks")
   for (const clause of clauses.slice(0, 3)) {
     const clauseToks = clause
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter(t => t.length >= 3 && !/^\d+$/.test(t) && !PRODUCT_STOPWORDS.has(t));
+      .filter(
+        t =>
+          t.length >= 3 &&
+          !/^\d+$/.test(t) &&
+          !PRODUCT_STOPWORDS.has(t) &&
+          !GENERIC_MODIFIER_WORDS.has(t)
+      );
     if (clauseToks.length >= 2) {
       queries.push(clauseToks.slice(0, 3).join(' '));
     } else if (clauseToks.length === 1 && coreNouns.length >= 2 && clauseToks[0] !== coreNouns[0]) {
@@ -20615,11 +20671,9 @@ function buildFocusedVisualSearchQueries(productName: string, category?: string)
       queries.push(clauseToks[0]);
     }
   }
-  if (coreNouns.length >= 3) {
-    queries.push(coreNouns.slice(0, 3).join(' '));
-    queries.push(`${coreNouns[0]} ${coreNouns[coreNouns.length - 1]}`);
-  } else if (coreNouns.length >= 1) {
-    queries.push(coreNouns.join(' '));
+
+  if (queries.length === 0 && allTokens.length > 0) {
+    queries.push(allTokens.slice(0, 3).join(' '));
   }
   if (queries.length === 0 && category) {
     queries.push(cleanProductSearchSubject(category));
@@ -21265,12 +21319,13 @@ async function fetchLiveCommercialWebProductImages(
         .join(' ')
     : '';
 
+  const tokenProf = extractProductKeywordTokens(cleanedSubject);
   const searchQueries = Array.from(
     new Set(
       [
         focused[0] || '',
-        focused[1] ? `${focused[1]} product` : '',
-        hints.primaryQuery ? `${hints.primaryQuery} photograph` : '',
+        focused[1] || '',
+        focused[0] && !/product/i.test(focused[0]) ? `${focused[0]} product` : '',
         specHint && focused[0] ? `${focused[0]} ${specHint}`.replace(/\s+/g, ' ').trim() : ''
       ].filter(q => q.length >= 3)
     )
@@ -21278,19 +21333,18 @@ async function fetchLiveCommercialWebProductImages(
 
   const subjectTokens = Array.from(
     new Set([
-      ...cleanedSubject
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .filter(w => w.length >= 3 && !['the', 'and', 'for', 'with', 'from', 'bulk', 'wholesale', 'grade', 'origin', 'certified', 'premium', 'high', 'quality'].includes(w)),
+      ...tokenProf.coreNouns,
       ...hints.expandedTokens
     ])
-  );
+  ).filter(w => w.length >= 3 && !PRODUCT_STOPWORDS.has(w) && !GENERIC_MODIFIER_WORDS.has(w));
   const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto/i;
 
   await Promise.allSettled(
-    searchQueries.map(async qStr => {
+    searchQueries.map(async (qStr, qIdx) => {
       try {
-        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&qft=+filterui:photo-photo+filterui:imagesize-large&form=HDRSC2&first=1`;
+        // Use clean photo filter (without imagesize-large) so B2B catalog product photos from IndiaMART/TradeIndia/Made-in-China/OEMs match Google Images results!
+        const filterParam = qIdx === 0 ? '&qft=+filterui:photo-photo' : '';
+        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}${filterParam}&form=HDRSC2&first=1`;
         const resp = await fetch(searchUrl, {
           headers: {
             'User-Agent':
@@ -21518,14 +21572,17 @@ async function handleVisualProductImageSearch(params: {
       const dedupKey = cleanUrl.split('#')[0];
       if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
       const isGoogleThumb = cleanUrl.includes('encrypted-tbn0.gstatic.com/images');
-      const rel = isCandidateStrictlyRelevant(c, tokenProfile, { allowCdnWithoutExt: isGoogleThumb });
+      const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads)\b/i.test(cleanUrl);
+      const rel = isCandidateStrictlyRelevant(c, tokenProfile, { allowCdnWithoutExt: isGoogleThumb || isCommercialCdn });
       if (!rel.valid) continue;
       const sourceBoost =
         c.sourceDomain === 'commons.wikimedia.org'
-          ? 8
-          : c.sourceDomain === 'images.google.com'
-            ? 5
-            : 0;
+          ? 4
+          : isCommercialCdn
+            ? 6
+            : c.sourceDomain === 'images.google.com'
+              ? 5
+              : 2;
       candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score + sourceBoost });
     }
   };
