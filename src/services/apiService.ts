@@ -129,6 +129,29 @@ export function unmarkProductIdDeleted(id: string): void {
     }
   } catch {}
 }
+
+export function syncDeletedProductIdsFromServer(serverDeletedIds: string[]): void {
+  const cleanIds = Array.from(
+    new Set(
+      (serverDeletedIds || [])
+        .map(id => String(id || '').trim())
+        .filter(Boolean)
+    )
+  );
+  const winSet = getWindowDeletedSet();
+  winSet.clear();
+  cleanIds.forEach(id => {
+    winSet.add(id);
+    if (id.startsWith('prod-db-')) {
+      winSet.add(id.replace('prod-db-', ''));
+    }
+  });
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(DELETED_PRODUCT_IDS_KEY, JSON.stringify(cleanIds));
+    }
+  } catch {}
+}
 const DELETED_USERS_STORAGE_KEY = 'th_permanently_deleted_users_v1';
 const USER_DELETION_LOGS_STORAGE_KEY = 'th_user_deletion_logs_v1';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
@@ -1805,8 +1828,8 @@ export const api = {
         const contentType = res.headers.get('content-type') || '';
         if (!contentType || contentType.includes('application/json')) {
           const data = await res.json();
-          if (Array.isArray(data?.deletedIds) && data.deletedIds.length > 0) {
-            markProductIdsDeleted(data.deletedIds);
+          if (Array.isArray(data?.deletedIds)) {
+            syncDeletedProductIdsFromServer(data.deletedIds);
           }
           if (Array.isArray(data?.data) && data.data.length > 0) {
             const baseMap = new Map<string, Product>();

@@ -117,6 +117,36 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [isInspectorModalOpen, setIsInspectorModalOpen] = useState<boolean>(false);
   const [inspectorHighlightPulse, setInspectorHighlightPulse] = useState<boolean>(false);
   const [croppingRowTarget, setCroppingRowTarget] = useState<{ row: UnifiedAuditRow; imageSrc: string } | null>(null);
+  const [copiedRecordLinkId, setCopiedRecordLinkId] = useState<string | null>(null);
+
+  const buildLiveRecordUrl = useCallback((row: UnifiedAuditRow): string => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    if (row.record_type === 'RFQ') {
+      return `${origin}/?rfq=${encodeURIComponent(row.record_id)}`;
+    }
+    if (row.record_type === 'CATEGORY') {
+      return `${origin}/?view=PRODUCT_DIRECTORY&category=${encodeURIComponent(row.title)}`;
+    }
+    return `${origin}/?product=${encodeURIComponent(row.record_id)}`;
+  }, []);
+
+  const handleCopyLiveRecordLink = useCallback(
+    async (row: UnifiedAuditRow) => {
+      const targetUrl = buildLiveRecordUrl(row);
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(targetUrl);
+        }
+      } catch {
+        // ignore clipboard permission issues
+      }
+      setCopiedRecordLinkId(row.record_id);
+      window.setTimeout(() => {
+        setCopiedRecordLinkId(prev => (prev === row.record_id ? null : prev));
+      }, 2200);
+    },
+    [buildLiveRecordUrl]
+  );
 
   const { siteContent } = useSiteContent();
 
@@ -1600,6 +1630,46 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                     <h4 className="text-sm font-black text-slate-900 leading-snug">{selectedRecord.title}</h4>
                     <div className="text-[11px] text-slate-600">
                       <span className="font-semibold text-slate-800">{selectedRecord.category}</span> — {selectedRecord.issue_reason}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                      {onViewOnHomepage && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onViewOnHomepage({
+                              recordId: selectedRecord.record_id,
+                              recordType: selectedRecord.record_type
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>
+                            {selectedRecord.record_type === 'CATEGORY'
+                              ? 'View Live in Sectors'
+                              : selectedRecord.record_type === 'RFQ'
+                                ? 'View Live in Buy Leads'
+                                : 'View Live on Homepage'}
+                          </span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyLiveRecordLink(selectedRecord)}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {copiedRecordLinkId === selectedRecord.record_id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-700">Live Link Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="w-3 h-3 text-slate-500" />
+                            <span>Copy Live Link</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 

@@ -498,6 +498,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               return (
                 <article
                   key={prod.id}
+                  id={`featured-product-card-${prod.id}`}
                   onClick={() => onSelectProduct(prod)}
                   className="bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
                 >

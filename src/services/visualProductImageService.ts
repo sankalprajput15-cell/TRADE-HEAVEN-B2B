@@ -65,12 +65,37 @@ const GENERIC_PLACEHOLDER_PATTERNS = [
   '3d_render'
 ];
 
+const MISMATCH_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
+  'wholesale', 'bulk', 'supply', 'direct', 'factory', 'oem', 'odm', 'verified',
+  'new', 'high', 'best', 'commercial', 'industrial', 'product', 'products', 'unit', 'units',
+  'tons', 'metric', 'pcs', 'pieces', 'kgs', 'kg', 'ton', 'pure', 'natural', 'premium',
+  'standard', 'international', 'global', 'certified', 'genuine', 'original', 'custom',
+  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'auto', 'catalog'
+]);
+
+function extractTopicTokensClient(text: string): string[] {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !/^\d+$/.test(w) && !MISMATCH_STOPWORDS.has(w));
+}
+
+function tokenStemOverlap(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a))) return true;
+  const sa = a.endsWith('s') && a.length > 4 ? a.slice(0, -1) : a;
+  const sb = b.endsWith('s') && b.length > 4 ? b.slice(0, -1) : b;
+  return sa.length >= 3 && sb.length >= 3 && (sa === sb || (sa.length >= 4 && sb.length >= 4 && (sa.includes(sb) || sb.includes(sa))));
+}
+
 export function isMismatchedProductImageUrl(
   imageUrl?: string,
   productTitle?: string,
   category?: string
 ): boolean {
-  const lowerUrl = String(imageUrl || '').trim().toLowerCase();
+  const lowerUrl = String(imageUrl || '').trim().toLowerCase().split('?')[0];
   if (!lowerUrl) return false;
   const target = `${productTitle || ''} ${category || ''}`.toLowerCase();
   if (!target.trim()) return false;
@@ -93,7 +118,6 @@ export function isMismatchedProductImageUrl(
   ) {
     return true;
   }
-  // Generator/tank photos on excavators/earthmoving or unrelated items
   if (
     (lowerUrl.includes('image002_50ab7837') || lowerUrl.includes('image003_6c1f0619')) &&
     !/(generator|genset|cummins|cat power|diesel power|power generation)/i.test(target)
@@ -107,11 +131,72 @@ export function isMismatchedProductImageUrl(
     return true;
   }
   if (
+    lowerUrl.includes('image005_20fe3db0') &&
+    !/(excavator|construction equipment|heavy equipment|cat\b|cummins|machinery|loader|bulldozer)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
     lowerUrl.includes('stainless-steel-heavy-coils') &&
     !/(steel|coil|sheet|metal|alloy|iron|galvanized|rebar|plate)/i.test(target)
   ) {
     return true;
   }
+  if (
+    lowerUrl.includes('mineral-coal') &&
+    !/(coal|anthracite|coking|steam coal|carbon|fuel|energy|mineral|mining|metallurgy)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('lithium-battery') &&
+    !/(lithium|lifepo4|battery|batteries|energy storage|solar|power|electric|inverter|ess)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('en590-diesel') &&
+    !/(diesel|en590|en 590|ulsd|fuel|oil|petroleum|energy|tank|gas oil)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('gold-bullion') &&
+    !/(gold|bullion|bar|ingot|dore|precious metal|jewelry)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('sidath-vimukthi') &&
+    !/(vanilla|pod|bean|spice|extract|orchid)/i.test(target)
+  ) {
+    return true;
+  }
+  if (
+    lowerUrl.includes('whatsapp_image_') &&
+    !/(jade|cabochon|turquoise|gemstone|nephrite|matrix|mineral|stone|jewel|crystal|blackstone|yunnan)/i.test(target)
+  ) {
+    return true;
+  }
+
+  // Enforce slug-to-title relevance on auto-generated or verified local upload filenames
+  const fileName = lowerUrl.split('/').pop() || '';
+  const autoMatch = fileName.match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i) ||
+    fileName.match(/^(?:verified-belt)-\d+\.(?:webp|jpe?g|png)$/i);
+  if (autoMatch) {
+    const rawSlug = autoMatch[1] || 'leather-belt';
+    const slugTokens = extractTopicTokensClient(rawSlug.replace(/-/g, ' '));
+    const targetTokens = extractTopicTokensClient(target);
+    if (slugTokens.length >= 1 && targetTokens.length >= 1) {
+      const hasOverlap = slugTokens.some(st =>
+        targetTokens.some(tt => tokenStemOverlap(st, tt))
+      );
+      if (!hasOverlap) {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -648,46 +733,68 @@ export async function fetchVisualProductImages(params: {
       };
     };
 
-    try {
-      const res = await fetch('/api/v1/products/fetch-images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const json = await res.json();
+    const tryBackendFetch = async (endpoint: string): Promise<VisualProductSearchResponse | null> => {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const ctype = (res.headers.get('content-type') || '').toLowerCase();
+        if (!res.ok || ctype.includes('text/html')) return null;
+        const json = await res.json().catch(() => null);
+        if (!json || typeof json !== 'object') return null;
+        if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
         const normalized = parsePayload(json);
-        if (normalized.success) {
-          SESSION_CACHE.set(key, { data: normalized, cachedAt: Date.now() });
+        // Reject off-topic candidates returned by older PHP fallbacks
+        const cleanPool = normalized.pool.filter(
+          c => !isGenericOrPlaceholderImageUrl(c.url) && !isMismatchedProductImageUrl(c.url, productName, category)
+        );
+        if (normalized.success && cleanPool.length > 0) {
+          const finalNorm: VisualProductSearchResponse = {
+            ...normalized,
+            pool: cleanPool,
+            images: cleanPool.slice(0, count),
+            totalVerified: cleanPool.length
+          };
+          SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
           persistSessionCacheToLocalStorage();
+          return finalNorm;
         }
-        return normalized;
+      } catch {
+        // ignore network/parse error
+      }
+      return null;
+    };
+
+    const primaryVisual = await tryBackendFetch('/api/v1/products/fetch-images');
+    if (primaryVisual) return primaryVisual;
+
+    const phpVisual = await tryBackendFetch('/api.php?action=fetch_product_images');
+    if (phpVisual) return phpVisual;
+
+    // Standalone Chrome fallback: query Wikimedia Commons directly via CORS (origin=*) with crisp focused queries
+    try {
+      const wikiCandidates = await fetchWikimediaCommonsCorsCandidates(productName, category, count);
+      if (wikiCandidates.length > 0) {
+        const wikiResp: VisualProductSearchResponse = {
+          success: true,
+          status: 'ok',
+          provider: 'wikimedia_commons_live',
+          queryUsed: `${productName} ${category}`.trim(),
+          totalVerified: wikiCandidates.length,
+          images: wikiCandidates.slice(0, count),
+          pool: wikiCandidates
+        };
+        SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
+        persistSessionCacheToLocalStorage();
+        return wikiResp;
       }
     } catch {
-      // Fallback to PHP backend endpoint
+      // ignore Wikimedia fallback errors
     }
 
-    try {
-      const phpRes = await fetch('/api.php?action=fetch_product_images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (phpRes.ok) {
-        const json = await phpRes.json();
-        const normalized = parsePayload(json);
-        if (normalized.success) {
-          SESSION_CACHE.set(key, { data: normalized, cachedAt: Date.now() });
-          persistSessionCacheToLocalStorage();
-          return normalized;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    // Resilient fallback for PHP/cPanel hosts where GEMINI_API_KEY is not configured:
-    // Score and return real verified images already stored in the live server media library & overrides.
+    // Only return verified server media library assets that actually match this product's tokens (never score-0 random images)
     try {
       const serverMediaCandidates = await buildServerMediaLibraryCandidates(productName, category, count);
       if (serverMediaCandidates.length > 0) {
@@ -710,8 +817,8 @@ export async function fetchVisualProductImages(params: {
 
     return {
       success: false,
-      status: 'error',
-      message: 'Unable to reach Visual Product Image Finder endpoint. Please upload an image manually or try again.',
+      status: 'no_relevant_matches',
+      message: `No matching verified photos were found automatically for "${productName}". Please upload a photo manually or refine the title.`,
       images: [],
       pool: []
     };
@@ -916,22 +1023,113 @@ async function fetchLiveServerImageStateRaw(): Promise<{
   return { overrides: {}, mediaLibrary: [] };
 }
 
+function buildFocusedVisualSearchQueriesClient(productName: string, category?: string): string[] {
+  const cleaned = cleanProductSearchSubject(productName).replace(/\s*&\s*/g, ', ');
+  const clauses = cleaned
+    .split(/[,;/]+/)
+    .map(c => c.trim())
+    .filter(c => c.length >= 3);
+  const queries: string[] = [];
+  const tokens = extractTopicTokensClient(cleaned);
+
+  if (tokens.length >= 2 && tokens.length <= 4) {
+    queries.push(tokens.join(' '));
+  }
+  for (const cl of clauses.slice(0, 3)) {
+    const clTokens = extractTopicTokensClient(cl);
+    if (clTokens.length >= 2) {
+      queries.push(clTokens.slice(0, 3).join(' '));
+    } else if (clTokens.length === 1 && tokens.length >= 2 && clTokens[0] !== tokens[0]) {
+      queries.push(`${tokens[0]} ${clTokens[0]}`);
+    } else if (clTokens.length === 1 && clTokens[0].length >= 4) {
+      queries.push(clTokens[0]);
+    }
+  }
+  if (tokens.length >= 3) {
+    queries.push(tokens.slice(0, 3).join(' '));
+    queries.push(`${tokens[0]} ${tokens[tokens.length - 1]}`);
+  }
+  if (queries.length === 0 && category) {
+    const catToks = extractTopicTokensClient(category);
+    if (catToks.length > 0) queries.push(catToks.slice(0, 2).join(' '));
+  }
+  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 4);
+}
+
+async function fetchWikimediaCommonsCorsCandidates(
+  productName: string,
+  category?: string,
+  limit = 15
+): Promise<VisualProductImageCandidate[]> {
+  if (typeof fetch !== 'function') return [];
+  const queries = buildFocusedVisualSearchQueriesClient(productName, category);
+  if (queries.length === 0) return [];
+  const titleTokens = extractTopicTokensClient(cleanProductSearchSubject(productName));
+  const badTitleRe = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i;
+
+  const seen = new Set<string>();
+  const collected: VisualProductImageCandidate[] = [];
+
+  await Promise.allSettled(
+    queries.map(async qStr => {
+      try {
+        const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${qStr} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+        const data: any = await resp.json().catch(() => null);
+        const pages = Object.values(data?.query?.pages || {}) as any[];
+        for (const p of pages) {
+          const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
+          if (!info) continue;
+          const rawTitle = String(p?.title || '');
+          if (badTitleRe.test(rawTitle)) continue;
+          const mime = String(info.mime || '').toLowerCase();
+          if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
+          const w = Number(info.width || 0);
+          const h = Number(info.height || 0);
+          if ((w > 0 && w < 380) || (h > 0 && h < 280)) continue;
+          const candUrl = String(info.thumburl || info.url || '').trim();
+          if (!candUrl || seen.has(candUrl)) continue;
+
+          const readableTitle = rawTitle.replace(/^File:/i, '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+          const checkHay = `${readableTitle} ${candUrl}`.toLowerCase();
+          const hits = titleTokens.filter(tk => checkHay.includes(tk) || (tk.length >= 4 && tokenStemOverlap(tk, checkHay)));
+          const minNeeded = titleTokens.length >= 4 ? 2 : 1;
+          if (titleTokens.length > 0 && hits.length < minNeeded) continue;
+          if (isMismatchedProductImageUrl(candUrl, productName, category)) continue;
+
+          seen.add(candUrl);
+          collected.push({
+            url: candUrl,
+            thumbnailUrl: candUrl,
+            title: readableTitle || qStr,
+            sourceDomain: 'commons.wikimedia.org',
+            width: w || undefined,
+            height: h || undefined,
+            relevanceScore: hits.length * 4 + (w >= h ? 2 : 0)
+          });
+        }
+      } catch {
+        // ignore single query errors
+      }
+    })
+  );
+
+  return collected
+    .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+    .slice(0, Math.max(limit, 15));
+}
+
 async function buildServerMediaLibraryCandidates(
   productName: string,
   category: string,
   count = 15
 ): Promise<VisualProductImageCandidate[]> {
   const { overrides, mediaLibrary } = await fetchLiveServerImageStateRaw();
-  const stopWords = new Set([
-    'the', 'and', 'for', 'with', 'from', 'export', 'grade', 'quality', 'wholesale',
-    'bulk', 'supply', 'direct', 'factory', 'oem', 'odm', 'verified', 'product',
-    'products', 'general', 'international', 'global', 'certified', 'rfq', 'buy', 'lead'
-  ]);
-  const tokens = `${productName} ${category}`
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 3 && !stopWords.has(w));
+  const titleTokens = extractTopicTokensClient(cleanProductSearchSubject(productName));
+  const categoryTokens = extractTopicTokensClient(category);
+  const tokens = titleTokens.length > 0 ? titleTokens : categoryTokens;
+  if (tokens.length === 0) return [];
 
   const seenUrls = new Set<string>();
   const scored: Array<{ score: number; cand: VisualProductImageCandidate }> = [];
@@ -941,14 +1139,23 @@ async function buildServerMediaLibraryCandidates(
     if (!clean || seenUrls.has(clean)) return;
     if (!clean.startsWith('/assets/uploads/')) return;
     if (isGenericOrPlaceholderImageUrl(clean) || /\.svg$/i.test(clean)) return;
+    if (isMismatchedProductImageUrl(clean, productName, category)) return;
     seenUrls.add(clean);
 
-    const hay = `${clean} ${labelHint}`.toLowerCase();
+    const hayTokens = extractTopicTokensClient(`${clean} ${labelHint}`);
+    let titleHits = 0;
     let score = 0;
-    for (const tok of tokens) {
-      if (hay.includes(tok)) score += 3;
-      else if (tok.length >= 4 && hay.includes(tok.slice(0, 4))) score += 1;
+    for (const tok of titleTokens) {
+      if (hayTokens.some(ht => ht === tok)) {
+        titleHits++;
+        score += 4;
+      } else if (hayTokens.some(ht => tokenStemOverlap(ht, tok))) {
+        titleHits++;
+        score += 2;
+      }
     }
+    if (titleHits === 0) return;
+
     scored.push({
       score,
       cand: {
@@ -973,10 +1180,10 @@ async function buildServerMediaLibraryCandidates(
   }
 
   scored.sort((a, b) => b.score - a.score);
-  const topMatched = scored.filter(s => s.score > 0).map(s => s.cand);
-  const remaining = fisherYatesShuffle(scored.filter(s => s.score === 0).map(s => s.cand));
-  const combined = [...topMatched, ...remaining];
-  return combined.slice(0, Math.max(count, 18));
+  return scored
+    .filter(s => s.score >= 3)
+    .map(s => s.cand)
+    .slice(0, Math.max(count, 18));
 }
 
 function classifyClientAuditIssue(
@@ -993,13 +1200,12 @@ function classifyClientAuditIssue(
   if (isGenericOrPlaceholderImageUrl(cleanUrl) || /\.svg$/i.test(cleanUrl)) {
     return { flagged: true, type: 'PLACEHOLDER_OR_MISSING', reason: 'Generic stock or placeholder asset detected' };
   }
-  const lower = cleanUrl.toLowerCase();
-  const joined = `${title} ${category}`.toLowerCase();
-  if (lower.includes('agricultural_rice_husk_powder') && !/(rice|husk|agri|biomass|pellet|powder)/i.test(joined)) {
-    return { flagged: true, type: 'MISMATCHED', reason: 'Cross-category mismatch (Rice Husk image on non-agri item)' };
-  }
-  if (lower.includes('leather_belt') && !/(leather|belt|apparel|fashion|strap|wallet|textile|garment)/i.test(joined)) {
-    return { flagged: true, type: 'MISMATCHED', reason: 'Cross-category mismatch (Leather Belt image on non-leather item)' };
+  if (isMismatchedProductImageUrl(cleanUrl, title, category)) {
+    return {
+      flagged: true,
+      type: 'MISMATCHED',
+      reason: `Off-topic or cross-category image detected on "${title}"`
+    };
   }
   const prev = seenUrls.get(cleanUrl);
   if (prev && prev.id !== recId) {
@@ -1091,12 +1297,6 @@ async function runClientFallbackCatalogImageAudit(options: {
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
-  // Build available verified server pool for auto-fix when dryRun === false
-  const verifiedPool = !options.dryRun
-    ? (await buildServerMediaLibraryCandidates('industrial wholesale export product', 'General', 200)).map(c => c.url)
-    : [];
-  let poolCursor = 0;
-
   for (const item of dedupMap.values()) {
     if (item.type === 'CATEGORY') categoriesScanned++;
     else if (item.type === 'RFQ') rfqsScanned++;
@@ -1160,17 +1360,15 @@ async function runClientFallbackCatalogImageAudit(options: {
       continue;
     }
 
-    // Pick a verified server photo for auto-fix
+    // Only pick a verified local asset that genuinely matches this exact item's title/category (never unrelated images)
     let pickedUrl = '';
-    while (poolCursor < verifiedPool.length) {
-      const candidate = verifiedPool[poolCursor++];
-      if (!seenUrls.has(candidate)) {
-        pickedUrl = candidate;
+    const itemMatches = await buildServerMediaLibraryCandidates(item.title, item.category, 10);
+    for (const c of itemMatches) {
+      const cu = String(c.url || '').split('?')[0];
+      if (cu && !seenUrls.has(cu) && !isMismatchedProductImageUrl(cu, item.title, item.category)) {
+        pickedUrl = cu;
         break;
       }
-    }
-    if (!pickedUrl && verifiedPool.length > 0) {
-      pickedUrl = verifiedPool[(recordsFixed) % verifiedPool.length];
     }
 
     if (pickedUrl) {
@@ -1331,40 +1529,6 @@ export async function fixSingleCatalogImage(params: {
     revert: Boolean(params.revert)
   };
 
-  const isValidSingleFixResponse = (json: any): json is SingleCatalogImageFixResult =>
-    Boolean(json && json.success === true && typeof json.record_id === 'string' && typeof json.new_image_url === 'string');
-
-  let primaryError = '';
-  try {
-    const res = await fetch('/api/v1/admin/fix-single-catalog-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json().catch(() => null);
-    if (res.ok && isValidSingleFixResponse(json)) {
-      return json;
-    }
-    primaryError = json?.message || `HTTP ${res.status}`;
-  } catch (err: any) {
-    primaryError = err?.message || 'Network error';
-  }
-
-  try {
-    const fallbackRes = await fetch('/api.php?action=fix_single_catalog_image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const json = await fallbackRes.json().catch(() => null);
-    if (fallbackRes.ok && isValidSingleFixResponse(json)) {
-      return json;
-    }
-  } catch {
-    // proceed to direct set_product_images fallback
-  }
-
-  // Universal PHP/cPanel fallback via /api.php?action=set_product_images (always available on live production)
   const cleanId = String(params.recordId || '').trim();
   const resolvedType: SingleCatalogImageFixResult['record_type'] =
     params.recordType || (cleanId.startsWith('cat-') ? 'CATEGORY' : cleanId.startsWith('rfq-') ? 'RFQ' : 'PRODUCT');
@@ -1372,6 +1536,54 @@ export async function fixSingleCatalogImage(params: {
   const resolvedCategory = String(params.category || 'General').trim();
   const prevUrl = String(params.previousImageUrl || '').trim();
 
+  const isValidSingleFixResponse = (json: any): json is SingleCatalogImageFixResult =>
+    Boolean(
+      json &&
+        json.success === true &&
+        typeof json.record_id === 'string' &&
+        typeof json.new_image_url === 'string' &&
+        json.new_image_url.trim().length > 0 &&
+        !isGenericOrPlaceholderImageUrl(json.new_image_url) &&
+        (params.revert ||
+          Boolean(params.customImageUrl) ||
+          !isMismatchedProductImageUrl(json.new_image_url, resolvedTitle, resolvedCategory))
+    );
+
+  const singleFixEndpoints = [
+    '/api/v1/admin/fix-single-catalog-image',
+    '/api.php?action=fix_single_catalog_image',
+    '/api.php?__route=v1/admin/fix-single-catalog-image'
+  ];
+
+  let lastMeaningfulError = '';
+  for (const endpoint of singleFixEndpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const ctype = (res.headers.get('content-type') || '').toLowerCase();
+      if (ctype.includes('text/html')) {
+        continue;
+      }
+      const json = await res.json().catch(() => null);
+      if (res.ok && isValidSingleFixResponse(json)) {
+        return json;
+      }
+      if (json && json.message && !json.service) {
+        lastMeaningfulError = String(json.message);
+      } else if (res.status >= 400) {
+        lastMeaningfulError = `Server endpoint returned status ${res.status}`;
+      }
+    } catch (err: any) {
+      if (err?.message && !lastMeaningfulError) {
+        lastMeaningfulError = err.message;
+      }
+    }
+  }
+
+  // Universal fallback: resolve via visual search (Backend -> PHP -> Live Wikimedia Commons CORS) & persist to server
   let finalUrl = '';
   let source = 'direct_set_product_images';
 
@@ -1382,6 +1594,7 @@ export async function fixSingleCatalogImage(params: {
     finalUrl = params.customImageUrl.trim();
     source = 'manual_custom_url';
   } else {
+    const cleanPrev = prevUrl.split('?')[0];
     const visual = await fetchVisualProductImages({
       productName: resolvedTitle,
       productId: cleanId,
@@ -1390,26 +1603,47 @@ export async function fixSingleCatalogImage(params: {
       forceRefresh: true
     });
     const pool = Array.isArray(visual.pool) && visual.pool.length > 0 ? visual.pool : visual.images || [];
-    const cleanPrev = prevUrl.split('?')[0];
-    const picked = pool.find(c => c?.url && c.url.split('?')[0] !== cleanPrev) || pool[0];
+    const relevantCandidates = pool.filter(
+      c =>
+        c?.url &&
+        !isGenericOrPlaceholderImageUrl(c.url) &&
+        !isMismatchedProductImageUrl(c.url, resolvedTitle, resolvedCategory)
+    );
+    const picked =
+      relevantCandidates.find(c => c.url.split('?')[0] !== cleanPrev) || relevantCandidates[0];
     if (picked?.url) {
-      finalUrl = picked.url;
-      source = visual.provider || 'server_media_library_verified';
+      let candidateUrl = picked.url;
+      if (/^https?:\/\//i.test(candidateUrl)) {
+        const mirrored = await autoUploadDisplayedProductImage({
+          imageUrl: candidateUrl,
+          productId: cleanId,
+          productName: resolvedTitle,
+          category: resolvedCategory
+        });
+        if (mirrored) {
+          candidateUrl = mirrored;
+        }
+      }
+      finalUrl = candidateUrl;
+      source = visual.provider || 'wikimedia_commons_live';
     }
   }
 
   if (!finalUrl) {
-    throw new Error(primaryError || `Could not resolve a replacement image for ${cleanId}. Please upload a photo manually.`);
+    throw new Error(
+      lastMeaningfulError ||
+        `No matching verified photo found automatically for "${resolvedTitle}".`
+    );
   }
 
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
-  const cleanFinal = finalUrl.split('?')[0];
-  const ext = cleanFinal.split('.').pop()?.toUpperCase() || 'WEBP';
+  const cleanFinal = finalUrl.startsWith('data:') ? finalUrl : finalUrl.split('?')[0];
+  const ext = cleanFinal.startsWith('data:') ? 'WEBP' : cleanFinal.split('.').pop()?.toUpperCase() || 'WEBP';
 
   const persistEndpoints = [
-    '/api.php?action=set_product_images',
-    '/api/v1/admin/product-images'
+    '/api/v1/admin/product-images',
+    '/api.php?action=set_product_images'
   ];
   let persisted = false;
   for (const ep of persistEndpoints) {
@@ -1425,6 +1659,8 @@ export async function fixSingleCatalogImage(params: {
           format: ext
         })
       });
+      const ctype = (saveRes.headers.get('content-type') || '').toLowerCase();
+      if (ctype.includes('text/html')) continue;
       const saveJson = await saveRes.json().catch(() => null);
       if (saveRes.ok && saveJson && (saveJson.success === true || saveJson.status === 'success')) {
         persisted = true;
@@ -1435,8 +1671,10 @@ export async function fixSingleCatalogImage(params: {
     }
   }
 
-  if (!persisted) {
-    throw new Error(primaryError || `Failed to save updated image for ${cleanId} to the server.`);
+  if (!persisted && !/^https?:\/\//i.test(cleanFinal)) {
+    throw new Error(
+      lastMeaningfulError || `Failed to save updated image for ${cleanId} to the server.`
+    );
   }
 
   return {

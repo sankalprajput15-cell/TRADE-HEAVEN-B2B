@@ -1,6 +1,7 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
 import { imageCdnService } from './imageCdnService';
+import { isMismatchedProductImageUrl, isGenericOrPlaceholderImageUrl } from './visualProductImageService';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 
@@ -1295,7 +1296,11 @@ class ProductImageManagerService {
           const lowerTitle = (productTitle || '').toLowerCase();
           const hasCoalFile = /\bcoal\b/.test(lowerCand.replace(/[-_/]/g, ' ')) && !lowerCand.includes('charcoal');
           const isCharcoalOrLeather = lowerTitle.includes('charcoal') || lowerTitle.includes('leather') || lowerTitle.includes('belt');
-          if (!(hasCoalFile && isCharcoalOrLeather)) {
+          if (
+            !(hasCoalFile && isCharcoalOrLeather) &&
+            !isGenericOrPlaceholderImageUrl(candidateUrl) &&
+            !isMismatchedProductImageUrl(candidateUrl, productTitle, category)
+          ) {
             return candidateUrl;
           }
         }
@@ -1319,11 +1324,15 @@ class ProductImageManagerService {
         if (this.isManualEntry(matchedEntry)) {
           return normalizeProductAssetUrl(matchedEntry.primary);
         }
-        // Anti-cross-contamination safeguard
+        const candidatePrimary = normalizeProductAssetUrl(matchedEntry.primary);
         const isTargetSaree = /(saree|sari|textile|apparel|fabric|garment|silk|dress)/i.test(lowerTitle);
-        const isEntrySaree = matchedEntry.primary.toLowerCase().includes('saree') || matchedEntry.primary.toLowerCase().includes('shree');
-        if (!isEntrySaree || isTargetSaree) {
-          return normalizeProductAssetUrl(matchedEntry.primary);
+        const isEntrySaree = candidatePrimary.toLowerCase().includes('saree') || candidatePrimary.toLowerCase().includes('shree');
+        if (
+          (!isEntrySaree || isTargetSaree) &&
+          !isGenericOrPlaceholderImageUrl(candidatePrimary) &&
+          !isMismatchedProductImageUrl(candidatePrimary, productTitle, category)
+        ) {
+          return candidatePrimary;
         }
       }
     }
@@ -1331,14 +1340,23 @@ class ProductImageManagerService {
     // 3. Check URL replacement rules (including query-stripped local URLs)
     if (normalizedSrc) {
       const strippedSrc = this.stripLocalAssetQuery(normalizedSrc);
+      const acceptReplacement = (rawNewUrl: string): string | undefined => {
+        const normNew = normalizeProductAssetUrl(rawNewUrl);
+        if (!normNew || isGenericOrPlaceholderImageUrl(normNew)) return undefined;
+        if (isMismatchedProductImageUrl(normNew, productTitle, category)) return undefined;
+        return normNew;
+      };
       if (this.state.urlReplacements[normalizedSrc]) {
-        return normalizeProductAssetUrl(this.state.urlReplacements[normalizedSrc]);
+        const ok = acceptReplacement(this.state.urlReplacements[normalizedSrc]);
+        if (ok) return ok;
       }
       if (strippedSrc && this.state.urlReplacements[strippedSrc]) {
-        return normalizeProductAssetUrl(this.state.urlReplacements[strippedSrc]);
+        const ok = acceptReplacement(this.state.urlReplacements[strippedSrc]);
+        if (ok) return ok;
       }
       if (src && this.state.urlReplacements[src]) {
-        return normalizeProductAssetUrl(this.state.urlReplacements[src]);
+        const ok = acceptReplacement(this.state.urlReplacements[src]);
+        if (ok) return ok;
       }
       for (const [oldSubstr, newUrl] of Object.entries(this.state.urlReplacements)) {
         const cleanSubstr = this.stripLocalAssetQuery(oldSubstr);
@@ -1348,7 +1366,8 @@ class ProductImageManagerService {
             (cleanSubstr && strippedSrc.includes(cleanSubstr)) ||
             (src && src.includes(oldSubstr)))
         ) {
-          return normalizeProductAssetUrl(newUrl);
+          const ok = acceptReplacement(newUrl);
+          if (ok) return ok;
         }
       }
     }
@@ -1381,18 +1400,36 @@ class ProductImageManagerService {
       const entry = this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()];
       if (entry && entry.primary) {
         const cleanPrimary = normalizeProductAssetUrl(entry.primary);
-        if (Array.isArray(entry.gallery) && entry.gallery.length > 0) {
-          const cleanGallery = entry.gallery.map(u => normalizeProductAssetUrl(u)).filter(Boolean);
-          return [cleanPrimary, ...cleanGallery.filter(u => u !== cleanPrimary)];
+        const entryAllowed =
+          this.isManualEntry(entry) ||
+          (!isGenericOrPlaceholderImageUrl(cleanPrimary) &&
+            !isMismatchedProductImageUrl(cleanPrimary, product.title, product.category));
+        if (entryAllowed) {
+          if (Array.isArray(entry.gallery) && entry.gallery.length > 0) {
+            const cleanGallery = entry.gallery
+              .map(u => normalizeProductAssetUrl(u))
+              .filter(
+                u =>
+                  Boolean(u) &&
+                  (this.isManualEntry(entry) || !isMismatchedProductImageUrl(u, product.title, product.category))
+              );
+            return cleanGallery.length > 0 ? [cleanPrimary, ...cleanGallery.filter(u => u !== cleanPrimary)] : [cleanPrimary];
+          }
+          return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
         }
-        return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
       }
     }
 
     if (product.title && this.state.overrides[product.title.trim()]) {
       const entry = this.state.overrides[product.title.trim()];
       const cleanPrimary = normalizeProductAssetUrl(entry.primary);
-      return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
+      const entryAllowed =
+        this.isManualEntry(entry) ||
+        (!isGenericOrPlaceholderImageUrl(cleanPrimary) &&
+          !isMismatchedProductImageUrl(cleanPrimary, product.title, product.category));
+      if (entryAllowed) {
+        return [cleanPrimary, ...rawImages.slice(1).filter(u => !this.isPlaceholderOverrideUrl(u) && u !== cleanPrimary)];
+      }
     }
 
     // Apply URL replacements, category override, or global override

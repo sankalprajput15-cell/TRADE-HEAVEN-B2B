@@ -13,7 +13,7 @@ import {
   PaymentCheckoutData,
   AuthUser
 } from './types';
-import { api, getDeletedProductIdsSet, markProductIdsDeleted } from './services/apiService';
+import { api, getDeletedProductIdsSet, markProductIdsDeleted, syncDeletedProductIdsFromServer } from './services/apiService';
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
@@ -496,8 +496,9 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     const mergeCustomCatalog = (companies: any[], customProducts: any[], serverDeletedIds?: string[]) => {
       try {
-        if (Array.isArray(serverDeletedIds) && serverDeletedIds.length > 0) {
-          markProductIdsDeleted(serverDeletedIds);
+        const hadServerDeletedList = Array.isArray(serverDeletedIds);
+        if (hadServerDeletedList) {
+          syncDeletedProductIdsFromServer(serverDeletedIds);
         }
         const deletedSet = getDeletedProductIdsSet();
 
@@ -513,10 +514,12 @@ const MainApp: React.FC = () => {
             }
           });
         }
-        if (Array.isArray(customProducts) && customProducts.length > 0) {
-          const visibleCustomProducts = customProducts.filter(
-            cp => cp && cp.id && !deletedSet.has(String(cp.id)) && !deletedSet.has(String(cp.id).replace(/^prod-db-/, ''))
-          );
+        const visibleCustomProducts = Array.isArray(customProducts)
+          ? customProducts.filter(
+              cp => cp && cp.id && !deletedSet.has(String(cp.id)) && !deletedSet.has(String(cp.id).replace(/^prod-db-/, ''))
+            )
+          : [];
+        if (visibleCustomProducts.length > 0 || hadServerDeletedList || deletedSet.size > 0) {
           setProducts(prev => {
             const byId = new Map<string, Product>();
             prev.forEach(p => {
@@ -524,6 +527,13 @@ const MainApp: React.FC = () => {
                 byId.set(p.id, p);
               }
             });
+            if (hadServerDeletedList) {
+              MOCK_PRODUCTS.forEach(mp => {
+                if (mp && mp.id && !byId.has(mp.id) && !deletedSet.has(String(mp.id))) {
+                  byId.set(mp.id, mp);
+                }
+              });
+            }
             const additions: Product[] = [];
             visibleCustomProducts.forEach(cp => {
               if (cp && cp.id) {
@@ -541,12 +551,6 @@ const MainApp: React.FC = () => {
               ])
             );
           });
-        } else if (deletedSet.size > 0) {
-          setProducts(prev =>
-            prev.filter(
-              p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
-            )
-          );
         }
       } catch {}
     };
@@ -816,7 +820,12 @@ const MainApp: React.FC = () => {
       const prodId = params.get('product') || params.get('productId');
       if (prodId && products.length > 0) {
         const found = resolveProduct(prodId, products);
-        if (found && (!selectedProduct || selectedProduct.id !== found.id)) {
+        if (
+          found &&
+          (!selectedProduct ||
+            selectedProduct.id !== found.id ||
+            (found.images?.[0] && found.images[0] !== selectedProduct.images?.[0]))
+        ) {
           setSelectedProduct(found);
         }
       }

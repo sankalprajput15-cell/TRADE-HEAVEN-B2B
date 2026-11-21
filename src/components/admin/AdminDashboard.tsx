@@ -1141,12 +1141,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         document.getElementById('category-mega-menu')
                       : record.recordType === 'RFQ'
                         ? document.getElementById('recent-rfqs-section')
-                        : document.getElementById('featured-products-section') ||
+                        : document.getElementById(`featured-product-card-${record.recordId}`) ||
+                          document.getElementById('featured-products-section') ||
                           document.getElementById('category-mega-menu');
                   if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (el.id.startsWith('featured-product-card-')) {
+                      el.classList.add('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      window.setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      }, 3200);
+                    }
                   }
-                }, 260);
+                }, 300);
               }}
             />
 
@@ -1350,7 +1357,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'PRODUCT_IMAGE_SYSTEM' && (
           <div className="space-y-4">
-            <DedicatedProductImageSystem />
+            <DedicatedProductImageSystem
+              onViewOnHomepage={(record) => {
+                onNavigate('HOMEPAGE');
+                window.setTimeout(() => {
+                  const el =
+                    record.recordType === 'CATEGORY'
+                      ? document.getElementById(`category-card-${record.recordId}`) ||
+                        document.getElementById('category-mega-menu')
+                      : record.recordType === 'RFQ'
+                        ? document.getElementById('recent-rfqs-section')
+                        : document.getElementById(`featured-product-card-${record.recordId}`) ||
+                          document.getElementById('featured-products-section') ||
+                          document.getElementById('category-mega-menu');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (el.id.startsWith('featured-product-card-')) {
+                      el.classList.add('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      window.setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      }, 3200);
+                    }
+                  }
+                }, 300);
+              }}
+            />
           </div>
         )}
 

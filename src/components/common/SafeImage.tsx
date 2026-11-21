@@ -370,32 +370,34 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    // Subject-matched real local fallback photo (confirmed present across local & live deployments) before SVG fallback
+    // Subject-matched real local fallback photo ONLY when topic explicitly matches (otherwise render bespoke spec card SVG instead of wrong photo)
     if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
       const subjectText = `${productId || ''} ${productTitle || ''} ${category || ''} ${alt || ''}`.toLowerCase();
-      let verifiedRealFallback = '/assets/uploads/auto-building-construction-materials-37394a3c058e.webp';
+      let verifiedRealFallback = '';
       if (/vanilla|pod|bean|extract|spice/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-double-fold-pure-vanilla-extract-c-a3ff90b9f6f3.webp';
       } else if (/\bgold\b|bullion|dore|nugget|prod-au-|rfq-au-/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-lbma-good-delivery-gold-bullion-ba-6f8695d4a3e8.webp';
       } else if (/solar|battery|lithium|ess|renewable|energy|inverter|photovoltaic|panel|monocryst/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp';
-      } else if (/generator|genset|diesel|power|cummins|cat\b|engine/.test(subjectText)) {
+      } else if (/generator|genset|diesel|cat\b|cummins/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/image002_50ab7837.png';
-      } else if (/leather|belt|tannery|hide|wallet|garment|textile|apparel/.test(subjectText)) {
+      } else if (/leather|belt|tannery|hide|wallet/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/verified-belt-01.webp';
-      } else if (/auto|vehicle|car|ev\b|tire|brake|wheel/.test(subjectText)) {
+      } else if (/electric vehicle|\bev\b|car charger|charging station/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp';
-      } else if (/electron|semiconductor|chip|sensor|oled|cnc|machin|milling|motor|pump|industrial/.test(subjectText)) {
+      } else if (/semiconductor|microchip|silicon wafer|pcb|circuit board|cnc milling/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp';
-      } else if (/chem|polymer|resin|solvent|hdpe|urea|fertiliz|plastic|oil|fuel|bitumen/.test(subjectText)) {
+      } else if (/polymer pellets|hdpe resin|petrochemical|bitumen|solvent/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp';
-      } else if (/medic|glove|nitrile|surgical|hospital|pharma|diagnostic/.test(subjectText)) {
+      } else if (/nitrile glove|surgical glove|examination glove|mri scanner/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-disposable-nitrile-examination-7302dff17ffb.webp';
-      } else if (/agri|sugar|coffee|rice|soy|wheat|cashew|avocado|food|grain|fruit|cocoa|tea|beef|fish|seafood/.test(subjectText)) {
+      } else if (/\bwheat\b|\bsoybean\b|\bgreen coffee\b|\bcashew\b|\bbasmati rice\b/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp';
+      } else if (/\bbricks\b|\bclay brick\b|\brebar\b|\bcement\b|\bconcrete\b|\bconstruction materials\b/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-building-construction-materials-37394a3c058e.webp';
       }
-      if (!list.includes(verifiedRealFallback)) {
+      if (verifiedRealFallback && !list.includes(verifiedRealFallback)) {
         list.push(verifiedRealFallback);
       }
     }
@@ -530,11 +532,16 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           (Boolean(productId) && !hasSavedLocalPid) ||
           (resolvedTitle.length >= 3 && !hasSavedLocalTitle);
 
+        const cleanBasePath = cleanCandidate.split('?')[0];
+        const isGenericFallbackAsset =
+          /^\/assets\/uploads\/auto-(?:building-construction-materials|agriculture-agro-commodities|electronics-semiconductors|chemicals-allied-products|automotive-electric-vehicles|renewable-energy-solar)-[a-f0-9]+\.webp$/i.test(cleanBasePath);
         if (
           needsPersistence &&
+          !isGenericFallbackAsset &&
           !cleanCandidate.startsWith('data:') &&
           !cleanCandidate.startsWith('blob:') &&
-          !isGenericOrPlaceholderImageUrl(cleanCandidate)
+          !isGenericOrPlaceholderImageUrl(cleanCandidate) &&
+          !isMismatchedProductImageUrl(cleanCandidate, resolvedTitle, category)
         ) {
           void autoUploadDisplayedProductImage({
             imageUrl: cleanCandidate,
@@ -542,7 +549,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
             productName: resolvedTitle,
             category
           }).then(localUrl => {
-            if (localUrl && (productId || resolvedTitle.length >= 3)) {
+            if (
+              localUrl &&
+              !isMismatchedProductImageUrl(localUrl, resolvedTitle, category) &&
+              (productId || resolvedTitle.length >= 3)
+            ) {
               productImageManagerService.registerAutoSavedImage({
                 productId,
                 productTitle: resolvedTitle || undefined,

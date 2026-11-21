@@ -14207,6 +14207,7 @@ function loadServerProductImageState(
     }
   };
 
+  const corruptedWritableFiles: string[] = [];
   for (const fileToRead of [IMAGE_OVERRIDES_BACKUP_FILE, PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE]) {
     try {
       if (fs.existsSync(fileToRead)) {
@@ -14215,7 +14216,10 @@ function loadServerProductImageState(
         mergeOverridesFromParsed(parsed, false);
       }
     } catch (err) {
-      console.warn('[ProductImageSystem] Error reading overrides file:', fileToRead, err);
+      if (fileToRead === IMAGE_OVERRIDES_FILE || fileToRead === PUBLIC_DATA_OVERRIDES_FILE) {
+        corruptedWritableFiles.push(fileToRead);
+      }
+      console.warn('[ProductImageSystem] Error reading overrides file (auto-healing from valid mirror):', fileToRead, err instanceof Error ? err.message : err);
     }
   }
 
@@ -14317,6 +14321,15 @@ function loadServerProductImageState(
       }
     } catch {}
     hasCompletedUploadsDirScan = true;
+  }
+
+  if (corruptedWritableFiles.length > 0 && Object.keys(defaultState.overrides || {}).length > 0) {
+    try {
+      const healedJson = JSON.stringify(defaultState, null, 2);
+      for (const badFile of corruptedWritableFiles) {
+        atomicWriteTextFileSync(badFile, healedJson);
+      }
+    } catch {}
   }
 
   lastLoadedProductImageDiskSig = computeProductImageDiskSignature(!skipDirectoryScan);
@@ -14445,6 +14458,23 @@ function permanentlyDeleteReplacedUploadFiles(
   return deletedUrls;
 }
 
+function atomicWriteTextFileSync(targetPath: string, content: string) {
+  const dir = path.dirname(targetPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    fs.writeFileSync(tmpPath, content, 'utf-8');
+    fs.renameSync(tmpPath, targetPath);
+  } catch (err) {
+    try {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    } catch {}
+    throw err;
+  }
+}
+
 // Fast boot: load JSON overrides immediately and defer the 1,800+ file directory scan until after port 3000 opens
 serverProductImageState = loadServerProductImageState(undefined, { skipDirectoryScan: true });
 
@@ -14455,9 +14485,9 @@ function saveServerProductImageState() {
       serverProductImageState = loadServerProductImageState(serverProductImageState, { forceReload: true });
     }
     const serialized = JSON.stringify(serverProductImageState, null, 2);
-    // Persist strictly inside public/assets/uploads and public/data (never write into src/ at runtime)
-    fs.writeFileSync(IMAGE_OVERRIDES_FILE, serialized, 'utf-8');
-    fs.writeFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized, 'utf-8');
+    // Persist atomically inside public/assets/uploads and public/data (never write into src/ at runtime)
+    atomicWriteTextFileSync(IMAGE_OVERRIDES_FILE, serialized);
+    atomicWriteTextFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized);
     lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
@@ -20559,6 +20589,44 @@ function buildRealPhotoSubjectHints(productName: string, category?: string): {
   return { primaryQuery: clean, expandedTokens: [] };
 }
 
+function buildFocusedVisualSearchQueries(productName: string, category?: string): string[] {
+  const cleaned = cleanProductSearchSubject(productName).replace(/\s*&\s*/g, ', ');
+  const clauses = cleaned
+    .split(/[,;/]+/)
+    .map(c => c.trim())
+    .filter(c => c.length >= 3);
+  const { allTokens, coreNouns } = extractProductKeywordTokens(cleaned);
+  const queries: string[] = [];
+
+  if (allTokens.length >= 2 && allTokens.length <= 4) {
+    queries.push(allTokens.join(' '));
+  }
+  for (const clause of clauses.slice(0, 3)) {
+    const clauseToks = clause
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length >= 3 && !/^\d+$/.test(t) && !PRODUCT_STOPWORDS.has(t));
+    if (clauseToks.length >= 2) {
+      queries.push(clauseToks.slice(0, 3).join(' '));
+    } else if (clauseToks.length === 1 && coreNouns.length >= 2 && clauseToks[0] !== coreNouns[0]) {
+      queries.push(`${coreNouns[0]} ${clauseToks[0]}`);
+    } else if (clauseToks.length === 1 && clauseToks[0].length >= 4) {
+      queries.push(clauseToks[0]);
+    }
+  }
+  if (coreNouns.length >= 3) {
+    queries.push(coreNouns.slice(0, 3).join(' '));
+    queries.push(`${coreNouns[0]} ${coreNouns[coreNouns.length - 1]}`);
+  } else if (coreNouns.length >= 1) {
+    queries.push(coreNouns.join(' '));
+  }
+  if (queries.length === 0 && category) {
+    queries.push(cleanProductSearchSubject(category));
+  }
+  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 4);
+}
+
 interface ProductTokenProfile {
   allTokens: string[];
   coreNouns: string[];
@@ -20590,6 +20658,13 @@ function tokenMatchesText(token: string, text: string): boolean {
   }
   return false;
 }
+
+const AMBIGUOUS_SINGLE_MATERIAL_WORDS = new Set([
+  'wooden', 'wood', 'plastic', 'metal', 'steel', 'aluminum', 'aluminium',
+  'brass', 'copper', 'iron', 'glass', 'ceramic', 'paper', 'cotton',
+  'nylon', 'polyester', 'rubber', 'silicone', 'ice', 'cream', 'cocktail',
+  'oil', 'water', 'food', 'mini', 'heavy', 'light', 'multi', 'set', 'kit', 'pack'
+]);
 
 function isCandidateStrictlyRelevant(
   item: VisualImageCandidate,
@@ -20638,9 +20713,13 @@ function isCandidateStrictlyRelevant(
   }
 
   let matchedCore = 0;
+  let matchedSpecificCore = 0;
   for (const cn of coreNouns) {
     if (tokenMatchesText(cn, combinedText)) {
       matchedCore++;
+      if (!AMBIGUOUS_SINGLE_MATERIAL_WORDS.has(cn)) {
+        matchedSpecificCore++;
+      }
     }
   }
 
@@ -20648,16 +20727,20 @@ function isCandidateStrictlyRelevant(
     return { valid: false, score: 0 };
   }
 
+  // Require at least 2 matched tokens (or 1 specific non-material core noun when title has <=2 tokens)
   const headNoun = coreNouns[coreNouns.length - 1];
-  const firstCoreNoun = coreNouns[0];
   const headMatched = headNoun ? tokenMatchesText(headNoun, combinedText) : false;
-  const firstCoreMatched = firstCoreNoun ? tokenMatchesText(firstCoreNoun, combinedText) : false;
 
-  if (allTokens.length >= 2 && matchedAll < 2 && !headMatched && !firstCoreMatched) {
+  if (allTokens.length >= 3 && matchedAll < 2) {
+    if (matchedSpecificCore === 0) {
+      return { valid: false, score: 0 };
+    }
+  }
+  if (matchedAll === 1 && matchedSpecificCore === 0) {
     return { valid: false, score: 0 };
   }
 
-  const score = matchedCore * 3 + matchedAll + (headMatched ? 2 : 0);
+  const score = matchedSpecificCore * 5 + matchedCore * 3 + matchedAll + (headMatched ? 2 : 0);
   return { valid: true, score };
 }
 
@@ -21037,7 +21120,8 @@ async function fetchGoogleImagesProductPhotos(
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const hints = buildRealPhotoSubjectHints(productName, category);
-  const query = `${hints.primaryQuery} photograph`.replace(/\s+/g, ' ').trim();
+  const focused = buildFocusedVisualSearchQueries(productName, category);
+  const query = `${focused[0] || hints.primaryQuery} photograph`.replace(/\s+/g, ' ').trim();
   if (!query) return discovered;
 
   const userAgents = [
@@ -21068,7 +21152,7 @@ async function fetchGoogleImagesProductPhotos(
           discovered.push({
             url: decoded,
             thumbnailUrl: decoded,
-            title: `${hints.primaryQuery} Google Photo`,
+            title: `${focused[0] || hints.primaryQuery} Google Photo`,
             sourceDomain: 'images.google.com',
             relevanceScore: 10
           });
@@ -21082,7 +21166,7 @@ async function fetchGoogleImagesProductPhotos(
         discovered.push({
           url: cleanTbn,
           thumbnailUrl: cleanTbn,
-          title: `${hints.primaryQuery} Google Image`,
+          title: `${focused[0] || hints.primaryQuery} Google Image`,
           sourceDomain: 'images.google.com',
           relevanceScore: 8
         });
@@ -21102,10 +21186,14 @@ async function fetchWikimediaCommonsProductImages(
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
   const hints = buildRealPhotoSubjectHints(productName, category);
-  const queriesToTry =
-    hints.expandedTokens.length > 0 && hints.primaryQuery
-      ? [hints.primaryQuery]
-      : Array.from(new Set([hints.primaryQuery, cleanedSubject].filter(q => q.length >= 2)));
+  const focused = buildFocusedVisualSearchQueries(productName, category);
+  const queriesToTry = Array.from(
+    new Set([
+      ...(hints.expandedTokens.length > 0 && hints.primaryQuery ? [hints.primaryQuery] : []),
+      ...focused,
+      cleanedSubject
+    ].filter(q => q && q.length >= 3))
+  ).slice(0, 4);
   if (queriesToTry.length === 0) return discovered;
 
   const wikiBadTitleRegex = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|rian|efta|lccn|ceremony|inaugur|minister|delegation|baker_electric|stetson|young_girl|18[89]\d|19[0-8]\d)/i;
@@ -21134,7 +21222,7 @@ async function fetchWikimediaCommonsProductImages(
           if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
           const w = Number(info.width || 0);
           const h = Number(info.height || 0);
-          if ((w > 0 && w < 480) || (h > 0 && h < 320)) continue;
+          if ((w > 0 && w < 420) || (h > 0 && h < 300)) continue;
           const candidateUrl = String(info.thumburl || info.url || '').trim();
           if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) continue;
           const titleText = rawTitle
@@ -21167,6 +21255,7 @@ async function fetchLiveCommercialWebProductImages(
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
   const hints = buildRealPhotoSubjectHints(productName, category);
+  const focused = buildFocusedVisualSearchQueries(productName, category);
   const specHint = specifications
     ? specifications
         .replace(/[^\w\s-]/g, ' ')
@@ -21179,12 +21268,13 @@ async function fetchLiveCommercialWebProductImages(
   const searchQueries = Array.from(
     new Set(
       [
+        focused[0] || '',
+        focused[1] ? `${focused[1]} product` : '',
         hints.primaryQuery ? `${hints.primaryQuery} photograph` : '',
-        cleanedSubject,
-        specHint ? `${cleanedSubject} ${specHint}`.replace(/\s+/g, ' ').trim() : ''
+        specHint && focused[0] ? `${focused[0]} ${specHint}`.replace(/\s+/g, ' ').trim() : ''
       ].filter(q => q.length >= 3)
     )
-  );
+  ).slice(0, 3);
 
   const subjectTokens = Array.from(
     new Set([
@@ -21461,8 +21551,18 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  // 3A. If Gemini API key is set, run Google Search Grounding first
-  if (geminiKey) {
+  // 3A + 3C. Run Wikimedia Commons + Google Images + Commercial Web IN PARALLEL with Gemini Search Grounding so real photos resolve in ~2-4s without stalling
+  const directWebDiscoveryPromise = Promise.all([
+    fetchWikimediaCommonsProductImages(cleanName, cleanCategory),
+    fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
+    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs)
+  ]).then(async ([wikiCandidates, googleCandidates, webCandidates]) => {
+    collectAndFilter([...wikiCandidates, ...googleCandidates, ...webCandidates]);
+    await verifyPendingBatch(45);
+  });
+
+  const geminiDiscoveryPromise = (async () => {
+    if (!geminiKey) return;
     const ai = new GoogleGenAI({
       apiKey: geminiKey,
       httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
@@ -21512,47 +21612,16 @@ Return ONLY valid JSON in this format:
     }
 
     await verifyPendingBatch(32);
+  })();
 
-    if (verifiedMap.size < 12 && !quotaErrorMessage) {
-      const excludeDomains = Array.from(verifiedMap.values())
-        .map(v => v.sourceDomain)
-        .filter(Boolean)
-        .slice(0, 6)
-        .join(', ');
-
-      const round2Prompt = `Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing "${cleanName}" (${cleanCategory || 'wholesale export product'}).
-Look specifically across Wikimedia Commons (upload.wikimedia.org), university/agricultural/industrial databases, retail & wholesale supplier product pages${excludeDomains ? ` (prefer additional sources beyond ${excludeDomains})` : ''}.
-Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourcePageUrl": "https://...", "title": "...", "sourceDomain": "..." }] } with 15 to 20 direct high-resolution product photo URLs.`;
-
-      const round2 = await runGeminiGroundedImageSearchRound({
-        ai,
-        prompt: round2Prompt,
-        productName: cleanName
-      });
-
-      collectAndFilter(round2.candidates);
-      if (round2.groundedPages.length > 0 && candidateMap.size < 22) {
-        const pageImages2 = await extractProductImagesFromGroundedPages(
-          round2.groundedPages,
-          cleanName,
-          tokenProfile
-        );
-        collectAndFilter(pageImages2);
-      }
-
-      await verifyPendingBatch(30);
-    }
-  }
-
-  // 3C. Google Images + Wikimedia Commons Real Photography + Commercial Web discovery
-  if (verifiedMap.size < 12) {
-    const [googleCandidates, wikiCandidates, webCandidates] = await Promise.all([
-      fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
-      fetchWikimediaCommonsProductImages(cleanName, cleanCategory),
-      fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs)
+  await directWebDiscoveryPromise;
+  if (verifiedMap.size < 6) {
+    await Promise.race([
+      geminiDiscoveryPromise,
+      new Promise<void>(resolve => setTimeout(resolve, 6500))
     ]);
-    collectAndFilter([...googleCandidates, ...wikiCandidates, ...webCandidates]);
-    await verifyPendingBatch(50);
+  } else {
+    void geminiDiscoveryPromise.catch(() => {});
   }
 
   const allVerified = Array.from(verifiedMap.values()).sort(
@@ -22602,11 +22671,45 @@ function detectCatalogImageIssue(
     };
   }
 
-  // Check auto-<slug>-<hash>.webp slug relevance if slug has clear subject words
-  const autoMatch = path.basename(cleanUrl).match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{8,16}\.(?:webp|jpe?g|png)$/i);
-  if (autoMatch && targetTokens.length >= 2) {
+  if (
+    lowerUrl.includes('image005_20fe3db0') &&
+    !/(excavator|construction equipment|heavy equipment|cat\b|cummins|machinery|loader|bulldozer)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Heavy Construction Equipment image assigned to "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('sidath-vimukthi') &&
+    !/(vanilla|pod|bean|spice|extract|orchid)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Vanilla photo assigned to "${record.title}"`
+    };
+  }
+
+  if (
+    lowerUrl.includes('whatsapp_image_') &&
+    !/(jade|cabochon|turquoise|gemstone|nephrite|matrix|mineral|stone|jewel|crystal|blackstone|yunnan)/i.test(targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: Gemstone/Blackstone photo assigned to "${record.title}"`
+    };
+  }
+
+  // Check auto-<slug>-<hash>.webp / verified-<slug>.webp relevance even for 1-word slugs like auto-bricks-...
+  const baseFile = path.basename(cleanUrl);
+  const autoMatch = baseFile.match(/^(?:auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i);
+  if (autoMatch && targetTokens.length >= 1) {
     const slugTokens = extractMeaningfulAuditTokens(autoMatch[1].replace(/-/g, ' '));
-    if (slugTokens.length >= 2) {
+    if (slugTokens.length >= 1) {
       const hasTokenOverlap = slugTokens.some(st =>
         targetTokens.some(tt => tt === st || (tt.length >= 4 && st.length >= 4 && (tt.includes(st) || st.includes(tt))))
       );
@@ -22703,6 +22806,11 @@ function findMatchingLocalMasterImageOnDisk(
     }
 
     if (titleHits === 0) continue;
+    const mismatchChk = detectCatalogImageIssue(
+      { id: 'probe', type: 'PRODUCT', title, category, imageUrl: item.webUrl },
+      new Map()
+    );
+    if (mismatchChk.flagged) continue;
 
     if (score >= 10 && !usedUrls.has(item.webUrl) && score > bestUnusedScore) {
       bestUnusedScore = score;

@@ -62,11 +62,13 @@ export interface DeleteImageConfirmationState {
 interface DedicatedProductImageSystemProps {
   products?: Product[];
   onProductsUpdated?: () => void;
+  onViewOnHomepage?: (record: { recordId: string; recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' }) => void;
 }
 
 export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemProps> = ({
   products: externalProducts,
-  onProductsUpdated
+  onProductsUpdated,
+  onViewOnHomepage
 }) => {
   const [allProducts, setAllProducts] = useState<Product[]>(() =>
     productImageManagerService.applyOverridesToProductList(
@@ -1170,6 +1172,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       {/* AUTOMATED CATALOG IMAGE QUALITY & DUPLICATE AUDITOR WIDGET */}
       <CatalogImageAuditorWidget
         products={allProducts}
+        onViewOnHomepage={onViewOnHomepage}
         onAuditCompleted={async (res) => {
           await refreshState();
           showToast(
