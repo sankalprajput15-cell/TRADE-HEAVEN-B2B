@@ -4697,6 +4697,41 @@ switch ($action) {
         $clean_subject = preg_replace('/\b\d+(?:\.\d+)?\s*-\s*ton\b/i', ' ', (string)$clean_subject);
         $clean_subject = preg_replace('/\bgrade\s+[a-z0-9+-]+\b/i', ' ', (string)$clean_subject);
         $clean_subject = preg_replace('/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/', ' ', (string)$clean_subject);
+        $compound_rules = [
+            '/\bsun\s+flower(s)?\b/i' => 'sunflower$1',
+            '/\bsoy(?:a)?\s+bean(s)?\b/i' => 'soybean$1',
+            '/\bground\s+nut(s)?\b/i' => 'groundnut$1',
+            '/\bpea\s+nut(s)?\b/i' => 'peanut$1',
+            '/\bcoco\s+nut(s)?\b/i' => 'coconut$1',
+            '/\bpine\s+apple(s)?\b/i' => 'pineapple$1',
+            '/\bwater\s+melon(s)?\b/i' => 'watermelon$1',
+            '/\bsugar\s+cane(s)?\b/i' => 'sugarcane$1',
+            '/\bchick\s+pea(s)?\b/i' => 'chickpea$1',
+            '/\bcotton\s+seed(s)?\b/i' => 'cottonseed$1',
+            '/\bflax\s+seed(s)?\b/i' => 'flaxseed$1',
+            '/\bcarda\s+mom\b/i' => 'cardamom',
+            '/\bcorn\s+starch\b/i' => 'cornstarch',
+            '/\bsea\s+food\b/i' => 'seafood',
+            '/\bgear\s+box(es)?\b/i' => 'gearbox$1',
+            '/\bhand\s+bag(s)?\b/i' => 'handbag$1',
+            '/\bback\s+pack(s)?\b/i' => 'backpack$1',
+            '/\bfoot\s+wear\b/i' => 'footwear',
+            '/\brain\s+coat(s)?\b/i' => 'raincoat$1',
+            '/\bbed\s+sheet(s)?\b/i' => 'bedsheet$1',
+            '/\btooth\s+brush(es)?\b/i' => 'toothbrush$1',
+            '/\btooth\s+paste\b/i' => 'toothpaste',
+            '/\bhead\s+phone(s)?\b/i' => 'headphone$1',
+            '/\bear\s+bud(s)?\b/i' => 'earbud$1',
+            '/\bsmart\s+watch(es)?\b/i' => 'smartwatch$1',
+            '/\bpower\s+bank(s)?\b/i' => 'powerbank$1',
+            '/\bfork\s+lift(s)?\b/i' => 'forklift$1',
+            '/\bbull\s+dozer(s)?\b/i' => 'bulldozer$1',
+            '/\bply\s+wood\b/i' => 'plywood',
+            '/\bcard\s+board\b/i' => 'cardboard'
+        ];
+        foreach ($compound_rules as $c_re => $c_rep) {
+            $clean_subject = preg_replace($c_re, $c_rep, (string)$clean_subject);
+        }
         $clean_subject = trim(preg_replace('/\s+/', ' ', (string)$clean_subject));
         $p_name = strlen($clean_subject) >= 2 ? $clean_subject : $raw_p_name;
 
@@ -4713,7 +4748,7 @@ switch ($action) {
 
         $norm_name = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($p_name))));
         $norm_cat = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($p_cat))));
-        $cache_keyword = $norm_cat !== '' ? ($norm_name . '::' . $norm_cat) : $norm_name;
+        $cache_keyword = 'v2:' . ($norm_cat !== '' ? ($norm_name . '::' . $norm_cat) : $norm_name);
 
         $cat_word = '';
         if ($p_cat !== '') {
@@ -4801,18 +4836,7 @@ switch ($action) {
         }
         if ($gemini_api_key === 'MY_GEMINI_API_KEY') $gemini_api_key = '';
 
-        if ($gemini_api_key === '') {
-            echo json_encode([
-                "status" => "api_key_missing",
-                "success" => false,
-                "configRequired" => true,
-                "message" => "GEMINI_API_KEY is not configured. Please ensure GEMINI_API_KEY is set in Settings > Secrets to enable Gemini Google Search Grounding visual product search.",
-                "queryUsed" => $query_used,
-                "images" => [],
-                "pool" => []
-            ]);
-            break;
-        }
+        // Continue into live Commercial Web + exact-phrase Wikimedia + optional Gemini Search Grounding pipeline even if GEMINI_API_KEY is empty.
 
         $blocked_domains = [
             'picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'placekitten.com',
@@ -4836,30 +4860,58 @@ switch ($action) {
         }
         if (empty($core_nouns)) $core_nouns = $prod_tokens;
 
+        $is_safe_public_url = function($url_in) {
+            $u = trim((string)$url_in);
+            if ($u === '' || !preg_match('/^https?:\/\//i', $u)) return false;
+            $parts = parse_url($u);
+            $host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
+            if ($host === '' || $host === 'localhost' || $host === '0.0.0.0' || $host === '::1') return false;
+            if (substr($host, -6) === '.local' || substr($host, -9) === '.internal' || $host === 'metadata.google.internal') return false;
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+            }
+            if (preg_match('/^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.)/', $host)) return false;
+            return true;
+        };
+
         $token_matches_text = function($tk, $txt) {
             $stems = [$tk];
             if (strlen($tk) > 4) {
                 if (substr($tk, -3) === 'ies') $stems[] = substr($tk, 0, -3) . 'y';
                 if (substr($tk, -2) === 'es') $stems[] = substr($tk, 0, -2);
-                if (substr($tk, -1) === 's') $stems[] = substr($tk, 0, -1);
+                if (substr($tk, -1) === 's' && substr($tk, -2) !== 'ss') $stems[] = substr($tk, 0, -1);
             }
+            $words = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($txt))));
             foreach ($stems as $st) {
-                if (strlen($st) >= 3 && strpos($txt, $st) !== false) return true;
+                if (strlen($st) < 3) continue;
+                if (strlen($st) <= 4) {
+                    foreach ($words as $w) {
+                        if ($w === $st || $w === $st . 's' || $w === $st . 'es') return true;
+                    }
+                } else {
+                    foreach ($words as $w) {
+                        if ($w === $st || strpos($w, $st) === 0 || (strlen($w) >= strlen($st) + 3 && strpos($w, $st) !== false)) {
+                            return true;
+                        }
+                    }
+                }
             }
             return false;
         };
 
-        $is_relevant_direct_image = function($cand) use ($blocked_domains, $prod_tokens, $core_nouns, $token_matches_text) {
+        $excluded_terms_re = '/(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i';
+
+        $is_relevant_direct_image = function($cand, $allow_cdn_without_ext = false) use ($blocked_domains, $prod_tokens, $core_nouns, $token_matches_text, $is_safe_public_url, $excluded_terms_re) {
             $u = trim((string)($cand['url'] ?? ''));
-            if ($u === '' || !preg_match('/^https?:\/\//i', $u)) return false;
-            if (!preg_match('/\.(?:jpe?g|png|webp)(?:[?#!_].*)?$/i', $u)) return false;
+            if (!$is_safe_public_url($u)) return false;
+            if (!$allow_cdn_without_ext && !preg_match('/\.(?:jpe?g|png|webp)(?:[?#!_].*)?$/i', $u)) return false;
             $host = strtolower((string)(parse_url($u, PHP_URL_HOST) ?? ''));
             if ($host === '') return false;
             foreach ($blocked_domains as $bd) {
                 if ($host === $bd || substr($host, -strlen('.' . $bd)) === '.' . $bd) return false;
             }
             $combined = strtolower($u . ' ' . ($cand['title'] ?? '') . ' ' . ($cand['sourceDomain'] ?? ''));
-            if (preg_match('/(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i', $combined)) {
+            if (preg_match($excluded_terms_re, $combined)) {
                 return false;
             }
             if (!empty($cand['width']) && $cand['width'] < 300) return false;
@@ -4875,13 +4927,19 @@ switch ($action) {
             }
             if ($hits_core === 0) return false;
             $head_noun = !empty($core_nouns) ? $core_nouns[count($core_nouns) - 1] : '';
-            $first_core = !empty($core_nouns) ? $core_nouns[0] : '';
             $head_matched = $head_noun !== '' ? $token_matches_text($head_noun, $combined) : false;
-            $first_matched = $first_core !== '' ? $token_matches_text($first_core, $combined) : false;
-            if (count($prod_tokens) >= 2 && $hits_all < 2 && !$head_matched && !$first_matched) {
+            $norm_hay = preg_replace('/[^a-z0-9]+/', ' ', $combined);
+            $core_phrase = implode(' ', array_slice($core_nouns, 0, 2));
+            $compact_phrase = implode('', array_slice($core_nouns, 0, 2));
+            $exact_phrase_hit = (count($core_nouns) >= 2) && (
+                strpos($norm_hay, $core_phrase) !== false ||
+                (strlen($compact_phrase) >= 7 && strpos(preg_replace('/[^a-z0-9]/', '', $combined), $compact_phrase) !== false)
+            );
+            if (count($core_nouns) >= 2 && $hits_core < 2 && !$exact_phrase_hit) {
                 return false;
             }
-            return $hits_core * 3 + $hits_all + ($head_matched ? 2 : 0);
+            $source_boost = (($cand['sourceDomain'] ?? '') === 'commons.wikimedia.org') ? 1 : 12;
+            return ($exact_phrase_hit ? 10 : 0) + ($hits_core * 4) + $hits_all + ($head_matched ? 3 : 0) + $source_boost;
         };
 
         $call_gemini_grounded = function($prompt_text) use ($gemini_api_key, $p_name) {
@@ -5139,21 +5197,23 @@ switch ($action) {
             return $ok;
         };
 
-        $fetch_live_commercial_web_images = function() use ($p_name, $p_specs) {
+        $fetch_live_commercial_web_images = function() use ($p_name, $is_safe_public_url) {
             $found = [];
-            $queries = [
-                trim($p_name),
-                trim($p_name . ' ' . $p_specs . ' wholesale')
-            ];
-            foreach ($queries as $q_str) {
-                $b_url = 'https://www.bing.com/images/search?q=' . urlencode($q_str) . '&form=HDRSC2&first=1';
+            $primary_q = trim($p_name);
+            $endpoints = [];
+            if (strlen($primary_q) >= 3) {
+                $endpoints[] = 'https://www.bing.com/images/search?q=' . urlencode($primary_q) . '&qft=+filterui:photo-photo&form=HDRSC2&first=1';
+                $endpoints[] = 'https://www.bing.com/images/async?q=' . urlencode($primary_q . ' product photo') . '&first=1&count=28&mmasync=1';
+                $endpoints[] = 'https://www.bing.com/images/async?q=' . urlencode($primary_q . ' bulk wholesale') . '&first=1&count=24&mmasync=1';
+            }
+            foreach ($endpoints as $b_url) {
                 $b_html = '';
                 if (function_exists('curl_init')) {
                     $ch = curl_init($b_url);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-                    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36');
                     $b_html = (string)curl_exec($ch);
                     curl_close($ch);
                 }
@@ -5162,11 +5222,11 @@ switch ($action) {
                         $dec_m = json_decode(html_entity_decode($raw_m, ENT_QUOTES, 'UTF-8'), true);
                         if (!is_array($dec_m)) continue;
                         $murl = trim((string)($dec_m['murl'] ?? ''));
-                        if ($murl === '' || !preg_match('/^https?:\/\//i', $murl)) continue;
+                        if (!$is_safe_public_url($murl)) continue;
                         $purl = trim((string)($dec_m['purl'] ?? $murl));
                         $found[] = [
                             'url' => $murl,
-                            'thumbnailUrl' => $murl,
+                            'thumbnailUrl' => trim((string)($dec_m['turl'] ?? $murl)),
                             'title' => trim((string)($dec_m['t'] ?? $p_name)),
                             'sourceDomain' => strtolower((string)(parse_url($purl, PHP_URL_HOST) ?? ''))
                         ];
@@ -5181,12 +5241,12 @@ switch ($action) {
         $seen_urls = [];
         $quota_error = '';
 
-        $add_cands = function($list) use (&$cand_pool, &$seen_urls, $is_relevant_direct_image) {
+        $add_cands = function($list, $allow_cdn_without_ext = false) use (&$cand_pool, &$seen_urls, $is_relevant_direct_image) {
             foreach ($list as $c) {
                 $u = trim((string)($c['url'] ?? ''));
                 $dk = explode('#', $u)[0];
                 if ($u === '' || isset($seen_urls[$dk])) continue;
-                $score = $is_relevant_direct_image($c);
+                $score = $is_relevant_direct_image($c, $allow_cdn_without_ext);
                 if ($score === false) continue;
                 $seen_urls[$dk] = true;
                 $c['relevanceScore'] = intval($score);
@@ -5194,35 +5254,29 @@ switch ($action) {
             }
         };
 
-        $spec_note = $p_specs !== '' ? " ({$p_specs})" : '';
-        $cat_note = $p_cat !== '' ? " in category \"{$p_cat}\"" : '';
-        $r1_prompt = "You are a commercial product image research engine using Google Search.\nFind 20 to 25 REAL, public, high-resolution direct product photography image URLs (.jpg, .jpeg, .png, or .webp) strictly depicting the exact product: \"{$p_name}\"{$cat_note}{$spec_note}.\nEvery url must be a direct .jpg/.jpeg/.png/.webp image file URL (min 300x300). No shutterstock/getty/istock/alamy/123rf/depositphotos/dreamstime/picsum/via.placeholder, no logos, svg, gif, icons, or off-topic photos.\nReturn ONLY valid JSON: {\"images\":[{\"url\":\"https://.../photo.jpg\",\"sourcePageUrl\":\"https://...\",\"title\":\"...\",\"sourceDomain\":\"...\"}]}.";
-
-        $r1 = $call_gemini_grounded($r1_prompt);
-        if ($r1['error'] !== '' && preg_match('/quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i', $r1['error'])) {
-            $quota_error = "Gemini Google Search Grounding quota or key error ({$r1['error']}). Please verify GEMINI_API_KEY in Settings > Secrets.";
+        // 1. Run Commercial Product Photo Search (Bing + Bing Async) FIRST
+        $add_cands($fetch_live_commercial_web_images(), true);
+        if (!empty($cand_pool)) {
+            usort($cand_pool, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
+            $verified = $verify_live_batch(array_slice($cand_pool, 0, 32));
         }
-        $add_cands($r1['candidates']);
-        if (!empty($r1['pages']) && count($cand_pool) < 25) {
-            $add_cands($scrape_grounded_pages($r1['pages']));
-        }
-        $verified = $verify_live_batch(array_slice($cand_pool, 0, 30));
 
-        if (count($verified) < 12 && $quota_error === '') {
+        // 2. Augment with Gemini Search Grounding only if configured and fewer than 10 commercial photos found
+        if (count($verified) < 10 && $gemini_api_key !== '') {
             $cand_pool = [];
-            $r2_prompt = "Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing \"{$p_name}\"{$cat_note}. Include Wikimedia Commons (upload.wikimedia.org), manufacturer datasheets, and supplier product galleries.\nReturn ONLY valid JSON: {\"images\":[{\"url\":\"https://.../photo.jpg\",\"sourcePageUrl\":\"https://...\",\"title\":\"...\",\"sourceDomain\":\"...\"}]}.";
-            $r2 = $call_gemini_grounded($r2_prompt);
-            $add_cands($r2['candidates']);
-            if (!empty($r2['pages']) && count($cand_pool) < 22) {
-                $add_cands($scrape_grounded_pages($r2['pages']));
+            $spec_note = $p_specs !== '' ? " ({$p_specs})" : '';
+            $cat_note = $p_cat !== '' ? " in category \"{$p_cat}\"" : '';
+            $r1_prompt = "You are a commercial product image research engine using Google Search.\nFind 20 to 25 REAL, public, high-resolution direct product photography image URLs (.jpg, .jpeg, .png, or .webp) strictly depicting the exact product: \"{$p_name}\"{$cat_note}{$spec_note}.\nEvery url must be a direct .jpg/.jpeg/.png/.webp image file URL (min 300x300). No shutterstock/getty/istock/alamy/123rf/depositphotos/dreamstime/picsum/via.placeholder, no logos, svg, gif, icons, or off-topic photos.\nReturn ONLY valid JSON: {\"images\":[{\"url\":\"https://.../photo.jpg\",\"sourcePageUrl\":\"https://...\",\"title\":\"...\",\"sourceDomain\":\"...\"}]}.";
+
+            $r1 = $call_gemini_grounded($r1_prompt);
+            if ($r1['error'] !== '' && preg_match('/quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i', $r1['error'])) {
+                $quota_error = "Gemini Google Search Grounding quota or key error ({$r1['error']}).";
+            }
+            $add_cands($r1['candidates'], false);
+            if (!empty($r1['pages']) && count($cand_pool) < 25) {
+                $add_cands($scrape_grounded_pages($r1['pages']), false);
             }
             $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 30)));
-        }
-
-        if (count($verified) < 12) {
-            $cand_pool = [];
-            $add_cands($fetch_live_commercial_web_images());
-            $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 40)));
         }
 
         if (empty($verified)) {

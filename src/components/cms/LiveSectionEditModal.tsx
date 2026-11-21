@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { HeroBannerSlidesEditor } from './HeroBannerSlidesEditor';
 import { 
   X, 
   Save, 
@@ -224,13 +225,23 @@ export const LiveSectionEditModal: React.FC<Props> = ({
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Hero Background Image URL</label>
-                <input
-                  type="text"
-                  value={formData.homepage.heroBgImage}
-                  onChange={e => setFormData({ ...formData, homepage: { ...formData.homepage, heroBgImage: e.target.value } })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+              <div className="pt-2 border-t border-slate-200">
+                <HeroBannerSlidesEditor
+                  compact
+                  slides={formData.homepage.heroSlides}
+                  legacyHeroBgImage={formData.homepage.heroBgImage}
+                  onChange={nextSlides =>
+                    setFormData({
+                      ...formData,
+                      homepage: {
+                        ...formData.homepage,
+                        heroSlides: nextSlides,
+                        heroBgImage: nextSlides[0]?.image?.trim()
+                          ? nextSlides[0].image.trim()
+                          : formData.homepage.heroBgImage
+                      }
+                    })
+                  }
                 />
               </div>
 

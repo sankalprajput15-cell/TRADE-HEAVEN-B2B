@@ -16,6 +16,7 @@ import { Product } from '../../types';
 import {
   fixSingleCatalogImage,
   fetchVisualProductImages,
+  cleanProductSearchSubject,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
@@ -38,7 +39,9 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const [originalUrl] = useState<string>(currentImageUrl);
   const [liveUrl, setLiveUrl] = useState<string>(currentImageUrl);
   const [previousUrl, setPreviousUrl] = useState<string>(currentImageUrl);
-  const [searchQuery, setSearchQuery] = useState<string>(product.title || '');
+  const [searchQuery, setSearchQuery] = useState<string>(
+    cleanProductSearchSubject(product.title || '') || product.title || ''
+  );
   const [candidates, setCandidates] = useState<VisualProductImageCandidate[]>([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState<boolean>(false);
   const [isApplying, setIsApplying] = useState<boolean>(false);

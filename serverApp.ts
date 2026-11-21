@@ -20790,6 +20790,77 @@ function fisherYatesShuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+const COMPOUND_PRODUCT_NORMALIZATIONS: Array<[RegExp, string]> = [
+  [/\bsun\s+flower(s)?\b/gi, 'sunflower$1'],
+  [/\bsoy(?:a)?\s+bean(s)?\b/gi, 'soybean$1'],
+  [/\bground\s+nut(s)?\b/gi, 'groundnut$1'],
+  [/\bpea\s+nut(s)?\b/gi, 'peanut$1'],
+  [/\bcoco\s+nut(s)?\b/gi, 'coconut$1'],
+  [/\bpine\s+apple(s)?\b/gi, 'pineapple$1'],
+  [/\bwater\s+melon(s)?\b/gi, 'watermelon$1'],
+  [/\bsugar\s+cane(s)?\b/gi, 'sugarcane$1'],
+  [/\bchick\s+pea(s)?\b/gi, 'chickpea$1'],
+  [/\bcotton\s+seed(s)?\b/gi, 'cottonseed$1'],
+  [/\bflax\s+seed(s)?\b/gi, 'flaxseed$1'],
+  [/\bcarda\s+mom\b/gi, 'cardamom'],
+  [/\bcorn\s+starch\b/gi, 'cornstarch'],
+  [/\bsea\s+food\b/gi, 'seafood'],
+  [/\bgear\s+box(es)?\b/gi, 'gearbox$1'],
+  [/\bhand\s+bag(s)?\b/gi, 'handbag$1'],
+  [/\bback\s+pack(s)?\b/gi, 'backpack$1'],
+  [/\bfoot\s+wear\b/gi, 'footwear'],
+  [/\brain\s+coat(s)?\b/gi, 'raincoat$1'],
+  [/\bbed\s+sheet(s)?\b/gi, 'bedsheet$1'],
+  [/\btooth\s+brush(es)?\b/gi, 'toothbrush$1'],
+  [/\btooth\s+paste\b/gi, 'toothpaste'],
+  [/\bhead\s+phone(s)?\b/gi, 'headphone$1'],
+  [/\bear\s+bud(s)?\b/gi, 'earbud$1'],
+  [/\bsmart\s+watch(es)?\b/gi, 'smartwatch$1'],
+  [/\bpower\s+bank(s)?\b/gi, 'powerbank$1'],
+  [/\bwork\s+wear\b/gi, 'workwear'],
+  [/\bsports?\s+wear\b/gi, 'sportswear'],
+  [/\btable\s+ware\b/gi, 'tableware'],
+  [/\bkitchen\s+ware\b/gi, 'kitchenware'],
+  [/\bcook\s+ware\b/gi, 'cookware'],
+  [/\bglass\s+ware\b/gi, 'glassware'],
+  [/\bhard\s+ware\b/gi, 'hardware'],
+  [/\bfire\s+wood\b/gi, 'firewood'],
+  [/\bply\s+wood\b/gi, 'plywood'],
+  [/\bcard\s+board\b/gi, 'cardboard'],
+  [/\bwheel\s+chair(s)?\b/gi, 'wheelchair$1'],
+  [/\bfork\s+lift(s)?\b/gi, 'forklift$1'],
+  [/\bbull\s+dozer(s)?\b/gi, 'bulldozer$1'],
+  [/\bgreen\s+house(s)?\b/gi, 'greenhouse$1'],
+  [/\bwind\s+mill(s)?\b/gi, 'windmill$1'],
+  [/\bflash\s+light(s)?\b/gi, 'flashlight$1'],
+  [/\bkey\s+board(s)?\b/gi, 'keyboard$1'],
+  [/\bnote\s+book(s)?\b/gi, 'notebook$1']
+];
+
+function normalizeCompoundProductTerms(input: string): string {
+  let out = String(input || '');
+  for (const [re, rep] of COMPOUND_PRODUCT_NORMALIZATIONS) {
+    out = out.replace(re, rep);
+  }
+  return out;
+}
+
+function isSafePublicHttpUrl(rawUrl: string): boolean {
+  try {
+    const u = new URL(rawUrl);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!host || host === 'localhost' || host === '0.0.0.0' || host === '::1') return false;
+    if (host.endsWith('.local') || host.endsWith('.internal') || host === 'metadata.google.internal') return false;
+    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    if (/^(fc|fd|fe80|::ffff:127\.|::ffff:10\.|::ffff:192\.168\.|::ffff:169\.254\.)/i.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function cleanProductSearchSubject(rawName: string): string {
   let s = String(rawName || '').trim();
   if (!s) return '';
@@ -20809,8 +20880,9 @@ function cleanProductSearchSubject(rawName: string): string {
   s = s.replace(/\b\d+(?:\.\d+)?\s*-\s*ton\b/gi, ' ');
   s = s.replace(/\bgrade\s+[a-z0-9+-]+\b/gi, ' ');
   s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
+  s = normalizeCompoundProductTerms(s);
   s = s.replace(/\s+/g, ' ').trim();
-  return s || String(rawName || '').trim();
+  return s || normalizeCompoundProductTerms(String(rawName || '').trim());
 }
 
 function normalizeVisualSearchKeyword(productName: string, category?: string): string {
@@ -20825,8 +20897,8 @@ function normalizeVisualSearchKeyword(productName: string, category?: string): s
     .replace(/[^\w\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!cleanName) return cleanCat;
-  return cleanCat ? `${cleanName}::${cleanCat}` : cleanName;
+  if (!cleanName) return cleanCat ? `v2:${cleanCat}` : '';
+  return cleanCat ? `v2:${cleanName}::${cleanCat}` : `v2:${cleanName}`;
 }
 
 function buildCommercialProductImageQuery(productName: string, category?: string, specifications?: string): string {
@@ -20891,7 +20963,7 @@ const BLOCKED_IMAGE_DOMAINS = [
 ];
 
 const EXCLUDED_IMAGE_TERMS_REGEX =
-  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
 
 const PRODUCT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
@@ -21042,16 +21114,13 @@ function buildFocusedVisualSearchQueries(productName: string, category?: string)
     queries.push(hints.primaryQuery);
   }
 
-  // 2. Core product noun phrase + spec (e.g. "monocrystalline solar panels 550w")
+  // 2. Core product noun phrase + spec (keep full compound phrase intact — never drop the lead noun)
   if (coreNouns.length >= 2) {
-    const corePhrase = coreNouns.slice(0, 3).join(' ');
+    const corePhrase = coreNouns.slice(0, 4).join(' ');
     if (primarySpec && !corePhrase.includes(primarySpec)) {
       queries.push(`${corePhrase} ${primarySpec}`);
     }
     queries.push(corePhrase);
-    if (coreNouns.length >= 3) {
-      queries.push(coreNouns.slice(-2).join(' '));
-    }
   } else if (coreNouns.length === 1) {
     queries.push(primarySpec ? `${coreNouns[0]} ${primarySpec}` : coreNouns[0]);
   }
@@ -21113,8 +21182,18 @@ const DIRECT_IMAGE_EXT_REGEX = /\.(?:jpe?g|png|webp)(?:[?#!_].*)?$/i;
 
 function tokenMatchesText(token: string, text: string): boolean {
   const stems = getWordStems(token);
+  const words = text.split(/[^a-z0-9]+/).filter(Boolean);
   for (const s of stems) {
-    if (text.includes(s)) return true;
+    if (s.length <= 4) {
+      // Short words (e.g. "sun", "oil", "tea", "bag", "nut") MUST match whole word or simple plural to block "sunset"/"sunrise"/"sunken"
+      if (words.some(w => w === s || w === `${s}s` || w === `${s}es`)) {
+        return true;
+      }
+    } else {
+      if (words.some(w => w === s || w.startsWith(s) || (w.length >= s.length + 3 && w.includes(s)))) {
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -21123,7 +21202,8 @@ const AMBIGUOUS_SINGLE_MATERIAL_WORDS = new Set([
   'wooden', 'wood', 'plastic', 'metal', 'steel', 'aluminum', 'aluminium',
   'brass', 'copper', 'iron', 'glass', 'ceramic', 'paper', 'cotton',
   'nylon', 'polyester', 'rubber', 'silicone', 'ice', 'cream', 'cocktail',
-  'oil', 'water', 'food', 'mini', 'heavy', 'light', 'multi', 'set', 'kit', 'pack'
+  'oil', 'water', 'food', 'mini', 'heavy', 'light', 'multi', 'set', 'kit', 'pack',
+  'sun', 'flower', 'seed', 'seeds', 'powder', 'sheet', 'pipe', 'tube', 'bar', 'rod', 'box', 'bag'
 ]);
 
 function isCandidateStrictlyRelevant(
@@ -21132,7 +21212,7 @@ function isCandidateStrictlyRelevant(
   options: { allowCdnWithoutExt?: boolean } = {}
 ): { valid: boolean; score: number } {
   const rawUrl = String(item.url || '').trim();
-  if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return { valid: false, score: 0 };
+  if (!rawUrl || !isSafePublicHttpUrl(rawUrl)) return { valid: false, score: 0 };
 
   let parsedUrl: URL;
   try {
@@ -21187,20 +21267,33 @@ function isCandidateStrictlyRelevant(
     return { valid: false, score: 0 };
   }
 
-  // Require at least 2 matched tokens (or 1 specific non-material core noun when title has <=2 tokens)
   const headNoun = coreNouns[coreNouns.length - 1];
   const headMatched = headNoun ? tokenMatchesText(headNoun, combinedText) : false;
 
-  if (allTokens.length >= 3 && matchedAll < 2) {
-    if (matchedSpecificCore === 0) {
-      return { valid: false, score: 0 };
-    }
+  // Check exact multi-word phrase bonus (e.g. "sunflower seeds" appearing together in title or URL)
+  const corePhrase = coreNouns.slice(0, 3).join(' ');
+  const compactPhrase = coreNouns.slice(0, 2).join('');
+  const normalizedTitleHay = `${item.title || ''} ${rawUrl}`.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+  const exactPhraseHit =
+    coreNouns.length >= 2 &&
+    (normalizedTitleHay.includes(corePhrase) ||
+      (compactPhrase.length >= 7 && combinedText.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
+
+  // STRICT MULTI-TOKEN RULE:
+  // If product has 2+ core nouns (e.g., ["sunflower", "seeds"]), require at least 2 core nouns to match (prevents single-word false matches like "sun" or "seeds" alone).
+  if (coreNouns.length >= 2 && matchedCore < 2 && !exactPhraseHit) {
+    return { valid: false, score: 0 };
   }
-  if (matchedAll === 1 && matchedSpecificCore === 0) {
+  if (coreNouns.length === 1 && matchedSpecificCore === 0 && matchedAll < 2) {
     return { valid: false, score: 0 };
   }
 
-  const score = matchedSpecificCore * 5 + matchedCore * 3 + matchedAll + (headMatched ? 2 : 0);
+  const score =
+    (exactPhraseHit ? 10 : 0) +
+    matchedSpecificCore * 5 +
+    matchedCore * 4 +
+    matchedAll +
+    (headMatched ? 3 : 0);
   return { valid: true, score };
 }
 
@@ -21269,7 +21362,7 @@ async function extractProductImagesFromGroundedPages(
   const seenPages = new Set<string>();
   for (const p of pageUrls) {
     const clean = String(p?.uri || '').trim();
-    if (!clean || !/^https?:\/\//i.test(clean) || seenPages.has(clean)) continue;
+    if (!clean || !isSafePublicHttpUrl(clean) || seenPages.has(clean)) continue;
     try {
       const host = new URL(clean).hostname.toLowerCase();
       if (BLOCKED_IMAGE_DOMAINS.some(d => host === d || host.endsWith('.' + d))) continue;
@@ -21293,7 +21386,8 @@ async function extractProductImagesFromGroundedPages(
         signal: AbortSignal.timeout(3500)
       });
       if (!resp.ok) return [];
-      const finalPageUrl = resp.url && /^https?:\/\//i.test(resp.url) ? resp.url : page.uri;
+      const finalPageUrl = resp.url && isSafePublicHttpUrl(resp.url) ? resp.url : page.uri;
+      if (!isSafePublicHttpUrl(finalPageUrl)) return [];
       let domain = '';
       try {
         domain = new URL(finalPageUrl).hostname.toLowerCase();
@@ -21367,7 +21461,7 @@ async function verifyLiveProductImageUrl(
   cand: VisualImageCandidate
 ): Promise<VisualImageCandidate | null> {
   const url = String(cand.url || '').trim();
-  if (!url || !/^https?:\/\//i.test(url)) return null;
+  if (!url || !isSafePublicHttpUrl(url)) return null;
 
   // Wikimedia Commons imageinfo API already validates MIME, dimensions, and live CDN thumburl
   if (cand.sourceDomain === 'commons.wikimedia.org' && url.includes('wikimedia.org') && cand.width && cand.height) {
@@ -21653,17 +21747,19 @@ async function fetchWikimediaCommonsProductImages(
       ...focused,
       cleanedSubject
     ].filter(q => q && q.length >= 3))
-  ).slice(0, 4);
+  ).slice(0, 3);
   if (queriesToTry.length === 0) return discovered;
 
-  const wikiBadTitleRegex = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|rian|efta|lccn|ceremony|inaugur|minister|delegation|baker_electric|stetson|young_girl|18[89]\d|19[0-8]\d)/i;
+  const wikiBadTitleRegex = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|rian|efta|lccn|ceremony|inaugur|minister|delegation|baker_electric|stetson|young_girl|18[89]\d|19[0-8]\d|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|sunset|sunrise|konark|temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|portrait|selfie|wedding)/i;
 
   await Promise.allSettled(
     queriesToTry.map(async qStr => {
       try {
+        // Quote multi-word queries so Wikimedia returns exact subject matches (e.g. "sunflower seeds") instead of loose single-word hits like "Sun"
+        const phraseQuery = qStr.includes(' ') ? `"${qStr}"` : qStr;
         const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-          `${qStr} filetype:bitmap`
-        )}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
+          `${phraseQuery} filetype:bitmap`
+        )}&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
         const resp = await fetch(apiUrl, {
           headers: {
             'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
@@ -21684,13 +21780,12 @@ async function fetchWikimediaCommonsProductImages(
           const h = Number(info.height || 0);
           if ((w > 0 && w < 420) || (h > 0 && h < 300)) continue;
           const candidateUrl = String(info.thumburl || info.url || '').trim();
-          if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) continue;
+          if (!candidateUrl || !isSafePublicHttpUrl(candidateUrl)) continue;
           const titleText = rawTitle
             .replace(/^File:/i, '')
             .replace(/\.[^.]+$/, '')
             .replace(/[_-]+/g, ' ')
             .trim();
-          const isLandscape = w >= h && w >= 640;
           discovered.push({
             url: candidateUrl,
             thumbnailUrl: candidateUrl,
@@ -21698,7 +21793,7 @@ async function fetchWikimediaCommonsProductImages(
             sourceDomain: 'commons.wikimedia.org',
             width: w || undefined,
             height: h || undefined,
-            relevanceScore: isLandscape ? 18 : 11
+            relevanceScore: 6
           });
         }
       } catch {}
@@ -21714,7 +21809,6 @@ async function fetchLiveCommercialWebProductImages(
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
-  const hints = buildRealPhotoSubjectHints(productName, category);
   const focused = buildFocusedVisualSearchQueries(productName, category);
   const specHint = specifications
     ? specifications
@@ -21725,39 +21819,41 @@ async function fetchLiveCommercialWebProductImages(
         .join(' ')
     : '';
 
-  const tokenProf = extractProductKeywordTokens(cleanedSubject);
-  const searchQueries = Array.from(
-    new Set(
-      [
-        focused[0] || '',
-        focused[1] || '',
-        focused[0] && !/product/i.test(focused[0]) ? `${focused[0]} product` : '',
-        specHint && focused[0] ? `${focused[0]} ${specHint}`.replace(/\s+/g, ' ').trim() : ''
-      ].filter(q => q.length >= 3)
-    )
-  ).slice(0, 3);
+  const primaryQ = focused[0] || cleanedSubject;
+  const searchEndpoints: Array<{ url: string; label: string }> = [];
+  if (primaryQ.length >= 3) {
+    searchEndpoints.push({
+      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC2&first=1`,
+      label: primaryQ
+    });
+    searchEndpoints.push({
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=1&count=28&mmasync=1`,
+      label: `${primaryQ} product photo`
+    });
+    searchEndpoints.push({
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} bulk wholesale`)}&first=1&count=24&mmasync=1`,
+      label: `${primaryQ} wholesale`
+    });
+  }
+  if (specHint && primaryQ.length >= 3) {
+    searchEndpoints.push({
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} ${specHint}`)}&first=1&count=18&mmasync=1`,
+      label: `${primaryQ} ${specHint}`
+    });
+  }
 
-  const subjectTokens = Array.from(
-    new Set([
-      ...tokenProf.coreNouns,
-      ...hints.expandedTokens
-    ])
-  ).filter(w => w.length >= 3 && !PRODUCT_STOPWORDS.has(w) && !GENERIC_MODIFIER_WORDS.has(w));
-  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto/i;
+  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph/i;
 
   await Promise.allSettled(
-    searchQueries.map(async (qStr, qIdx) => {
+    searchEndpoints.map(async ep => {
       try {
-        // Use clean photo filter (without imagesize-large) so B2B catalog product photos from IndiaMART/TradeIndia/Made-in-China/OEMs match Google Images results!
-        const filterParam = qIdx === 0 ? '&qft=+filterui:photo-photo' : '';
-        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}${filterParam}&form=HDRSC2&first=1`;
-        const resp = await fetch(searchUrl, {
+        const resp = await fetch(ep.url, {
           headers: {
             'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(4500)
+          signal: AbortSignal.timeout(5000)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -21770,13 +21866,12 @@ async function fetchLiveCommercialWebProductImages(
               .replace(/&#39;/g, "'");
             const meta = JSON.parse(rawJson);
             const murl = String(meta?.murl || '').trim();
-            if (!murl || !/^https?:\/\//i.test(murl)) continue;
-            if (/\.(svg|gif)(\?|$)/i.test(murl)) continue;
+            if (!murl || !isSafePublicHttpUrl(murl)) continue;
+            if (/\.(svg|gif|ico)(\?|$)/i.test(murl)) continue;
             const purl = String(meta?.purl || '').trim();
             const titleStr = String(meta?.t || meta?.desc || '').trim();
             const combinedCheck = `${titleStr} ${purl} ${murl}`.toLowerCase();
             if (bannedLiveRegex.test(combinedCheck)) continue;
-            if (subjectTokens.length > 0 && !subjectTokens.some(tok => combinedCheck.includes(tok))) continue;
             let domain = '';
             try {
               domain = new URL(purl || murl).hostname.toLowerCase();
@@ -21789,7 +21884,8 @@ async function fetchLiveCommercialWebProductImages(
                 .replace(/&amp;/g, '&')
                 .replace(/[\uE000-\uF8FF]/g, '')
                 .trim(),
-              sourceDomain: domain
+              sourceDomain: domain,
+              relevanceScore: 14
             });
           } catch {}
         }
@@ -21972,28 +22068,31 @@ async function handleVisualProductImageSearch(params: {
   const verifiedMap = new Map<string, VisualImageCandidate>();
   let quotaErrorMessage = '';
 
-  const collectAndFilter = (list: VisualImageCandidate[]) => {
+  const collectAndFilter = (list: VisualImageCandidate[], allowCdnWithoutExt = false) => {
     for (const c of list) {
       const cleanUrl = String(c.url || '').trim();
       const dedupKey = cleanUrl.split('#')[0];
       if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
       const isGoogleThumb = cleanUrl.includes('encrypted-tbn0.gstatic.com/images');
-      const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads)\b/i.test(cleanUrl);
-      const rel = isCandidateStrictlyRelevant(c, tokenProfile, { allowCdnWithoutExt: isGoogleThumb || isCommercialCdn });
+      const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads|media-amazon\.com|susercontent\.com|walmartimages\.com|ebayimg\.com|bhg\.com|thespruce\.com|health\.com|bigcommerce\.com|squarespace-cdn\.com|wixstatic\.com)\b/i.test(cleanUrl);
+      const rel = isCandidateStrictlyRelevant(c, tokenProfile, {
+        allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn
+      });
       if (!rel.valid) continue;
+      // Strongly prefer genuine commercial product photography over encyclopedia/Wikimedia images
       const sourceBoost =
         c.sourceDomain === 'commons.wikimedia.org'
-          ? 4
+          ? 1
           : isCommercialCdn
-            ? 6
+            ? 14
             : c.sourceDomain === 'images.google.com'
-              ? 5
-              : 2;
+              ? 12
+              : 10;
       candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score + sourceBoost });
     }
   };
 
-  const verifyPendingBatch = async (limit: number = 35) => {
+  const verifyPendingBatch = async (limit: number = 40) => {
     const sortedPending = Array.from(candidateMap.entries()).sort(
       (a, b) => (b[1].relevanceScore || 0) - (a[1].relevanceScore || 0)
     );
@@ -22014,14 +22113,20 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  // 3A + 3C. Run Wikimedia Commons + Google Images + Commercial Web IN PARALLEL with Gemini Search Grounding so real photos resolve in ~2-4s without stalling
+  // 3A + 3C. Commercial Product Search (Bing + Bing Async + Google Images) FIRST, with strict exact-phrase Wikimedia only as supplement
   const directWebDiscoveryPromise = Promise.all([
-    fetchWikimediaCommonsProductImages(cleanName, cleanCategory),
+    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs),
     fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
-    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs)
-  ]).then(async ([wikiCandidates, googleCandidates, webCandidates]) => {
-    collectAndFilter([...wikiCandidates, ...googleCandidates, ...webCandidates]);
-    await verifyPendingBatch(45);
+    fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
+  ]).then(async ([webCandidates, googleCandidates, wikiCandidates]) => {
+    collectAndFilter(webCandidates, true);
+    collectAndFilter(googleCandidates, true);
+    await verifyPendingBatch(36);
+    // Only add exact-phrase Wikimedia Commons results if commercial sources returned fewer than 12 verified photos
+    if (verifiedMap.size < 12) {
+      collectAndFilter(wikiCandidates, false);
+      await verifyPendingBatch(20);
+    }
   });
 
   const geminiDiscoveryPromise = (async () => {

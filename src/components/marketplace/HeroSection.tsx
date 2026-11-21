@@ -32,9 +32,11 @@ import {
   LogIn,
   Calculator
 } from 'lucide-react';
-import heroLogisticsBanner from '../../assets/images/b2b_global_logistics_hero_1795156803921.jpg';
-import heroFactoryBanner from '../../assets/images/b2b_factory_machinery_hero_1795156798466.jpg';
-import heroAgriBanner from '../../assets/images/b2b_bulk_trade_hero_1795156798871.jpg';
+import {
+  getNormalizedHeroSlides,
+  resolveHeroSlideImageSrc
+} from '../cms/HeroBannerSlidesEditor';
+import { DEFAULT_HERO_BANNER_SLIDES } from '../../data/defaultSiteContent';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { getAllSuppliersWithUsers } from '../../services/apiService';
@@ -166,66 +168,6 @@ const POPULAR_SEARCH_CHIPS = [
   'Cotton Textiles'
 ];
 
-interface HeroCarouselSlide {
-  id: string;
-  eyebrow: string;
-  title: string;
-  highlight: string;
-  suffix: string;
-  subtitle: string;
-  image: string;
-  imageAlt: string;
-  primaryCta: string;
-  primaryAction: 'PRODUCTS' | 'SUPPLIERS' | 'RFQS';
-  secondaryCta: string;
-  searchHint: string;
-}
-
-const HERO_CAROUSEL_SLIDES: HeroCarouselSlide[] = [
-  {
-    id: 'global-logistics',
-    eyebrow: 'Global B2B Trade Portal · 200+ Countries',
-    title: 'Connect Directly With',
-    highlight: 'Verified Manufacturers',
-    suffix: '& Bulk Importers',
-    subtitle: 'Source wholesale factory inventory, submit bulk RFQs, and compare FOB / CIF container rates on one unified B2B marketplace.',
-    image: heroLogisticsBanner,
-    imageAlt: 'International maritime container terminal shipping freight globally',
-    primaryCta: 'Source Products',
-    primaryAction: 'PRODUCTS',
-    secondaryCta: 'Post Buy Offer',
-    searchHint: ''
-  },
-  {
-    id: 'industrial-machinery',
-    eyebrow: 'ISO 9001 & CE Audited Factories',
-    title: 'Precision Machinery &',
-    highlight: 'Industrial Automation',
-    suffix: 'Direct Exporters',
-    subtitle: 'Access audited CNC machining centers, solar energy plants, and heavy equipment manufacturers with direct trade protection.',
-    image: heroFactoryBanner,
-    imageAlt: 'Modern precision CNC manufacturing plant floor with robotic automation',
-    primaryCta: 'Browse Machinery',
-    primaryAction: 'SUPPLIERS',
-    secondaryCta: 'Post Buy Offer',
-    searchHint: 'Industrial Machinery & Automation'
-  },
-  {
-    id: 'agro-commodities',
-    eyebrow: 'High-Volume Bulk Export Hub',
-    title: 'Bulk Agricultural &',
-    highlight: 'Wholesale Commodities',
-    suffix: 'Verified Supply',
-    subtitle: 'Explore 1121 Basmati rice, refined oils, raw cotton, and bulk agro commodities from certified primary exporters.',
-    image: heroAgriBanner,
-    imageAlt: 'Global agricultural commodities export warehouse with inspected grain samples',
-    primaryCta: 'View Active RFQs',
-    primaryAction: 'RFQS',
-    secondaryCta: 'Post Buy Offer',
-    searchHint: 'Farm Products - Grains, Fruits etc'
-  }
-];
-
 export const HeroSection: React.FC<Props> = ({
   onSearch,
   onOpenCreateRfq,
@@ -267,12 +209,22 @@ export const HeroSection: React.FC<Props> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const portalCatLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const heroSlides = useMemo(
+    () => getNormalizedHeroSlides(siteContent?.homepage?.heroSlides),
+    [siteContent?.homepage?.heroSlides]
+  );
+
   useEffect(() => {
+    setActiveSlideIndex(prev => (heroSlides.length > 0 ? prev % heroSlides.length : 0));
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setActiveSlideIndex(prev => (prev + 1) % HERO_CAROUSEL_SLIDES.length);
+      setActiveSlideIndex(prev => (prev + 1) % heroSlides.length);
     }, 6500);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -643,16 +595,14 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   const hp = siteContent.homepage;
-  const activeSlide = HERO_CAROUSEL_SLIDES[activeSlideIndex] || HERO_CAROUSEL_SLIDES[0];
-  const customHeroImage =
-    hp.heroBgImage &&
-    hp.heroBgImage.trim() &&
-    !hp.heroBgImage.includes('unsplash.com') &&
-    !hp.heroBgImage.includes('vecteezy_')
-      ? hp.heroBgImage.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/')
-      : '';
-  const currentSlideImageSrc =
-    activeSlideIndex === 0 && customHeroImage ? customHeroImage : activeSlide.image;
+  const safeSlideIndex = heroSlides.length > 0 ? activeSlideIndex % heroSlides.length : 0;
+  const activeSlide = heroSlides[safeSlideIndex] || DEFAULT_HERO_BANNER_SLIDES[0];
+  const currentSlideImageSrc = resolveHeroSlideImageSrc(activeSlide, safeSlideIndex, hp.heroBgImage);
+  const isFirstDefaultSlideCopy =
+    safeSlideIndex === 0 &&
+    activeSlide.title === DEFAULT_HERO_BANNER_SLIDES[0].title &&
+    activeSlide.highlight === DEFAULT_HERO_BANNER_SLIDES[0].highlight &&
+    activeSlide.subtitle === DEFAULT_HERO_BANNER_SLIDES[0].subtitle;
 
   const sidebarCategories = useMemo(() => (CATEGORIES_TREE || []).slice(0, 10), []);
   const activeFlyoutCat = useMemo(
@@ -1952,11 +1902,11 @@ export const HeroSection: React.FC<Props> = ({
             <div className="relative z-10 h-full flex flex-col justify-between p-5 sm:p-7 max-w-xl">
               <div className="space-y-2.5 sm:space-y-3">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
-                  {activeSlideIndex === 0 ? t('heroBadge') : activeSlide.eyebrow}
+                  {isFirstDefaultSlideCopy ? t('heroBadge') : activeSlide.eyebrow}
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl xl:text-[34px] font-black tracking-tight text-white leading-[1.15]">
-                  {activeSlideIndex === 0 ? (
+                  {isFirstDefaultSlideCopy ? (
                     <>
                       <EditableText contentKey="homepage.heroHeadline" defaultText={t('heroTitle1')} />{' '}
                       <span className="text-amber-400">
@@ -1974,7 +1924,7 @@ export const HeroSection: React.FC<Props> = ({
                 </h1>
 
                 <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-lg">
-                  {activeSlideIndex === 0 ? (
+                  {isFirstDefaultSlideCopy ? (
                     <EditableText contentKey="homepage.heroSubheadline" defaultText={t('heroSubtitle')} />
                   ) : (
                     activeSlide.subtitle

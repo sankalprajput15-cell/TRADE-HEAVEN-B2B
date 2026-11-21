@@ -43,6 +43,7 @@ import { api } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { WholeSitePagePreviewModal } from './WholeSitePagePreviewModal';
+import { HeroBannerSlidesEditor } from '../cms/HeroBannerSlidesEditor';
 
 const WHOLE_SITE_DRAFT_STORAGE_KEY = 'th_whole_site_draft_v1';
 
@@ -1753,14 +1754,34 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <h3 className="text-sm font-bold text-slate-900">Homepage Banner &amp; Hero Images</h3>
+                    <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
+                      <HeroBannerSlidesEditor
+                        slides={draft.homepage?.heroSlides}
+                        legacyHeroBgImage={draft.homepage?.heroBgImage}
+                        onChange={nextSlides => {
+                          setDraft(prev => ({
+                            ...prev,
+                            homepage: {
+                              ...prev.homepage,
+                              heroSlides: nextSlides,
+                              heroBgImage:
+                                nextSlides[0]?.image?.trim()
+                                  ? nextSlides[0].image.trim()
+                                  : prev.homepage.heroBgImage
+                            }
+                          }));
+                          setHasDraftEdits(true);
+                        }}
+                      />
+                    </div>
                     <div className="border-t border-slate-200">
                       {renderCmsImageControl(
-                        'Hero Background Image',
+                        'Fallback Hero Background Image (Slide 1 Legacy URL)',
                         'homepage.heroBgImage',
                         draft.homepage?.heroBgImage || '',
-                        'Primary hero backdrop shown at the top of the homepage.'
+                        'Optional fallback backdrop if Slide 1 above has no custom image.'
                       )}
                       {renderCmsImageControl(
                         'Onboarding Partner Banner Thumbnail',

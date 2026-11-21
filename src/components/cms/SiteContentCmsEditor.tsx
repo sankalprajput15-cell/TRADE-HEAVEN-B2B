@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { SiteContent, DEFAULT_SITE_CONTENT, CategoryItemCMS, TestimonialCMS, H2HFeatureCMS, TierPlanCMS } from '../../data/defaultSiteContent';
 import { productImageManagerService, normalizeProductAssetUrl } from '../../services/productImageManagerService';
+import { HeroBannerSlidesEditor } from './HeroBannerSlidesEditor';
 import { 
   FileEdit, 
   Save, 
@@ -790,20 +791,23 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Hero Background Image URL (Maritime Port / Logistics)</label>
-                  <input
-                    type="text"
-                    value={formData.homepage.heroBgImage}
-                    onChange={e => setFormData({ ...formData, homepage: { ...formData.homepage, heroBgImage: e.target.value } })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                <div className="sm:col-span-2 pt-2 border-t border-slate-200">
+                  <HeroBannerSlidesEditor
+                    slides={formData.homepage.heroSlides}
+                    legacyHeroBgImage={formData.homepage.heroBgImage}
+                    onChange={nextSlides =>
+                      setFormData({
+                        ...formData,
+                        homepage: {
+                          ...formData.homepage,
+                          heroSlides: nextSlides,
+                          heroBgImage: nextSlides[0]?.image?.trim()
+                            ? nextSlides[0].image.trim()
+                            : formData.homepage.heroBgImage
+                        }
+                      })
+                    }
                   />
-                  {formData.homepage.heroBgImage && formData.homepage.heroBgImage.trim() ? (
-                    <div className="mt-2 h-20 w-full rounded-xl overflow-hidden border border-slate-200 relative">
-                      <img src={formData.homepage.heroBgImage.trim()} alt="Hero BG Preview" className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 right-2 px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-bold">Image Preview</span>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </div>

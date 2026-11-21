@@ -139,6 +139,7 @@ export interface SiteContent {
     heroSubheadline: string;
     heroTrustEyebrow: string;
     heroBgImage: string;
+    heroSlides?: HeroBannerSlideCMS[];
     searchPlaceholder: string;
     tradeSpecialist: TradeSpecialistCMS;
     bannerImageCol1: string;
@@ -266,6 +267,69 @@ export interface SiteContent {
   };
 }
 
+export interface HeroBannerSlideCMS {
+  id: string;
+  eyebrow: string;
+  title: string;
+  highlight: string;
+  suffix: string;
+  subtitle: string;
+  image: string;
+  imageAlt: string;
+  primaryCta: string;
+  primaryAction: 'PRODUCTS' | 'SUPPLIERS' | 'RFQS';
+  secondaryCta: string;
+  searchHint: string;
+}
+
+export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlideCMS[] = [
+  {
+    id: 'global-logistics',
+    eyebrow: 'Global B2B Trade Portal · 200+ Countries',
+    title: 'Connect Directly With',
+    highlight: 'Verified Manufacturers',
+    suffix: '& Bulk Importers',
+    subtitle:
+      'Source wholesale factory inventory, submit bulk RFQs, and compare FOB / CIF container rates on one unified B2B marketplace.',
+    image: '',
+    imageAlt: 'International maritime container terminal shipping freight globally',
+    primaryCta: 'Source Products',
+    primaryAction: 'PRODUCTS',
+    secondaryCta: 'Post Buy Offer',
+    searchHint: ''
+  },
+  {
+    id: 'industrial-machinery',
+    eyebrow: 'ISO 9001 & CE Audited Factories',
+    title: 'Precision Machinery &',
+    highlight: 'Industrial Automation',
+    suffix: 'Direct Exporters',
+    subtitle:
+      'Access audited CNC machining centers, solar energy plants, and heavy equipment manufacturers with direct trade protection.',
+    image: '',
+    imageAlt: 'Modern precision CNC manufacturing plant floor with robotic automation',
+    primaryCta: 'Browse Machinery',
+    primaryAction: 'SUPPLIERS',
+    secondaryCta: 'Post Buy Offer',
+    searchHint: 'Industrial Machinery & Automation'
+  },
+  {
+    id: 'agro-commodities',
+    eyebrow: 'High-Volume Bulk Export Hub',
+    title: 'Bulk Agricultural &',
+    highlight: 'Wholesale Commodities',
+    suffix: 'Verified Supply',
+    subtitle:
+      'Explore 1121 Basmati rice, refined oils, raw cotton, and bulk agro commodities from certified primary exporters.',
+    image: '',
+    imageAlt: 'Global agricultural commodities export warehouse with inspected grain samples',
+    primaryCta: 'View Active RFQs',
+    primaryAction: 'RFQS',
+    secondaryCta: 'Post Buy Offer',
+    searchHint: 'Farm Products - Grains, Fruits etc'
+  }
+];
+
 export const DEFAULT_SITE_CONTENT: SiteContent = {
   brand: {
     siteName: "Trade Heaven",
@@ -287,6 +351,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     heroSubheadline: "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     heroTrustEyebrow: "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
     heroBgImage: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    heroSlides: DEFAULT_HERO_BANNER_SLIDES,
     searchPlaceholder: "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     tradeSpecialist: {
       name: "Elena Rostova",

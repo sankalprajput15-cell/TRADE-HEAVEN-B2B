@@ -28,7 +28,7 @@ const LOCAL_MIRROR_MAP = new Map<string, string>();
 const INFLIGHT_AUTO_UPLOADS = new Map<string, Promise<string | null>>();
 const BOUND_LOCAL_KEYS = new Set<string>();
 
-const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v4';
+const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v5';
 const LOCAL_MIRROR_STORAGE_KEY = 'th_local_uploaded_image_mirrors_v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 let mirrorCacheHydrated = false;
@@ -79,12 +79,129 @@ const MISMATCH_STOPWORDS = new Set([
   'trade', 'heaven', 'tradeheaven'
 ]);
 
+const COMPOUND_PRODUCT_NORMALIZATIONS_CLIENT: Array<[RegExp, string]> = [
+  [/\bsun\s+flower(s)?\b/gi, 'sunflower$1'],
+  [/\bsoy(?:a)?\s+bean(s)?\b/gi, 'soybean$1'],
+  [/\bground\s+nut(s)?\b/gi, 'groundnut$1'],
+  [/\bpea\s+nut(s)?\b/gi, 'peanut$1'],
+  [/\bcoco\s+nut(s)?\b/gi, 'coconut$1'],
+  [/\bpine\s+apple(s)?\b/gi, 'pineapple$1'],
+  [/\bwater\s+melon(s)?\b/gi, 'watermelon$1'],
+  [/\bsugar\s+cane(s)?\b/gi, 'sugarcane$1'],
+  [/\bchick\s+pea(s)?\b/gi, 'chickpea$1'],
+  [/\bcotton\s+seed(s)?\b/gi, 'cottonseed$1'],
+  [/\bflax\s+seed(s)?\b/gi, 'flaxseed$1'],
+  [/\bcarda\s+mom\b/gi, 'cardamom'],
+  [/\bcorn\s+starch\b/gi, 'cornstarch'],
+  [/\bsea\s+food\b/gi, 'seafood'],
+  [/\bgear\s+box(es)?\b/gi, 'gearbox$1'],
+  [/\bhand\s+bag(s)?\b/gi, 'handbag$1'],
+  [/\bback\s+pack(s)?\b/gi, 'backpack$1'],
+  [/\bfoot\s+wear\b/gi, 'footwear'],
+  [/\brain\s+coat(s)?\b/gi, 'raincoat$1'],
+  [/\bbed\s+sheet(s)?\b/gi, 'bedsheet$1'],
+  [/\btooth\s+brush(es)?\b/gi, 'toothbrush$1'],
+  [/\btooth\s+paste\b/gi, 'toothpaste'],
+  [/\bhead\s+phone(s)?\b/gi, 'headphone$1'],
+  [/\bear\s+bud(s)?\b/gi, 'earbud$1'],
+  [/\bsmart\s+watch(es)?\b/gi, 'smartwatch$1'],
+  [/\bpower\s+bank(s)?\b/gi, 'powerbank$1'],
+  [/\bwork\s+wear\b/gi, 'workwear'],
+  [/\bsports?\s+wear\b/gi, 'sportswear'],
+  [/\btable\s+ware\b/gi, 'tableware'],
+  [/\bkitchen\s+ware\b/gi, 'kitchenware'],
+  [/\bcook\s+ware\b/gi, 'cookware'],
+  [/\bglass\s+ware\b/gi, 'glassware'],
+  [/\bhard\s+ware\b/gi, 'hardware'],
+  [/\bfire\s+wood\b/gi, 'firewood'],
+  [/\bply\s+wood\b/gi, 'plywood'],
+  [/\bcard\s+board\b/gi, 'cardboard'],
+  [/\bwheel\s+chair(s)?\b/gi, 'wheelchair$1'],
+  [/\bfork\s+lift(s)?\b/gi, 'forklift$1'],
+  [/\bbull\s+dozer(s)?\b/gi, 'bulldozer$1'],
+  [/\bgreen\s+house(s)?\b/gi, 'greenhouse$1'],
+  [/\bwind\s+mill(s)?\b/gi, 'windmill$1'],
+  [/\bflash\s+light(s)?\b/gi, 'flashlight$1'],
+  [/\bkey\s+board(s)?\b/gi, 'keyboard$1'],
+  [/\bnote\s+book(s)?\b/gi, 'notebook$1']
+];
+
+const OFF_TOPIC_CANDIDATE_RE =
+  /(nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|diagram|chart|logo|icon|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i;
+
+const CLIENT_GENERIC_MODIFIERS = new Set([
+  'fresh', 'raw', 'black', 'white', 'red', 'green', 'yellow', 'blue', 'golden', 'silver',
+  'refined', 'unrefined', 'organic', 'processed', 'frozen', 'dried', 'dry', 'wet', 'liquid',
+  'solid', 'powder', 'powdered', 'granular', 'granules', 'crude', 'heavy', 'light', 'medium',
+  'small', 'large', 'extra', 'long', 'short', 'whole', 'split', 'peeled', 'washed', 'polished',
+  'roasted', 'salted', 'unsalted', 'hulled', 'shelled', 'edible', 'food', 'agricultural'
+]);
+
+function normalizeCompoundProductTermsClient(input: string): string {
+  let out = String(input || '');
+  for (const [re, rep] of COMPOUND_PRODUCT_NORMALIZATIONS_CLIENT) {
+    out = out.replace(re, rep);
+  }
+  return out;
+}
+
 function extractTopicTokensClient(text: string): string[] {
-  return String(text || '')
+  return normalizeCompoundProductTermsClient(String(text || ''))
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length >= 3 && !/^\d+$/.test(w) && !MISMATCH_STOPWORDS.has(w));
+}
+
+function tokenMatchesHaystackWordBoundary(token: string, haystack: string): boolean {
+  const tk = token.toLowerCase().trim();
+  if (tk.length < 3) return false;
+  const stems = new Set<string>([tk]);
+  if (tk.length > 4) {
+    if (tk.endsWith('ies')) stems.add(tk.slice(0, -3) + 'y');
+    if (tk.endsWith('es')) stems.add(tk.slice(0, -2));
+    if (tk.endsWith('s') && !tk.endsWith('ss')) stems.add(tk.slice(0, -1));
+  }
+  const words = haystack.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  for (const s of stems) {
+    if (s.length <= 4) {
+      if (words.some(w => w === s || w === `${s}s` || w === `${s}es`)) return true;
+    } else {
+      if (words.some(w => w === s || w.startsWith(s) || (w.length >= s.length + 3 && w.includes(s)))) return true;
+    }
+  }
+  return false;
+}
+
+function isCandidateOffTopicClient(
+  cand: VisualProductImageCandidate,
+  productName: string
+): boolean {
+  const checkHay = `${cand.title || ''} ${cand.url || ''} ${cand.sourceDomain || ''}`.toLowerCase();
+  if (OFF_TOPIC_CANDIDATE_RE.test(checkHay)) return true;
+  const cleaned = cleanProductSearchSubject(productName);
+  const allToks = Array.from(new Set(extractTopicTokensClient(cleaned)));
+  if (allToks.length === 0) return false;
+  const coreToks = allToks.filter(t => !CLIENT_GENERIC_MODIFIERS.has(t));
+  const targetCore = coreToks.length > 0 ? coreToks : allToks;
+  const coreHits = targetCore.filter(tk => tokenMatchesHaystackWordBoundary(tk, checkHay)).length;
+  const compactPhrase = targetCore.slice(0, 2).join('');
+  const exactPhraseHit =
+    targetCore.length >= 2 &&
+    (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(targetCore.slice(0, 2).join(' ')) ||
+      (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
+
+  // For local/trusted mirrored tradeheaven uploads or Google thumbnails without descriptive filenames, don't discard if title already matches
+  const isLocalUpload = String(cand.url || '').startsWith('/assets/uploads/');
+  if (isLocalUpload) return false;
+
+  if (targetCore.length >= 2 && coreHits < 2 && !exactPhraseHit) {
+    return true;
+  }
+  if (targetCore.length === 1 && coreHits === 0) {
+    return true;
+  }
+  return false;
 }
 
 function tokenStemOverlap(a: string, b: string): boolean {
@@ -283,8 +400,9 @@ export function cleanProductSearchSubject(rawName: string): string {
   // Remove manufacturer slash lists like "CAT / Cummins " so core product noun remains dominant
   s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
   s = s.replace(/\s*&\s*/g, ' ');
+  s = normalizeCompoundProductTermsClient(s);
   s = s.replace(/\s+/g, ' ').trim();
-  return s || String(rawName || '').trim();
+  return s || normalizeCompoundProductTermsClient(String(rawName || '').trim());
 }
 
 function hydrateSessionCacheFromLocalStorage(): void {
@@ -766,9 +884,12 @@ export async function fetchVisualProductImages(params: {
         if (!json || typeof json !== 'object') return null;
         if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
         const normalized = parsePayload(json);
-        // Reject off-topic candidates returned by older PHP fallbacks
+        // Reject off-topic or single-word false-match candidates returned by older caches/fallbacks
         const cleanPool = normalized.pool.filter(
-          c => !isGenericOrPlaceholderImageUrl(c.url) && !isMismatchedProductImageUrl(c.url, productName, category)
+          c =>
+            !isGenericOrPlaceholderImageUrl(c.url) &&
+            !isMismatchedProductImageUrl(c.url, productName, category) &&
+            !isCandidateOffTopicClient(c, productName)
         );
         if (normalized.success && cleanPool.length > 0) {
           const finalNorm: VisualProductSearchResponse = {
@@ -1050,15 +1171,15 @@ function buildFocusedVisualSearchQueriesClient(productName: string, category?: s
     .map(c => c.trim())
     .filter(c => c.length >= 3);
   const queries: string[] = [];
-  const tokens = extractTopicTokensClient(cleaned);
+  const tokens = Array.from(new Set(extractTopicTokensClient(cleaned)));
 
   if (tokens.length >= 2 && tokens.length <= 4) {
     queries.push(tokens.join(' '));
   }
   for (const cl of clauses.slice(0, 3)) {
-    const clTokens = extractTopicTokensClient(cl);
+    const clTokens = Array.from(new Set(extractTopicTokensClient(cl)));
     if (clTokens.length >= 2) {
-      queries.push(clTokens.slice(0, 3).join(' '));
+      queries.push(clTokens.slice(0, 4).join(' '));
     } else if (clTokens.length === 1 && tokens.length >= 2 && clTokens[0] !== tokens[0]) {
       queries.push(`${tokens[0]} ${clTokens[0]}`);
     } else if (clTokens.length === 1 && clTokens[0].length >= 4) {
@@ -1067,13 +1188,15 @@ function buildFocusedVisualSearchQueriesClient(productName: string, category?: s
   }
   if (tokens.length >= 3) {
     queries.push(tokens.slice(0, 3).join(' '));
-    queries.push(`${tokens[0]} ${tokens[tokens.length - 1]}`);
+  }
+  if (queries.length === 0 && tokens.length > 0) {
+    queries.push(tokens.join(' '));
   }
   if (queries.length === 0 && category) {
     const catToks = extractTopicTokensClient(category);
     if (catToks.length > 0) queries.push(catToks.slice(0, 2).join(' '));
   }
-  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 4);
+  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 3);
 }
 
 async function fetchWikimediaCommonsCorsCandidates(
@@ -1084,8 +1207,9 @@ async function fetchWikimediaCommonsCorsCandidates(
   if (typeof fetch !== 'function') return [];
   const queries = buildFocusedVisualSearchQueriesClient(productName, category);
   if (queries.length === 0) return [];
-  const titleTokens = extractTopicTokensClient(cleanProductSearchSubject(productName));
-  const badTitleRe = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i;
+  const allTitleTokens = Array.from(new Set(extractTopicTokensClient(cleanProductSearchSubject(productName))));
+  const coreTitleTokens = allTitleTokens.filter(t => !CLIENT_GENERIC_MODIFIERS.has(t));
+  const requiredTokens = coreTitleTokens.length > 0 ? coreTitleTokens : allTitleTokens;
 
   const seen = new Set<string>();
   const collected: VisualProductImageCandidate[] = [];
@@ -1093,7 +1217,9 @@ async function fetchWikimediaCommonsCorsCandidates(
   await Promise.allSettled(
     queries.map(async qStr => {
       try {
-        const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${qStr} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
+        // Quote multi-word queries so Wikimedia searches the exact product phrase (e.g. "sunflower seeds") instead of matching "sun" alone
+        const phraseQuery = qStr.includes(' ') ? `"${qStr}"` : qStr;
+        const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${phraseQuery} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
         const resp = await fetch(url);
         if (!resp.ok) return;
         const data: any = await resp.json().catch(() => null);
@@ -1102,7 +1228,7 @@ async function fetchWikimediaCommonsCorsCandidates(
           const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
           if (!info) continue;
           const rawTitle = String(p?.title || '');
-          if (badTitleRe.test(rawTitle)) continue;
+          if (OFF_TOPIC_CANDIDATE_RE.test(rawTitle)) continue;
           const mime = String(info.mime || '').toLowerCase();
           if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
           const w = Number(info.width || 0);
@@ -1113,9 +1239,17 @@ async function fetchWikimediaCommonsCorsCandidates(
 
           const readableTitle = rawTitle.replace(/^File:/i, '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
           const checkHay = `${readableTitle} ${candUrl}`.toLowerCase();
-          const hits = titleTokens.filter(tk => checkHay.includes(tk) || (tk.length >= 4 && tokenStemOverlap(tk, checkHay)));
-          const minNeeded = titleTokens.length >= 4 ? 2 : 1;
-          if (titleTokens.length > 0 && hits.length < minNeeded) continue;
+          if (OFF_TOPIC_CANDIDATE_RE.test(checkHay)) continue;
+
+          const coreHits = requiredTokens.filter(tk => tokenMatchesHaystackWordBoundary(tk, checkHay));
+          const minNeeded = requiredTokens.length >= 2 ? 2 : 1;
+          const compactPhrase = requiredTokens.slice(0, 2).join('');
+          const exactPhraseHit =
+            requiredTokens.length >= 2 &&
+            (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(requiredTokens.slice(0, 2).join(' ')) ||
+              (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
+
+          if (requiredTokens.length > 0 && coreHits.length < minNeeded && !exactPhraseHit) continue;
           if (isMismatchedProductImageUrl(candUrl, productName, category)) continue;
 
           seen.add(candUrl);
@@ -1126,7 +1260,7 @@ async function fetchWikimediaCommonsCorsCandidates(
             sourceDomain: 'commons.wikimedia.org',
             width: w || undefined,
             height: h || undefined,
-            relevanceScore: hits.length * 4 + (w >= h ? 2 : 0)
+            relevanceScore: (exactPhraseHit ? 10 : 0) + coreHits.length * 4 + (w >= h ? 2 : 0)
           });
         }
       } catch {
