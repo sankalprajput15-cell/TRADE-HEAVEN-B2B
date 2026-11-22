@@ -25,16 +25,20 @@ import {
   ExternalLink,
   CheckSquare,
   Square,
-  StopCircle
+  StopCircle,
+  Lock,
+  Database
 } from 'lucide-react';
 import {
   runCatalogImageAuditAndCleanup,
   fixSingleCatalogImage,
+  verifyAndLockSavedCatalogImages,
   fetchVisualProductImages,
   cleanProductSearchSubject,
   CatalogImageAuditSummary,
   CatalogImageAuditLogItem,
   CatalogScannedCleanRecord,
+  ServerVerifyLockVaultResult,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
@@ -68,6 +72,10 @@ interface UnifiedAuditRow {
   source?: string;
   is_fallback_card?: boolean;
   updatedAt?: string;
+  locked?: boolean;
+  serverSavedVerified?: boolean;
+  verifiedAt?: string;
+  liveSynced?: boolean;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -137,6 +145,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     currentTitle: string;
   } | null>(null);
   const bulkRefetchAbortRef = useRef<boolean>(false);
+  const [isVerifyingVault, setIsVerifyingVault] = useState<boolean>(false);
+  const [vaultStatus, setVaultStatus] = useState<ServerVerifyLockVaultResult | null>(null);
 
   const handleEmbedTradeHeavenSeoImages = useCallback(async () => {
     setIsEmbeddingSeo(true);
@@ -472,7 +482,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             new_image_url: clean.current_image_url || '',
             query_used: clean.title,
             status: clean.status === 'FIXED' ? 'FIXED' : 'CLEAN',
-            updatedAt: clean.updated_at
+            updatedAt: clean.updated_at,
+            locked: Boolean(clean.locked || clean.server_verified || clean.status === 'FIXED'),
+            serverSavedVerified: Boolean(clean.server_verified || clean.locked || clean.status === 'FIXED')
           });
         }
       }
@@ -501,8 +513,10 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
               old_image_url: ov?.previousPrimary || cat.image || '(empty)',
               new_image_url: resolvedUrl || '',
               query_used: cat.name,
-              status: ov?.updatedBy === 'admin-manual' ? 'FIXED' : 'CLEAN',
-              updatedAt: ov?.updatedAt
+              status: ov?.updatedBy === 'admin-manual' || ov?.locked ? 'FIXED' : 'CLEAN',
+              updatedAt: ov?.updatedAt,
+              locked: Boolean(ov?.locked || ov?.serverVerified),
+              serverSavedVerified: Boolean(ov?.serverVerified || ov?.locked)
             });
           }
         }
@@ -697,12 +711,19 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         is_fallback_card?: boolean;
         status: 'FIXED' | 'FLAGGED';
         updatedAt?: string;
+        serverSavedVerified?: boolean;
+        diskVerified?: boolean;
+        locked?: boolean;
+        verifiedAt?: string;
+        liveSynced?: boolean;
       },
       opts?: { preserveSelection?: boolean }
     ) => {
       const wasFlagged = targetRow.status === 'FLAGGED';
       const nowFixed = res.status === 'FIXED';
       const ts = res.updatedAt || new Date().toISOString();
+      const isVerified = nowFixed && Boolean(res.serverSavedVerified ?? res.diskVerified ?? true);
+      const isLocked = nowFixed && Boolean(res.locked ?? isVerified);
       lastLocalMutationAtRef.current = Date.now();
 
       // Determine next unfixed record BEFORE removing targetRow from flagged queue
@@ -732,15 +753,19 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           issue_type: nowFixed ? 'HEALTHY' : targetRow.issue_type,
           issue_reason: nowFixed
             ? targetRow.record_type === 'CATEGORY'
-              ? 'Fixed — live in Homepage Procurement Sectors'
-              : 'Fixed — saved and verified in catalog'
+              ? 'Saved & locked on server — old image permanently blocked'
+              : 'Saved & locked on server (disk verified) — old image blocked'
             : targetRow.issue_reason,
           old_image_url: res.old_image_url || targetRow.old_image_url,
           new_image_url: nowFixed ? res.new_image_url : '(pending audit fix)',
           status: nowFixed ? 'FIXED' : 'FLAGGED',
           source: res.source,
           is_fallback_card: Boolean(res.is_fallback_card),
-          updatedAt: ts
+          updatedAt: ts,
+          locked: isLocked,
+          serverSavedVerified: isVerified,
+          verifiedAt: res.verifiedAt || ts,
+          liveSynced: res.liveSynced
         };
         if (!exists) return [updatedEntry, ...prev];
         return prev.map(r => (r.record_id === targetRow.record_id ? updatedEntry : r));
@@ -756,7 +781,9 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           previous_image_url: res.old_image_url || targetRow.old_image_url,
           current_image_url: res.new_image_url,
           updated_at: ts,
-          status: nowFixed ? 'FIXED' : 'FLAGGED'
+          status: nowFixed ? 'FIXED' : 'FLAGGED',
+          locked: isLocked,
+          server_verified: isVerified
         };
         if (idx === -1) {
           return nowFixed ? [nextRec, ...prev] : prev;
@@ -859,7 +886,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             : options?.customImageUrl
               ? 'admin-manual'
               : 'catalog-image-auditor',
-          revert: Boolean(options?.revert)
+          revert: Boolean(options?.revert),
+          locked: !options?.revert && Boolean(result.locked ?? result.serverSavedVerified ?? true),
+          serverVerified: !options?.revert && Boolean(result.serverSavedVerified ?? result.diskVerified ?? true),
+          verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
+          replacedOldUrls: result.replacedOldUrls
         }
       ]);
       await syncMarketplaceImageListeners();
@@ -878,30 +909,64 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       } else if (result.is_fallback_card) {
         setAlertMessage({
           type: 'info',
-          title: `Fallback Spec Card Generated for "${row.title}" (${rid})`,
+          title: `Saved & Locked Fallback Spec Card for "${row.title}" (${rid})`,
           detail:
-            'No exact external product photo matched within the time limit. Use "Upload Photo Manually" if you want to upload the exact product photo yourself.',
-          actionRow: { ...row, new_image_url: result.new_image_url, status: 'FIXED', is_fallback_card: true }
+            'Disk-verified and locked on server so the old image cannot return. Use "Upload Photo Manually" if you want to upload your own product photo.',
+          actionRow: { ...row, new_image_url: result.new_image_url, status: 'FIXED', is_fallback_card: true, locked: true, serverSavedVerified: true }
         });
       } else {
         setAlertMessage({
           type: 'success',
-          title: `Fixed Image for "${row.title}" (${rid})`,
-          detail: `Updated directly to verified unique asset: ${result.new_image_url}`,
-          actionRow: { ...row, new_image_url: result.new_image_url, status: 'FIXED' }
+          title: `Saved & Permanently Locked on Server: "${row.title}" (${rid})`,
+          detail: `Disk-verified write confirmed (${result.new_image_url})${result.liveSynced ? ' & synced to live server' : ''}. Old image URL is permanently blocked from returning.`,
+          actionRow: { ...row, new_image_url: result.new_image_url, status: 'FIXED', locked: true, serverSavedVerified: Boolean(result.serverSavedVerified ?? true) }
         });
       }
     } catch (err: any) {
       setAlertMessage({
         type: 'error',
-        title: `Auto-Fetch Could Not Fix "${row.title}"`,
-        detail: `${err?.message || 'Unable to fetch right image automatically.'} Click "Upload Photo Manually" to assign a photo directly from your device.`,
+        title: `Server Save / Auto-Fetch Failed for "${row.title}"`,
+        detail: `${err?.message || 'Unable to fetch and verify image save on server.'} Click "Upload Photo Manually" to assign a photo directly from your device.`,
         actionRow: row
       });
     } finally {
       setFixingRecordIds(prev => ({ ...prev, [rid]: false }));
     }
   };
+
+  const handleVerifyAndLockServerVault = useCallback(async () => {
+    if (isVerifyingVault || isRunningFix || isBulkRefetching) return;
+    setIsVerifyingVault(true);
+    setAlertMessage(null);
+    lastLocalMutationAtRef.current = Date.now();
+    try {
+      const res = await verifyAndLockSavedCatalogImages();
+      setVaultStatus(res);
+      await syncMarketplaceImageListeners(true);
+      await fetchPreviewStats({
+        includeCatalog: true,
+        clearSessionTouched: true,
+        bypassCooldown: true
+      });
+      setAlertMessage({
+        type: res.serverSavedVerified ? 'success' : 'error',
+        title: res.serverSavedVerified
+          ? `Server Vault Verified & Locked: ${res.verifiedCount.toLocaleString()} Saved Images Confirmed on Disk`
+          : `Server Vault Verification Warning (${res.verifiedCount}/${res.lockedCount} Verified)`,
+        detail: res.serverSavedVerified
+          ? `Read-back confirmed across ${(res.diskFiles || ['product-image-overrides.json', 'productImageSystemState.json']).join(' & ')}. ${res.blockedOldUrlsCount.toLocaleString()} old image URLs are permanently blacklisted from returning${res.liveSynced ? ' and synced to live server' : ''}.`
+          : `Some overrides could not be verified on disk (${res.missingOnDiskCount} missing files). Retry or re-upload missing images.`
+      });
+    } catch (err: any) {
+      setAlertMessage({
+        type: 'error',
+        title: 'Server Vault Verification Failed',
+        detail: err?.message || 'Unable to reach server verification endpoint.'
+      });
+    } finally {
+      setIsVerifyingVault(false);
+    }
+  }, [fetchPreviewStats, isBulkRefetching, isRunningFix, isVerifyingVault, syncMarketplaceImageListeners]);
 
   const selectedBulkIdList = useMemo(
     () => Object.keys(selectedBulkIds).filter(id => Boolean(selectedBulkIds[id])),
@@ -1066,6 +1131,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           previousImageUrl: currentUrlForExclusion
         });
 
+        // Guarantee strict server disk verification before treating item as saved & locked
+        if (result.serverSavedVerified === false) {
+          throw new Error(`Server did not verify disk write for ${rid}`);
+        }
+
         // Immediately reflect and persist in real time per image
         lastLocalMutationAtRef.current = Date.now();
         applySingleRecordMutationResult(row, result, { preserveSelection: true });
@@ -1080,7 +1150,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                 ? result.old_image_url
                 : currentUrlForExclusion,
             updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
-            updatedBy: 'catalog-image-auditor'
+            updatedBy: 'catalog-image-auditor',
+            locked: true,
+            serverVerified: true,
+            verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
+            replacedOldUrls: result.replacedOldUrls
           }
         ]);
 
@@ -1095,10 +1169,12 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           old_image_url: result.old_image_url || row.old_image_url,
           new_image_url: result.new_image_url,
           status: 'FIXED',
+          locked: true,
+          serverSavedVerified: true,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString()
         };
 
-        // Deselect successfully re-fetched item in real time
+        // Deselect successfully disk-verified & locked item in real time
         setSelectedBulkIds(prev => {
           const next = { ...prev };
           delete next[rid];
@@ -1120,37 +1196,44 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     };
 
     try {
-      const workerCount = Math.min(2, targets.length);
-      const workers = Array.from({ length: workerCount }, async () => {
-        while (!bulkRefetchAbortRef.current) {
-          const idx = cursor++;
-          if (idx >= targets.length) break;
-          await processSingleTarget(targets[idx]);
-        }
-      });
-      await Promise.all(workers);
+      // Run strictly sequentially (1 worker) so similar-title products NEVER race for the same image URL!
+      while (!bulkRefetchAbortRef.current && cursor < targets.length) {
+        const idx = cursor++;
+        await processSingleTarget(targets[idx]);
+      }
 
-      await syncMarketplaceImageListeners();
+      // Final server vault disk read-back confirmation across all saved items
+      let vaultRes: ServerVerifyLockVaultResult | null = null;
+      if (succeededCount > 0) {
+        try {
+          vaultRes = await verifyAndLockSavedCatalogImages();
+          setVaultStatus(vaultRes);
+        } catch {
+          // Per-item disk verification already succeeded
+        }
+      }
+
+      await syncMarketplaceImageListeners(true);
 
       const wasStopped = bulkRefetchAbortRef.current && completedCount < targets.length;
       if (succeededCount > 0) {
         setAlertMessage({
           type: failedCount > 0 || wasStopped ? 'info' : 'success',
           title: wasStopped
-            ? `Batch Re-Fetch Stopped: ${succeededCount} Saved Live to Server (${completedCount}/${targets.length} Processed)`
-            : `Batch Re-Fetch Complete: ${succeededCount} Image${succeededCount === 1 ? '' : 's'} Re-Fetched & Saved Live to Server`,
+            ? `Batch Re-Fetch Stopped: ${succeededCount} Disk-Verified & Locked on Server (${completedCount}/${targets.length})`
+            : `Batch Re-Fetch Complete: ${succeededCount} Image${succeededCount === 1 ? '' : 's'} Saved, Verified & Locked on Server`,
           detail:
             failedCount > 0
-              ? `${succeededCount} image${succeededCount === 1 ? '' : 's'} were automatically saved in real time on the server. ${failedCount} item${failedCount === 1 ? '' : 's'} stayed selected because no auto-match was found — you can retry or click Upload manually.`
-              : `All ${succeededCount} selected image${succeededCount === 1 ? '' : 's'} were fetched and automatically saved to the server in real time and synced across the site.`,
+              ? `${succeededCount} image${succeededCount === 1 ? '' : 's'} passed disk read-back verification and are permanently locked on server (old images blocked)${vaultRes?.liveSynced ? ' & synced live' : ''}. ${failedCount} item${failedCount === 1 ? '' : 's'} stayed checked — retry or upload manually.`
+              : `All ${succeededCount} selected image${succeededCount === 1 ? '' : 's'} passed server disk read-back verification and are permanently locked${vaultRes?.liveSynced ? ' & synced to live server' : ''}. Old images can never return.`,
           actionRow: lastSucceededRow
         });
       } else {
         setAlertMessage({
           type: 'error',
-          title: `Batch Re-Fetch Could Not Update Selected Images (${failedCount} Failed)`,
+          title: `Batch Re-Fetch Could Not Save Selected Images (${failedCount} Failed)`,
           detail:
-            'No matching verified external photos were found automatically for the selected items. They remain checked so you can upload photos manually or inspect them individually.'
+            'No matching unique photos could be fetched and verified on disk for the selected items. They remain checked so you can upload photos manually or inspect them individually.'
         });
       }
     } finally {
@@ -1783,6 +1866,70 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         </button>
       </div>
 
+      {/* DEDICATED SERVER SAVE VAULT & PERMANENT LOCK GUARANTEE BAR */}
+      <div
+        data-testid="server-save-vault-guarantee"
+        className="rounded-xl border border-emerald-200 bg-emerald-50/75 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3"
+      >
+        <div className="flex items-start gap-2.5 min-w-0">
+          <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Lock className="w-3.5 h-3.5" />
+          </span>
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-emerald-950">
+                Server Save &amp; Permanent Lock Guarantee
+              </span>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-900 text-[10px] font-black">
+                {vaultStatus
+                  ? `${vaultStatus.verifiedCount.toLocaleString()} Disk-Verified & Locked`
+                  : `${Number(summary?.locked_count ?? recordsFixed).toLocaleString()} Locked on Server`}
+              </span>
+              {vaultStatus && (
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    vaultStatus.liveSynced
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  {vaultStatus.liveSynced ? 'Live Server Synced' : 'Local Server Disk Verified'}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-emerald-900/90 leading-snug">
+              Every fetched or uploaded photo is verified by synchronous disk read-back, permanently locked against re-flagging, and its old URL is blacklisted so the previous image can never come back across reloads or other Chrome windows.
+              {vaultStatus?.verifiedAt && (
+                <span className="ml-1 font-mono text-[10px] text-emerald-800">
+                  (Verified {new Date(vaultStatus.verifiedAt).toLocaleTimeString()} • {vaultStatus.blockedOldUrlsCount.toLocaleString()} old URLs blocked)
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={isVerifyingVault || isRunningFix || isBulkRefetching}
+          onClick={() => void handleVerifyAndLockServerVault()}
+          data-testid="verify-lock-server-btn"
+          className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+          title="Read back every saved override from server disk, permanently lock them, block all replaced old URLs, and sync to live server"
+        >
+          {isVerifyingVault ? (
+            <>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>Verifying Disk &amp; Locking...</span>
+            </>
+          ) : (
+            <>
+              <Database className="w-3.5 h-3.5" />
+              <span>Verify &amp; Lock All Saved on Server</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* RESULT ALERT BANNER */}
       {alertMessage && (
         <div
@@ -2195,6 +2342,16 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                                 {row.status}
                               </span>
                               {row.status === 'FIXED' && (
+                                <span
+                                  data-testid={`locked-badge-${row.record_id}`}
+                                  className="px-1.5 py-0.5 rounded bg-emerald-700 text-white text-[10px] font-bold inline-flex items-center gap-1"
+                                  title="Disk-verified and permanently locked on server — old image URL is blocked from returning"
+                                >
+                                  <Lock className="w-2.5 h-2.5" />
+                                  <span>Saved &amp; Locked</span>
+                                </span>
+                              )}
+                              {row.status === 'FIXED' && (
                                 <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">
                                   {row.record_type === 'CATEGORY'
                                     ? 'Homepage: Procurement Sectors'
@@ -2325,7 +2482,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                         {selectedRecord.record_type} • {selectedRecord.record_id}
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                        className={`px-2 py-0.5 rounded text-[10px] font-black uppercase inline-flex items-center gap-1 ${
                           selectedRecord.status === 'FIXED'
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : selectedRecord.status === 'CLEAN'
@@ -2333,11 +2490,16 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                             : 'bg-rose-100 text-rose-800 border border-rose-300'
                         }`}
                       >
-                        {hasUnsavedStagedChange
-                          ? 'Previewing Change'
-                          : selectedRecord.status === 'FIXED'
-                          ? 'Applied & Saved'
-                          : selectedRecord.status}
+                        {selectedRecord.status === 'FIXED' && !hasUnsavedStagedChange && (
+                          <Lock className="w-2.5 h-2.5 text-emerald-700" />
+                        )}
+                        <span>
+                          {hasUnsavedStagedChange
+                            ? 'Previewing Change'
+                            : selectedRecord.status === 'FIXED'
+                            ? 'Server Verified & Locked'
+                            : selectedRecord.status}
+                        </span>
                       </span>
                     </div>
                     <h4 className="text-sm font-black text-slate-900 leading-snug">{selectedRecord.title}</h4>

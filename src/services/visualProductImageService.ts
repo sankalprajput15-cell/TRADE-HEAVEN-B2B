@@ -1101,6 +1101,8 @@ export interface CatalogScannedCleanRecord {
   previous_image_url?: string;
   updated_at?: string;
   status: 'CLEAN' | 'FLAGGED' | 'FIXED';
+  locked?: boolean;
+  server_verified?: boolean;
 }
 
 export interface CatalogImageAuditSummary {
@@ -1118,6 +1120,10 @@ export interface CatalogImageAuditSummary {
   newly_fixed_count?: number;
   records_fixed: number;
   healthy_records?: number;
+  server_saved_verified?: boolean;
+  disk_verified_count?: number;
+  locked_count?: number;
+  live_synced?: boolean;
   timestamp?: string;
   audit_log: CatalogImageAuditLogItem[];
   catalog_records?: CatalogScannedCleanRecord[];
@@ -1125,6 +1131,12 @@ export interface CatalogImageAuditSummary {
 
 export interface SingleCatalogImageFixResult {
   success: boolean;
+  serverSavedVerified?: boolean;
+  diskVerified?: boolean;
+  locked?: boolean;
+  verifiedAt?: string;
+  liveSynced?: boolean;
+  replacedOldUrls?: string[];
   record_id: string;
   record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
@@ -1137,6 +1149,21 @@ export interface SingleCatalogImageFixResult {
   status: 'FIXED' | 'FLAGGED';
   updatedAt?: string;
   imageUpdatedAt?: number;
+  message?: string;
+}
+
+export interface ServerVerifyLockVaultResult {
+  success: boolean;
+  serverSavedVerified: boolean;
+  verifiedCount: number;
+  lockedCount: number;
+  missingOnDiskCount: number;
+  blockedOldUrlsCount: number;
+  totalOverridesOnDisk: number;
+  liveSynced: boolean;
+  liveSyncError?: string;
+  verifiedAt: string;
+  diskFiles?: string[];
   message?: string;
 }
 
@@ -1472,7 +1499,10 @@ async function runClientFallbackCatalogImageAudit(options: {
     const isAuditorFixed = Boolean(
       ov &&
       cleanCurrent &&
-      (ov.updatedBy === 'catalog-image-auditor' || ov.updatedBy === 'system-repair') &&
+      (ov.locked === true ||
+        ov.serverVerified === true ||
+        ov.updatedBy === 'catalog-image-auditor' ||
+        ov.updatedBy === 'system-repair') &&
       !isGenericOrPlaceholderImageUrl(cleanCurrent) &&
       !seenUrls.has(cleanCurrent)
     );
@@ -1485,7 +1515,14 @@ async function runClientFallbackCatalogImageAudit(options: {
       const cleanU = cleanCurrent;
       if (cleanU) seenUrls.set(cleanU, { id: item.id, title: item.title });
       const wasRecentlyFixed = Boolean(
-        ov && (ov.updatedBy === 'admin-manual' || ov.updatedBy === 'admin-upload' || ov.updatedBy === 'manual' || ov.updatedBy === 'catalog-image-auditor' || ov.updatedBy === 'system-repair')
+        ov &&
+          (ov.locked === true ||
+            ov.serverVerified === true ||
+            ov.updatedBy === 'admin-manual' ||
+            ov.updatedBy === 'admin-upload' ||
+            ov.updatedBy === 'manual' ||
+            ov.updatedBy === 'catalog-image-auditor' ||
+            ov.updatedBy === 'system-repair')
       );
       if (wasRecentlyFixed) recordsFixed++;
       if (options.includeCatalog) {
@@ -1497,7 +1534,9 @@ async function runClientFallbackCatalogImageAudit(options: {
           current_image_url: currentUrl,
           previous_image_url: prevUrl || currentUrl,
           updated_at: ov?.updatedAt,
-          status: wasRecentlyFixed ? 'FIXED' : 'CLEAN'
+          status: wasRecentlyFixed ? 'FIXED' : 'CLEAN',
+          locked: Boolean(ov?.locked || ov?.serverVerified),
+          server_verified: Boolean(ov?.serverVerified || ov?.locked)
         });
       }
       continue;
@@ -1729,6 +1768,8 @@ export async function fixSingleCatalogImage(params: {
         !isGenericOrPlaceholderImageUrl(json.new_image_url) &&
         (params.revert ||
           Boolean(params.customImageUrl) ||
+          json.serverSavedVerified === true ||
+          json.diskVerified === true ||
           !isMismatchedProductImageUrl(json.new_image_url, resolvedTitle, resolvedCategory))
     );
 
@@ -1829,17 +1870,22 @@ export async function fixSingleCatalogImage(params: {
     '/api.php?action=set_product_images'
   ];
   let persisted = false;
+  let diskVerified = false;
   for (const ep of persistEndpoints) {
     try {
       const method = ep.includes('api.php') ? 'POST' : 'PUT';
       const saveRes = await fetch(ep, {
         method,
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           productId: cleanId,
           primaryUrl: cleanFinal,
           galleryUrls: [cleanFinal],
-          format: ext
+          format: ext,
+          locked: !params.revert,
+          serverVerified: !params.revert,
+          imageUpdatedAt: nowMs
         })
       });
       const ctype = (saveRes.headers.get('content-type') || '').toLowerCase();
@@ -1847,6 +1893,12 @@ export async function fixSingleCatalogImage(params: {
       const saveJson = await saveRes.json().catch(() => null);
       if (saveRes.ok && saveJson && (saveJson.success === true || saveJson.status === 'success')) {
         persisted = true;
+        const returnedPrimary = String(saveJson?.data?.overrides?.[cleanId]?.primary || '').split('?')[0];
+        diskVerified = Boolean(
+          saveJson.serverSavedVerified === true ||
+            saveJson.diskVerified === true ||
+            (returnedPrimary && returnedPrimary === cleanFinal.split('?')[0])
+        );
         break;
       }
     } catch {
@@ -1854,14 +1906,32 @@ export async function fixSingleCatalogImage(params: {
     }
   }
 
-  if (!persisted && !/^https?:\/\//i.test(cleanFinal)) {
+  // STRICT GUARANTEE: NEVER claim success if the server did not confirm persistence!
+  if (!persisted) {
     throw new Error(
-      lastMeaningfulError || `Failed to save updated image for ${cleanId} to the server.`
+      lastMeaningfulError ||
+        `Server did NOT confirm saving the updated image for ${cleanId}. Please retry or check server connectivity.`
     );
+  }
+
+  // If fallback endpoint did not explicitly echo disk verification, run an explicit verify-and-lock confirmation for this ID
+  if (!params.revert && !diskVerified) {
+    try {
+      const lockCheck = await verifyAndLockSavedCatalogImages([cleanId]);
+      if (lockCheck.serverSavedVerified && lockCheck.verifiedCount > 0) {
+        diskVerified = true;
+      }
+    } catch {
+      // Keep persisted=true with diskVerified=false so UI reports status accurately
+    }
   }
 
   return {
     success: true,
+    serverSavedVerified: diskVerified,
+    diskVerified,
+    locked: !params.revert && diskVerified,
+    verifiedAt: nowIso,
     record_id: cleanId,
     record_type: resolvedType,
     title: resolvedTitle,
@@ -1875,5 +1945,52 @@ export async function fixSingleCatalogImage(params: {
     updatedAt: nowIso,
     imageUpdatedAt: !params.revert ? nowMs : undefined
   };
+}
+
+export async function verifyAndLockSavedCatalogImages(
+  recordIds?: string[]
+): Promise<ServerVerifyLockVaultResult> {
+  const payload =
+    Array.isArray(recordIds) && recordIds.length > 0 ? { record_ids: recordIds } : {};
+  const endpoints = [
+    '/api/v1/admin/verify-and-lock-catalog-images',
+    '/api.php?action=verify_and_lock_catalog_images'
+  ];
+  let lastError = 'Unable to reach server verification vault endpoint.';
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const ctype = (res.headers.get('content-type') || '').toLowerCase();
+      if (ctype.includes('text/html')) continue;
+      const json = await res.json().catch(() => null);
+      if (res.ok && json && typeof json.verifiedCount === 'number') {
+        return {
+          success: Boolean(json.success),
+          serverSavedVerified: Boolean(json.serverSavedVerified),
+          verifiedCount: Number(json.verifiedCount || 0),
+          lockedCount: Number(json.lockedCount || 0),
+          missingOnDiskCount: Number(json.missingOnDiskCount || 0),
+          blockedOldUrlsCount: Number(json.blockedOldUrlsCount || 0),
+          totalOverridesOnDisk: Number(json.totalOverridesOnDisk || 0),
+          liveSynced: Boolean(json.liveSynced),
+          liveSyncError: json.liveSyncError,
+          verifiedAt: String(json.verifiedAt || new Date().toISOString()),
+          diskFiles: Array.isArray(json.diskFiles) ? json.diskFiles : undefined,
+          message: json.message
+        };
+      }
+      if (json?.message) lastError = String(json.message);
+    } catch (err: any) {
+      if (err?.message) lastError = err.message;
+    }
+  }
+
+  throw new Error(lastError);
 }
 

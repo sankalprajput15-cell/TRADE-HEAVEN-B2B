@@ -1099,8 +1099,34 @@ function th_entry_timestamp_ms($entry) {
     return max($numMs, $isoMs);
 }
 
+function th_strip_url_base($url) {
+    $raw = trim((string)$url);
+    if ($raw === '' || $raw === '(empty)' || $raw === '(pending audit fix)') return '';
+    return explode('#', explode('?', $raw)[0])[0];
+}
+
+function th_merge_replaced_old_urls($existingList, $candidates = []) {
+    $set = [];
+    if (is_array($existingList)) {
+        foreach ($existingList as $u) {
+            $b = th_strip_url_base($u);
+            if ($b !== '') $set[$b] = true;
+        }
+    }
+    foreach ($candidates as $c) {
+        $b = th_strip_url_base($c);
+        if ($b !== '') $set[$b] = true;
+    }
+    $out = array_keys($set);
+    if (count($out) > 20) {
+        $out = array_slice($out, -20);
+    }
+    return $out;
+}
+
 function th_is_protected_override($entry) {
     if (!is_array($entry)) return false;
+    if (!empty($entry['locked']) || !empty($entry['serverVerified'])) return true;
     $by = strtolower(trim((string)($entry['updatedBy'] ?? '')));
     return in_array($by, ['admin-manual', 'user-upload', 'catalog-image-auditor'], true);
 }
@@ -1114,19 +1140,37 @@ function th_merge_override_entry($existing, $incoming) {
     }
     $exTs = th_entry_timestamp_ms($existing);
     $inTs = th_entry_timestamp_ms($incoming);
+    $exLocked = !empty($existing['locked']) || !empty($existing['serverVerified']);
+    $inLocked = !empty($incoming['locked']) || !empty($incoming['serverVerified']);
     if ($exTs > $inTs) {
         return $existing;
+    }
+    if ($exLocked && !$inLocked && $inTs <= $exTs) {
+        return $existing;
+    }
+    // Never revert a locked override back to a URL previously recorded in replacedOldUrls
+    $inBase = th_strip_url_base($incoming['primary'] ?? '');
+    if ($exLocked && $inBase !== '' && !empty($existing['replacedOldUrls']) && is_array($existing['replacedOldUrls'])) {
+        foreach ($existing['replacedOldUrls'] as $oldU) {
+            if (th_strip_url_base($oldU) === $inBase && $inTs <= $exTs) {
+                return $existing;
+            }
+        }
     }
     if ($inTs > $exTs) {
         if (empty($incoming['previousPrimary']) && !empty($existing['primary']) && $existing['primary'] !== $incoming['primary']) {
             $incoming['previousPrimary'] = $existing['primary'];
         }
+        $mergedOld = th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], is_array($incoming['replacedOldUrls'] ?? null) ? $incoming['replacedOldUrls'] : []);
+        if (!empty($mergedOld)) {
+            $incoming['replacedOldUrls'] = $mergedOld;
+        }
         return $incoming;
     }
-    // Same timestamp: protected manual/auditor wins over auto
+    // Same timestamp: locked / protected manual/auditor wins over auto
     $exProt = th_is_protected_override($existing);
     $inProt = th_is_protected_override($incoming);
-    if ($exProt && !$inProt) {
+    if (($exLocked && !$inLocked) || ($exProt && !$inProt)) {
         return $existing;
     }
     return $incoming;
@@ -1224,6 +1268,21 @@ function th_save_image_state_atomic($uploads_dir, $state) {
         th_write_json_atomic($public_data_file, $state);
     }
     return $ok1;
+}
+
+function th_verify_override_on_disk($uploads_dir, $record_id, $expected_primary) {
+    $clean_id = trim((string)$record_id);
+    $expected_base = th_strip_url_base($expected_primary);
+    if ($clean_id === '' || $expected_base === '') return false;
+    if (strpos($expected_base, '/assets/uploads/') === 0) {
+        $fp = rtrim($uploads_dir, '/') . '/' . basename($expected_base);
+        if (!file_exists($fp) || filesize($fp) <= 100) return false;
+    }
+    $overrides_file = rtrim($uploads_dir, '/') . '/product-image-overrides.json';
+    $parsed = th_read_json_locked($overrides_file);
+    if (!is_array($parsed) || empty($parsed['overrides'][$clean_id]['primary'])) return false;
+    $disk_base = th_strip_url_base($parsed['overrides'][$clean_id]['primary']);
+    return ($disk_base === $expected_base);
 }
 
 function th_sync_image_override_to_db_and_cms($pid, $primaryUrl, $galleryUrls, $pdo, $db_connected) {
@@ -4120,9 +4179,13 @@ switch ($action) {
             $effectiveMs = max($nowMs, $incomingMs);
             if ($existingMs <= $effectiveMs) {
                 $gallery = (is_array($galleryUrls) && count($galleryUrls) > 0) ? array_values($galleryUrls) : [$primaryUrl];
-                $prevPrimary = (!empty($existing['primary']) && $existing['primary'] !== $primaryUrl)
+                $prevPrimary = (!empty($existing['primary']) && th_strip_url_base($existing['primary']) !== th_strip_url_base($primaryUrl))
                     ? $existing['primary']
                     : ($existing['previousPrimary'] ?? null);
+                $replacedUrls = array_values(array_filter(
+                    th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], [$prevPrimary]),
+                    function($u) use ($primaryUrl) { return th_strip_url_base($u) !== th_strip_url_base($primaryUrl); }
+                ));
                 $state['overrides'][$productId] = [
                     "primary" => $primaryUrl,
                     "previousPrimary" => $prevPrimary,
@@ -4130,7 +4193,11 @@ switch ($action) {
                     "format" => $format,
                     "updatedAt" => $nowIso,
                     "imageUpdatedAt" => $effectiveMs,
-                    "updatedBy" => "admin-manual"
+                    "updatedBy" => "admin-manual",
+                    "locked" => true,
+                    "serverVerified" => true,
+                    "verifiedAt" => $nowIso,
+                    "replacedOldUrls" => $replacedUrls
                 ];
                 $state['productActivityTimestamps'][$productId] = $effectiveMs;
                 $affectedIds[$productId] = [$primaryUrl, $gallery];
@@ -4144,9 +4211,13 @@ switch ($action) {
                 $effectiveMs = max($nowMs, $incomingMs);
                 if ($existingMs <= $effectiveMs) {
                     $gallery = (is_array($galleryUrls) && count($galleryUrls) > 0) ? array_values($galleryUrls) : [$primaryUrl];
-                    $prevPrimary = (!empty($existing['primary']) && $existing['primary'] !== $primaryUrl)
+                    $prevPrimary = (!empty($existing['primary']) && th_strip_url_base($existing['primary']) !== th_strip_url_base($primaryUrl))
                         ? $existing['primary']
                         : ($existing['previousPrimary'] ?? null);
+                    $replacedUrls = array_values(array_filter(
+                        th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], [$prevPrimary]),
+                        function($u) use ($primaryUrl) { return th_strip_url_base($u) !== th_strip_url_base($primaryUrl); }
+                    ));
                     $state['overrides'][$pid] = [
                         "primary" => $primaryUrl,
                         "previousPrimary" => $prevPrimary,
@@ -4154,7 +4225,11 @@ switch ($action) {
                         "format" => $format,
                         "updatedAt" => $nowIso,
                         "imageUpdatedAt" => $effectiveMs,
-                        "updatedBy" => "admin-manual"
+                        "updatedBy" => "admin-manual",
+                        "locked" => true,
+                        "serverVerified" => true,
+                        "verifiedAt" => $nowIso,
+                        "replacedOldUrls" => $replacedUrls
                     ];
                     $state['productActivityTimestamps'][$pid] = $effectiveMs;
                     $affectedIds[$pid] = [$primaryUrl, $gallery];
@@ -4172,13 +4247,21 @@ switch ($action) {
         }
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         header("Pragma: no-cache");
-        th_save_image_state_atomic($uploads_dir, $state);
+        $savedOk = th_save_image_state_atomic($uploads_dir, $state);
         foreach ($affectedIds as $affPid => $pair) {
             th_sync_image_override_to_db_and_cms($affPid, $pair[0], $pair[1], $pdo, $db_connected);
+        }
+        $diskVerified = $savedOk;
+        if ($productId && $primaryUrl) {
+            $diskVerified = th_verify_override_on_disk($uploads_dir, $productId, $primaryUrl);
         }
         echo json_encode([
             "status" => "success",
             "success" => true,
+            "serverSavedVerified" => $diskVerified,
+            "diskVerified" => $diskVerified,
+            "locked" => true,
+            "verifiedAt" => $nowIso,
             "data" => $state
         ]);
         break;
@@ -7478,7 +7561,7 @@ switch ($action) {
         $categories_scanned = 0;
         $scanned_ids_aud = [];
 
-        $is_verified_override_php = function ($ov_rec, $cur_img) use (&$seen_urls_aud) {
+        $is_verified_override_php = function ($ov_rec, $cur_img) use (&$seen_urls_aud, $uploads_dir_aud) {
             if (!is_array($ov_rec) || trim((string)$cur_img) === '') return false;
             $updater = strtolower(trim((string)($ov_rec['updatedBy'] ?? '')));
             $clean_u = trim(explode('?', (string)$cur_img)[0]);
@@ -7487,10 +7570,14 @@ switch ($action) {
             foreach (['picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'unsplash.com', 'pexels.com', 'pixabay.com', 'shutterstock.com', 'istockphoto.com', 'vecteezy_'] as $bad_host) {
                 if (strpos($lower_u, $bad_host) !== false) return false;
             }
+            if (strpos($clean_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_aud . '/' . basename($clean_u);
+                if (!file_exists($fp) || filesize($fp) <= 100) return false;
+            }
             if (in_array($updater, ['admin-manual', 'admin-upload', 'manual'], true)) {
                 return true;
             }
-            if (in_array($updater, ['catalog-image-auditor', 'system-repair'], true)) {
+            if (!empty($ov_rec['locked']) || !empty($ov_rec['serverVerified']) || in_array($updater, ['catalog-image-auditor', 'system-repair'], true)) {
                 return !isset($seen_urls_aud[$clean_u]);
             }
             return false;
@@ -7845,15 +7932,27 @@ switch ($action) {
                     continue;
                 }
                 $seen_urls_aud[$new_u] = ['id' => $cid, 'title' => $ctitle];
+                $now_iso_c = gmdate('Y-m-d\TH:i:s\Z');
+                $now_ms_c = (int)round(microtime(true) * 1000);
+                $replaced_c = array_values(array_filter(
+                    th_merge_replaced_old_urls($ov_rec['replacedOldUrls'] ?? [], [$cur_img]),
+                    function($u) use ($new_u) { return th_strip_url_base($u) !== th_strip_url_base($new_u); }
+                ));
                 $ov_state_aud['overrides'][$cid] = [
                     'primary' => $new_u,
                     'previousPrimary' => $cur_img ?: null,
                     'gallery' => [$new_u],
                     'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
-                    'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
-                    'imageUpdatedAt' => (int)round(microtime(true) * 1000),
-                    'updatedBy' => 'catalog-image-auditor'
+                    'updatedAt' => $now_iso_c,
+                    'imageUpdatedAt' => $now_ms_c,
+                    'updatedBy' => 'catalog-image-auditor',
+                    'locked' => true,
+                    'serverVerified' => true,
+                    'verifiedAt' => $now_iso_c,
+                    'replacedOldUrls' => $replaced_c
                 ];
+                $ov_state_aud['productActivityTimestamps'][$cid] = $now_ms_c;
+                th_sync_image_override_to_db_and_cms($cid, $new_u, [$new_u], $pdo, $db_connected);
                 $records_fixed++;
                 $audit_log[] = [
                     'record_id' => $cid,
@@ -7870,8 +7969,9 @@ switch ($action) {
             }
         }
 
+        $saved_aud_ok = true;
         if (!$dry_run) {
-            th_save_image_state_atomic($uploads_dir_aud, $ov_state_aud);
+            $saved_aud_ok = th_save_image_state_atomic($uploads_dir_aud, $ov_state_aud);
         }
 
         $newly_fixed_dup = 0;
@@ -7903,6 +8003,13 @@ switch ($action) {
         $out_dup_detected = $dry_run ? $duplicates_detected : $remaining_dup;
         $out_mis_detected = $dry_run ? $mismatched_detected : $remaining_mis;
 
+        $locked_count_aud = 0;
+        foreach (($ov_state_aud['overrides'] ?? []) as $ov_ent) {
+            if (is_array($ov_ent) && (!empty($ov_ent['locked']) || !empty($ov_ent['serverVerified']) || th_is_protected_override($ov_ent))) {
+                $locked_count_aud++;
+            }
+        }
+
         $audit_resp = [
             "status" => "success",
             "success" => true,
@@ -7918,6 +8025,8 @@ switch ($action) {
             "newly_fixed_count" => $newly_fixed_dup + $newly_fixed_mis,
             "records_fixed" => $records_fixed,
             "healthy_records" => max(0, $total_scanned - ($out_dup_detected + $out_mis_detected)),
+            "server_saved_verified" => $saved_aud_ok,
+            "locked_count" => $locked_count_aud,
             "timestamp" => gmdate('c'),
             "audit_log" => $audit_log
         ];
@@ -7953,6 +8062,27 @@ switch ($action) {
         $final_url = '';
         $source_sf = 'manual_custom_url';
 
+        // CRITICAL: Build complete set of already-used URLs across ALL other catalog overrides + old/replaced URLs for this record
+        // so fix_single_catalog_image NEVER picks a duplicate URL or re-selects an old replaced image!
+        $used_urls_sf = [];
+        foreach (($ov_state_sf['overrides'] ?? []) as $other_id => $other_ov) {
+            if ($other_id === $rec_id || !is_array($other_ov)) continue;
+            $ou = th_strip_url_base($other_ov['primary'] ?? '');
+            if ($ou !== '') $used_urls_sf[$ou] = true;
+        }
+        $clean_old_sf = th_strip_url_base($old_url);
+        if ($clean_old_sf !== '') $used_urls_sf[$clean_old_sf] = true;
+        $ex_primary_base = th_strip_url_base($existing_ov['primary'] ?? '');
+        if ($ex_primary_base !== '') $used_urls_sf[$ex_primary_base] = true;
+        $ex_prev_base = th_strip_url_base($existing_ov['previousPrimary'] ?? '');
+        if ($ex_prev_base !== '') $used_urls_sf[$ex_prev_base] = true;
+        if (!empty($existing_ov['replacedOldUrls']) && is_array($existing_ov['replacedOldUrls'])) {
+            foreach ($existing_ov['replacedOldUrls'] as $rep_u) {
+                $rb = th_strip_url_base($rep_u);
+                if ($rb !== '') $used_urls_sf[$rb] = true;
+            }
+        }
+
         if ($is_revert && $prev_url !== '' && $prev_url !== '(empty)') {
             $final_url = trim(explode('?', $prev_url)[0]);
             $source_sf = 'revert_restore';
@@ -7965,9 +8095,8 @@ switch ($action) {
             $title_words_sf = array_values(array_unique(array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_title_sf)), function($w) use ($stop_sf) {
                 return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stop_sf, true);
             })));
-            $clean_old_sf = trim(explode('?', $old_url)[0]);
 
-            // 1. Live Wikimedia Commons + Bing focused real-photo search (downloads verified image directly into /assets/uploads/)
+            // 1. Live Wikimedia Commons focused real-photo search (downloads verified UNUSED image directly into /assets/uploads/)
             if (function_exists('curl_init') && !empty($title_words_sf)) {
                 $clauses_sf = array_values(array_filter(array_map('trim', preg_split('/[,;\/&]+/', $clean_title_sf)), function($c) {
                     return strlen($c) >= 3;
@@ -8000,7 +8129,7 @@ switch ($action) {
                 $live_cands_sf = [];
 
                 foreach ($sf_queries as $q_sf) {
-                    $w_api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($q_sf . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=15&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json';
+                    $w_api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($q_sf . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json';
                     $ch_w = curl_init($w_api);
                     curl_setopt($ch_w, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch_w, CURLOPT_FOLLOWLOCATION, true);
@@ -8039,13 +8168,13 @@ switch ($action) {
                             'score' => $spec_hits * 5 + $all_hits * 2 + ($w >= $h ? 2 : 0)
                         ];
                     }
-                    if (count($live_cands_sf) >= 6) break;
+                    if (count($live_cands_sf) >= 12) break;
                 }
 
                 if (!empty($live_cands_sf)) {
                     usort($live_cands_sf, function($a, $b) { return $b['score'] <=> $a['score']; });
                     $auto_slug_sf = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($clean_title_sf)), '-'), 0, 36) ?: 'product';
-                    foreach (array_slice($live_cands_sf, 0, 5) as $cand_sf) {
+                    foreach (array_slice($live_cands_sf, 0, 12) as $cand_sf) {
                         $ext_u = $cand_sf['url'];
                         $u_hash = substr(sha1($ext_u), 0, 12);
                         $dl_ext = 'jpg';
@@ -8055,13 +8184,15 @@ switch ($action) {
                         $local_fname = "auto-{$auto_slug_sf}-{$u_hash}.{$dl_ext}";
                         $local_fpath = $uploads_dir_sf . '/' . $local_fname;
                         $local_web_url = '/assets/uploads/' . $local_fname;
-                        if ($local_web_url === $clean_old_sf) continue;
+                        // Never pick an old URL or any URL already used by another catalog item
+                        if (isset($used_urls_sf[$local_web_url]) || isset($used_urls_sf[th_strip_url_base($ext_u)])) continue;
 
                         $ok_dl = (file_exists($local_fpath) && filesize($local_fpath) > 2500);
-                        if (!$ok_dl) {
+                        if (!$ok_dl && th_is_safe_public_http_url($ext_u)) {
                             $ch_dl = curl_init($ext_u);
                             curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
                             curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
+                            curl_setopt($ch_dl, CURLOPT_MAXREDIRS, 3);
                             curl_setopt($ch_dl, CURLOPT_TIMEOUT, 6);
                             curl_setopt($ch_dl, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
                             $bin_dl = (string)curl_exec($ch_dl);
@@ -8069,7 +8200,7 @@ switch ($action) {
                             $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
                             curl_close($ch_dl);
                             if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
-                                $ok_dl = (@file_put_contents($local_fpath, $bin_dl) !== false);
+                                $ok_dl = (@file_put_contents($local_fpath, $bin_dl, LOCK_EX) !== false);
                             }
                         }
                         if ($ok_dl) {
@@ -8081,7 +8212,7 @@ switch ($action) {
                 }
             }
 
-            // 2. If live Wikimedia search did not yield a file, check ONLY strictly relevant local uploads (require strong title match, NEVER score-0 random files or Unsplash fallback)
+            // 2. If live Wikimedia search did not yield a file, check ONLY strictly relevant UNUSED local uploads
             if ($final_url === '' && !empty($title_words_sf)) {
                 $best_url = '';
                 $best_score = 0;
@@ -8090,7 +8221,7 @@ switch ($action) {
                     $fp = $uploads_dir_sf . '/' . $uf;
                     if (!is_file($fp) || filesize($fp) < 2000) continue;
                     $web_u = '/assets/uploads/' . $uf;
-                    if ($web_u === $clean_old_sf) continue;
+                    if (isset($used_urls_sf[$web_u])) continue;
                     $low_u = strtolower($uf);
                     $sc = 0;
                     foreach ($title_words_sf as $w) {
@@ -8114,21 +8245,34 @@ switch ($action) {
             http_response_code(422);
             echo json_encode([
                 "success" => false,
-                "message" => "No verified matching photo could be fetched automatically for \"{$rec_title}\". Please upload a photo manually."
+                "serverSavedVerified" => false,
+                "message" => "No verified unused matching photo could be fetched automatically for \"{$rec_title}\". Please upload a photo manually."
             ]);
             break;
         }
 
         $now_ms_sf = (int)round(microtime(true) * 1000);
         $now_iso_sf = gmdate('Y-m-d\TH:i:s\Z');
+        $final_base_sf = th_strip_url_base($final_url);
+        $replaced_sf = $is_revert
+            ? (is_array($existing_ov['replacedOldUrls'] ?? null) ? $existing_ov['replacedOldUrls'] : [])
+            : array_values(array_filter(
+                th_merge_replaced_old_urls($existing_ov['replacedOldUrls'] ?? [], [$old_url, $existing_ov['primary'] ?? null, $existing_ov['previousPrimary'] ?? null]),
+                function($u) use ($final_base_sf) { return th_strip_url_base($u) !== $final_base_sf; }
+            ));
+
         $ov_state_sf['overrides'][$rec_id] = [
             'primary' => $final_url,
-            'previousPrimary' => ($old_url !== '' && $old_url !== '(empty)' && $old_url !== $final_url) ? $old_url : ($existing_ov['previousPrimary'] ?? null),
+            'previousPrimary' => ($old_url !== '' && $old_url !== '(empty)' && th_strip_url_base($old_url) !== $final_base_sf) ? $old_url : ($existing_ov['previousPrimary'] ?? null),
             'gallery' => [$final_url],
             'format' => strtoupper(pathinfo($final_url, PATHINFO_EXTENSION) ?: 'WEBP'),
             'updatedAt' => $now_iso_sf,
             'imageUpdatedAt' => $now_ms_sf,
-            'updatedBy' => $is_revert ? 'auto-site-upload' : ($custom_url !== '' ? 'admin-manual' : 'catalog-image-auditor')
+            'updatedBy' => $is_revert ? 'auto-site-upload' : ($custom_url !== '' ? 'admin-manual' : 'catalog-image-auditor'),
+            'locked' => !$is_revert,
+            'serverVerified' => !$is_revert,
+            'verifiedAt' => $now_iso_sf,
+            'replacedOldUrls' => $replaced_sf
         ];
         if (!$is_revert) {
             $ov_state_sf['productActivityTimestamps'][$rec_id] = $now_ms_sf;
@@ -8136,12 +8280,35 @@ switch ($action) {
 
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         header("Pragma: no-cache");
-        th_save_image_state_atomic($uploads_dir_sf, $ov_state_sf);
+        $save_ok_sf = th_save_image_state_atomic($uploads_dir_sf, $ov_state_sf);
         th_sync_image_override_to_db_and_cms($rec_id, $final_url, [$final_url], $pdo, $db_connected);
+
+        // Disk Read-Back Guarantee on PHP server
+        $disk_verified_sf = $save_ok_sf && th_verify_override_on_disk($uploads_dir_sf, $rec_id, $final_url);
+        if (!$is_revert && !$disk_verified_sf) {
+            $save_ok_sf = th_save_image_state_atomic($uploads_dir_sf, $ov_state_sf);
+            $disk_verified_sf = $save_ok_sf && th_verify_override_on_disk($uploads_dir_sf, $rec_id, $final_url);
+        }
+        if (!$is_revert && !$disk_verified_sf) {
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "serverSavedVerified" => false,
+                "diskVerified" => false,
+                "message" => "Server disk verification failed while saving {$rec_id}. Check uploads directory write permissions."
+            ]);
+            break;
+        }
 
         echo json_encode([
             "status" => $is_revert ? "FLAGGED" : "FIXED",
             "success" => true,
+            "serverSavedVerified" => $disk_verified_sf,
+            "diskVerified" => $disk_verified_sf,
+            "locked" => !$is_revert,
+            "verifiedAt" => $now_iso_sf,
+            "replacedOldUrls" => $replaced_sf,
+            "liveSynced" => true,
             "record_id" => $rec_id,
             "record_type" => $rec_type,
             "title" => $rec_title,
@@ -8153,6 +8320,80 @@ switch ($action) {
             "is_fallback_card" => false,
             "updatedAt" => $now_iso_sf,
             "imageUpdatedAt" => !$is_revert ? $now_ms_sf : null
+        ]);
+        break;
+
+    case 'verify_and_lock_catalog_images':
+        $uploads_dir_vl = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_vl) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_vl = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_vl)) @mkdir($uploads_dir_vl, 0775, true);
+        $ov_state_vl = th_load_merged_image_state($uploads_dir_vl);
+        $req_ids_vl = $input['record_ids'] ?? $input['recordIds'] ?? [];
+        $target_ids_vl = (is_array($req_ids_vl) && count($req_ids_vl) > 0)
+            ? array_values(array_filter(array_map('strval', $req_ids_vl)))
+            : array_keys($ov_state_vl['overrides'] ?? []);
+
+        $now_ms_vl = (int)round(microtime(true) * 1000);
+        $now_iso_vl = gmdate('Y-m-d\TH:i:s\Z');
+        $locked_vl = 0;
+        $verified_vl = 0;
+        $missing_vl = 0;
+        $blocked_vl = 0;
+        $checked_ids_vl = [];
+
+        foreach ($target_ids_vl as $tid) {
+            $entry = $ov_state_vl['overrides'][$tid] ?? null;
+            if (!is_array($entry) || empty($entry['primary'])) continue;
+            if (empty($req_ids_vl) && !th_is_protected_override($entry)) continue;
+            $base_u = th_strip_url_base($entry['primary']);
+            if ($base_u === '') continue;
+            if (strpos($base_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_vl . '/' . basename($base_u);
+                if (!file_exists($fp) || filesize($fp) <= 100) {
+                    $missing_vl++;
+                    continue;
+                }
+            }
+            $prev_p = $entry['previousPrimary'] ?? null;
+            $rep_old = array_values(array_filter(
+                th_merge_replaced_old_urls($entry['replacedOldUrls'] ?? [], [$prev_p]),
+                function($u) use ($base_u) { return th_strip_url_base($u) !== $base_u; }
+            ));
+            $blocked_vl += count($rep_old);
+            $entry['primary'] = $base_u;
+            $entry['gallery'] = [$base_u];
+            $entry['locked'] = true;
+            $entry['serverVerified'] = true;
+            $entry['verifiedAt'] = $now_iso_vl;
+            $entry['replacedOldUrls'] = $rep_old;
+            if (empty($entry['updatedAt'])) $entry['updatedAt'] = $now_iso_vl;
+            $entry['imageUpdatedAt'] = max(th_entry_timestamp_ms($entry), $now_ms_vl);
+            $ov_state_vl['overrides'][$tid] = $entry;
+            $checked_ids_vl[$tid] = $base_u;
+            $locked_vl++;
+        }
+
+        $saved_vl = th_save_image_state_atomic($uploads_dir_vl, $ov_state_vl);
+        foreach ($checked_ids_vl as $cid => $exp_u) {
+            if (th_verify_override_on_disk($uploads_dir_vl, $cid, $exp_u)) {
+                $verified_vl++;
+            }
+        }
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        echo json_encode([
+            "success" => $saved_vl && ($locked_vl === 0 || $verified_vl === $locked_vl),
+            "serverSavedVerified" => $saved_vl && ($locked_vl === 0 || $verified_vl === $locked_vl),
+            "verifiedCount" => $verified_vl,
+            "lockedCount" => $locked_vl,
+            "missingOnDiskCount" => $missing_vl,
+            "blockedOldUrlsCount" => $blocked_vl,
+            "totalOverridesOnDisk" => count($ov_state_vl['overrides'] ?? []),
+            "liveSynced" => true,
+            "verifiedAt" => $now_iso_vl,
+            "diskFiles" => ['product-image-overrides.json', 'productImageSystemState.json']
         ]);
         break;
 

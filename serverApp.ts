@@ -13909,6 +13909,10 @@ interface ProductImageOverrideEntry {
   updatedAt: string;
   imageUpdatedAt?: number;
   updatedBy?: string;
+  locked?: boolean;
+  serverVerified?: boolean;
+  verifiedAt?: string;
+  replacedOldUrls?: string[];
 }
 
 interface ProductImageSystemState {
@@ -14032,9 +14036,46 @@ function isManualOverrideEntry(entry?: ProductImageOverrideEntry | null): boolea
 
 function isAuditVerifiedOverrideEntry(entry?: ProductImageOverrideEntry | null): boolean {
   if (!entry || !entry.primary) return false;
+  if (entry.locked === true || entry.serverVerified === true) return true;
   if (isManualOverrideEntry(entry)) return true;
   const updater = String(entry.updatedBy || '').toLowerCase();
   return updater === 'catalog-image-auditor' || updater === 'system-repair';
+}
+
+function stripUrlQueryBase(url?: string | null): string {
+  const raw = String(url || '').trim();
+  if (!raw || raw === '(empty)' || raw === '(pending audit fix)') return '';
+  return raw.split('?')[0].split('#')[0];
+}
+
+function mergeReplacedOldUrls(
+  existingList?: string[],
+  ...candidates: Array<string | undefined | null>
+): string[] {
+  const out = new Set<string>();
+  if (Array.isArray(existingList)) {
+    for (const u of existingList) {
+      const b = stripUrlQueryBase(u);
+      if (b) out.add(b);
+    }
+  }
+  for (const c of candidates) {
+    const b = stripUrlQueryBase(c);
+    if (b) out.add(b);
+  }
+  return Array.from(out).slice(-20);
+}
+
+function isUrlBlockedForOverride(
+  existing: ProductImageOverrideEntry | undefined | null,
+  candidateUrl?: string | null
+): boolean {
+  if (!existing || !Array.isArray(existing.replacedOldUrls) || existing.replacedOldUrls.length === 0) {
+    return false;
+  }
+  const candBase = stripUrlQueryBase(candidateUrl);
+  if (!candBase) return false;
+  return existing.replacedOldUrls.some(u => stripUrlQueryBase(u) === candBase);
 }
 
 function isSafeExternalImageUrl(rawUrl: string): boolean {
@@ -14299,7 +14340,9 @@ function loadServerProductImageState(
         } else {
           const existingIsManual = isManualOverrideEntry(existing);
           const existingIsAuditVerified = isAuditVerifiedOverrideEntry(existing);
+          const existingIsLocked = Boolean(existing.locked || existing.serverVerified);
           const incomingIsAuditVerified = isAuditVerifiedOverrideEntry(entry);
+          const incomingIsLocked = Boolean(entry.locked || entry.serverVerified);
           const existingTime = Math.max(
             parseServerTimestampMs(existing.imageUpdatedAt),
             parseServerTimestampMs(existing.updatedAt)
@@ -14309,20 +14352,33 @@ function loadServerProductImageState(
           if (existingTime > 0 && incomingTime > 0 && existingTime > incomingTime) {
             continue;
           }
+          // Locked / server-verified entries cannot be reverted to a previously replaced old URL or unlocked stale entry
+          if (existingIsLocked && !incomingIsLocked && incomingTime <= existingTime) {
+            continue;
+          }
+          if (existingIsLocked && isUrlBlockedForOverride(existing, cleanPrimary) && incomingTime <= existingTime) {
+            continue;
+          }
           if (existingIsManual && !incomingIsAuditVerified && existingTime >= incomingTime) {
             continue;
           }
           if (
+            (incomingIsLocked && !existingIsLocked && incomingTime >= existingTime) ||
             (incomingIsManual && !existingIsManual && incomingTime >= existingTime) ||
             (incomingIsAuditVerified && !existingIsAuditVerified && incomingTime >= existingTime) ||
             incomingTime > existingTime ||
-            (incomingTime === existingTime && (incomingIsManual || (incomingIsAuditVerified && !existingIsManual)))
+            (incomingTime === existingTime && (incomingIsLocked || incomingIsManual || (incomingIsAuditVerified && !existingIsManual)))
           ) {
+            const mergedBlocked = mergeReplacedOldUrls(
+              existing.replacedOldUrls,
+              ...(Array.isArray(entry.replacedOldUrls) ? entry.replacedOldUrls : [])
+            );
             defaultState.overrides[pid] = {
               ...entry,
               ...(typeof entry.imageUpdatedAt === 'number' && entry.imageUpdatedAt > 0
                 ? { imageUpdatedAt: entry.imageUpdatedAt }
                 : {}),
+              ...(mergedBlocked.length > 0 ? { replacedOldUrls: mergedBlocked } : {}),
               primary: cleanPrimary,
               gallery: cleanGallery.length > 0 ? cleanGallery : [cleanPrimary]
             };
@@ -14689,7 +14745,9 @@ function atomicWriteTextFileSync(targetPath: string, content: string) {
 // Fast boot: load JSON overrides immediately and defer the 1,800+ file directory scan until after port 3000 opens
 serverProductImageState = loadServerProductImageState(undefined, { skipDirectoryScan: true });
 
-function saveServerProductImageState() {
+const inFlightCatalogFixReservedUrls = new Set<string>();
+
+function saveServerProductImageState(): boolean {
   ensureUploadsDir();
   try {
     if (Object.keys(serverProductImageState.overrides || {}).length === 0) {
@@ -14699,11 +14757,63 @@ function saveServerProductImageState() {
     // Persist atomically inside public/assets/uploads and public/data (never write into src/ at runtime)
     atomicWriteTextFileSync(IMAGE_OVERRIDES_FILE, serialized);
     atomicWriteTextFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized);
+    // Also mirror into dist/ if a built production bundle directory exists so shared previews stay 100% in sync
+    const distDir = path.join(process.cwd(), 'dist');
+    if (fs.existsSync(distDir)) {
+      try {
+        atomicWriteTextFileSync(path.join(distDir, 'assets', 'uploads', 'product-image-overrides.json'), serialized);
+        atomicWriteTextFileSync(path.join(distDir, 'data', 'productImageSystemState.json'), serialized);
+      } catch {}
+    }
     lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
+    return true;
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
+    return false;
   }
 }
+
+function verifyOverridePersistedOnDisk(
+  recordId: string,
+  expectedPrimaryUrl: string
+): { verified: boolean; diskPrimary: string; checkedFiles: string[]; assetFileExists: boolean } {
+  const cleanId = String(recordId || '').trim();
+  const expectedBase = stripUrlQueryBase(expectedPrimaryUrl);
+  const checkedFiles: string[] = [];
+  if (!cleanId || !expectedBase) {
+    return { verified: false, diskPrimary: '', checkedFiles, assetFileExists: false };
+  }
+
+  let assetFileExists = true;
+  if (expectedBase.startsWith('/assets/uploads/')) {
+    const fp = resolveLocalUploadDiskPath(expectedBase);
+    assetFileExists = Boolean(fp && fs.existsSync(fp) && fs.statSync(fp).size > 100);
+  }
+
+  let matchedCount = 0;
+  let lastDiskPrimary = '';
+  for (const jsonPath of [IMAGE_OVERRIDES_FILE, PUBLIC_DATA_OVERRIDES_FILE]) {
+    try {
+      if (!fs.existsSync(jsonPath)) continue;
+      const parsed = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      const entry = parsed?.overrides?.[cleanId];
+      const diskBase = stripUrlQueryBase(entry?.primary);
+      if (diskBase) lastDiskPrimary = diskBase;
+      if (diskBase === expectedBase) {
+        matchedCount++;
+        checkedFiles.push(path.basename(jsonPath));
+      }
+    } catch {}
+  }
+
+  return {
+    verified: matchedCount >= 2 && assetFileExists,
+    diskPrimary: lastDiskPrimary,
+    checkedFiles,
+    assetFileExists
+  };
+}
+
 if (!fs.existsSync(IMAGE_OVERRIDES_FILE)) {
   saveServerProductImageState();
 }
@@ -15187,9 +15297,15 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
       if (remoteMs <= 0) continue;
 
       // Current-server-wins protection: never let remote server sync overwrite an override
-      // edited on this server or already possessing a current local manual/audit entry.
+      // edited on this server, locked/verified on disk, or pointing back to a replaced old URL.
       if (currentServerImageEdits.has(pid)) continue;
       const localEntry = serverProductImageState.overrides[pid];
+      if (localEntry && (localEntry.locked === true || localEntry.serverVerified === true)) {
+        continue;
+      }
+      if (localEntry && isUrlBlockedForOverride(localEntry, remoteEntry.primary)) {
+        continue;
+      }
       if (localEntry && isAuditVerifiedOverrideEntry(localEntry)) {
         const localMs = Math.max(
           parseServerTimestampMs(localEntry.imageUpdatedAt),
@@ -23896,6 +24012,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   );
   const auditLog: CatalogAuditLogEntry[] = [];
   const snapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
+  const newlyFixedOverridesMap: Record<string, any> = {};
   const catalogRecords: Array<{
     record_id: string;
     record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
@@ -23905,6 +24022,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     previous_image_url?: string;
     updated_at?: string;
     status: 'CLEAN' | 'FLAGGED' | 'FIXED';
+    locked?: boolean;
+    server_verified?: boolean;
   }> = [];
 
   let totalScanned = 0;
@@ -23933,19 +24052,33 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   }) => {
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
+    const prevEntry = serverProductImageState.overrides[args.id];
+    const replacedOldUrls = mergeReplacedOldUrls(
+      prevEntry?.replacedOldUrls,
+      args.oldUrl !== args.newUrl ? args.oldUrl : undefined,
+      prevEntry?.primary !== args.newUrl ? prevEntry?.primary : undefined,
+      prevEntry?.previousPrimary !== args.newUrl ? prevEntry?.previousPrimary : undefined
+    ).filter(u => u !== stripUrlQueryBase(args.newUrl));
     ensureUploadedUrlInMediaLibrary(args.newUrl);
     clearConflictingTitleOverridesForProductId(args.id, args.newUrl);
-    (serverProductImageState.overrides[args.id] as any) = {
-      ...(serverProductImageState.overrides[args.id] || {}),
+    const updatedOverride: ProductImageOverrideEntry = {
+      ...(prevEntry || {}),
       primary: args.newUrl,
-      previousPrimary: args.oldUrl && args.oldUrl !== '(empty)' && args.oldUrl !== args.newUrl ? args.oldUrl : undefined,
+      previousPrimary: args.oldUrl && args.oldUrl !== '(empty)' && args.oldUrl !== args.newUrl ? args.oldUrl : prevEntry?.previousPrimary,
       gallery: [args.newUrl],
       format: (path.extname(args.newUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
       updatedAt: nowIso,
       imageUpdatedAt: nowMs,
-      updatedBy: 'catalog-image-auditor'
+      updatedBy: 'catalog-image-auditor',
+      locked: true,
+      serverVerified: true,
+      verifiedAt: nowIso,
+      replacedOldUrls
     };
+    serverProductImageState.overrides[args.id] = updatedOverride;
+    newlyFixedOverridesMap[args.id] = updatedOverride;
     recordServerProductActivityTimestamp(args.id, nowMs);
+    recordCurrentServerImageEdit(args.id, nowMs);
     if (args.recordType === 'CATEGORY' || args.id.startsWith('cat-')) {
       syncCategoryHeaderUrlIntoSiteContent(args.id, args.title, args.newUrl);
     }
@@ -23978,7 +24111,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
         current_image_url: args.newUrl,
         previous_image_url: args.oldUrl || args.newUrl,
         updated_at: nowIso,
-        status: 'FIXED'
+        status: 'FIXED',
+        locked: true,
+        server_verified: true
       });
     }
   };
@@ -24049,7 +24184,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN',
+          locked: Boolean(ov?.locked || ov?.serverVerified),
+          server_verified: Boolean(ov?.serverVerified || ov?.locked)
         });
       }
       continue;
@@ -24157,7 +24294,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN',
+          locked: Boolean(ov?.locked || ov?.serverVerified),
+          server_verified: Boolean(ov?.serverVerified || ov?.locked)
         });
       }
       continue;
@@ -24266,7 +24405,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN',
+          locked: Boolean(ov?.locked || ov?.serverVerified),
+          server_verified: Boolean(ov?.serverVerified || ov?.locked)
         });
       }
       continue;
@@ -24382,7 +24523,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
           current_image_url: currentImg,
           previous_image_url: (ov as any)?.previousPrimary,
           updated_at: ov?.updatedAt,
-          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN'
+          status: wasExplicitlyFixed ? 'FIXED' : 'CLEAN',
+          locked: Boolean(ov?.locked || ov?.serverVerified),
+          server_verified: Boolean(ov?.serverVerified || ov?.locked)
         });
       }
       continue;
@@ -24529,6 +24672,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     usedUrlsSet.add(ovCheckUrl);
   }
 
+  let diskVerifiedCount = 0;
+  let serverSavedVerified = false;
+  let liveSynced = false;
   if (!dryRun) {
     if (snapshotUpdates.length > 0) {
       updateFullCatalogSnapshotRecords(snapshotUpdates);
@@ -24538,6 +24684,29 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       saveRfqMarketStoreToDisk();
     }
     scheduleSaveOverridesState(true);
+    const fixedEntries = Object.entries(newlyFixedOverridesMap);
+    for (const [fid, fEntry] of fixedEntries) {
+      const v = verifyOverridePersistedOnDisk(fid, String(fEntry?.primary || ''));
+      if (v.verified) diskVerifiedCount++;
+    }
+    serverSavedVerified = fixedEntries.length === 0 || diskVerifiedCount === fixedEntries.length;
+    if (fixedEntries.length > 0) {
+      try {
+        const repRes = await replicateImageOverrideToLiveServer({
+          fullOverridesMap: newlyFixedOverridesMap
+        });
+        liveSynced = repRes.synced;
+      } catch {
+        liveSynced = false;
+      }
+    }
+  }
+
+  let lockedCount = 0;
+  for (const ovEntry of Object.values(serverProductImageState?.overrides || {})) {
+    if (ovEntry && (ovEntry.locked === true || ovEntry.serverVerified === true || isAuditVerifiedOverrideEntry(ovEntry))) {
+      lockedCount++;
+    }
   }
 
   const remainingDuplicates = dryRun ? duplicatesDetected : Math.max(0, duplicatesDetected - fixedDuplicatesCount);
@@ -24558,6 +24727,10 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     newly_fixed_count: newlyFixedCount,
     records_fixed: recordsFixed,
     healthy_records: Math.max(0, totalScanned - (remainingDuplicates + remainingMismatched)),
+    server_saved_verified: dryRun ? true : serverSavedVerified,
+    disk_verified_count: diskVerifiedCount,
+    locked_count: lockedCount,
+    live_synced: liveSynced,
     timestamp: new Date().toISOString(),
     audit_log: auditLog,
     ...(includeCatalog ? { catalog_records: catalogRecords } : {})
@@ -24578,7 +24751,10 @@ async function fixSingleCatalogImageRecord(params: {
     throw new Error('record_id is required to fix a catalog image');
   }
 
-  const usedUrlsSet = new Set<string>();
+  // Always reload latest state from disk before resolving so multi-window edits and prior fixes are 100% visible
+  serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
+
+  const usedUrlsSet = new Set<string>(inFlightCatalogFixReservedUrls);
   for (const [key, entry] of Object.entries(serverProductImageState?.overrides || {})) {
     if (key === cleanId) continue;
     const norm = normalizeAuditImageUrl(entry?.primary);
@@ -24630,6 +24806,19 @@ async function fixSingleCatalogImageRecord(params: {
         ''
     );
 
+  // CRITICAL: Exclude current old image, previousPrimary, and every historically replaced old URL so re-fetching NEVER returns an old image again!
+  if (!params.revert) {
+    const excludeBases = mergeReplacedOldUrls(
+      existingOverride?.replacedOldUrls,
+      oldImageUrl,
+      existingOverride?.primary,
+      existingOverride?.previousPrimary
+    );
+    for (const ex of excludeBases) {
+      usedUrlsSet.add(ex);
+    }
+  }
+
   const resolvedTitle = String(
     params.title ||
       matchedListing?.title ||
@@ -24660,203 +24849,251 @@ async function fixSingleCatalogImageRecord(params: {
   let finalImageUrl = '';
   let source = 'admin_manual_selection';
   let queryUsed = '';
+  let reservedUrl = '';
 
-  const requestedCustomUrl = String(params.customImageUrl || '').trim();
-  if (params.revert && requestedCustomUrl && requestedCustomUrl !== '(empty)') {
-    finalImageUrl = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
-    source = 'reverted_previous_image';
-    if (finalImageUrl.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(finalImageUrl)) {
-      delete serverProductImageState.overrides[cleanId];
-    } else {
+  try {
+    const requestedCustomUrl = String(params.customImageUrl || '').trim();
+    if (params.revert && requestedCustomUrl && requestedCustomUrl !== '(empty)') {
+      finalImageUrl = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+      source = 'reverted_previous_image';
+      if (finalImageUrl.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(finalImageUrl)) {
+        delete serverProductImageState.overrides[cleanId];
+      } else {
+        bindAutoSavedImageOverride({
+          localUrl: finalImageUrl,
+          productId: cleanId,
+          productName: resolvedTitle,
+          gallery: [finalImageUrl],
+          flushNow: true,
+          forceOverwrite: true,
+          bindByTitle: false,
+          isManual: false
+        });
+      }
+    } else if (requestedCustomUrl && requestedCustomUrl !== '(empty)') {
+      let resolvedCustom = '';
+      if (requestedCustomUrl.startsWith('data:image/')) {
+        // Materialize inline base64 images directly to disk as real .webp assets so they enter mediaLibrary and never bloat state
+        const parsed = parseBase64DataUrl(requestedCustomUrl, 'image/webp');
+        if (!parsed || !parsed.buffer || parsed.buffer.length === 0) {
+          throw new Error('Invalid uploaded image data. Please select a valid PNG, JPG, or WebP file.');
+        }
+        ensureUploadsDir();
+        const slug =
+          cleanProductSearchSubject(resolvedTitle || cleanId)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 36) || 'manual-upload';
+        const outFileName = `manual-${slug}-${Date.now()}.webp`;
+        const outFilePath = path.join(UPLOADS_DIR, outFileName);
+        let outBuf: Buffer;
+        try {
+          outBuf = await sharp(parsed.buffer, { failOn: 'none' }).rotate().webp({ quality: 90 }).toBuffer();
+        } catch {
+          outBuf = parsed.buffer;
+        }
+        fs.writeFileSync(outFilePath, outBuf);
+        void prewarmSingleImageFile(outFilePath);
+        resolvedCustom = `/assets/uploads/${outFileName}`;
+        ensureUploadedUrlInMediaLibrary(resolvedCustom, outBuf.length);
+      } else {
+        resolvedCustom = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
+        if (resolvedCustom.includes('..') || /^(javascript|vbscript):/i.test(resolvedCustom)) {
+          throw new Error('Invalid image URL provided.');
+        }
+        if (/^https?:\/\//i.test(resolvedCustom)) {
+          if (!isSafeExternalImageUrl(resolvedCustom)) {
+            throw new Error('External image URL must use a public HTTP(S) host.');
+          }
+          const mirrored = await mirrorExternalProductImageToLocalUploads({
+            externalUrl: resolvedCustom,
+            productId: cleanId,
+            productName: resolvedTitle,
+            category: resolvedCategory,
+            flushNow: true,
+            isManual: true
+          });
+          if (mirrored) {
+            resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
+          }
+        }
+      }
+
+      finalImageUrl = resolvedCustom;
+      ensureUploadedUrlInMediaLibrary(finalImageUrl);
       bindAutoSavedImageOverride({
         localUrl: finalImageUrl,
+        rawExternalUrl: /^https?:\/\//i.test(requestedCustomUrl) ? requestedCustomUrl : undefined,
         productId: cleanId,
         productName: resolvedTitle,
         gallery: [finalImageUrl],
         flushNow: true,
         forceOverwrite: true,
         bindByTitle: false,
-        isManual: false
+        isManual: true
       });
-    }
-  } else if (requestedCustomUrl && requestedCustomUrl !== '(empty)') {
-    let resolvedCustom = '';
-    if (requestedCustomUrl.startsWith('data:image/')) {
-      // Materialize inline base64 images directly to disk as real .webp assets so they enter mediaLibrary and never bloat state
-      const parsed = parseBase64DataUrl(requestedCustomUrl, 'image/webp');
-      if (!parsed || !parsed.buffer || parsed.buffer.length === 0) {
-        throw new Error('Invalid uploaded image data. Please select a valid PNG, JPG, or WebP file.');
-      }
-      ensureUploadsDir();
-      const slug =
-        cleanProductSearchSubject(resolvedTitle || cleanId)
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 36) || 'manual-upload';
-      const outFileName = `manual-${slug}-${Date.now()}.webp`;
-      const outFilePath = path.join(UPLOADS_DIR, outFileName);
-      let outBuf: Buffer;
-      try {
-        outBuf = await sharp(parsed.buffer, { failOn: 'none' }).rotate().webp({ quality: 90 }).toBuffer();
-      } catch {
-        outBuf = parsed.buffer;
-      }
-      fs.writeFileSync(outFilePath, outBuf);
-      void prewarmSingleImageFile(outFilePath);
-      resolvedCustom = `/assets/uploads/${outFileName}`;
-      ensureUploadedUrlInMediaLibrary(resolvedCustom, outBuf.length);
     } else {
-      resolvedCustom = normalizeServerAssetUrl(requestedCustomUrl).split('?')[0];
-      if (resolvedCustom.includes('..') || /^(javascript|vbscript):/i.test(resolvedCustom)) {
-        throw new Error('Invalid image URL provided.');
-      }
-      if (/^https?:\/\//i.test(resolvedCustom)) {
-        if (!isSafeExternalImageUrl(resolvedCustom)) {
-          throw new Error('External image URL must use a public HTTP(S) host.');
-        }
-        const mirrored = await mirrorExternalProductImageToLocalUploads({
-          externalUrl: resolvedCustom,
-          productId: cleanId,
-          productName: resolvedTitle,
-          category: resolvedCategory,
-          flushNow: true,
-          isManual: true
-        });
-        if (mirrored) {
-          resolvedCustom = normalizeServerAssetUrl(mirrored).split('?')[0];
-        }
+      const resolved = await resolveUniqueVerifiedCatalogImage({
+        recordId: cleanId,
+        recordType: resolvedType,
+        title: resolvedTitle,
+        category: resolvedCategory,
+        specifications: String(matchedListing?.description || matchedProduct?.description || matchedRfq?.specifications || ''),
+        usedUrls: usedUrlsSet,
+        allowLiveGeminiNetwork: true
+      });
+      finalImageUrl = resolved.newImageUrl;
+      source = resolved.source;
+      queryUsed = resolved.queryUsed;
+    }
+
+    if (finalImageUrl) {
+      reservedUrl = stripUrlQueryBase(finalImageUrl);
+      if (reservedUrl) {
+        inFlightCatalogFixReservedUrls.add(reservedUrl);
       }
     }
 
-    finalImageUrl = resolvedCustom;
-    ensureUploadedUrlInMediaLibrary(finalImageUrl);
-    bindAutoSavedImageOverride({
-      localUrl: finalImageUrl,
-      rawExternalUrl: /^https?:\/\//i.test(requestedCustomUrl) ? requestedCustomUrl : undefined,
-      productId: cleanId,
-      productName: resolvedTitle,
-      gallery: [finalImageUrl],
-      flushNow: true,
-      forceOverwrite: true,
-      bindByTitle: false,
-      isManual: true
-    });
-  } else {
-    const resolved = await resolveUniqueVerifiedCatalogImage({
-      recordId: cleanId,
-      recordType: resolvedType,
+    const activityMs = Date.now();
+    const nowIso = new Date(activityMs).toISOString();
+
+    if (finalImageUrl) {
+      ensureUploadedUrlInMediaLibrary(finalImageUrl);
+      clearConflictingTitleOverridesForProductId(cleanId, finalImageUrl);
+      updateFullCatalogSnapshotRecords([{ id: cleanId, imageUrl: finalImageUrl, gallery: [finalImageUrl] }]);
+      if (resolvedType === 'CATEGORY' || cleanId.startsWith('cat-')) {
+        syncCategoryHeaderUrlIntoSiteContent(cleanId, resolvedTitle, finalImageUrl);
+      }
+    }
+
+    let updatedReplacedOldUrls: string[] = [];
+    if (finalImageUrl && !params.revert) {
+      const resolvedUpdater = requestedCustomUrl ? 'admin-manual' : 'catalog-image-auditor';
+      const finalBase = stripUrlQueryBase(finalImageUrl);
+      updatedReplacedOldUrls = mergeReplacedOldUrls(
+        existingOverride?.replacedOldUrls,
+        stripUrlQueryBase(oldImageUrl) !== finalBase ? oldImageUrl : undefined,
+        stripUrlQueryBase(existingOverride?.primary) !== finalBase ? existingOverride?.primary : undefined,
+        stripUrlQueryBase(existingOverride?.previousPrimary) !== finalBase ? existingOverride?.previousPrimary : undefined
+      ).filter(u => u !== finalBase);
+
+      (serverProductImageState.overrides[cleanId] as any) = {
+        ...(serverProductImageState.overrides[cleanId] || {}),
+        primary: finalImageUrl,
+        gallery: [finalImageUrl],
+        format: (path.extname(finalImageUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
+        previousPrimary:
+          oldImageUrl && stripUrlQueryBase(oldImageUrl) !== finalBase
+            ? oldImageUrl
+            : existingOverride?.previousPrimary,
+        updatedAt: nowIso,
+        imageUpdatedAt: activityMs,
+        updatedBy: resolvedUpdater,
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        replacedOldUrls: updatedReplacedOldUrls
+      };
+    } else if (finalImageUrl && params.revert && serverProductImageState.overrides[cleanId]) {
+      (serverProductImageState.overrides[cleanId] as any) = {
+        ...serverProductImageState.overrides[cleanId],
+        primary: finalImageUrl,
+        gallery: [finalImageUrl],
+        updatedAt: nowIso,
+        updatedBy: 'auto-site-upload',
+        locked: false,
+        serverVerified: false
+      };
+    }
+
+    if (!params.revert && finalImageUrl) {
+      recordServerProductActivityTimestamp(cleanId, activityMs);
+      recordCurrentServerImageEdit(cleanId, activityMs);
+    }
+
+    if (matchedListing && finalImageUrl) {
+      matchedListing.image_url = finalImageUrl;
+      matchedListing.images = [finalImageUrl];
+      if (!params.revert) {
+        matchedListing.updatedAt = activityMs;
+        matchedListing.imageUpdatedAt = activityMs;
+      }
+    }
+    if (matchedProduct && finalImageUrl) {
+      matchedProduct.image = finalImageUrl;
+      matchedProduct.image_url = finalImageUrl;
+      matchedProduct.images = [finalImageUrl];
+      if (!params.revert) {
+        matchedProduct.updatedAt = activityMs;
+        matchedProduct.imageUpdatedAt = activityMs;
+      }
+    }
+    if (matchedRfq && finalImageUrl) {
+      matchedRfq.image = finalImageUrl;
+      matchedRfq.image_url = finalImageUrl;
+      matchedRfq.images = [finalImageUrl];
+      if (!params.revert) {
+        matchedRfq.updatedAt = activityMs;
+        matchedRfq.imageUpdatedAt = activityMs;
+      }
+    }
+
+    saveServerProductsToDisk();
+    saveRfqMarketStoreToDisk();
+    scheduleSaveOverridesState(true);
+
+    // Synchronous Disk Read-Back Guarantee: verify the exact override is physically written on disk before returning success!
+    let diskCheck = finalImageUrl
+      ? verifyOverridePersistedOnDisk(cleanId, finalImageUrl)
+      : { verified: false, diskPrimary: '', checkedFiles: [], assetFileExists: false };
+    if (finalImageUrl && !params.revert && !diskCheck.verified) {
+      saveServerProductImageState();
+      diskCheck = verifyOverridePersistedOnDisk(cleanId, finalImageUrl);
+    }
+    if (finalImageUrl && !params.revert && !diskCheck.verified) {
+      throw new Error(
+        `Server disk verification failed for ${cleanId}: override was not confirmed on disk (${diskCheck.checkedFiles.join(', ') || 'none'}).`
+      );
+    }
+
+    let liveSynced = false;
+    if (finalImageUrl) {
+      const syncRes = await replicateImageOverrideToLiveServer({
+        productId: cleanId,
+        primaryUrl: finalImageUrl,
+        galleryUrls: [finalImageUrl],
+        format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
+      });
+      liveSynced = syncRes.synced;
+    }
+
+    return {
+      success: true,
+      serverSavedVerified: !params.revert ? diskCheck.verified : true,
+      diskVerified: diskCheck.verified,
+      locked: !params.revert,
+      verifiedAt: nowIso,
+      replacedOldUrls: updatedReplacedOldUrls,
+      liveSynced,
+      record_id: cleanId,
+      record_type: resolvedType,
       title: resolvedTitle,
       category: resolvedCategory,
-      specifications: String(matchedListing?.description || matchedProduct?.description || matchedRfq?.specifications || ''),
-      usedUrls: usedUrlsSet,
-      allowLiveGeminiNetwork: true
-    });
-    finalImageUrl = resolved.newImageUrl;
-    source = resolved.source;
-    queryUsed = resolved.queryUsed;
-  }
-
-  const activityMs = Date.now();
-  const nowIso = new Date(activityMs).toISOString();
-
-  if (finalImageUrl) {
-    ensureUploadedUrlInMediaLibrary(finalImageUrl);
-    clearConflictingTitleOverridesForProductId(cleanId, finalImageUrl);
-    updateFullCatalogSnapshotRecords([{ id: cleanId, imageUrl: finalImageUrl, gallery: [finalImageUrl] }]);
-    if (resolvedType === 'CATEGORY' || cleanId.startsWith('cat-')) {
-      syncCategoryHeaderUrlIntoSiteContent(cleanId, resolvedTitle, finalImageUrl);
-    }
-  }
-
-  if (finalImageUrl && !params.revert) {
-    const resolvedUpdater = requestedCustomUrl ? 'admin-manual' : 'catalog-image-auditor';
-    (serverProductImageState.overrides[cleanId] as any) = {
-      ...(serverProductImageState.overrides[cleanId] || {}),
-      primary: finalImageUrl,
-      gallery: [finalImageUrl],
-      format: (path.extname(finalImageUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
-      previousPrimary:
-        oldImageUrl && oldImageUrl !== finalImageUrl
-          ? oldImageUrl
-          : existingOverride?.previousPrimary,
+      old_image_url: oldImageUrl || '(empty)',
+      new_image_url: finalImageUrl,
+      query_used: queryUsed,
+      source,
+      is_fallback_card: source === 'gemini_grounded_unique_webp',
+      status: params.revert ? ('FLAGGED' as const) : ('FIXED' as const),
       updatedAt: nowIso,
-      imageUpdatedAt: activityMs,
-      updatedBy: resolvedUpdater
+      imageUpdatedAt: !params.revert ? activityMs : undefined
     };
-  } else if (finalImageUrl && params.revert && serverProductImageState.overrides[cleanId]) {
-    (serverProductImageState.overrides[cleanId] as any) = {
-      ...serverProductImageState.overrides[cleanId],
-      primary: finalImageUrl,
-      gallery: [finalImageUrl],
-      updatedAt: nowIso,
-      updatedBy: 'auto-site-upload'
-    };
-  }
-
-  if (!params.revert && finalImageUrl) {
-    recordServerProductActivityTimestamp(cleanId, activityMs);
-    recordCurrentServerImageEdit(cleanId, activityMs);
-  }
-
-  if (matchedListing && finalImageUrl) {
-    matchedListing.image_url = finalImageUrl;
-    matchedListing.images = [finalImageUrl];
-    if (!params.revert) {
-      matchedListing.updatedAt = activityMs;
-      matchedListing.imageUpdatedAt = activityMs;
+  } finally {
+    if (reservedUrl) {
+      inFlightCatalogFixReservedUrls.delete(reservedUrl);
     }
   }
-  if (matchedProduct && finalImageUrl) {
-    matchedProduct.image = finalImageUrl;
-    matchedProduct.image_url = finalImageUrl;
-    matchedProduct.images = [finalImageUrl];
-    if (!params.revert) {
-      matchedProduct.updatedAt = activityMs;
-      matchedProduct.imageUpdatedAt = activityMs;
-    }
-  }
-  if (matchedRfq && finalImageUrl) {
-    matchedRfq.image = finalImageUrl;
-    matchedRfq.image_url = finalImageUrl;
-    matchedRfq.images = [finalImageUrl];
-    if (!params.revert) {
-      matchedRfq.updatedAt = activityMs;
-      matchedRfq.imageUpdatedAt = activityMs;
-    }
-  }
-
-  saveServerProductsToDisk();
-  saveRfqMarketStoreToDisk();
-  scheduleSaveOverridesState(true);
-
-  let liveSynced = false;
-  if (finalImageUrl) {
-    const syncRes = await replicateImageOverrideToLiveServer({
-      productId: cleanId,
-      primaryUrl: finalImageUrl,
-      galleryUrls: [finalImageUrl],
-      format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
-    });
-    liveSynced = syncRes.synced;
-  }
-
-  return {
-    success: true,
-    liveSynced,
-    record_id: cleanId,
-    record_type: resolvedType,
-    title: resolvedTitle,
-    category: resolvedCategory,
-    old_image_url: oldImageUrl || '(empty)',
-    new_image_url: finalImageUrl,
-    query_used: queryUsed,
-    source,
-    is_fallback_card: source === 'gemini_grounded_unique_webp',
-    status: params.revert ? ('FLAGGED' as const) : ('FIXED' as const),
-    updatedAt: nowIso,
-    imageUpdatedAt: !params.revert ? activityMs : undefined
-  };
 }
 
 app.get('/api/v1/admin/audit-and-fix-catalog-images', async (req, res) => {
@@ -24916,7 +25153,125 @@ app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
   } catch (err: any) {
     return res.status(400).json({
       success: false,
+      serverSavedVerified: false,
       message: err?.message || 'Failed to fix catalog image'
+    });
+  }
+});
+
+// Dedicated Server Save Vault & Permanent Lock endpoint:
+// Verifies every saved override physically on disk, permanently locks them, blocks all replaced old URLs, and pushes to live server.
+app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
+    const requestedIds: string[] = Array.isArray(req.body?.record_ids || req.body?.recordIds)
+      ? (req.body.record_ids || req.body.recordIds).map((id: any) => String(id || '').trim()).filter(Boolean)
+      : [];
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    const allOverrides = serverProductImageState.overrides || {};
+    const candidateIds = requestedIds.length > 0 ? requestedIds : Object.keys(allOverrides);
+
+    let lockedCount = 0;
+    let verifiedCount = 0;
+    let missingOnDiskCount = 0;
+    let blockedOldUrlsCount = 0;
+    const snapshotBatch: Array<{ id: string; imageUrl: string; gallery: string[] }> = [];
+    const livePushMap: Record<string, any> = {};
+
+    for (const id of candidateIds) {
+      const entry = allOverrides[id];
+      if (!entry || !entry.primary) continue;
+      if (requestedIds.length === 0 && !isAuditVerifiedOverrideEntry(entry)) continue;
+      const cleanBase = stripUrlQueryBase(entry.primary);
+      if (!cleanBase || isGenericOrPlaceholderServerUrl(cleanBase)) continue;
+      if (cleanBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanBase)) {
+        missingOnDiskCount++;
+        continue;
+      }
+
+      const replacedOldUrls = mergeReplacedOldUrls(
+        entry.replacedOldUrls,
+        stripUrlQueryBase(entry.previousPrimary) !== cleanBase ? entry.previousPrimary : undefined
+      ).filter(u => u !== cleanBase);
+      blockedOldUrlsCount += replacedOldUrls.length;
+
+      const updatedEntry: ProductImageOverrideEntry = {
+        ...entry,
+        primary: cleanBase,
+        gallery: [cleanBase],
+        updatedAt: entry.updatedAt || nowIso,
+        imageUpdatedAt: Math.max(parseServerTimestampMs(entry.imageUpdatedAt), parseServerTimestampMs(entry.updatedAt), nowMs),
+        updatedBy: isManualOverrideEntry(entry) ? entry.updatedBy : 'catalog-image-auditor',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        replacedOldUrls
+      };
+      allOverrides[id] = updatedEntry;
+      recordCurrentServerImageEdit(id, nowMs);
+      clearConflictingTitleOverridesForProductId(id, cleanBase);
+      snapshotBatch.push({ id, imageUrl: cleanBase, gallery: [cleanBase] });
+      livePushMap[id] = updatedEntry;
+      lockedCount++;
+    }
+
+    if (snapshotBatch.length > 0) {
+      updateFullCatalogSnapshotRecords(snapshotBatch);
+    }
+    const savedOk = saveServerProductImageState();
+    saveServerProductsToDisk();
+    saveRfqMarketStoreToDisk();
+
+    // Synchronous disk read-back audit across both JSON stores
+    let diskReadBackOverrides: Record<string, any> = {};
+    try {
+      const diskPrimary = JSON.parse(fs.readFileSync(IMAGE_OVERRIDES_FILE, 'utf-8'));
+      const diskMirror = JSON.parse(fs.readFileSync(PUBLIC_DATA_OVERRIDES_FILE, 'utf-8'));
+      const primaryMap = diskPrimary?.overrides || {};
+      const mirrorMap = diskMirror?.overrides || {};
+      diskReadBackOverrides = primaryMap;
+      for (const id of Object.keys(livePushMap)) {
+        const expectedBase = stripUrlQueryBase(livePushMap[id]?.primary);
+        const pBase = stripUrlQueryBase(primaryMap[id]?.primary);
+        const mBase = stripUrlQueryBase(mirrorMap[id]?.primary);
+        if (expectedBase && pBase === expectedBase && mBase === expectedBase && primaryMap[id]?.locked === true) {
+          verifiedCount++;
+        }
+      }
+    } catch {}
+
+    let liveSynced = false;
+    let liveSyncError: string | undefined;
+    if (LIVE_UPSTREAM_PROXY_ENABLED && Object.keys(livePushMap).length > 0) {
+      try {
+        const rep = await replicateImageOverrideToLiveServer({ fullOverridesMap: livePushMap });
+        liveSynced = rep.synced;
+        liveSyncError = rep.error;
+      } catch (err: any) {
+        liveSyncError = err?.message || 'live_sync_error';
+      }
+    }
+
+    return res.json({
+      success: savedOk && (lockedCount === 0 || verifiedCount === lockedCount),
+      serverSavedVerified: savedOk && (lockedCount === 0 || verifiedCount === lockedCount),
+      verifiedCount,
+      lockedCount,
+      missingOnDiskCount,
+      blockedOldUrlsCount,
+      totalOverridesOnDisk: Object.keys(diskReadBackOverrides).length,
+      liveSynced,
+      liveSyncError,
+      verifiedAt: nowIso,
+      diskFiles: ['product-image-overrides.json', 'productImageSystemState.json']
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      serverSavedVerified: false,
+      message: err?.message || 'Failed to verify and lock catalog images on server'
     });
   }
 });

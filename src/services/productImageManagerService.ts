@@ -43,6 +43,10 @@ export interface ProductImageOverrideEntry {
   updatedAt: string;
   imageUpdatedAt?: number;
   updatedBy?: string;
+  locked?: boolean;
+  serverVerified?: boolean;
+  verifiedAt?: string;
+  replacedOldUrls?: string[];
 }
 
 export interface MediaLibraryItem {
@@ -513,6 +517,8 @@ class ProductImageManagerService {
   private isProtectedManualOrAuditEntry(entry?: ProductImageOverrideEntry | null): boolean {
     if (!entry?.primary) return false;
     return (
+      entry.locked === true ||
+      entry.serverVerified === true ||
       entry.updatedBy === 'admin-manual' ||
       entry.updatedBy === 'user-upload' ||
       entry.updatedBy === 'catalog-image-auditor'
@@ -1202,6 +1208,10 @@ class ProductImageManagerService {
       updatedAt?: string;
       updatedBy?: string;
       revert?: boolean;
+      locked?: boolean;
+      serverVerified?: boolean;
+      verifiedAt?: string;
+      replacedOldUrls?: string[];
     }>
   ): void {
     if (!Array.isArray(entries) || entries.length === 0) return;
@@ -1233,6 +1243,15 @@ class ProductImageManagerService {
       const existing = this.state.overrides[cleanId];
       const existingGallery = Array.isArray(existing?.gallery) ? existing!.gallery : [];
       const resolvedTs = this.parseTimestampMs(item.updatedAt) || nowMs;
+      const cleanBase = cleanUrl.split('?')[0];
+      const mergedReplaced = Array.from(
+        new Set([
+          ...(Array.isArray(existing?.replacedOldUrls) ? existing!.replacedOldUrls : []),
+          ...(Array.isArray(item.replacedOldUrls) ? item.replacedOldUrls : []),
+          ...(item.previousUrl ? [item.previousUrl.split('?')[0]] : [])
+        ])
+      ).filter(u => u && u !== '(empty)' && u !== cleanBase);
+
       this.state.overrides[cleanId] = {
         primary: cleanUrl,
         ...(item.previousUrl ? { previousPrimary: normalizeProductAssetUrl(item.previousUrl) } : {}),
@@ -1240,7 +1259,11 @@ class ProductImageManagerService {
         format: this.detectFormatFromUrl(cleanUrl),
         updatedAt: item.updatedAt || nowIso,
         imageUpdatedAt: resolvedTs,
-        updatedBy: item.updatedBy || (item.revert ? 'auto-site-upload' : 'catalog-image-auditor')
+        updatedBy: item.updatedBy || (item.revert ? 'auto-site-upload' : 'catalog-image-auditor'),
+        locked: item.revert ? false : (item.locked ?? true),
+        serverVerified: item.revert ? false : (item.serverVerified ?? true),
+        ...(item.verifiedAt ? { verifiedAt: item.verifiedAt } : !item.revert ? { verifiedAt: nowIso } : {}),
+        ...(mergedReplaced.length > 0 ? { replacedOldUrls: mergedReplaced } : {})
       };
       if (!item.revert) {
         this.recordProductActivityTimestamp(cleanId, resolvedTs, false);
