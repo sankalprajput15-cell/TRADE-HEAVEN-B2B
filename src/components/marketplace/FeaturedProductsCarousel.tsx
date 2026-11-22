@@ -3,6 +3,7 @@ import { Product } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { CountryFlag } from '../common/CountryFlag';
+import { getResponsiveGridColsClass, clampGridInt } from '../../utils/gridLayoutUtils';
 import {
   Star,
   Mail,
@@ -14,7 +15,9 @@ import {
   Upload,
   CheckCircle2,
   AlertTriangle,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export interface FeaturedProductsCarouselProps {
@@ -26,6 +29,10 @@ export interface FeaturedProductsCarouselProps {
   onViewAllProducts: () => void;
   formatPrice: (usd: number) => string;
   isLoading?: boolean;
+  layoutMode?: 'GRID' | 'CAROUSEL';
+  desktopColumns?: number;
+  rows?: number;
+  autoSlide?: boolean;
   autoSlideIntervalMs?: number;
   // Admin inline image tools (preserved from homepage)
   isAdminUser?: boolean;
@@ -94,10 +101,11 @@ export function sortTopRatedProducts(list: Product[]): Product[] {
   });
 }
 
-function getVisibleCountForWidth(width: number): number {
-  if (width >= 1024) return 4;
-  if (width >= 768) return 3;
-  if (width >= 640) return 2;
+function getVisibleCountForWidth(width: number, desktopColumns: number): number {
+  const safeDesktop = clampGridInt(desktopColumns, 1, 6, 4);
+  if (width >= 1024) return safeDesktop;
+  if (width >= 768) return Math.min(3, safeDesktop);
+  if (width >= 640) return Math.min(2, safeDesktop);
   return 1;
 }
 
@@ -110,6 +118,10 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   onViewAllProducts,
   formatPrice,
   isLoading = false,
+  layoutMode = 'CAROUSEL',
+  desktopColumns = 4,
+  rows = 1,
+  autoSlide = true,
   autoSlideIntervalMs = 4500,
   isAdminUser = false,
   fixingProductIds = {},
@@ -124,9 +136,16 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   onQuickCardFileChange
 }) => {
   const { t, tText } = useLanguage();
+  const safeDesktopColumns = clampGridInt(desktopColumns, 1, 6, 4);
+  const safeRows = clampGridInt(rows, 1, 10, 1);
+  // Multi-row configurations always render as a responsive Grid; single-row respects GRID vs CAROUSEL
+  const effectiveLayoutMode: 'GRID' | 'CAROUSEL' =
+    layoutMode === 'GRID' || safeRows > 1 ? 'GRID' : 'CAROUSEL';
 
   const [visibleCount, setVisibleCount] = useState<number>(() =>
-    typeof window !== 'undefined' ? getVisibleCountForWidth(window.innerWidth) : 4
+    typeof window !== 'undefined'
+      ? getVisibleCountForWidth(window.innerWidth, safeDesktopColumns)
+      : safeDesktopColumns
   );
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -136,16 +155,16 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   const touchStartXRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
 
-  // Track responsive card count
+  // Track responsive card count in carousel mode
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handleResize = () => {
-      setVisibleCount(getVisibleCountForWidth(window.innerWidth));
+      setVisibleCount(getVisibleCountForWidth(window.innerWidth, safeDesktopColumns));
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [safeDesktopColumns]);
 
   // Respect OS reduced-motion preference
   useEffect(() => {
@@ -160,7 +179,7 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   const totalProducts = products.length;
   const maxIndex = Math.max(0, totalProducts - visibleCount);
   const safeIndex = Math.min(currentIndex, maxIndex);
-  const canSlide = maxIndex > 0;
+  const canSlide = effectiveLayoutMode === 'CAROUSEL' && maxIndex > 0;
 
   const isAnyAdminCardBusy = useMemo(() => {
     if (isAdminInspecting) return true;
@@ -171,6 +190,8 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   }, [fixingProductIds, uploadingProductIds, isAdminInspecting]);
 
   const isAutoPlaying =
+    effectiveLayoutMode === 'CAROUSEL' &&
+    autoSlide &&
     canSlide &&
     !isLoading &&
     !isHovered &&
@@ -181,7 +202,7 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   // Reset slide index when category or product list changes
   useEffect(() => {
     setCurrentIndex(0);
-  }, [selectedCategory, totalProducts]);
+  }, [selectedCategory, totalProducts, effectiveLayoutMode]);
 
   // Clamp slide index on resize
   useEffect(() => {
@@ -208,6 +229,7 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
   }, [isAutoPlaying, maxIndex, autoSlideIntervalMs]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (effectiveLayoutMode !== 'CAROUSEL') return;
     if (e.key === 'ArrowRight') {
       e.preventDefault();
       handleNext();
@@ -237,10 +259,177 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
     touchEndXRef.current = null;
   };
 
+  const renderProductCard = (prod: Product) => {
+    const tiers = Array.isArray(prod.priceTiers) ? prod.priceTiers : [];
+    const firstTier = tiers[0];
+    const lastTier = tiers[tiers.length - 1];
+    const fallbackPrice = Number(prod.fobPriceUsd ?? 0);
+    const minPrice = Number(lastTier?.priceUsd ?? fallbackPrice) || 0;
+    const maxPrice = Number(firstTier?.priceUsd ?? fallbackPrice) || 0;
+    const safeMoq = Number(prod.moq ?? 1) || 1;
+    const imgUrl = prod.images && prod.images[0] ? prod.images[0] : '';
+    const unitLabel = prod.moqUnit || prod.unit || 'Units';
+    const ratingScore = getProductEffectiveRating(prod);
+    const hasVerifiedReviews =
+      typeof prod.reviewCount === 'number' && prod.reviewCount > 0;
+    const isVerifiedExporter =
+      Boolean(prod.supplierIsVerified) ||
+      prod.supplierTier === 'GOLD' ||
+      prod.supplierTier === 'PLATINUM' ||
+      prod.supplierTier === 'VIP';
+    const isCardFixing = Boolean(fixingProductIds[prod.id]);
+    const isCardUploading = Boolean(uploadingProductIds[prod.id]);
+
+    return (
+      <article
+        id={`featured-product-card-${prod.id}`}
+        onClick={() => onSelectProduct(prod)}
+        className="h-full bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group"
+      >
+        <div>
+          {/* Product Photo */}
+          <div className="relative aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
+            <SafeImage
+              src={imgUrl}
+              alt={prod.title}
+              productId={prod.id}
+              productTitle={prod.title}
+              category={prod.category}
+              type="product"
+              isThumbnail={true}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+
+            {isAdminUser && onAdminFix && onAdminInspect && onAdminUploadClick && (
+              <div
+                onClick={e => e.stopPropagation()}
+                data-testid={`admin-card-image-actions-${prod.id}`}
+                className="absolute inset-x-1.5 bottom-1.5 z-20 flex items-center justify-center gap-1 rounded-lg bg-slate-950/85 backdrop-blur-xs p-1 shadow-lg border border-white/15"
+              >
+                <button
+                  type="button"
+                  disabled={isCardFixing || isCardUploading}
+                  onClick={e => onAdminFix(e, prod, imgUrl)}
+                  title="Auto-fix product image"
+                  className="flex-1 px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Wand2 className={`w-3 h-3 shrink-0 ${isCardFixing ? 'animate-spin' : ''}`} />
+                  <span>{isCardFixing ? 'Fixing' : 'Fix'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isCardFixing || isCardUploading}
+                  onClick={e => onAdminInspect(e, prod, imgUrl)}
+                  title="Inspect image, compare candidates, or crop"
+                  className="flex-1 px-2 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Eye className="w-3 h-3 shrink-0" />
+                  <span>Inspect</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isCardFixing || isCardUploading}
+                  onClick={e => onAdminUploadClick(e, prod, imgUrl)}
+                  title="Upload replacement image directly"
+                  className="flex-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Upload className={`w-3 h-3 shrink-0 ${isCardUploading ? 'animate-bounce' : ''}`} />
+                  <span>{isCardUploading ? 'Saving' : 'Upload'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Product Body */}
+          <div className="p-3.5 space-y-2">
+            {/* Unboxed Metadata: Category & Top Rating */}
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="font-semibold text-blue-700 truncate">
+                {tText(prod.category)}
+              </span>
+              <span
+                className="inline-flex items-center gap-1 shrink-0 font-bold text-slate-900 tabular-nums"
+                aria-label={`Rated ${ratingScore.toFixed(1)} out of 5`}
+              >
+                <Star className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
+                <span>{ratingScore.toFixed(1)}</span>
+                {hasVerifiedReviews && (
+                  <span className="text-slate-400 font-medium">
+                    ({prod.reviewCount})
+                  </span>
+                )}
+              </span>
+            </div>
+
+            <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0F294D] transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
+              {prod.title}
+            </h3>
+
+            <div className="pt-1">
+              <div className="text-base font-black text-[#0F294D] tabular-nums">
+                {minPrice > 0 && maxPrice > minPrice
+                  ? `${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`
+                  : maxPrice > 0
+                  ? formatPrice(maxPrice)
+                  : prod.priceRangeUsd || 'Request Quote'}
+                <span className="text-[11px] font-medium text-slate-500"> / {unitLabel}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 tabular-nums truncate">
+                <span>
+                  MOQ:{' '}
+                  <strong className="text-slate-800">
+                    {safeMoq.toLocaleString()} {unitLabel}
+                  </strong>
+                </span>
+                {typeof prod.leadTimeDays === 'number' && prod.leadTimeDays > 0 && (
+                  <>
+                    <span className="text-slate-300" aria-hidden="true">·</span>
+                    <span>{prod.leadTimeDays}d lead</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Supplier Footer */}
+        <div className="px-3.5 py-2.5 bg-[#F8FAFC] border-t border-slate-100 flex items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-1.5 min-w-0 text-[11px] text-slate-600 font-semibold">
+            <CountryFlag country={prod.supplierCountry} size="xs" />
+            <span className="truncate">{prod.supplierName || prod.supplierCountry}</span>
+            {isVerifiedExporter && (
+              <ShieldCheck
+                className="w-3.5 h-3.5 text-emerald-600 shrink-0"
+                aria-label="Verified Supplier"
+              />
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              onContactSupplier(prod);
+            }}
+            className="px-2.5 py-1 rounded-md bg-white hover:bg-[#EA580C] text-[#0F294D] hover:text-white border border-slate-300 hover:border-[#EA580C] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1"
+          >
+            <Mail className="w-3 h-3 shrink-0" />
+            <span>Inquire</span>
+          </button>
+        </div>
+      </article>
+    );
+  };
+
+  const gridColsClass = getResponsiveGridColsClass(safeDesktopColumns, false);
+
   return (
     <section
       id="featured-products-section"
-      aria-roledescription="carousel"
+      aria-roledescription={effectiveLayoutMode === 'CAROUSEL' ? 'carousel' : undefined}
       aria-label="Featured Top-Rated Products"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -270,6 +459,27 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {effectiveLayoutMode === 'CAROUSEL' && canSlide && (
+            <div className="inline-flex items-center gap-1 mr-1">
+              <button
+                type="button"
+                onClick={handlePrev}
+                aria-label="Previous featured products"
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                aria-label="Next featured products"
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {selectedCategory && onClearCategory && (
             <button
               type="button"
@@ -334,10 +544,10 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
         </div>
       )}
 
-      {/* Carousel Viewport */}
+      {/* Viewport: Grid or Carousel */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[0, 1, 2, 3].map(idx => (
+        <div className={`grid ${gridColsClass} gap-4`}>
+          {Array.from({ length: Math.min(8, safeDesktopColumns * safeRows) }).map((_, idx) => (
             <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 h-80 animate-pulse" />
           ))}
         </div>
@@ -347,6 +557,14 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
           <p className="text-xs text-slate-500">
             Reset the active category filter or browse the complete wholesale catalog.
           </p>
+        </div>
+      ) : effectiveLayoutMode === 'GRID' ? (
+        <div className={`grid ${gridColsClass} gap-4`}>
+          {products.map(prod => (
+            <div key={prod.id} className="min-w-0">
+              {renderProductCard(prod)}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-4">
@@ -366,176 +584,15 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
                 transform: `translate3d(-${(safeIndex * 100) / visibleCount}%, 0, 0)`
               }}
             >
-              {products.map(prod => {
-                const tiers = Array.isArray(prod.priceTiers) ? prod.priceTiers : [];
-                const firstTier = tiers[0];
-                const lastTier = tiers[tiers.length - 1];
-                const fallbackPrice = Number(prod.fobPriceUsd ?? 0);
-                const minPrice = Number(lastTier?.priceUsd ?? fallbackPrice) || 0;
-                const maxPrice = Number(firstTier?.priceUsd ?? fallbackPrice) || 0;
-                const safeMoq = Number(prod.moq ?? 1) || 1;
-                const imgUrl = prod.images && prod.images[0] ? prod.images[0] : '';
-                const unitLabel = prod.moqUnit || prod.unit || 'Units';
-                const ratingScore = getProductEffectiveRating(prod);
-                const hasVerifiedReviews =
-                  typeof prod.reviewCount === 'number' && prod.reviewCount > 0;
-                const isVerifiedExporter =
-                  Boolean(prod.supplierIsVerified) ||
-                  prod.supplierTier === 'GOLD' ||
-                  prod.supplierTier === 'PLATINUM' ||
-                  prod.supplierTier === 'VIP';
-                const isCardFixing = Boolean(fixingProductIds[prod.id]);
-                const isCardUploading = Boolean(uploadingProductIds[prod.id]);
-
-                return (
-                  <div
-                    key={prod.id}
-                    className="px-2 shrink-0"
-                    style={{ width: `${100 / visibleCount}%` }}
-                  >
-                    <article
-                      id={`featured-product-card-${prod.id}`}
-                      onClick={() => onSelectProduct(prod)}
-                      className="h-full bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group"
-                    >
-                      <div>
-                        {/* Product Photo */}
-                        <div className="relative aspect-4/3 bg-slate-100 border-b border-slate-100 overflow-hidden">
-                          <SafeImage
-                            src={imgUrl}
-                            alt={prod.title}
-                            productId={prod.id}
-                            productTitle={prod.title}
-                            category={prod.category}
-                            type="product"
-                            isThumbnail={true}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-
-                          {isAdminUser && onAdminFix && onAdminInspect && onAdminUploadClick && (
-                            <div
-                              onClick={e => e.stopPropagation()}
-                              data-testid={`admin-card-image-actions-${prod.id}`}
-                              className="absolute inset-x-1.5 bottom-1.5 z-20 flex items-center justify-center gap-1 rounded-lg bg-slate-950/85 backdrop-blur-xs p-1 shadow-lg border border-white/15"
-                            >
-                              <button
-                                type="button"
-                                disabled={isCardFixing || isCardUploading}
-                                onClick={e => onAdminFix(e, prod, imgUrl)}
-                                title="Auto-fix product image"
-                                className="flex-1 px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <Wand2 className={`w-3 h-3 shrink-0 ${isCardFixing ? 'animate-spin' : ''}`} />
-                                <span>{isCardFixing ? 'Fixing' : 'Fix'}</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={isCardFixing || isCardUploading}
-                                onClick={e => onAdminInspect(e, prod, imgUrl)}
-                                title="Inspect image, compare candidates, or crop"
-                                className="flex-1 px-2 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <Eye className="w-3 h-3 shrink-0" />
-                                <span>Inspect</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={isCardFixing || isCardUploading}
-                                onClick={e => onAdminUploadClick(e, prod, imgUrl)}
-                                title="Upload replacement image directly"
-                                className="flex-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <Upload className={`w-3 h-3 shrink-0 ${isCardUploading ? 'animate-bounce' : ''}`} />
-                                <span>{isCardUploading ? 'Saving' : 'Upload'}</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Product Body */}
-                        <div className="p-3.5 space-y-2">
-                          {/* Unboxed Metadata: Category & Top Rating */}
-                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                            <span className="font-semibold text-blue-700 truncate">
-                              {tText(prod.category)}
-                            </span>
-                            <span
-                              className="inline-flex items-center gap-1 shrink-0 font-bold text-slate-900 tabular-nums"
-                              aria-label={`Rated ${ratingScore.toFixed(1)} out of 5`}
-                            >
-                              <Star className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
-                              <span>{ratingScore.toFixed(1)}</span>
-                              {hasVerifiedReviews && (
-                                <span className="text-slate-400 font-medium">
-                                  ({prod.reviewCount})
-                                </span>
-                              )}
-                            </span>
-                          </div>
-
-                          <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0F294D] transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
-                            {prod.title}
-                          </h3>
-
-                          <div className="pt-1">
-                            <div className="text-base font-black text-[#0F294D] tabular-nums">
-                              {minPrice > 0 && maxPrice > minPrice
-                                ? `${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`
-                                : maxPrice > 0
-                                ? formatPrice(maxPrice)
-                                : prod.priceRangeUsd || 'Request Quote'}
-                              <span className="text-[11px] font-medium text-slate-500"> / {unitLabel}</span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 tabular-nums truncate">
-                              <span>
-                                MOQ:{' '}
-                                <strong className="text-slate-800">
-                                  {safeMoq.toLocaleString()} {unitLabel}
-                                </strong>
-                              </span>
-                              {typeof prod.leadTimeDays === 'number' && prod.leadTimeDays > 0 && (
-                                <>
-                                  <span className="text-slate-300" aria-hidden="true">·</span>
-                                  <span>{prod.leadTimeDays}d lead</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Supplier Footer */}
-                      <div className="px-3.5 py-2.5 bg-[#F8FAFC] border-t border-slate-100 flex items-center justify-between gap-2">
-                        <div className="inline-flex items-center gap-1.5 min-w-0 text-[11px] text-slate-600 font-semibold">
-                          <CountryFlag country={prod.supplierCountry} size="xs" />
-                          <span className="truncate">{prod.supplierName || prod.supplierCountry}</span>
-                          {isVerifiedExporter && (
-                            <ShieldCheck
-                              className="w-3.5 h-3.5 text-emerald-600 shrink-0"
-                              aria-label="Verified Supplier"
-                            />
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            onContactSupplier(prod);
-                          }}
-                          className="px-2.5 py-1 rounded-md bg-white hover:bg-[#EA580C] text-[#0F294D] hover:text-white border border-slate-300 hover:border-[#EA580C] text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1"
-                        >
-                          <Mail className="w-3 h-3 shrink-0" />
-                          <span>Inquire</span>
-                        </button>
-                      </div>
-                    </article>
-                  </div>
-                );
-              })}
+              {products.map(prod => (
+                <div
+                  key={prod.id}
+                  className="px-2 shrink-0"
+                  style={{ width: `${100 / visibleCount}%` }}
+                >
+                  {renderProductCard(prod)}
+                </div>
+              ))}
             </div>
           </div>
         </div>

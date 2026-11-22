@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product, Currency } from '../../types';
+import { getResponsiveGridColsClass } from '../../utils/gridLayoutUtils';
 import { SafeImage } from '../common/SafeImage';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { useAuth } from '../../context/AuthContext';
@@ -256,6 +257,7 @@ interface Props {
   getTierBadge: (tier: any) => React.ReactNode;
   isLoading?: boolean;
   skeletonCount?: number;
+  desktopColumns?: number;
 }
 
 export const ProductCatalogGrid: React.FC<Props> = ({
@@ -267,7 +269,8 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   formatPrice,
   getTierBadge,
   isLoading = false,
-  skeletonCount = 12
+  skeletonCount = 12,
+  desktopColumns = 4
 }) => {
   const { isAdmin } = useAuth();
   const [editingImageProduct, setEditingImageProduct] = useState<Product | null>(null);
@@ -282,7 +285,7 @@ export const ProductCatalogGrid: React.FC<Props> = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
+      <div className={`grid ${getResponsiveGridColsClass(desktopColumns, true)} gap-4 sm:gap-5 min-w-0 w-full`}>
         {(() => {
           const usedGridUrls = new Set<string>();
           return products.map(product => {

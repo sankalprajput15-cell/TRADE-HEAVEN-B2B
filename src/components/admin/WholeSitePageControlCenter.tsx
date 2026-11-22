@@ -28,27 +28,34 @@ import {
   Link2,
   X,
   CheckCircle2,
-  FileClock
+  FileClock,
+  LayoutGrid,
+  Layers
 } from 'lucide-react';
 import { ActiveView, AuthUser, Product, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
 import {
-  DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
   DEFAULT_SITE_CONTENT,
+  DEFAULT_SITE_SECTION_LAYOUTS,
   HomepageDisplayConfig,
-  SiteContent
+  SectionGridLayoutConfig,
+  SiteContent,
+  SiteSectionLayouts
 } from '../../data/defaultSiteContent';
-import { MOCK_COMPANIES, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
+import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { mergeHomepageDisplayConfig } from '../../utils/gridLayoutUtils';
 import { SafeImage } from '../common/SafeImage';
 import { WholeSitePagePreviewModal } from './WholeSitePagePreviewModal';
 import { HeroBannerSlidesEditor } from '../cms/HeroBannerSlidesEditor';
+import { SectionGridLayoutControlBar } from './SectionGridLayoutControlBar';
 
 const WHOLE_SITE_DRAFT_STORAGE_KEY = 'th_whole_site_draft_v1';
 
 type SitePageKey =
   | 'HOMEPAGE'
+  | 'SITE_GRID_MATRIX'
   | 'PRODUCT_DIRECTORY'
   | 'BUY_LEADS'
   | 'SUPPLIERS_DIRECTORY'
@@ -61,7 +68,7 @@ type SitePageKey =
   | 'GLOBAL_BRAND'
   | 'INFO_AND_POLICIES';
 
-type HomepageSubTab = 'FEATURED_PRODUCTS' | 'BUY_LEADS' | 'SUPPLIERS' | 'HERO_AND_SECTIONS';
+type HomepageSubTab = 'FEATURED_PRODUCTS' | 'BUY_LEADS' | 'CATEGORIES' | 'SUPPLIERS' | 'HERO_AND_SECTIONS';
 
 interface StagedItemImageChange {
   url: string;
@@ -91,8 +98,17 @@ const SITE_PAGES: SitePageMeta[] = [
     label: 'Homepage',
     routeView: 'HOMEPAGE',
     routeQuery: '/?view=HOMEPAGE',
-    summary: 'Hero, featured products (1–8), buy leads (1–8), suppliers (1–6), banners, and section visibility.',
+    summary: 'Control rows, columns, number of items, exact pinned/hidden products, buy leads, categories, suppliers, hero banners, and section visibility.',
     icon: Layout
+  },
+  {
+    key: 'SITE_GRID_MATRIX',
+    group: 'Marketplace',
+    label: 'Rows, Columns & Display Matrix',
+    routeView: 'HOMEPAGE',
+    routeQuery: 'All site sections & directories',
+    summary: 'Master control panel for rows, columns, Grid vs Carousel mode, and exact item counts across every section and directory page on the site.',
+    icon: LayoutGrid
   },
   {
     key: 'PRODUCT_DIRECTORY',
@@ -100,7 +116,7 @@ const SITE_PAGES: SitePageMeta[] = [
     label: 'Products Catalog',
     routeView: 'PRODUCT_DIRECTORY',
     routeQuery: '/?view=PRODUCT_DIRECTORY',
-    summary: 'Catalog header, banner image, CTA copy, and permanent product photo overrides.',
+    summary: 'Catalog grid columns, rows, items per page, header banner, CTA copy, and permanent product photo overrides.',
     icon: Package
   },
   {
@@ -240,14 +256,7 @@ function mergeSiteContentDefaults(source?: Partial<SiteContent> | null): SiteCon
   return {
     ...DEFAULT_SITE_CONTENT,
     ...(source || {}),
-    homepageDisplayConfig: {
-      ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
-      ...(source?.homepageDisplayConfig || {}),
-      sectionVisibility: {
-        ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
-        ...(source?.homepageDisplayConfig?.sectionVisibility || {})
-      }
-    }
+    homepageDisplayConfig: mergeHomepageDisplayConfig(source?.homepageDisplayConfig)
   };
 }
 
@@ -334,6 +343,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   const [productSearch, setProductSearch] = useState('');
   const [rfqSearch, setRfqSearch] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
 
   // Inline URL editor state & file upload state
   const [editingUrlTarget, setEditingUrlTarget] = useState<{ kind: 'item' | 'cms'; id: string; value: string } | null>(null);
@@ -388,28 +398,43 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   };
 
   const displayConfig: HomepageDisplayConfig = useMemo(
-    () => ({
-      ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
-      ...(draft.homepageDisplayConfig || {}),
-      sectionVisibility: {
-        ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
-        ...(draft.homepageDisplayConfig?.sectionVisibility || {})
-      }
-    }),
+    () => mergeHomepageDisplayConfig(draft.homepageDisplayConfig),
     [draft.homepageDisplayConfig]
   );
 
   const liveDisplayConfig: HomepageDisplayConfig = useMemo(
-    () => ({
-      ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
-      ...(siteContent?.homepageDisplayConfig || {}),
-      sectionVisibility: {
-        ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
-        ...(siteContent?.homepageDisplayConfig?.sectionVisibility || {})
-      }
-    }),
+    () => mergeHomepageDisplayConfig(siteContent?.homepageDisplayConfig),
     [siteContent?.homepageDisplayConfig]
   );
+
+  const sectionLayouts = displayConfig.sectionLayouts || DEFAULT_SITE_SECTION_LAYOUTS;
+  const featuredProductsLayout = sectionLayouts.featuredProducts;
+  const recentRfqsLayout = sectionLayouts.recentRfqs;
+  const categoryShowcaseLayout = sectionLayouts.categoryShowcase;
+  const verifiedSuppliersLayout = sectionLayouts.verifiedSuppliers;
+  const productsDirectoryLayout = sectionLayouts.productsDirectory;
+  const buyLeadsDirectoryLayout = sectionLayouts.buyLeadsDirectory;
+  const suppliersDirectoryLayout = sectionLayouts.suppliersDirectory;
+
+  const updateSectionLayout = (
+    sectionKey: keyof SiteSectionLayouts,
+    nextLayout: SectionGridLayoutConfig,
+    label: string
+  ) => {
+    mutateDisplayConfig(
+      prev => {
+        const mergedPrev = mergeHomepageDisplayConfig(prev);
+        return {
+          ...mergedPrev,
+          sectionLayouts: {
+            ...(mergedPrev.sectionLayouts || DEFAULT_SITE_SECTION_LAYOUTS),
+            [sectionKey]: nextLayout
+          }
+        };
+      },
+      `Updated ${label} layout (${nextLayout.layoutMode === 'CAROUSEL' ? `Carousel · ${nextLayout.columns} visible · ${nextLayout.itemCount} items` : `${nextLayout.columns} cols × ${nextLayout.rows} rows · ${nextLayout.itemCount} items`})`
+    );
+  };
 
   // Synced products with staged draft photo overrides overlaid for accurate preview
   const syncedProducts = useMemo(() => {
@@ -430,8 +455,9 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     });
   }, [liveProducts, imageSyncTick, stagedItemImages]);
 
-  // Exact 8 products in draft Featured Wholesale Products
+  // Exact products in draft Featured Wholesale Products (dynamic itemCount from layout config)
   const resolvedFeaturedProducts = useMemo(() => {
+    const limit = Math.max(1, featuredProductsLayout.itemCount || 12);
     const hiddenSet = new Set(displayConfig.hiddenProductIds || []);
     const visible = syncedProducts.filter(p => !hiddenSet.has(p.id));
     const pinnedIds = displayConfig.pinnedProductIds || [];
@@ -441,13 +467,19 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
       const byId = new Map(visible.map(p => [p.id, p]));
       const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as Product[];
       if (mode === 'PINNED_ONLY' && pinned.length > 0) {
-        return pinned.slice(0, 8);
+        return pinned.slice(0, limit);
       }
       const pinnedSet = new Set(pinned.map(p => p.id));
-      return [...pinned, ...visible.filter(p => !pinnedSet.has(p.id))].slice(0, 8);
+      return [...pinned, ...visible.filter(p => !pinnedSet.has(p.id))].slice(0, limit);
     }
-    return visible.slice(0, 8);
-  }, [syncedProducts, displayConfig.hiddenProductIds, displayConfig.pinnedProductIds, displayConfig.featuredProductsMode]);
+    return visible.slice(0, limit);
+  }, [
+    syncedProducts,
+    displayConfig.hiddenProductIds,
+    displayConfig.pinnedProductIds,
+    displayConfig.featuredProductsMode,
+    featuredProductsLayout.itemCount
+  ]);
 
   // Synced RFQs with staged draft photo overrides overlaid
   const syncedRfqs = useMemo(() => {
@@ -481,6 +513,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   }, [liveRfqs, imageSyncTick, stagedItemImages]);
 
   const resolvedHomepageRfqs = useMemo(() => {
+    const limit = Math.max(1, recentRfqsLayout.itemCount || 8);
     const hiddenSet = new Set(displayConfig.hiddenRfqIds || []);
     const visible = syncedRfqs.filter(r => !hiddenSet.has(r.id));
     const pinnedIds = displayConfig.pinnedRfqIds || [];
@@ -489,15 +522,67 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
       const byId = new Map(visible.map(r => [r.id, r]));
       const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof visible;
       if (mode === 'PINNED_ONLY' && pinned.length > 0) {
-        return pinned.slice(0, 8);
+        return pinned.slice(0, limit);
       }
       const pinnedSet = new Set(pinned.map(r => r.id));
-      return [...pinned, ...visible.filter(r => !pinnedSet.has(r.id))].slice(0, 8);
+      return [...pinned, ...visible.filter(r => !pinnedSet.has(r.id))].slice(0, limit);
     }
-    return visible.slice(0, 8);
-  }, [syncedRfqs, displayConfig.hiddenRfqIds, displayConfig.pinnedRfqIds, displayConfig.featuredRfqsMode]);
+    return visible.slice(0, limit);
+  }, [
+    syncedRfqs,
+    displayConfig.hiddenRfqIds,
+    displayConfig.pinnedRfqIds,
+    displayConfig.featuredRfqsMode,
+    recentRfqsLayout.itemCount
+  ]);
+
+  const allCategoriesPool = useMemo(() => {
+    if (draft.homepage?.categoriesList && draft.homepage.categoriesList.length > 0) {
+      return draft.homepage.categoriesList;
+    }
+    return (CATEGORIES_TREE || []).map(c => ({
+      id: c.id,
+      name: c.name,
+      description: (c.subcategories || []).join(', '),
+      iconName: c.icon,
+      image: (c as any).image || '',
+      badge: 'Verified',
+      productCount: c.count || '25,000+ Items'
+    }));
+  }, [draft.homepage?.categoriesList]);
+
+  const resolvedHomepageCategories = useMemo(() => {
+    const limit = Math.max(1, categoryShowcaseLayout.itemCount || 12);
+    const hiddenSet = new Set(displayConfig.hiddenCategoryIds || []);
+    const visible = allCategoriesPool.filter(c => !hiddenSet.has(c.id));
+    const pinnedIds = displayConfig.pinnedCategoryIds || [];
+    if (pinnedIds.length > 0) {
+      const byId = new Map(visible.map(c => [c.id, c]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof visible;
+      const pinnedSet = new Set(pinned.map(c => c.id));
+      return [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))].slice(0, limit);
+    }
+    return visible.slice(0, limit);
+  }, [
+    allCategoriesPool,
+    displayConfig.hiddenCategoryIds,
+    displayConfig.pinnedCategoryIds,
+    categoryShowcaseLayout.itemCount
+  ]);
+
+  const filteredCategoriesForPicker = useMemo(() => {
+    const q = categorySearch.trim().toLowerCase();
+    if (!q) return allCategoriesPool;
+    return allCategoriesPool.filter(
+      c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q) ||
+        (c.id || '').toLowerCase().includes(q)
+    );
+  }, [allCategoriesPool, categorySearch]);
 
   const resolvedHomepageSuppliers = useMemo(() => {
+    const limit = Math.max(1, verifiedSuppliersLayout.itemCount || 6);
     const hiddenSet = new Set(displayConfig.hiddenSupplierIds || []);
     const visible = MOCK_COMPANIES.filter(c => !hiddenSet.has(c.id));
     const pinnedIds = displayConfig.pinnedSupplierIds || [];
@@ -505,16 +590,26 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
       const byId = new Map(visible.map(c => [c.id, c]));
       const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof visible;
       const pinnedSet = new Set(pinned.map(c => c.id));
-      return [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))].slice(0, 6);
+      return [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))].slice(0, limit);
     }
-    return visible.slice(0, 6);
-  }, [displayConfig.hiddenSupplierIds, displayConfig.pinnedSupplierIds]);
+    return visible.slice(0, limit);
+  }, [
+    displayConfig.hiddenSupplierIds,
+    displayConfig.pinnedSupplierIds,
+    verifiedSuppliersLayout.itemCount
+  ]);
 
   // Compute human-readable list of staged changes vs live site
   const pendingImageCount = Object.keys(stagedItemImages).length;
 
   const changeSummary = useMemo(() => {
     const changes: string[] = [];
+    if (
+      JSON.stringify(displayConfig.sectionLayouts) !==
+      JSON.stringify(liveDisplayConfig.sectionLayouts)
+    ) {
+      changes.push('Site rows, columns & item counts');
+    }
     if (
       JSON.stringify(displayConfig.pinnedProductIds) !== JSON.stringify(liveDisplayConfig.pinnedProductIds) ||
       JSON.stringify(displayConfig.hiddenProductIds) !== JSON.stringify(liveDisplayConfig.hiddenProductIds) ||
@@ -528,6 +623,12 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
       displayConfig.featuredRfqsMode !== liveDisplayConfig.featuredRfqsMode
     ) {
       changes.push('Homepage Buy Leads slots/order');
+    }
+    if (
+      JSON.stringify(displayConfig.pinnedCategoryIds) !== JSON.stringify(liveDisplayConfig.pinnedCategoryIds) ||
+      JSON.stringify(displayConfig.hiddenCategoryIds) !== JSON.stringify(liveDisplayConfig.hiddenCategoryIds)
+    ) {
+      changes.push('Homepage Categories selection/order');
     }
     if (
       JSON.stringify(displayConfig.pinnedSupplierIds) !== JSON.stringify(liveDisplayConfig.pinnedSupplierIds) ||
@@ -652,31 +753,45 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   };
 
   // Pin / Unpin / Reorder / Hide helpers (staged in draft first)
-  const togglePin = (listType: 'product' | 'rfq' | 'supplier', id: string) => {
+  const togglePin = (listType: 'product' | 'rfq' | 'supplier' | 'category', id: string) => {
     const key =
       listType === 'product'
         ? 'pinnedProductIds'
         : listType === 'rfq'
         ? 'pinnedRfqIds'
+        : listType === 'category'
+        ? 'pinnedCategoryIds'
         : 'pinnedSupplierIds';
     const hiddenKey =
       listType === 'product'
         ? 'hiddenProductIds'
         : listType === 'rfq'
         ? 'hiddenRfqIds'
+        : listType === 'category'
+        ? 'hiddenCategoryIds'
         : 'hiddenSupplierIds';
-    const maxSlots = listType === 'supplier' ? 6 : 8;
+    const maxSlots =
+      listType === 'product'
+        ? Math.max(1, featuredProductsLayout.itemCount || 12)
+        : listType === 'rfq'
+        ? Math.max(1, recentRfqsLayout.itemCount || 8)
+        : listType === 'category'
+        ? Math.max(1, categoryShowcaseLayout.itemCount || 12)
+        : Math.max(1, verifiedSuppliersLayout.itemCount || 6);
 
-    const current = displayConfig[key] || [];
+    const current = (displayConfig[key] as string[] | undefined) || [];
     const isPinned = current.includes(id);
 
     if (!isPinned && current.length >= maxSlots) {
-      flashNotice('error', `Maximum ${maxSlots} pinned slots reached. Unpin an item first.`);
+      flashNotice(
+        'error',
+        `Maximum ${maxSlots} pinned slots reached. Increase "Total" count above or unpin an item first.`
+      );
       return;
     }
 
     const nextPinned = isPinned ? current.filter(x => x !== id) : [...current, id];
-    const nextHidden = (displayConfig[hiddenKey] || []).filter(x => x !== id);
+    const nextHidden = ((displayConfig[hiddenKey] as string[] | undefined) || []).filter(x => x !== id);
 
     mutateDisplayConfig(
       prev => ({
@@ -688,14 +803,20 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     );
   };
 
-  const movePinnedSlot = (listType: 'product' | 'rfq' | 'supplier', id: string, direction: -1 | 1) => {
+  const movePinnedSlot = (
+    listType: 'product' | 'rfq' | 'supplier' | 'category',
+    id: string,
+    direction: -1 | 1
+  ) => {
     const key =
       listType === 'product'
         ? 'pinnedProductIds'
         : listType === 'rfq'
         ? 'pinnedRfqIds'
+        : listType === 'category'
+        ? 'pinnedCategoryIds'
         : 'pinnedSupplierIds';
-    const current = [...(displayConfig[key] || [])];
+    const current = [...((displayConfig[key] as string[] | undefined) || [])];
     const idx = current.indexOf(id);
     if (idx === -1) {
       const currentShownIds =
@@ -703,6 +824,8 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
           ? resolvedFeaturedProducts.map(p => p.id)
           : listType === 'rfq'
           ? resolvedHomepageRfqs.map(r => r.id)
+          : listType === 'category'
+          ? resolvedHomepageCategories.map(c => c.id)
           : resolvedHomepageSuppliers.map(c => c.id);
       const pos = currentShownIds.indexOf(id);
       const targetPos = pos + direction;
@@ -719,25 +842,29 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     mutateDisplayConfig(prev => ({ ...prev, [key]: current }), 'Updated Homepage slot order');
   };
 
-  const toggleHide = (listType: 'product' | 'rfq' | 'supplier', id: string) => {
+  const toggleHide = (listType: 'product' | 'rfq' | 'supplier' | 'category', id: string) => {
     const hiddenKey =
       listType === 'product'
         ? 'hiddenProductIds'
         : listType === 'rfq'
         ? 'hiddenRfqIds'
+        : listType === 'category'
+        ? 'hiddenCategoryIds'
         : 'hiddenSupplierIds';
     const pinnedKey =
       listType === 'product'
         ? 'pinnedProductIds'
         : listType === 'rfq'
         ? 'pinnedRfqIds'
+        : listType === 'category'
+        ? 'pinnedCategoryIds'
         : 'pinnedSupplierIds';
-    const currentHidden = displayConfig[hiddenKey] || [];
+    const currentHidden = (displayConfig[hiddenKey] as string[] | undefined) || [];
     const isHidden = currentHidden.includes(id);
     const nextHidden = isHidden ? currentHidden.filter(x => x !== id) : [...currentHidden, id];
     const nextPinned = isHidden
-      ? displayConfig[pinnedKey] || []
-      : (displayConfig[pinnedKey] || []).filter(x => x !== id);
+      ? (displayConfig[pinnedKey] as string[] | undefined) || []
+      : ((displayConfig[pinnedKey] as string[] | undefined) || []).filter(x => x !== id);
 
     mutateDisplayConfig(
       prev => ({
@@ -1004,13 +1131,13 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     title: string;
     metaLine: string;
     imageUrl: string;
-    imageType: 'product' | 'rfq' | 'logo';
+    imageType: 'product' | 'rfq' | 'logo' | 'category';
     category?: string;
     isPinned: boolean;
     isHidden: boolean;
     canMoveUp?: boolean;
     canMoveDown?: boolean;
-    listType: 'product' | 'rfq' | 'supplier';
+    listType: 'product' | 'rfq' | 'supplier' | 'category';
     allowImageEdit?: boolean;
   }) => {
     const isBusy = uploadingId === opts.id;
@@ -1399,9 +1526,22 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
               <div className="inline-flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
                 {(
                   [
-                    { id: 'FEATURED_PRODUCTS', label: `Featured Products (${resolvedFeaturedProducts.length}/8)` },
-                    { id: 'BUY_LEADS', label: `Buy Leads / RFQs (${resolvedHomepageRfqs.length}/8)` },
-                    { id: 'SUPPLIERS', label: `Suppliers (${resolvedHomepageSuppliers.length}/6)` },
+                    {
+                      id: 'FEATURED_PRODUCTS',
+                      label: `Featured Products (${resolvedFeaturedProducts.length}/${featuredProductsLayout.itemCount})`
+                    },
+                    {
+                      id: 'BUY_LEADS',
+                      label: `Buy Leads / RFQs (${resolvedHomepageRfqs.length}/${recentRfqsLayout.itemCount})`
+                    },
+                    {
+                      id: 'CATEGORIES',
+                      label: `Categories (${resolvedHomepageCategories.length}/${categoryShowcaseLayout.itemCount})`
+                    },
+                    {
+                      id: 'SUPPLIERS',
+                      label: `Suppliers (${resolvedHomepageSuppliers.length}/${verifiedSuppliersLayout.itemCount})`
+                    },
                     { id: 'HERO_AND_SECTIONS', label: 'Hero, Banners & Sections' }
                   ] as const
                 ).map(tab => (
@@ -1420,16 +1560,30 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
                 ))}
               </div>
 
-              {/* SUBTAB A: FEATURED WHOLESALE PRODUCTS (SLOTS 1-8) */}
+              {/* SUBTAB A: FEATURED WHOLESALE PRODUCTS */}
               {homepageSubTab === 'FEATURED_PRODUCTS' && (
                 <div className="space-y-6">
+                  <SectionGridLayoutControlBar
+                    title="Featured Top-Rated Products — Rows, Columns & Count"
+                    sectionBadge="#featured-products-section"
+                    subtitle="Choose Multi-Row Grid or Carousel, desktop columns (1–6), rows (1–8), and exact number of products displayed on the homepage."
+                    value={featuredProductsLayout}
+                    defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.featuredProducts}
+                    supportsCarousel={true}
+                    itemLabel="products"
+                    maxColumns={6}
+                    maxRows={8}
+                    maxItems={48}
+                    onChange={next => updateSectionLayout('featuredProducts', next, 'Featured Products')}
+                  />
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        Displayed in Featured Wholesale Products (Slots 1–8)
+                        Displayed in Featured Wholesale Products (Slots 1–{featuredProductsLayout.itemCount})
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        All changes stay in draft so you can inspect Preview Before Publish, Save Draft, or Publish Live when ready.
+                        Pin, reorder, or hide exact products below. All changes stay in draft until you click Publish Live.
                       </p>
                     </div>
 
@@ -1536,13 +1690,27 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
                 </div>
               )}
 
-              {/* SUBTAB B: BUY LEADS / RFQS (SLOTS 1-8) */}
+              {/* SUBTAB B: BUY LEADS / RFQS */}
               {homepageSubTab === 'BUY_LEADS' && (
                 <div className="space-y-6">
+                  <SectionGridLayoutControlBar
+                    title="Latest Buy Leads & RFQs — Rows, Columns & Count"
+                    sectionBadge="#recent-rfqs-section"
+                    subtitle="Control how many columns, rows, and total buy-lead cards appear on the homepage."
+                    value={recentRfqsLayout}
+                    defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.recentRfqs}
+                    supportsCarousel={false}
+                    itemLabel="buy leads"
+                    maxColumns={6}
+                    maxRows={8}
+                    maxItems={48}
+                    onChange={next => updateSectionLayout('recentRfqs', next, 'Homepage Buy Leads')}
+                  />
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        Displayed in Latest Buy Leads &amp; RFQs (Slots 1–8)
+                        Displayed in Latest Buy Leads &amp; RFQs (Slots 1–{recentRfqsLayout.itemCount})
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
                         Pin specific buyer requirements, stage card photos, or hide RFQs before publishing live.
@@ -1637,12 +1805,114 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
                 </div>
               )}
 
-              {/* SUBTAB C: VERIFIED SUPPLIERS (SLOTS 1-6) */}
-              {homepageSubTab === 'SUPPLIERS' && (
+              {/* SUBTAB C2: INDUSTRY & CATEGORY SHOWCASE */}
+              {homepageSubTab === 'CATEGORIES' && (
                 <div className="space-y-6">
+                  <SectionGridLayoutControlBar
+                    title="Industry & Category Showcase — Rows, Columns & Count"
+                    sectionBadge="#category-mega-menu"
+                    subtitle="Configure how many industry category columns, rows, and total category cards appear on the homepage."
+                    value={categoryShowcaseLayout}
+                    defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.categoryShowcase}
+                    supportsCarousel={false}
+                    itemLabel="categories"
+                    maxColumns={6}
+                    maxRows={8}
+                    maxItems={48}
+                    onChange={next => updateSectionLayout('categoryShowcase', next, 'Homepage Categories')}
+                  />
+
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      Displayed in Audited Global Suppliers (Top 6 Slots)
+                      Displayed Industry Categories (Slots 1–{categoryShowcaseLayout.itemCount})
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Pin priority sectors to the top, reorder slots, or hide categories from the homepage showcase.
+                    </p>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-700 inline-flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-[#0F294D]" />
+                        <span>Homepage Category Slots (#1–#{resolvedHomepageCategories.length})</span>
+                      </span>
+                      <span className="text-slate-500 tabular-nums">
+                        {(displayConfig.pinnedCategoryIds || []).length} Pinned · {(displayConfig.hiddenCategoryIds || []).length} Hidden
+                      </span>
+                    </div>
+                    {resolvedHomepageCategories.map((cat, idx) =>
+                      renderSlotItemRow({
+                        slotNumber: idx + 1,
+                        id: cat.id,
+                        title: cat.name,
+                        metaLine: `${cat.productCount || 'Verified Sector'} · ${cat.description || ''}`,
+                        imageUrl: cat.image || '',
+                        imageType: 'category',
+                        category: cat.name,
+                        isPinned: (displayConfig.pinnedCategoryIds || []).includes(cat.id),
+                        isHidden: (displayConfig.hiddenCategoryIds || []).includes(cat.id),
+                        canMoveUp: idx > 0,
+                        canMoveDown: idx < resolvedHomepageCategories.length - 1,
+                        listType: 'category',
+                        allowImageEdit: false
+                      })
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <h4 className="text-sm font-bold text-slate-900">All Industry Categories</h4>
+                      <div className="relative w-full sm:w-72">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={categorySearch}
+                          onChange={e => setCategorySearch(e.target.value)}
+                          placeholder="Search category name or sector..."
+                          className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F294D]/20 focus:border-[#0F294D]"
+                        />
+                      </div>
+                    </div>
+                    <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[360px] overflow-y-auto">
+                      {filteredCategoriesForPicker.map(cat =>
+                        renderSlotItemRow({
+                          id: cat.id,
+                          title: cat.name,
+                          metaLine: `${cat.productCount || 'Verified Sector'} · ${cat.description || ''}`,
+                          imageUrl: cat.image || '',
+                          imageType: 'category',
+                          category: cat.name,
+                          isPinned: (displayConfig.pinnedCategoryIds || []).includes(cat.id),
+                          isHidden: (displayConfig.hiddenCategoryIds || []).includes(cat.id),
+                          listType: 'category',
+                          allowImageEdit: false
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB C: VERIFIED SUPPLIERS */}
+              {homepageSubTab === 'SUPPLIERS' && (
+                <div className="space-y-6">
+                  <SectionGridLayoutControlBar
+                    title="Audited Global Suppliers — Rows, Columns & Count"
+                    subtitle="Control desktop columns, rows, and total verified exporter cards shown on the homepage."
+                    value={verifiedSuppliersLayout}
+                    defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.verifiedSuppliers}
+                    supportsCarousel={false}
+                    itemLabel="suppliers"
+                    maxColumns={6}
+                    maxRows={8}
+                    maxItems={36}
+                    onChange={next => updateSectionLayout('verifiedSuppliers', next, 'Homepage Suppliers')}
+                  />
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Displayed in Audited Global Suppliers (Top {verifiedSuppliersLayout.itemCount} Slots)
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Control which exporter profiles appear first on the homepage and hide profiles you do not want featured.
@@ -1822,9 +2092,162 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
             </div>
           )}
 
+          {/* ================= 1.5 ALL-SITE ROWS, COLUMNS & DISPLAY MATRIX ================= */}
+          {selectedPage === 'SITE_GRID_MATRIX' && (
+            <div className="space-y-5">
+              <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#0F294D]">
+                    Whole-Site Grid, Rows, Columns &amp; Item Count Matrix
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Edit rows, columns, layout mode (Multi-Row Grid vs Carousel), and number of items for every section and directory page across the entire site. Click "Select Exact Items" on any section to pin, reorder, or hide specific entries, then click Publish Live.
+                  </p>
+                </div>
+              </div>
+
+              <SectionGridLayoutControlBar
+                title="1. Homepage — Featured Top-Rated Products"
+                sectionBadge="#featured-products-section"
+                subtitle="Switch between Multi-Row Grid (e.g., 4 cols × 2 rows = 8 products) or Carousel, and pick exact products."
+                value={featuredProductsLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.featuredProducts}
+                supportsCarousel={true}
+                itemLabel="products"
+                maxColumns={6}
+                maxRows={8}
+                maxItems={48}
+                onChange={next => updateSectionLayout('featuredProducts', next, 'Featured Products')}
+                onJumpToItemPicker={() => {
+                  setSelectedPage('HOMEPAGE');
+                  setHomepageSubTab('FEATURED_PRODUCTS');
+                }}
+                jumpButtonLabel="Select Exact Products"
+              />
+
+              <SectionGridLayoutControlBar
+                title="2. Homepage — Latest Buy Leads & RFQs"
+                sectionBadge="#recent-rfqs-section"
+                subtitle="Control columns, rows, and total importer buy-lead cards shown on the homepage."
+                value={recentRfqsLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.recentRfqs}
+                supportsCarousel={false}
+                itemLabel="buy leads"
+                maxColumns={6}
+                maxRows={8}
+                maxItems={48}
+                onChange={next => updateSectionLayout('recentRfqs', next, 'Homepage Buy Leads')}
+                onJumpToItemPicker={() => {
+                  setSelectedPage('HOMEPAGE');
+                  setHomepageSubTab('BUY_LEADS');
+                }}
+                jumpButtonLabel="Select Exact Buy Leads"
+              />
+
+              <SectionGridLayoutControlBar
+                title="3. Homepage — Industry & Category Showcase"
+                sectionBadge="#category-mega-menu"
+                subtitle="Control columns, rows, and total industry category cards shown on the homepage."
+                value={categoryShowcaseLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.categoryShowcase}
+                supportsCarousel={false}
+                itemLabel="categories"
+                maxColumns={6}
+                maxRows={8}
+                maxItems={48}
+                onChange={next => updateSectionLayout('categoryShowcase', next, 'Homepage Categories')}
+                onJumpToItemPicker={() => {
+                  setSelectedPage('HOMEPAGE');
+                  setHomepageSubTab('CATEGORIES');
+                }}
+                jumpButtonLabel="Select Exact Categories"
+              />
+
+              <SectionGridLayoutControlBar
+                title="4. Homepage — Audited Global Suppliers"
+                subtitle="Control columns, rows, and total exporter profile cards shown on the homepage."
+                value={verifiedSuppliersLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.verifiedSuppliers}
+                supportsCarousel={false}
+                itemLabel="suppliers"
+                maxColumns={6}
+                maxRows={8}
+                maxItems={36}
+                onChange={next => updateSectionLayout('verifiedSuppliers', next, 'Homepage Suppliers')}
+                onJumpToItemPicker={() => {
+                  setSelectedPage('HOMEPAGE');
+                  setHomepageSubTab('SUPPLIERS');
+                }}
+                jumpButtonLabel="Select Exact Suppliers"
+              />
+
+              <SectionGridLayoutControlBar
+                title="5. Products Catalog Page — Directory Grid"
+                sectionBadge="/?view=PRODUCT_DIRECTORY"
+                subtitle="Default desktop columns, rows, and products per page across the full wholesale product catalog."
+                value={productsDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.productsDirectory}
+                supportsCarousel={false}
+                itemLabel="products/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('productsDirectory', next, 'Products Catalog Page')}
+                onJumpToItemPicker={() => setSelectedPage('PRODUCT_DIRECTORY')}
+                jumpButtonLabel="Open Products Page Settings"
+              />
+
+              <SectionGridLayoutControlBar
+                title="6. Buy Leads & RFQs Page — Directory Grid"
+                sectionBadge="/?view=BUY_LEADS"
+                subtitle="Default desktop columns, rows, and buy leads per page in the full RFQ directory."
+                value={buyLeadsDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.buyLeadsDirectory}
+                supportsCarousel={false}
+                itemLabel="leads/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('buyLeadsDirectory', next, 'Buy Leads Page')}
+                onJumpToItemPicker={() => setSelectedPage('BUY_LEADS')}
+                jumpButtonLabel="Open Buy Leads Page Settings"
+              />
+
+              <SectionGridLayoutControlBar
+                title="7. Verified Suppliers Page — Directory Grid"
+                sectionBadge="/?view=SUPPLIERS_DIRECTORY"
+                subtitle="Default desktop columns, rows, and supplier cards per page in the full audited suppliers directory."
+                value={suppliersDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.suppliersDirectory}
+                supportsCarousel={false}
+                itemLabel="suppliers/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('suppliersDirectory', next, 'Suppliers Directory Page')}
+                onJumpToItemPicker={() => setSelectedPage('SUPPLIERS_DIRECTORY')}
+                jumpButtonLabel="Open Suppliers Page Settings"
+              />
+            </div>
+          )}
+
           {/* ================= 2. PRODUCTS CATALOG PAGE ================= */}
           {selectedPage === 'PRODUCT_DIRECTORY' && (
             <div className="space-y-6">
+              <SectionGridLayoutControlBar
+                title="Products Catalog Page — Rows, Columns & Products Per Page"
+                sectionBadge="/?view=PRODUCT_DIRECTORY"
+                subtitle="Sets desktop columns, rows, and default products displayed per page in the Product Directory."
+                value={productsDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.productsDirectory}
+                supportsCarousel={false}
+                itemLabel="products/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('productsDirectory', next, 'Products Catalog Page')}
+              />
+
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-slate-900">Products Page Copy &amp; Banner</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1884,6 +2307,20 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
           {/* ================= 3. BUY LEADS & RFQS PAGE ================= */}
           {selectedPage === 'BUY_LEADS' && (
             <div className="space-y-6">
+              <SectionGridLayoutControlBar
+                title="Buy Leads & RFQs Page — Rows, Columns & Leads Per Page"
+                sectionBadge="/?view=BUY_LEADS"
+                subtitle="Sets desktop columns, rows, and default buy leads displayed per page in the RFQ Directory."
+                value={buyLeadsDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.buyLeadsDirectory}
+                supportsCarousel={false}
+                itemLabel="leads/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('buyLeadsDirectory', next, 'Buy Leads Page')}
+              />
+
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-slate-900">Buy Leads Page Copy &amp; Banner</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1935,6 +2372,20 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
           {/* ================= 4. VERIFIED SUPPLIERS PAGE ================= */}
           {selectedPage === 'SUPPLIERS_DIRECTORY' && (
             <div className="space-y-6">
+              <SectionGridLayoutControlBar
+                title="Verified Suppliers Page — Rows, Columns & Suppliers Per Page"
+                sectionBadge="/?view=SUPPLIERS_DIRECTORY"
+                subtitle="Sets desktop columns, rows, and default suppliers displayed per page in the Audited Suppliers Directory."
+                value={suppliersDirectoryLayout}
+                defaultValue={DEFAULT_SITE_SECTION_LAYOUTS.suppliersDirectory}
+                supportsCarousel={false}
+                itemLabel="suppliers/page"
+                maxColumns={6}
+                maxRows={10}
+                maxItems={60}
+                onChange={next => updateSectionLayout('suppliersDirectory', next, 'Suppliers Directory Page')}
+              />
+
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-slate-900">Suppliers Directory Copy &amp; Banner</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

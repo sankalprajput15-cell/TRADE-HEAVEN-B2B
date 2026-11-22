@@ -4,6 +4,8 @@ import { useSiteContent } from '../../context/SiteContentContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { ActiveView } from '../../types';
+import { DEFAULT_SITE_SECTION_LAYOUTS } from '../../data/defaultSiteContent';
+import { mergeHomepageDisplayConfig, getResponsiveGridColsClass } from '../../utils/gridLayoutUtils';
 import { 
   Cpu, 
   Radio, 
@@ -138,7 +140,14 @@ export const CategoryMegaMenu: React.FC<Props> = ({
   };
 
   const hp = siteContent?.homepage;
-  const categoriesToRender = (hp?.categoriesList && hp.categoriesList.length > 0) 
+  const displayConfig = React.useMemo(
+    () => mergeHomepageDisplayConfig(siteContent?.homepageDisplayConfig),
+    [siteContent?.homepageDisplayConfig]
+  );
+  const categoryLayout = displayConfig.sectionLayouts?.categoryShowcase || DEFAULT_SITE_SECTION_LAYOUTS.categoryShowcase;
+  const [showAllCategories, setShowAllCategories] = React.useState(false);
+
+  const allCategoriesPool = (hp?.categoriesList && hp.categoriesList.length > 0) 
     ? hp.categoriesList 
     : (CATEGORIES_TREE || []).map(c => ({
         id: c.id,
@@ -150,6 +159,24 @@ export const CategoryMegaMenu: React.FC<Props> = ({
         badge: 'Verified',
         productCount: c.count || '25,000+ Items'
       }));
+
+  const visibleCategoriesPool = React.useMemo(() => {
+    const hiddenSet = new Set(displayConfig.hiddenCategoryIds || []);
+    const visible = allCategoriesPool.filter(c => !hiddenSet.has(c.id));
+    const pinnedIds = displayConfig.pinnedCategoryIds || [];
+    if (pinnedIds.length > 0) {
+      const byId = new Map(visible.map(c => [c.id, c]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof visible;
+      const pinnedSet = new Set(pinned.map(c => c.id));
+      return [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))];
+    }
+    return visible;
+  }, [allCategoriesPool, displayConfig.hiddenCategoryIds, displayConfig.pinnedCategoryIds]);
+
+  const maxCategoriesCount = Math.max(1, categoryLayout.itemCount || 12);
+  const categoriesToRender = showAllCategories
+    ? visibleCategoriesPool
+    : visibleCategoriesPool.slice(0, maxCategoriesCount);
 
   const handleCategoryClick = (catName: string) => {
     if (onNavigateToCategory) {
@@ -258,7 +285,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       </div>
 
       {/* Main Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid ${getResponsiveGridColsClass(categoryLayout.columns)} gap-4`}>
         {categoriesToRender.map(cat => {
           const isSelected = selectedCategory === cat.name;
           const catImage = cat.image || '';
@@ -402,6 +429,20 @@ export const CategoryMegaMenu: React.FC<Props> = ({
           );
         })}
       </div>
+
+      {visibleCategoriesPool.length > maxCategoriesCount && (
+        <div className="mt-4 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowAllCategories(prev => !prev)}
+            className="px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+          >
+            {showAllCategories
+              ? `Show Top ${maxCategoriesCount} Categories`
+              : `Show All ${visibleCategoriesPool.length} Categories`}
+          </button>
+        </div>
+      )}
 
       {/* Sourcing Bottom Banner with Direct Action Links */}
       <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">

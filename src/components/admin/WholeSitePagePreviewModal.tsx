@@ -12,7 +12,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Product, RfqRequirement } from '../../types';
-import { SiteContent, HomepageDisplayConfig } from '../../data/defaultSiteContent';
+import { SiteContent, HomepageDisplayConfig, DEFAULT_SITE_SECTION_LAYOUTS } from '../../data/defaultSiteContent';
+import { getResponsiveGridColsClass, mergeHomepageDisplayConfig } from '../../utils/gridLayoutUtils';
 import { SafeImage } from '../common/SafeImage';
 
 export interface PreviewSupplierItem {
@@ -70,7 +71,9 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
 
   if (!isOpen) return null;
 
-  const vis = displayConfig.sectionVisibility;
+  const mergedDisplay = mergeHomepageDisplayConfig(displayConfig);
+  const vis = mergedDisplay.sectionVisibility;
+  const layouts = mergedDisplay.sectionLayouts || DEFAULT_SITE_SECTION_LAYOUTS;
 
   const formatProductPrice = (prod: Product) => {
     const tiers = Array.isArray(prod.priceTiers) ? prod.priceTiers : [];
@@ -249,8 +252,8 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
 
           {/* Page-Specific Preview Content */}
           <div className="p-4 sm:p-6 space-y-6">
-            {/* HOMEPAGE PREVIEW */}
-            {pageKey === 'HOMEPAGE' && (
+            {/* HOMEPAGE / SITE GRID MATRIX PREVIEW */}
+            {(pageKey === 'HOMEPAGE' || pageKey === 'SITE_GRID_MATRIX') && (
               <>
                 {/* Hero Banner Preview */}
                 <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 text-white relative">
@@ -295,7 +298,7 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
                       <div>
                         <div className="text-xs font-semibold text-[#EA580C]">Latest Buy Leads &amp; RFQs</div>
                         <h2 className="text-base font-bold text-[#0F294D]">
-                          Showing {homepageRfqs.length} Buy Lead Cards ({displayConfig.featuredRfqsMode.replace('_', ' ')})
+                          Showing {homepageRfqs.length} Buy Lead Cards · {layouts.recentRfqs.columns} cols × {layouts.recentRfqs.rows} rows ({displayConfig.featuredRfqsMode.replace('_', ' ')})
                         </h2>
                       </div>
                     </div>
@@ -303,7 +306,7 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
                       className={`grid gap-4 ${
                         viewportMode === 'mobile'
                           ? 'grid-cols-1'
-                          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                          : getResponsiveGridColsClass(layouts.recentRfqs.columns)
                       }`}
                     >
                       {homepageRfqs.map((rfq, idx) => (
@@ -366,7 +369,7 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
                       <div>
                         <div className="text-xs font-semibold text-blue-700">Factory Direct Wholesale Catalog</div>
                         <h2 className="text-base font-bold text-[#0F294D]">
-                          Featured Wholesale Products ({featuredProducts.length} slots · {displayConfig.featuredProductsMode.replace('_', ' ')})
+                          Featured Wholesale Products ({featuredProducts.length} slots · {layouts.featuredProducts.layoutMode === 'CAROUSEL' && layouts.featuredProducts.rows <= 1 ? `Carousel ${layouts.featuredProducts.columns} visible` : `${layouts.featuredProducts.columns} cols × ${layouts.featuredProducts.rows} rows`} · {displayConfig.featuredProductsMode.replace('_', ' ')})
                         </h2>
                       </div>
                     </div>
@@ -374,7 +377,7 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
                       className={`grid gap-4 ${
                         viewportMode === 'mobile'
                           ? 'grid-cols-1'
-                          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                          : getResponsiveGridColsClass(layouts.featuredProducts.columns)
                       }`}
                     >
                       {featuredProducts.map((prod, idx) => (
@@ -440,12 +443,14 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
                     <div className="border-b border-slate-200 pb-3">
                       <div className="text-xs font-semibold text-blue-700">Audited Global Manufacturers</div>
                       <h2 className="text-base font-bold text-[#0F294D]">
-                        Top {homepageSuppliers.length} Suppliers on Homepage
+                        Top {homepageSuppliers.length} Suppliers on Homepage ({layouts.verifiedSuppliers.columns} cols × {layouts.verifiedSuppliers.rows} rows)
                       </h2>
                     </div>
                     <div
                       className={`grid gap-4 ${
-                        viewportMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
+                        viewportMode === 'mobile'
+                          ? 'grid-cols-1'
+                          : getResponsiveGridColsClass(layouts.verifiedSuppliers.columns)
                       }`}
                     >
                       {homepageSuppliers.map((comp, idx) => (

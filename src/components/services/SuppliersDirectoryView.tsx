@@ -9,6 +9,9 @@ import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
 import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
+import { useSiteContent } from '../../context/SiteContentContext';
+import { DEFAULT_SITE_SECTION_LAYOUTS } from '../../data/defaultSiteContent';
+import { mergeHomepageDisplayConfig, getResponsiveGridColsClass } from '../../utils/gridLayoutUtils';
 import regeneratedSupplierCoalImg from '../../assets/images/regenerated_image_1794231796775.jpg';
 import { 
   Search, 
@@ -86,12 +89,30 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   onOpenUpgradeModal,
   initialSearch = ''
 }) => {
+  const { siteContent } = useSiteContent();
+  const suppliersDirLayout = React.useMemo(
+    () =>
+      mergeHomepageDisplayConfig(siteContent?.homepageDisplayConfig).sectionLayouts
+        ?.suppliersDirectory || DEFAULT_SITE_SECTION_LAYOUTS.suppliersDirectory,
+    [siteContent?.homepageDisplayConfig]
+  );
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [selectedTier, setSelectedTier] = useState('ALL');
   const [companies, setCompanies] = useState<CompanyProfile[]>(() => MOCK_COMPANIES || []);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(() => suppliersDirLayout.itemCount || 12);
+
+  useEffect(() => {
+    const configured = suppliersDirLayout.itemCount || 12;
+    setItemsPerPage(configured);
+    setCurrentPage(1);
+  }, [suppliersDirLayout.itemCount]);
+
+  const supplierItemsPerPageOptions = React.useMemo(() => {
+    const base = [12, 24, 48, suppliersDirLayout.itemCount || 12];
+    return Array.from(new Set(base.filter(n => n > 0))).sort((a, b) => a - b);
+  }, [suppliersDirLayout.itemCount]);
   const [savedSupplierIds, setSavedSupplierIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(SAVED_SUPPLIERS_KEY);
@@ -248,7 +269,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+          <div className={`grid ${getResponsiveGridColsClass(suppliersDirLayout.columns)} gap-5 items-stretch`}>
             {paginatedCompanies.map((company, index) => {
               const isMelissaCompany = company.id === 'comp-melissa-mpcommodity' || (company.companyName || '').toLowerCase().includes('mp commodity');
               const isReverseEnergy =
@@ -544,7 +565,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             onItemsPerPageChange={setItemsPerPage}
-            itemsPerPageOptions={[12, 24, 48]}
+            itemsPerPageOptions={supplierItemsPerPageOptions}
             itemLabel="suppliers"
             scrollTargetId="suppliers-directory-root"
           />

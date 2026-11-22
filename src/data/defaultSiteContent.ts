@@ -74,6 +74,80 @@ export interface CategoryItemCMS {
   productCount: string;
 }
 
+export interface SectionGridLayoutConfig {
+  layoutMode?: 'GRID' | 'CAROUSEL';
+  columns: number;
+  rows: number;
+  itemCount: number;
+  autoSyncCount?: boolean;
+  autoSlide?: boolean;
+  autoSlideIntervalMs?: number;
+}
+
+export interface SiteSectionLayouts {
+  featuredProducts: SectionGridLayoutConfig;
+  recentRfqs: SectionGridLayoutConfig;
+  categoryShowcase: SectionGridLayoutConfig;
+  verifiedSuppliers: SectionGridLayoutConfig;
+  productsDirectory: SectionGridLayoutConfig;
+  buyLeadsDirectory: SectionGridLayoutConfig;
+  suppliersDirectory: SectionGridLayoutConfig;
+}
+
+export const DEFAULT_SITE_SECTION_LAYOUTS: SiteSectionLayouts = {
+  featuredProducts: {
+    layoutMode: 'CAROUSEL',
+    columns: 4,
+    rows: 1,
+    itemCount: 12,
+    autoSyncCount: false,
+    autoSlide: true,
+    autoSlideIntervalMs: 4500
+  },
+  recentRfqs: {
+    layoutMode: 'GRID',
+    columns: 4,
+    rows: 2,
+    itemCount: 8,
+    autoSyncCount: true
+  },
+  categoryShowcase: {
+    layoutMode: 'GRID',
+    columns: 3,
+    rows: 4,
+    itemCount: 12,
+    autoSyncCount: true
+  },
+  verifiedSuppliers: {
+    layoutMode: 'GRID',
+    columns: 3,
+    rows: 2,
+    itemCount: 6,
+    autoSyncCount: true
+  },
+  productsDirectory: {
+    layoutMode: 'GRID',
+    columns: 4,
+    rows: 3,
+    itemCount: 12,
+    autoSyncCount: true
+  },
+  buyLeadsDirectory: {
+    layoutMode: 'GRID',
+    columns: 3,
+    rows: 6,
+    itemCount: 18,
+    autoSyncCount: true
+  },
+  suppliersDirectory: {
+    layoutMode: 'GRID',
+    columns: 3,
+    rows: 4,
+    itemCount: 12,
+    autoSyncCount: true
+  }
+};
+
 export interface HomepageDisplayConfig {
   featuredProductsMode: 'AUTO_LATEST' | 'PINNED_FIRST' | 'PINNED_ONLY';
   pinnedProductIds: string[];
@@ -83,6 +157,8 @@ export interface HomepageDisplayConfig {
   hiddenRfqIds: string[];
   pinnedSupplierIds: string[];
   hiddenSupplierIds: string[];
+  pinnedCategoryIds?: string[];
+  hiddenCategoryIds?: string[];
   sectionVisibility: {
     announcementBanner: boolean;
     recentRfqs: boolean;
@@ -94,6 +170,7 @@ export interface HomepageDisplayConfig {
     whyChooseSection: boolean;
     regionBar: boolean;
   };
+  sectionLayouts?: SiteSectionLayouts;
 }
 
 export const DEFAULT_HOMEPAGE_DISPLAY_CONFIG: HomepageDisplayConfig = {
@@ -105,6 +182,8 @@ export const DEFAULT_HOMEPAGE_DISPLAY_CONFIG: HomepageDisplayConfig = {
   hiddenRfqIds: [],
   pinnedSupplierIds: [],
   hiddenSupplierIds: [],
+  pinnedCategoryIds: [],
+  hiddenCategoryIds: [],
   sectionVisibility: {
     announcementBanner: true,
     recentRfqs: true,
@@ -115,6 +194,15 @@ export const DEFAULT_HOMEPAGE_DISPLAY_CONFIG: HomepageDisplayConfig = {
     faqSection: true,
     whyChooseSection: true,
     regionBar: true
+  },
+  sectionLayouts: {
+    featuredProducts: { ...DEFAULT_SITE_SECTION_LAYOUTS.featuredProducts },
+    recentRfqs: { ...DEFAULT_SITE_SECTION_LAYOUTS.recentRfqs },
+    categoryShowcase: { ...DEFAULT_SITE_SECTION_LAYOUTS.categoryShowcase },
+    verifiedSuppliers: { ...DEFAULT_SITE_SECTION_LAYOUTS.verifiedSuppliers },
+    productsDirectory: { ...DEFAULT_SITE_SECTION_LAYOUTS.productsDirectory },
+    buyLeadsDirectory: { ...DEFAULT_SITE_SECTION_LAYOUTS.buyLeadsDirectory },
+    suppliersDirectory: { ...DEFAULT_SITE_SECTION_LAYOUTS.suppliersDirectory }
   }
 };
 

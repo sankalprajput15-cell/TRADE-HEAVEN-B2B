@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { SiteContent, DEFAULT_SITE_CONTENT, DEFAULT_HOMEPAGE_DISPLAY_CONFIG } from '../data/defaultSiteContent';
+import { SiteContent, DEFAULT_SITE_CONTENT } from '../data/defaultSiteContent';
 import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, UserRole } from '../types';
 import { useAuth, isStrictVerifiedRootAdmin } from './AuthContext';
 import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
 import { apiClient } from '../services/apiClient';
 import { productImageManagerService, normalizeProductAssetUrl } from '../services/productImageManagerService';
+import { mergeHomepageDisplayConfig } from '../utils/gridLayoutUtils';
 
 export interface RbacRolePermissions {
   canEditCmsContent: boolean;
@@ -160,14 +161,7 @@ function readSiteContentDraftFromStorage(): SiteContentDraftRecord | null {
 }
 
 function normalizeHeroImage(content: SiteContent): SiteContent {
-  const mergedDisplayConfig = {
-    ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG,
-    ...(content?.homepageDisplayConfig || {}),
-    sectionVisibility: {
-      ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
-      ...(content?.homepageDisplayConfig?.sectionVisibility || {})
-    }
-  };
+  const mergedDisplayConfig = mergeHomepageDisplayConfig(content?.homepageDisplayConfig);
   const nextContent: SiteContent = {
     ...content,
     homepageDisplayConfig: mergedDisplayConfig

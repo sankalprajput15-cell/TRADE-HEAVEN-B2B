@@ -6,6 +6,9 @@ import { productImageManagerService } from '../../services/productImageManagerSe
 import { autoSeoEngine } from '../../services/autoSeoEngine';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
+import { useSiteContent } from '../../context/SiteContentContext';
+import { DEFAULT_SITE_SECTION_LAYOUTS } from '../../data/defaultSiteContent';
+import { mergeHomepageDisplayConfig } from '../../utils/gridLayoutUtils';
 import { isPaidMemberUser } from '../../services/freeLeadService';
 import {
   checkAndDiscoverRfqsForKeyword,
@@ -561,13 +564,35 @@ export const ProductCatalog: React.FC<Props> = ({
     ).slice(0, 6);
   }, [catalogRfqsPool, searchTerm, catalogResultTitles]);
 
+  const { siteContent } = useSiteContent();
+  const productsDirectoryLayout = React.useMemo(
+    () =>
+      mergeHomepageDisplayConfig(siteContent?.homepageDisplayConfig).sectionLayouts
+        ?.productsDirectory || DEFAULT_SITE_SECTION_LAYOUTS.productsDirectory,
+    [siteContent?.homepageDisplayConfig]
+  );
+
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(12); // 3x4 / 4x3 product grid (12 items per page default)
+  const [itemsPerPage, setItemsPerPage] = useState<number>(
+    () => productsDirectoryLayout.itemCount || 12
+  );
+
+  // Sync itemsPerPage whenever admin updates Products Catalog layout in Whole Site Page Manager
+  useEffect(() => {
+    const configured = productsDirectoryLayout.itemCount || 12;
+    setItemsPerPage(configured);
+    setCurrentPage(1);
+  }, [productsDirectoryLayout.itemCount]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, activeCategory, activeSupplierTiers, activeCountries, selectedIncoterm, maxMoq, ownershipFilter]);
+
+  const productItemsPerPageOptions = React.useMemo(() => {
+    const base = [12, 24, 48, productsDirectoryLayout.itemCount || 12];
+    return Array.from(new Set(base.filter(n => n > 0))).sort((a, b) => a - b);
+  }, [productsDirectoryLayout.itemCount]);
 
   // Paginated subset
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -1266,6 +1291,7 @@ export const ProductCatalog: React.FC<Props> = ({
                       onContactSupplier={onContactSupplier}
                       formatPrice={formatPrice}
                       getTierBadge={getTierBadge}
+                      desktopColumns={productsDirectoryLayout.columns}
                     />
                   ) : (
                 /* List View */
@@ -1379,7 +1405,7 @@ export const ProductCatalog: React.FC<Props> = ({
                 itemsPerPage={itemsPerPage}
                 onPageChange={setCurrentPage}
                 onItemsPerPageChange={setItemsPerPage}
-                itemsPerPageOptions={[12, 24, 48]}
+                itemsPerPageOptions={productItemsPerPageOptions}
                 itemLabel="products"
                 scrollTargetId="product-catalog-section"
               />

@@ -34,7 +34,8 @@ import { productImageManagerService } from '../../services/productImageManagerSe
 import { fixSingleCatalogImage } from '../../services/visualProductImageService';
 import { AdminQuickImageInspectorModal } from '../admin/AdminQuickImageInspectorModal';
 import { useSiteContent } from '../../context/SiteContentContext';
-import { DEFAULT_HOMEPAGE_DISPLAY_CONFIG } from '../../data/defaultSiteContent';
+import { DEFAULT_SITE_SECTION_LAYOUTS } from '../../data/defaultSiteContent';
+import { mergeHomepageDisplayConfig, getResponsiveGridColsClass } from '../../utils/gridLayoutUtils';
 
 interface Props {
   products: Product[];
@@ -77,11 +78,15 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 }) => {
   const { t, tText } = useLanguage();
   const { siteContent } = useSiteContent();
-  const displayConfig = siteContent?.homepageDisplayConfig || DEFAULT_HOMEPAGE_DISPLAY_CONFIG;
-  const sectionVisibility = {
-    ...DEFAULT_HOMEPAGE_DISPLAY_CONFIG.sectionVisibility,
-    ...(displayConfig.sectionVisibility || {})
-  };
+  const displayConfig = React.useMemo(
+    () => mergeHomepageDisplayConfig(siteContent?.homepageDisplayConfig),
+    [siteContent?.homepageDisplayConfig]
+  );
+  const sectionVisibility = displayConfig.sectionVisibility;
+  const sectionLayouts = displayConfig.sectionLayouts || DEFAULT_SITE_SECTION_LAYOUTS;
+  const featuredProductsLayout = sectionLayouts.featuredProducts;
+  const recentRfqsLayout = sectionLayouts.recentRfqs;
+  const verifiedSuppliersLayout = sectionLayouts.verifiedSuppliers;
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
   const [imageSyncVersion, setImageSyncVersion] = React.useState(0);
@@ -309,22 +314,24 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   }, [allHomeRfqsPool, displayConfig.hiddenRfqIds]);
 
   const displayedRfqs = React.useMemo(() => {
+    const rfqLimit = Math.max(1, recentRfqsLayout.itemCount || 8);
     const pinnedIds = displayConfig.pinnedRfqIds || [];
     const mode = displayConfig.featuredRfqsMode || 'PINNED_FIRST';
     if (mode !== 'AUTO_LATEST' && pinnedIds.length > 0) {
       const byId = new Map(activeRfqsPool.map(r => [r.id, r]));
       const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof activeRfqsPool;
       if (mode === 'PINNED_ONLY' && pinned.length > 0) {
-        return pinned.slice(0, 8);
+        return pinned.slice(0, rfqLimit);
       }
       const pinnedSet = new Set(pinned.map(r => r.id));
       const rest = activeRfqsPool.filter(r => !pinnedSet.has(r.id));
-      return [...pinned, ...rest].slice(0, 8);
+      return [...pinned, ...rest].slice(0, rfqLimit);
     }
-    return activeRfqsPool.slice(0, 8);
-  }, [activeRfqsPool, displayConfig.pinnedRfqIds, displayConfig.featuredRfqsMode]);
+    return activeRfqsPool.slice(0, rfqLimit);
+  }, [activeRfqsPool, displayConfig.pinnedRfqIds, displayConfig.featuredRfqsMode, recentRfqsLayout.itemCount]);
 
   const featuredProducts = React.useMemo(() => {
+    const prodLimit = Math.max(1, featuredProductsLayout.itemCount || 12);
     const source = products && products.length > 0 ? products : MOCK_PRODUCTS;
     const synced = productImageManagerService.sortProductsLatestUploadedFirst(
       productImageManagerService.applyOverridesToProductList(source)
@@ -345,23 +352,25 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       const byId = new Map(topRatedPool.map(p => [p.id, p]));
       const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as Product[];
       if (mode === 'PINNED_ONLY' && pinned.length > 0) {
-        return pinned.slice(0, 12);
+        return pinned.slice(0, prodLimit);
       }
       const pinnedSet = new Set(pinned.map(p => p.id));
       const rest = topRatedPool.filter(p => !pinnedSet.has(p.id));
-      return [...pinned, ...rest].slice(0, 12);
+      return [...pinned, ...rest].slice(0, prodLimit);
     }
-    return topRatedPool.slice(0, 12);
+    return topRatedPool.slice(0, prodLimit);
   }, [
     products,
     selectedCategory,
     imageSyncVersion,
     displayConfig.pinnedProductIds,
     displayConfig.hiddenProductIds,
-    displayConfig.featuredProductsMode
+    displayConfig.featuredProductsMode,
+    featuredProductsLayout.itemCount
   ]);
 
   const displayedCompanies = React.useMemo(() => {
+    const supplierLimit = Math.max(1, verifiedSuppliersLayout.itemCount || 6);
     const hiddenSet = new Set(displayConfig.hiddenSupplierIds || []);
     const visible = MOCK_COMPANIES.filter(c => !hiddenSet.has(c.id));
     const pinnedIds = displayConfig.pinnedSupplierIds || [];
@@ -372,10 +381,16 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       const pinnedSet = new Set(pinned.map(c => c.id));
       ordered = [...pinned, ...visible.filter(c => !pinnedSet.has(c.id))];
     }
-    return (showAllSuppliers ? ordered : ordered.slice(0, 6)).map(c =>
+    return (showAllSuppliers ? ordered : ordered.slice(0, supplierLimit)).map(c =>
       securityService.gateCompanyProfile(c, currentUser)
     );
-  }, [currentUser, showAllSuppliers, displayConfig.pinnedSupplierIds, displayConfig.hiddenSupplierIds]);
+  }, [
+    currentUser,
+    showAllSuppliers,
+    displayConfig.pinnedSupplierIds,
+    displayConfig.hiddenSupplierIds,
+    verifiedSuppliersLayout.itemCount
+  ]);
 
   const curr =
     (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
@@ -480,7 +495,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
         {displayedRfqs && displayedRfqs.length > 0 ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid ${getResponsiveGridColsClass(recentRfqsLayout.columns)} gap-4`}>
               {displayedRfqs.map((rfq: any) => (
                 <article
                   key={rfq.id}
@@ -618,6 +633,11 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             onViewAllProducts={() => onNavigate('PRODUCT_DIRECTORY')}
             formatPrice={formatPrice}
             isLoading={isLoadingProducts}
+            layoutMode={featuredProductsLayout.layoutMode}
+            desktopColumns={featuredProductsLayout.columns}
+            rows={featuredProductsLayout.rows}
+            autoSlide={featuredProductsLayout.autoSlide !== false}
+            autoSlideIntervalMs={featuredProductsLayout.autoSlideIntervalMs || 4500}
             isAdminUser={isAdminUser}
             fixingProductIds={fixingProductIds}
             uploadingProductIds={uploadingProductIds}
@@ -694,7 +714,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`grid ${getResponsiveGridColsClass(verifiedSuppliersLayout.columns)} gap-4`}>
           {displayedCompanies.map((company, index) => (
             <article
               key={company.id || index}
@@ -775,7 +795,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               onClick={() => setShowAllSuppliers(!showAllSuppliers)}
               className="px-4 py-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
             >
-              {showAllSuppliers ? 'Show Top 6 Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
+              {showAllSuppliers
+                ? `Show Top ${verifiedSuppliersLayout.itemCount} Suppliers`
+                : `Show All ${MOCK_COMPANIES.length} Suppliers`}
             </button>
             <button
               type="button"
