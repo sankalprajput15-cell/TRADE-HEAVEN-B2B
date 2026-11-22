@@ -350,6 +350,7 @@ class ProductImageManagerService {
   private locallyDeletedIds = new Set<string>();
   private localMutationTimes = new Map<string, number>();
   private lastServerSyncAt = 0;
+  private lastLocalMutationAt = 0;
   private lastEmitTimestamp = 0;
   private inFlightWriteCount = 0;
   private stateWriteVersion = 0;
@@ -367,7 +368,11 @@ class ProductImageManagerService {
         try {
           this.syncChannel = new BroadcastChannel('tradeheaven_product_images_sync');
           this.syncChannel.onmessage = (ev) => {
-            if (ev?.data?.type === 'sync' && this.inFlightWriteCount === 0) {
+            if (
+              ev?.data?.type === 'sync' &&
+              this.inFlightWriteCount === 0 &&
+              Date.now() - this.lastLocalMutationAt > 2500
+            ) {
               this.syncFromServer(true).catch(() => {});
             }
           };
@@ -376,14 +381,22 @@ class ProductImageManagerService {
 
       // Cross-window fallback ping via localStorage storage event (fires across all Chrome windows on same origin)
       window.addEventListener('storage', (ev: StorageEvent) => {
-        if (ev.key === 'tradeheaven_product_images_sync_ping' && this.inFlightWriteCount === 0) {
+        if (
+          ev.key === 'tradeheaven_product_images_sync_ping' &&
+          this.inFlightWriteCount === 0 &&
+          Date.now() - this.lastLocalMutationAt > 2500
+        ) {
           this.syncFromServer(true).catch(() => {});
         }
       });
 
-      // Automatically sync when tab becomes visible or window gains focus (never interrupting active manual writes)
+      // Automatically sync when tab becomes visible or window gains focus (never interrupting active or recent manual writes)
       window.addEventListener('focus', () => {
-        if (this.inFlightWriteCount === 0 && Date.now() - this.lastServerSyncAt > 1500) {
+        if (
+          this.inFlightWriteCount === 0 &&
+          Date.now() - this.lastLocalMutationAt > 2500 &&
+          Date.now() - this.lastServerSyncAt > 1500
+        ) {
           this.syncFromServer(true).catch(() => {});
         }
       });
@@ -391,6 +404,7 @@ class ProductImageManagerService {
         if (
           document.visibilityState === 'visible' &&
           this.inFlightWriteCount === 0 &&
+          Date.now() - this.lastLocalMutationAt > 2500 &&
           Date.now() - this.lastServerSyncAt > 1500
         ) {
           this.syncFromServer(true).catch(() => {});
@@ -402,10 +416,12 @@ class ProductImageManagerService {
   private beginWrite(): void {
     this.inFlightWriteCount += 1;
     this.stateWriteVersion += 1;
+    this.lastLocalMutationAt = Date.now();
   }
 
   private endWrite(): void {
     this.inFlightWriteCount = Math.max(0, this.inFlightWriteCount - 1);
+    this.lastLocalMutationAt = Date.now();
   }
 
   private stripLocalAssetQuery(url: string | undefined | null): string {
@@ -481,9 +497,26 @@ class ProductImageManagerService {
     }
   }
 
+  private getEntryTimestampMs(entry?: ProductImageOverrideEntry | null): number {
+    if (!entry) return 0;
+    return Math.max(
+      this.parseTimestampMs(entry.imageUpdatedAt),
+      this.parseTimestampMs(entry.updatedAt)
+    );
+  }
+
   private isManualEntry(entry?: ProductImageOverrideEntry | null): boolean {
     if (!entry?.primary) return false;
-    return entry.updatedBy === 'admin-manual';
+    return entry.updatedBy === 'admin-manual' || entry.updatedBy === 'user-upload';
+  }
+
+  private isProtectedManualOrAuditEntry(entry?: ProductImageOverrideEntry | null): boolean {
+    if (!entry?.primary) return false;
+    return (
+      entry.updatedBy === 'admin-manual' ||
+      entry.updatedBy === 'user-upload' ||
+      entry.updatedBy === 'catalog-image-auditor'
+    );
   }
 
   public isManualOverride(productId?: string, productTitle?: string): boolean {
@@ -764,10 +797,10 @@ class ProductImageManagerService {
         const normalizedIdb = this.normalizeOverrideMap(idbState.overrides);
         for (const [pid, idbEntry] of Object.entries(normalizedIdb)) {
           if (this.locallyDeletedIds.has(pid)) continue;
-          if (!this.isManualEntry(idbEntry)) continue;
+          if (!this.isProtectedManualOrAuditEntry(idbEntry)) continue;
           const current = this.state.overrides[pid];
-          const idbTime = Date.parse(idbEntry.updatedAt || '') || 0;
-          const curTime = current ? (Date.parse(current.updatedAt || '') || 0) : 0;
+          const idbTime = this.getEntryTimestampMs(idbEntry);
+          const curTime = this.getEntryTimestampMs(current);
           if (!current || idbTime > curTime) {
             this.state.overrides[pid] = idbEntry;
             changed = true;
@@ -883,31 +916,27 @@ class ProductImageManagerService {
   private syncCachedProductsInLocalStorage() {
     if (typeof window === 'undefined') return;
     try {
-      const rawCustom = this.memoryStorage.get('trade_heaven_custom_products');
-      if (rawCustom) {
-        const parsedCustom = JSON.parse(rawCustom);
-        if (Array.isArray(parsedCustom)) {
-          const updatedCustom = this.applyOverridesToProductList(parsedCustom);
-          this.memoryStorage.set('trade_heaven_custom_products', JSON.stringify(updatedCustom));
-        }
-      }
-
-      const rawProducts = this.memoryStorage.get(PRODUCTS_CACHE_KEY);
-      if (rawProducts) {
-        const parsed = JSON.parse(rawProducts);
+      const applyAndPersist = (storage: Storage | Map<string, string>, key: string, isWebStorage: boolean) => {
+        const raw = isWebStorage ? (storage as Storage).getItem(key) : (storage as Map<string, string>).get(key);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           const updated = this.applyOverridesToProductList(parsed);
-          this.memoryStorage.set(PRODUCTS_CACHE_KEY, JSON.stringify(updated));
+          const serialized = JSON.stringify(updated);
+          if (isWebStorage) {
+            (storage as Storage).setItem(key, serialized);
+          } else {
+            (storage as Map<string, string>).set(key, serialized);
+          }
         }
-      }
+      };
 
-      const rawCatProducts = this.memoryStorage.get('cached_products');
-      if (rawCatProducts) {
-        const parsedCat = JSON.parse(rawCatProducts);
-        if (Array.isArray(parsedCat)) {
-          const updatedCat = this.applyOverridesToProductList(parsedCat);
-          this.memoryStorage.set('cached_products', JSON.stringify(updatedCat));
-        }
+      applyAndPersist(this.memoryStorage, 'trade_heaven_custom_products', false);
+      applyAndPersist(this.memoryStorage, PRODUCTS_CACHE_KEY, false);
+      applyAndPersist(this.memoryStorage, 'cached_products', false);
+
+      if (window.localStorage) {
+        applyAndPersist(window.localStorage, 'trade_heaven_custom_products', true);
       }
     } catch {}
   }
@@ -940,7 +969,10 @@ class ProductImageManagerService {
   }
 
   public async syncFromServer(force = true, includeFullMedia = false): Promise<ProductImageSystemState> {
-    if (!force && (this.inFlightWriteCount > 0 || Date.now() - this.lastServerSyncAt < 5000)) {
+    if (this.inFlightWriteCount > 0 || Date.now() - this.lastLocalMutationAt < 2500) {
+      return this.state;
+    }
+    if (!force && Date.now() - this.lastServerSyncAt < 5000) {
       return this.state;
     }
     const syncStartVersion = this.stateWriteVersion;
@@ -1027,7 +1059,7 @@ class ProductImageManagerService {
           ...DEFAULT_BUILTIN_OVERRIDES
         };
 
-        // Server overrides take priority over built-in defaults while honoring manual/auditor precedence and timestamps
+        // Server overrides merge strictly by monotonic timestamp (older server entries never downgrade newer entries)
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
           if (this.locallyDeletedIds.has(pid)) continue;
           const existing = mergedOverrides[pid];
@@ -1037,32 +1069,38 @@ class ProductImageManagerService {
             srvEntry.updatedBy === 'catalog-image-auditor' ||
             srvEntry.updatedBy === 'system-repair';
           const existingIsManual = this.isManualEntry(existing);
-          const srvTime = Math.max(
-            this.parseTimestampMs(srvEntry.imageUpdatedAt),
-            this.parseTimestampMs(srvEntry.updatedAt)
-          );
-          const existingTime = Math.max(
-            this.parseTimestampMs(existing?.imageUpdatedAt),
-            this.parseTimestampMs(existing?.updatedAt)
-          );
-          if (existingIsManual && !srvIsAuditFixed && existingTime >= srvTime) {
+          const srvTime = this.getEntryTimestampMs(srvEntry);
+          const existingTime = this.getEntryTimestampMs(existing);
+
+          if (!existing) {
+            mergedOverrides[pid] = srvEntry;
+          } else if (existingIsManual && !srvIsAuditFixed && existingTime >= srvTime) {
             continue;
-          }
-          if (!existing || srvIsManual || srvIsAuditFixed || !existingIsManual || srvTime >= existingTime) {
+          } else if (srvTime > existingTime) {
+            mergedOverrides[pid] = srvEntry;
+          } else if (srvTime === existingTime && (srvIsManual || (srvIsAuditFixed && !existingIsManual))) {
             mergedOverrides[pid] = srvEntry;
           }
         }
 
-        // Preserve local overrides ONLY if recently mutated in this active tab (never re-inject stale IndexedDB or pruned dead entries)
+        // Preserve ANY local override that is strictly newer by monotonic timestamp than server state
+        // (eliminates the ~5-10 min expiry cliff where MANUAL_MUTATION_GRACE_MS allowed older server/backup snapshots to revert edits)
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
-          const mutatedAt = this.localMutationTimes.get(pid) || 0;
-          const isRecentTabMutation = mutatedAt > 0 && Date.now() - mutatedAt < this.MANUAL_MUTATION_GRACE_MS;
-          if (!isRecentTabMutation) continue;
+          const localTime = this.getEntryTimestampMs(localEntry);
+          const localIsProtected = this.isProtectedManualOrAuditEntry(localEntry);
           const srvEntry = mergedOverrides[pid];
-          const localTime = Date.parse(localEntry.updatedAt || '') || 0;
-          const srvTime = Date.parse(srvEntry?.updatedAt || '') || 0;
-          if (!srvEntry || localTime >= srvTime) {
+          const srvTime = this.getEntryTimestampMs(srvEntry);
+          const srvIsProtected = this.isProtectedManualOrAuditEntry(srvEntry);
+          const mutatedInTab = this.localMutationTimes.has(pid);
+
+          if (!srvEntry) {
+            if (mutatedInTab || localIsProtected) {
+              mergedOverrides[pid] = localEntry;
+            }
+          } else if (localTime > srvTime) {
+            mergedOverrides[pid] = localEntry;
+          } else if (localTime === srvTime && localIsProtected && !srvIsProtected) {
             mergedOverrides[pid] = localEntry;
           }
         }
@@ -2531,23 +2569,29 @@ class ProductImageManagerService {
         primaryUrl: cleanPrimary,
         galleryUrls: resolvedGallery,
         format,
+        imageUpdatedAt: versionTs,
+        updatedAt: new Date(versionTs).toISOString(),
         updatedBy: 'admin-manual'
       });
 
+      let primaryPersisted = false;
       try {
         const res = await fetch('/api/v1/admin/product-images', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: bodyStr
         });
-        if (!res.ok) throw new Error('Primary endpoint non-200');
         const resJson = await res.json().catch(() => null);
-        if (Array.isArray(resJson?.deletedOldUrls) && resJson.deletedOldUrls.length > 0) {
-          this.pruneDeletedUrlsFromMemory(resJson.deletedOldUrls);
-          this.saveToLocalStorage({ productId: cleanId, url: cleanPrimary, gallery: resolvedGallery, action: 'prune_deleted_old_images' });
-          this.notifyListeners();
+        if (res.ok && (resJson?.success === true || resJson?.status === 'success')) {
+          primaryPersisted = true;
+          if (Array.isArray(resJson?.deletedOldUrls) && resJson.deletedOldUrls.length > 0) {
+            this.pruneDeletedUrlsFromMemory(resJson.deletedOldUrls);
+            this.saveToLocalStorage({ productId: cleanId, url: cleanPrimary, gallery: resolvedGallery, action: 'prune_deleted_old_images' });
+            this.notifyListeners();
+          }
         }
-      } catch {
+      } catch {}
+      if (!primaryPersisted) {
         await fetch('/api.php?action=set_product_images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2705,17 +2749,24 @@ class ProductImageManagerService {
         primaryUrl: cleanPrimary,
         galleryUrls,
         format,
+        imageUpdatedAt: nowMs,
+        updatedAt: nowIso,
         updatedBy: 'admin-manual'
       });
 
+      let bulkPersisted = false;
       try {
         const res = await fetch('/api/v1/admin/product-images', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: bodyStr
         });
-        if (!res.ok) throw new Error('Primary endpoint non-200');
-      } catch {
+        const resJson = await res.json().catch(() => null);
+        if (res.ok && (resJson?.success === true || resJson?.status === 'success')) {
+          bulkPersisted = true;
+        }
+      } catch {}
+      if (!bulkPersisted) {
         await fetch('/api.php?action=set_product_images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2734,22 +2785,25 @@ class ProductImageManagerService {
     if (!category || !primaryUrl) return;
     this.beginWrite();
     try {
-      const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      const cleanPrimary = this.withFreshCacheBuster(primaryUrl, nowMs);
       this.state.categoryOverrides[category] = cleanPrimary;
 
       if (matchingProductIds.length > 0) {
         const format = this.detectFormatFromUrl(cleanPrimary);
-        const nowIso = new Date().toISOString();
         for (const pid of matchingProductIds) {
           this.locallyDeletedIds.delete(pid);
-          this.localMutationTimes.set(pid, Date.now());
+          this.localMutationTimes.set(pid, nowMs);
           this.state.overrides[pid] = {
             primary: cleanPrimary,
             gallery: [cleanPrimary],
             format,
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          this.recordProductActivityTimestamp(pid, nowMs, false);
         }
       }
 
@@ -2767,17 +2821,24 @@ class ProductImageManagerService {
         category,
         productIds: matchingProductIds,
         primaryUrl: cleanPrimary,
+        imageUpdatedAt: nowMs,
+        updatedAt: nowIso,
         updatedBy: 'admin-manual'
       });
 
+      let catPersisted = false;
       try {
         const res = await fetch('/api/v1/admin/product-images', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: bodyStr
         });
-        if (!res.ok) throw new Error('Primary endpoint non-200');
-      } catch {
+        const resJson = await res.json().catch(() => null);
+        if (res.ok && (resJson?.success === true || resJson?.status === 'success')) {
+          catPersisted = true;
+        }
+      } catch {}
+      if (!catPersisted) {
         await fetch('/api.php?action=set_product_images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2796,22 +2857,25 @@ class ProductImageManagerService {
     if (!primaryUrl) return;
     this.beginWrite();
     try {
-      const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      const cleanPrimary = this.withFreshCacheBuster(primaryUrl, nowMs);
       this.state.globalDefaultImage = cleanPrimary;
 
       if (allProductIds.length > 0) {
         const format = this.detectFormatFromUrl(cleanPrimary);
-        const nowIso = new Date().toISOString();
         for (const pid of allProductIds) {
           this.locallyDeletedIds.delete(pid);
-          this.localMutationTimes.set(pid, Date.now());
+          this.localMutationTimes.set(pid, nowMs);
           this.state.overrides[pid] = {
             primary: cleanPrimary,
             gallery: [cleanPrimary],
             format,
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          this.recordProductActivityTimestamp(pid, nowMs, false);
         }
       }
 
@@ -2829,17 +2893,24 @@ class ProductImageManagerService {
         applyToAll: true,
         productIds: allProductIds,
         primaryUrl: cleanPrimary,
+        imageUpdatedAt: nowMs,
+        updatedAt: nowIso,
         updatedBy: 'admin-manual'
       });
 
+      let allPersisted = false;
       try {
         const res = await fetch('/api/v1/admin/product-images', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: bodyStr
         });
-        if (!res.ok) throw new Error('Primary endpoint non-200');
-      } catch {
+        const resJson = await res.json().catch(() => null);
+        if (res.ok && (resJson?.success === true || resJson?.status === 'success')) {
+          allPersisted = true;
+        }
+      } catch {}
+      if (!allPersisted) {
         await fetch('/api.php?action=set_product_images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2862,20 +2933,21 @@ class ProductImageManagerService {
     if (!oldUrlToReplace || !newUrl) return;
     this.beginWrite();
     try {
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
       const cleanOld = this.stripLocalAssetQuery(oldUrlToReplace);
-      const cleanNew = normalizeProductAssetUrl(newUrl);
+      const cleanNew = this.withFreshCacheBuster(newUrl, nowMs);
       if (cleanOld) {
         this.state.urlReplacements[cleanOld] = cleanNew;
       }
       this.state.urlReplacements[oldUrlToReplace] = cleanNew;
 
       const format = this.detectFormatFromUrl(cleanNew);
-      const nowIso = new Date().toISOString();
 
       // Update any existing local overrides matching cleanOld
       for (const [k, entry] of Object.entries(this.state.overrides)) {
         if (entry?.primary && this.stripLocalAssetQuery(entry.primary) === cleanOld) {
-          this.localMutationTimes.set(k, Date.now());
+          this.localMutationTimes.set(k, nowMs);
           this.state.overrides[k] = {
             ...entry,
             previousPrimary: entry.primary,
@@ -2883,22 +2955,26 @@ class ProductImageManagerService {
             gallery: [cleanNew, ...(entry.gallery || []).filter(u => u && this.stripLocalAssetQuery(u) !== cleanOld && u !== cleanNew)],
             format,
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          this.recordProductActivityTimestamp(k, nowMs, false);
         }
       }
 
       if (matchingProductIds.length > 0) {
         for (const pid of matchingProductIds) {
           this.locallyDeletedIds.delete(pid);
-          this.localMutationTimes.set(pid, Date.now());
+          this.localMutationTimes.set(pid, nowMs);
           this.state.overrides[pid] = {
             primary: cleanNew,
             gallery: [cleanNew],
             format,
             updatedAt: nowIso,
+            imageUpdatedAt: nowMs,
             updatedBy: 'admin-manual'
           };
+          this.recordProductActivityTimestamp(pid, nowMs, false);
         }
       }
 
@@ -2916,17 +2992,24 @@ class ProductImageManagerService {
         oldUrlToReplace: cleanOld || oldUrlToReplace,
         productIds: matchingProductIds,
         primaryUrl: cleanNew,
+        imageUpdatedAt: nowMs,
+        updatedAt: nowIso,
         updatedBy: 'admin-manual'
       });
 
+      let replacePersisted = false;
       try {
         const res = await fetch('/api/v1/admin/product-images', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: bodyStr
         });
-        if (!res.ok) throw new Error('Primary endpoint non-200');
-      } catch {
+        const resJson = await res.json().catch(() => null);
+        if (res.ok && (resJson?.success === true || resJson?.status === 'success')) {
+          replacePersisted = true;
+        }
+      } catch {}
+      if (!replacePersisted) {
         await fetch('/api.php?action=set_product_images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

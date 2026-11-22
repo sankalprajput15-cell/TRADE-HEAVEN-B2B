@@ -13832,6 +13832,8 @@ app.put('/api/v1/products/:id', (req, res) => {
         isManual: true
       });
       clearConflictingTitleOverridesForProductId(id, primaryUrl);
+      recordCurrentServerImageEdit(id, nowMs);
+      updateFullCatalogSnapshotRecords([{ id, imageUrl: primaryUrl, gallery: updatedProduct.images }]);
       if (/^https?:\/\//i.test(primaryUrl)) {
         void mirrorExternalProductImageToLocalUploads({
           externalUrl: primaryUrl,
@@ -13840,6 +13842,12 @@ app.put('/api/v1/products/:id', (req, res) => {
           category: updatedProduct?.category,
           flushNow: true,
           isManual: true
+        });
+      } else if (LIVE_UPSTREAM_PROXY_ENABLED) {
+        void replicateImageOverrideToLiveServer({
+          productId: id,
+          primaryUrl,
+          galleryUrls: updatedProduct.images
         });
       }
     }
@@ -14242,7 +14250,7 @@ function loadServerProductImageState(
     mediaLibrary: []
   };
 
-  const mergeOverridesFromParsed = (parsed: any, forceOverwrite = false) => {
+  const mergeOverridesFromParsed = (parsed: any, forceOverwrite = false, seedMissingOnly = false) => {
     if (!parsed || typeof parsed !== 'object') return;
     if (parsed.productActivityTimestamps && typeof parsed.productActivityTimestamps === 'object') {
       if (!defaultState.productActivityTimestamps) {
@@ -14252,7 +14260,7 @@ function loadServerProductImageState(
         const ts = parseServerTimestampMs(rawTs as any);
         if (ts > 0) {
           const existingTs = defaultState.productActivityTimestamps[pid] || 0;
-          if (ts > existingTs) {
+          if ((!seedMissingOnly || existingTs === 0) && ts > existingTs) {
             defaultState.productActivityTimestamps[pid] = ts;
           }
         }
@@ -14276,6 +14284,9 @@ function loadServerProductImageState(
               .filter(u => Boolean(u) && (incomingIsManual || !isGenericOrPlaceholderServerUrl(u)))
           : [cleanPrimary];
         const existing = defaultState.overrides[pid];
+        if (seedMissingOnly && existing) {
+          continue;
+        }
         if (!existing || forceOverwrite) {
           defaultState.overrides[pid] = {
             ...entry,
@@ -14294,7 +14305,10 @@ function loadServerProductImageState(
             parseServerTimestampMs(existing.updatedAt)
           );
           const incomingTime = entryTs;
-          // Only keep an older manual entry over a non-verified background auto-upload
+          // Current/newer runtime state always wins over older timestamps or backups
+          if (existingTime > 0 && incomingTime > 0 && existingTime > incomingTime) {
+            continue;
+          }
           if (existingIsManual && !incomingIsAuditVerified && existingTime >= incomingTime) {
             continue;
           }
@@ -14316,7 +14330,7 @@ function loadServerProductImageState(
         }
       }
     }
-    if (parsed.globalDefaultImage !== undefined && (forceOverwrite || !defaultState.globalDefaultImage)) {
+    if (parsed.globalDefaultImage !== undefined && !seedMissingOnly && (forceOverwrite || !defaultState.globalDefaultImage)) {
       defaultState.globalDefaultImage = parsed.globalDefaultImage
         ? normalizeServerAssetUrl(parsed.globalDefaultImage)
         : null;
@@ -14324,6 +14338,7 @@ function loadServerProductImageState(
     if (parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object') {
       for (const [cat, url] of Object.entries(parsed.categoryOverrides)) {
         if (typeof url === 'string' && url) {
+          if (seedMissingOnly && defaultState.categoryOverrides[cat]) continue;
           defaultState.categoryOverrides[cat] = normalizeServerAssetUrl(url);
         }
       }
@@ -14331,9 +14346,10 @@ function loadServerProductImageState(
     if (parsed.urlReplacements && typeof parsed.urlReplacements === 'object') {
       for (const [oldUrl, newUrl] of Object.entries(parsed.urlReplacements)) {
         if (typeof newUrl === 'string' && newUrl) {
+          if (seedMissingOnly && defaultState.urlReplacements[oldUrl]) continue;
           defaultState.urlReplacements[oldUrl] = normalizeServerAssetUrl(newUrl);
           const normOld = normalizeServerAssetUrl(oldUrl);
-          if (normOld) {
+          if (normOld && !(seedMissingOnly && defaultState.urlReplacements[normOld])) {
             defaultState.urlReplacements[normOld] = normalizeServerAssetUrl(newUrl);
           }
         }
@@ -14361,25 +14377,38 @@ function loadServerProductImageState(
   };
 
   const corruptedWritableFiles: string[] = [];
-  for (const fileToRead of [IMAGE_OVERRIDES_BACKUP_FILE, PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE]) {
+  let loadedRuntimeCount = 0;
+  for (const fileToRead of [PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_FILE]) {
     try {
       if (fs.existsSync(fileToRead)) {
         const raw = fs.readFileSync(fileToRead, 'utf-8');
         const parsed = JSON.parse(raw);
-        mergeOverridesFromParsed(parsed, false);
+        mergeOverridesFromParsed(parsed, false, false);
+        loadedRuntimeCount++;
       }
     } catch (err) {
-      if (fileToRead === IMAGE_OVERRIDES_FILE || fileToRead === PUBLIC_DATA_OVERRIDES_FILE) {
-        corruptedWritableFiles.push(fileToRead);
-      }
+      corruptedWritableFiles.push(fileToRead);
       console.warn('[ProductImageSystem] Error reading overrides file (auto-healing from valid mirror):', fileToRead, err instanceof Error ? err.message : err);
     }
   }
 
-  // Merge in-memory state using timestamp precedence so newer disk updates are preserved
+  // Merge in-memory state using timestamp precedence so active runtime edits always win
   if (existingMemoryState) {
-    mergeOverridesFromParsed(existingMemoryState, false);
+    mergeOverridesFromParsed(existingMemoryState, false, false);
   }
+
+  // Backup file is STRICTLY seed-only (only fills missing keys on fresh runtime, NEVER overwrites runtime edits or deleted entries)
+  try {
+    if (fs.existsSync(IMAGE_OVERRIDES_BACKUP_FILE) && !existingMemoryState && loadedRuntimeCount === 0) {
+      const rawBackup = fs.readFileSync(IMAGE_OVERRIDES_BACKUP_FILE, 'utf-8');
+      const parsedBackup = JSON.parse(rawBackup);
+      mergeOverridesFromParsed(parsedBackup, false, true);
+    } else if (fs.existsSync(IMAGE_OVERRIDES_BACKUP_FILE) && !existingMemoryState) {
+      const rawBackup = fs.readFileSync(IMAGE_OVERRIDES_BACKUP_FILE, 'utf-8');
+      const parsedBackup = JSON.parse(rawBackup);
+      mergeOverridesFromParsed(parsedBackup, false, true);
+    }
+  } catch {}
 
   // Scan public/assets/uploads to populate mediaLibrary with real local image files (skipped on fast initial boot, deferred to setImmediate)
   if (!skipDirectoryScan) {
@@ -14538,9 +14567,13 @@ function isUploadUrlStillReferenced(
   }
 
   for (const [pid, entry] of Object.entries(serverProductImageState.overrides || {})) {
-    if (excludeProductIds.has(pid)) continue;
     if (!entry) continue;
-    if (matchesUrl(entry.primary)) return true;
+    if (excludeProductIds.has(pid)) {
+      // Preserve undo history target if previousPrimary still references this asset
+      if (matchesUrl((entry as any).previousPrimary)) return true;
+      continue;
+    }
+    if (matchesUrl(entry.primary) || matchesUrl((entry as any).previousPrimary)) return true;
     if (Array.isArray(entry.gallery) && entry.gallery.some(u => matchesUrl(u))) return true;
   }
 
@@ -14557,6 +14590,31 @@ function isUploadUrlStillReferenced(
     if (matchesUrl(l.image_url)) return true;
     if (Array.isArray(l.images) && l.images.some((u: string) => matchesUrl(u))) return true;
   }
+
+  for (const r of serverRfqsStore || []) {
+    if (!r) continue;
+    const rid = String(r.id);
+    if (excludeProductIds.has(rid) || excludeProductIds.has(`rfq-${rid}`)) continue;
+    if (matchesUrl(r.image) || matchesUrl(r.image_url)) return true;
+    if (Array.isArray(r.images) && r.images.some((u: string) => matchesUrl(u))) return true;
+  }
+
+  // Check active CMS site content (heroSlides, heroBgImage, categoriesList, logos, etc.)
+  const scanSiteContentForUrl = (node: any, depth = 0): boolean => {
+    if (!node || depth > 8) return false;
+    if (typeof node === 'string') return matchesUrl(node);
+    if (Array.isArray(node)) return node.some(item => scanSiteContentForUrl(item, depth + 1));
+    if (typeof node === 'object') {
+      for (const [k, v] of Object.entries(node)) {
+        if (k === 'id' && typeof v === 'string' && excludeProductIds.has(v)) {
+          continue;
+        }
+        if (scanSiteContentForUrl(v, depth + 1)) return true;
+      }
+    }
+    return false;
+  };
+  if (serverSiteContent && scanSiteContentForUrl(serverSiteContent)) return true;
 
   return false;
 }
@@ -15090,6 +15148,14 @@ async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ 
   }
 }
 
+const currentServerImageEdits = new Map<string, number>();
+function recordCurrentServerImageEdit(pid: string | undefined | null, tsMs = Date.now()) {
+  const clean = String(pid || '').trim();
+  if (!clean) return;
+  const prev = currentServerImageEdits.get(clean) || 0;
+  currentServerImageEdits.set(clean, Math.max(prev, tsMs));
+}
+
 async function pullNewerManualOverridesFromLiveServer(force = false): Promise<number> {
   if (!LIVE_UPSTREAM_PROXY_ENABLED || isLiveRemotePullInFlight) return 0;
   const now = Date.now();
@@ -15120,13 +15186,19 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
       );
       if (remoteMs <= 0) continue;
 
+      // Current-server-wins protection: never let remote server sync overwrite an override
+      // edited on this server or already possessing a current local manual/audit entry.
+      if (currentServerImageEdits.has(pid)) continue;
       const localEntry = serverProductImageState.overrides[pid];
-      const localMs = Math.max(
-        parseServerTimestampMs(localEntry?.imageUpdatedAt),
-        parseServerTimestampMs(localEntry?.updatedAt)
-      );
-      // Only adopt from live if live manual edit is strictly newer than local
-      if (localEntry && localMs >= remoteMs) continue;
+      if (localEntry && isAuditVerifiedOverrideEntry(localEntry)) {
+        const localMs = Math.max(
+          parseServerTimestampMs(localEntry.imageUpdatedAt),
+          parseServerTimestampMs(localEntry.updatedAt)
+        );
+        // Only adopt from remote if local was NOT already manually set with a valid timestamp,
+        // or if local lacks a manual entry and remote is strictly newer.
+        if (isManualOverrideEntry(localEntry) || localMs >= remoteMs) continue;
+      }
 
       const cleanRemotePrimary = normalizeServerAssetUrl(remoteEntry.primary).split('?')[0];
       let localPrimary = cleanRemotePrimary;
@@ -15175,7 +15247,7 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
 
     if (changed) {
       saveServerProductImageState();
-      console.log(`[CrossServerImageSync] Pulled ${pulledCount} newer admin-manual override(s) from ${LIVE_TRADEHEAVEN_API_URL}`);
+      console.log(`[CrossServerImageSync] Pulled ${pulledCount} missing manual override(s) from ${LIVE_TRADEHEAVEN_API_URL}`);
     }
   } catch {
     // Non-blocking background sync
@@ -15511,6 +15583,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
         imageUpdatedAt: nowMs,
         updatedBy: 'admin-manual'
       };
+      recordCurrentServerImageEdit(cleanId, nowMs);
       recordServerProductActivityTimestamp(cleanId, nowMs);
       clearConflictingTitleOverridesForProductId(cleanId, uploadedUrl);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', uploadedUrl);
@@ -15567,6 +15640,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
           imageUpdatedAt: nowMs,
           updatedBy: 'admin-manual'
         };
+        recordCurrentServerImageEdit(cleanPid, nowMs);
         recordServerProductActivityTimestamp(cleanPid, nowMs);
         clearConflictingTitleOverridesForProductId(cleanPid, uploadedUrl);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', uploadedUrl);
@@ -16429,17 +16503,24 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
               parseServerTimestampMs(incomingEntry?.imageUpdatedAt),
               parseServerTimestampMs(incomingEntry?.updatedAt)
             );
-            if (existingManual && !incomingManual && existingTime >= incomingTime) {
-              continue;
+            // Strictly reject stale open-tab overwrites (even if marked admin-manual) when server has a newer entry
+            if (existingEntry) {
+              if (existingTime > 0 && incomingTime > 0 && existingTime > incomingTime) {
+                continue;
+              }
+              if (existingManual && !incomingManual && existingTime >= incomingTime) {
+                continue;
+              }
+              if (existingTime > 0 && incomingTime === 0) {
+                continue;
+              }
             }
-            if (!existingEntry || incomingManual || incomingTime >= existingTime) {
+            if (!existingEntry || incomingTime > existingTime || (incomingTime === existingTime && incomingManual)) {
               serverProductImageState.overrides[pid] = {
                 ...incomingEntry,
                 primary: normalizeServerAssetUrl(incomingEntry.primary),
                 updatedAt: incomingEntry.updatedAt || nowIso,
-                ...(typeof incomingEntry.imageUpdatedAt === 'number' && incomingEntry.imageUpdatedAt > 0
-                  ? { imageUpdatedAt: incomingEntry.imageUpdatedAt }
-                  : {})
+                ...(incomingTime > 0 ? { imageUpdatedAt: incomingTime } : { imageUpdatedAt: nowMs })
               };
             }
           }
@@ -16570,6 +16651,7 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
         imageUpdatedAt: nowMs,
         updatedBy: 'admin-manual'
       };
+      recordCurrentServerImageEdit(cleanId, nowMs);
       recordServerProductActivityTimestamp(cleanId, nowMs);
       clearConflictingTitleOverridesForProductId(cleanId, cleanPrim);
       syncCategoryHeaderUrlIntoSiteContent(cleanId, '', cleanPrim);
@@ -16622,6 +16704,7 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
           imageUpdatedAt: nowMs,
           updatedBy: 'admin-manual'
         };
+        recordCurrentServerImageEdit(cleanPid, nowMs);
         recordServerProductActivityTimestamp(cleanPid, nowMs);
         clearConflictingTitleOverridesForProductId(cleanPid, cleanPrim);
         syncCategoryHeaderUrlIntoSiteContent(cleanPid, '', cleanPrim);
@@ -16771,33 +16854,59 @@ function loadServerSiteContentFromDisk(): any {
 function saveServerSiteContentToDisk() {
   try {
     if (!serverSiteContent || typeof serverSiteContent !== 'object') return;
-    const dir = path.dirname(SITE_CONTENT_BACKUP_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(SITE_CONTENT_BACKUP_FILE, JSON.stringify(serverSiteContent, null, 2), 'utf-8');
+    atomicWriteTextFileSync(SITE_CONTENT_BACKUP_FILE, JSON.stringify(serverSiteContent, null, 2));
   } catch (err) {
     console.warn('[SiteContent] Failed to save site content to disk:', err);
   }
 }
 function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
   const cats = contentPayload?.homepage?.categoriesList;
-  if (!Array.isArray(cats) || cats.length === 0) return;
+  const slides = contentPayload?.homepage?.heroSlides;
   let updated = false;
-  const nowIso = new Date().toISOString();
-  for (const cat of cats) {
-    if (!cat || !cat.id || !cat.image) continue;
-    const cid = String(cat.id).trim();
-    const cleanImg = normalizeServerAssetUrl(String(cat.image).trim());
-    if (!cleanImg) continue;
-    const existing = serverProductImageState.overrides[cid];
-    if (!existing || normalizeServerAssetUrl(existing.primary) !== cleanImg || !isManualOverrideEntry(existing)) {
-      serverProductImageState.overrides[cid] = {
-        primary: cleanImg,
-        gallery: [cleanImg],
-        format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG',
-        updatedAt: nowIso,
-        updatedBy: 'admin-manual'
-      };
-      updated = true;
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  if (Array.isArray(cats)) {
+    for (const cat of cats) {
+      if (!cat || !cat.id || !cat.image) continue;
+      const cid = String(cat.id).trim();
+      const cleanImg = normalizeServerAssetUrl(String(cat.image).trim());
+      if (!cleanImg) continue;
+      const existing = serverProductImageState.overrides[cid];
+      if (!existing || normalizeServerAssetUrl(existing.primary) !== cleanImg || !isManualOverrideEntry(existing)) {
+        serverProductImageState.overrides[cid] = {
+          primary: cleanImg,
+          gallery: [cleanImg],
+          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG',
+          updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
+          updatedBy: 'admin-manual'
+        };
+        recordCurrentServerImageEdit(cid, nowMs);
+        recordServerProductActivityTimestamp(cid, nowMs);
+        updated = true;
+      }
+    }
+  }
+  if (Array.isArray(slides)) {
+    for (const slide of slides) {
+      if (!slide || !slide.id || !slide.image) continue;
+      const sid = String(slide.id).trim();
+      const cleanImg = normalizeServerAssetUrl(String(slide.image).trim());
+      if (!cleanImg) continue;
+      const existing = serverProductImageState.overrides[sid];
+      if (!existing || normalizeServerAssetUrl(existing.primary) !== cleanImg || !isManualOverrideEntry(existing)) {
+        serverProductImageState.overrides[sid] = {
+          primary: cleanImg,
+          gallery: [cleanImg],
+          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG',
+          updatedAt: nowIso,
+          imageUpdatedAt: nowMs,
+          updatedBy: 'admin-manual'
+        };
+        recordCurrentServerImageEdit(sid, nowMs);
+        recordServerProductActivityTimestamp(sid, nowMs);
+        updated = true;
+      }
     }
   }
   if (updated) {
@@ -16878,7 +16987,23 @@ app.put('/api/site-content', async (req, res) => {
   }
 
   const cleanPayload = extractSiteContentPayload(req.body);
-  serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload };
+  const incomingTs = Number((cleanPayload as any)?.siteContentUpdatedAt || 0);
+  const currentTs = Number((serverSiteContent as any)?.siteContentUpdatedAt || 0);
+  if (currentTs > 0 && incomingTs > 0 && incomingTs < currentTs) {
+    return res.json({
+      success: true,
+      liveSynced: false,
+      staleIgnored: true,
+      data: serverSiteContent,
+      message: 'Newer site content is already live on server; stale payload ignored.'
+    });
+  }
+  const nowMs = Date.now();
+  serverSiteContent = {
+    ...(serverSiteContent || {}),
+    ...cleanPayload,
+    siteContentUpdatedAt: Math.max(incomingTs || 0, nowMs)
+  };
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
   saveServerSiteContentToDisk();
   const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
@@ -22842,20 +22967,32 @@ const KNOWN_BAD_CATEGORY_HEADER_FILES = new Set([
 function syncCategoryHeaderUrlIntoSiteContent(catId: string, catName: string, localUrl: string) {
   if (!serverSiteContent || typeof serverSiteContent !== 'object') return;
   const hp = serverSiteContent.homepage;
-  if (!hp || !Array.isArray(hp.categoriesList)) return;
+  if (!hp) return;
   let updated = false;
-  hp.categoriesList = hp.categoriesList.map((cat: any) => {
-    if (!cat) return cat;
-    const idMatch = catId && String(cat.id || '').trim() === catId;
-    const nameMatch = catName && String(cat.name || '').trim().toLowerCase() === catName.trim().toLowerCase();
-    if (idMatch || nameMatch) {
-      updated = true;
-      return { ...cat, image: localUrl };
-    }
-    return cat;
-  });
+  if (Array.isArray(hp.categoriesList)) {
+    hp.categoriesList = hp.categoriesList.map((cat: any) => {
+      if (!cat) return cat;
+      const idMatch = catId && String(cat.id || '').trim() === catId;
+      const nameMatch = catName && String(cat.name || '').trim().toLowerCase() === catName.trim().toLowerCase();
+      if (idMatch || nameMatch) {
+        updated = true;
+        return { ...cat, image: localUrl };
+      }
+      return cat;
+    });
+  }
+  if (catId && Array.isArray(hp.heroSlides)) {
+    hp.heroSlides = hp.heroSlides.map((slide: any) => {
+      if (!slide) return slide;
+      if (String(slide.id || '').trim() === catId) {
+        updated = true;
+        return { ...slide, image: localUrl };
+      }
+      return slide;
+    });
+  }
   if (updated) {
-    serverSiteContent = { ...serverSiteContent, homepage: { ...hp } };
+    serverSiteContent = { ...serverSiteContent, homepage: { ...hp }, siteContentUpdatedAt: Date.now() };
     saveServerSiteContentToDisk();
   }
 }
@@ -24659,6 +24796,7 @@ async function fixSingleCatalogImageRecord(params: {
 
   if (!params.revert && finalImageUrl) {
     recordServerProductActivityTimestamp(cleanId, activityMs);
+    recordCurrentServerImageEdit(cleanId, activityMs);
   }
 
   if (matchedListing && finalImageUrl) {

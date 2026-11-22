@@ -44,8 +44,11 @@ export function resolveHeroSlideImageSrc(
     return trimmed.replace(/^\/assets\/aistudio\//, '/assets/uploads/');
   };
 
+  const slideId = (slide?.id || '').trim();
+  const overrideUrl = slideId ? cleanCustom(productImageManagerService.getProductImage(slideId)) : '';
   const slideImg = cleanCustom(slide?.image);
   if (slideImg) return slideImg;
+  if (overrideUrl) return overrideUrl;
 
   if (index === 0) {
     const legacyImg = cleanCustom(legacyHeroBgImage);
@@ -170,6 +173,7 @@ export const HeroBannerSlidesEditor: React.FC<HeroBannerSlidesEditorProps> = ({
     setStatusNotice(null);
     try {
       const res = await productImageManagerService.uploadAndAssignImageFile(file, {
+        productId: slideId,
         targetFormat: 'webp',
         quality: 0.9
       });

@@ -903,6 +903,25 @@ export const bigrockApi = {
     return this.submitListing(listing);
   },
 
+  async updateListing(id: string | number, listing: Partial<DbListing>): Promise<{ success: boolean; data?: DbListing; error?: string }> {
+    const rawId = String(id ?? '').trim();
+    if (!rawId) return { success: false, error: 'Missing listing ID' };
+    try {
+      const response = await fetch(`${BIGROCK_API_URL}?action=update_listing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...listing, id: rawId })
+      });
+      if (response.ok) {
+        const json = await safeParseJson(response);
+        if (json && (json.success || json.status === 'success')) {
+          return { success: true, data: json?.data || (listing as DbListing) };
+        }
+      }
+    } catch (err) { console.warn('[BigRock API updateListing]:', err); }
+    return { success: false, error: 'Failed to update live listing' };
+  },
+
   async deleteListing(id: string | number): Promise<{ success: boolean; error?: string }> {
     const rawId = String(id ?? '').trim();
     if (!rawId) return { success: false, error: 'Missing listing ID' };

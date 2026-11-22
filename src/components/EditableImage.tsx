@@ -98,6 +98,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
   }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgFallbackStage, targetWidth]);
 
   const lastHandledEventTsRef = useRef<number>(0);
+  const localEditTimestampRef = useRef<number>(0);
 
   // Hook into productImageManagerService custom events emitted on storage save
   useEffect(() => {
@@ -109,6 +110,13 @@ export const EditableImage: React.FC<EditableImageProps> = ({
         }
       });
     }
+
+    const getOverrideTimeMs = (entry: any): number => {
+      if (!entry) return 0;
+      const numTs = Number(entry.imageUpdatedAt || 0);
+      const isoTs = entry.updatedAt ? Date.parse(entry.updatedAt) || 0 : 0;
+      return Math.max(Number.isFinite(numTs) ? numTs : 0, isoTs);
+    };
 
     const handleImageSavedToStorage = (event: Event) => {
       if (!isMounted) return;
@@ -123,17 +131,36 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       }
 
       const key = (productId || contentKey || '').trim();
+      const targetMatchesKey = Boolean(
+        key &&
+          detail?.productId &&
+          (detail.productId === key || detail.productId.toLowerCase() === key.toLowerCase())
+      );
+      const isResetForKey =
+        detail?.action === 'reset_all_product_images' ||
+        (detail?.action === 'reset_product_image' && targetMatchesKey);
+      const matchedOverride =
+        key && (detail?.overrides?.[key] || productImageManagerService.getState()?.overrides?.[key]);
+      const matchedOverrideTs = getOverrideTimeMs(matchedOverride);
+      const hasNewerOverrideForKey =
+        localEditTimestampRef.current === 0 ||
+        matchedOverrideTs > localEditTimestampRef.current ||
+        (targetMatchesKey && evTs >= localEditTimestampRef.current);
 
-      // Clear any temporary local override so fresh storage source takes over
-      setLocalEditedSrc(null);
-      setImgFallbackStage(0);
+      if (isResetForKey || hasNewerOverrideForKey) {
+        if (matchedOverrideTs > localEditTimestampRef.current) {
+          localEditTimestampRef.current = matchedOverrideTs;
+        }
+        setLocalEditedSrc(null);
+        setImgFallbackStage(0);
+      }
 
-      // Force this component to re-render with the latest source from storage
+      // Force this component to re-render with the latest resolved source
       setTick((t) => (t + 1) % 1000000);
 
       if (detail?.url && onImageChangeRef.current) {
         if (
-          (detail.productId && (detail.productId === key || detail.productId.toLowerCase() === key.toLowerCase())) ||
+          targetMatchesKey ||
           (detail.overrides && key && detail.overrides[key]?.primary)
         ) {
           onImageChangeRef.current(detail.url);
@@ -157,8 +184,12 @@ export const EditableImage: React.FC<EditableImageProps> = ({
         e.key === 'tradeheaven_product_images_overrides' ||
         e.key === 'site_content_override'
       ) {
-        setLocalEditedSrc(null);
-        setImgFallbackStage(0);
+        const key = (productId || contentKey || '').trim();
+        const ov = key ? productImageManagerService.getState()?.overrides?.[key] : undefined;
+        if (localEditTimestampRef.current === 0 || getOverrideTimeMs(ov) > localEditTimestampRef.current) {
+          setLocalEditedSrc(null);
+          setImgFallbackStage(0);
+        }
         setTick((t) => (t + 1) % 1000000);
       }
     };
@@ -195,6 +226,9 @@ export const EditableImage: React.FC<EditableImageProps> = ({
     setStatusMessage(null);
 
     try {
+      const saveTs = Date.now();
+      localEditTimestampRef.current = saveTs;
+
       // 1. Update siteContent if this corresponds to a siteContent key
       if (contentKey) {
         updateField(contentKey, trimmed);
@@ -230,6 +264,8 @@ export const EditableImage: React.FC<EditableImageProps> = ({
     setStatusMessage(null);
 
     try {
+      const saveTs = Date.now();
+      localEditTimestampRef.current = saveTs;
       const targetKey = productId || contentKey;
       const result = await productImageManagerService.uploadAndAssignImageFile(file, {
         productId: targetKey,
@@ -237,6 +273,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       });
 
       if (result?.url) {
+        localEditTimestampRef.current = Date.now();
         if (contentKey) {
           updateField(contentKey, result.url);
         }

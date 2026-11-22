@@ -20,7 +20,7 @@ import {
 } from '../types';
 import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS, NORMALIZED_B2B_DATABASE } from '../data/mockData';
 import { securityService } from './securityService';
-import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
+import { bigrockApi, mapInquiryToRfq, DbListing } from './bigrockApi';
 import { productImageManagerService, normalizeProductAssetUrl } from './productImageManagerService';
 import { autoSeoEngine } from './autoSeoEngine';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
@@ -2081,6 +2081,22 @@ export const api = {
       const savedTitle = mergedProd.title || id;
 
       try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+          if (rawCustom) {
+            const customList: Product[] = JSON.parse(rawCustom);
+            if (Array.isArray(customList)) {
+              const idx = customList.findIndex(p => p && String(p.id) === String(id));
+              if (idx !== -1) {
+                customList[idx] = { ...customList[idx], ...mergedProd };
+                localStorage.setItem('trade_heaven_custom_products', JSON.stringify(customList));
+              }
+            }
+          }
+        }
+      } catch {}
+
+      try {
         autoSeoEngine.autoOptimizeProduct({
           ...mergedProd,
           imageUrl: mergedProd.images?.[0] || (mergedProd as any).imageUrl
@@ -2093,12 +2109,29 @@ export const api = {
         }));
       }
 
-      // Await Express backend persistence so immediate reloads never revert images
-      await fetch(`/api/v1/products/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(normalizedUpdates)
-      }).catch(() => {});
+      const liveListingPayload: Partial<DbListing> = {
+        ...(mergedProd.title ? { title: mergedProd.title } : {}),
+        ...(mergedProd.category ? { category: mergedProd.category } : {}),
+        ...(mergedProd.subCategory ? { sub_category: mergedProd.subCategory } : {}),
+        ...(mergedProd.priceTiers?.[0]?.priceUsd !== undefined ? { price: String(mergedProd.priceTiers[0].priceUsd) } : {}),
+        ...(mergedProd.moq !== undefined ? { moq: mergedProd.moq } : {}),
+        ...(mergedProd.moqUnit ? { moq_unit: mergedProd.moqUnit } : {}),
+        ...(mergedProd.supplierName ? { supplier_name: mergedProd.supplierName } : {}),
+        ...(mergedProd.supplierCountry ? { supplier_country: mergedProd.supplierCountry } : {}),
+        ...(mergedProd.portOfDispatch ? { location: mergedProd.portOfDispatch } : {}),
+        ...(mergedProd.description ? { description: mergedProd.description } : {}),
+        ...(cleanImages && cleanImages.length > 0 ? { image_url: cleanImages[0], images: cleanImages } : {})
+      };
+
+      // Await both Express backend and live PHP/MySQL listing persistence so neither reverts after reload/sync
+      await Promise.allSettled([
+        fetch(`/api/v1/products/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(normalizedUpdates)
+        }),
+        bigrockApi.updateListing(id, liveListingPayload)
+      ]);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tradeheaven_notify', {

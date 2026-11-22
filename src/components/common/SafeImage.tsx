@@ -518,11 +518,23 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       LOADED_IMAGE_URLS.add(currentCandidate);
       // Auto-upload & bind displayed product/category/RFQ image onto the site (/assets/uploads/...) so next load is instant & persistent
       if (!isLogoOrAvatar && !hasManualOverride && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
+        const resolvedTitle = (productTitle || alt || '').trim();
+        const stateOverrides = productImageManagerService.getState()?.overrides || {};
+        const pidOv = productId ? (stateOverrides[productId.trim()] || stateOverrides[productId.trim().toLowerCase()]) : undefined;
+        const titleOv = resolvedTitle ? (stateOverrides[resolvedTitle] || stateOverrides[resolvedTitle.toLowerCase()]) : undefined;
+        const isProtectedUpdater = (u?: string) =>
+          u === 'admin-manual' || u === 'user-upload' || u === 'catalog-image-auditor';
+        if (isProtectedUpdater(pidOv?.updatedBy) || isProtectedUpdater(titleOv?.updatedBy)) {
+          setHasError(false);
+          setIsLoaded(true);
+          callerOnLoad?.(e);
+          return;
+        }
+
         const cleanCandidate =
           currentCandidate.startsWith('/assets/uploads/') || currentCandidate.startsWith('/src/assets/')
             ? currentCandidate.split('?')[0]
             : currentCandidate;
-        const resolvedTitle = (productTitle || alt || '').trim();
         const existingPidOverride = productId ? productImageManagerService.getProductImage(productId) : undefined;
         const existingTitleOverride = resolvedTitle ? productImageManagerService.getProductImage(resolvedTitle) : undefined;
         const hasSavedLocalPid = Boolean(existingPidOverride && existingPidOverride.startsWith('/assets/uploads/'));
@@ -530,7 +542,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         const needsPersistence =
           /^https?:\/\//i.test(cleanCandidate) ||
           (Boolean(productId) && !hasSavedLocalPid) ||
-          (resolvedTitle.length >= 3 && !hasSavedLocalTitle);
+          (!productId && resolvedTitle.length >= 3 && !hasSavedLocalTitle);
 
         const cleanBasePath = cleanCandidate.split('?')[0];
         const isGenericFallbackAsset =

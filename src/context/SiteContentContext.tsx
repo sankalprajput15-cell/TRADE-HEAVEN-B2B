@@ -334,6 +334,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   ]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const lastLocalSaveTsRef = useRef<number>(0);
 
   // Fetch latest content and permissions from backend API on mount
   const refreshPermissions = async () => {
@@ -369,6 +370,14 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         ) {
           setSiteContent(prev => {
             if (hasLocalSiteMutationRef.current) return prev;
+            const prevTs = Number((prev as any)?.siteContentUpdatedAt || 0);
+            const incomingTs = Number((contentRes.data as any)?.siteContentUpdatedAt || 0);
+            if (prevTs > 0 && incomingTs > 0 && prevTs > incomingTs) {
+              return prev;
+            }
+            if (lastLocalSaveTsRef.current > 0 && (incomingTs === 0 || lastLocalSaveTsRef.current > incomingTs)) {
+              return prev;
+            }
             const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
             try {
               localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
@@ -388,11 +397,27 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     loadServerContent();
 
+    const shouldAcceptIncomingSiteContent = (incoming: any, current: any): boolean => {
+      if (!incoming || typeof incoming !== 'object') return false;
+      const incomingTs = Number(incoming.siteContentUpdatedAt || 0);
+      const currentTs = Math.max(
+        Number(current?.siteContentUpdatedAt || 0),
+        lastLocalSaveTsRef.current
+      );
+      if (currentTs > 0 && incomingTs > 0 && incomingTs < currentTs) return false;
+      if (lastLocalSaveTsRef.current > 0 && incomingTs === 0) return false;
+      return true;
+    };
+
     const handleStorageSync = (e: StorageEvent) => {
       if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          setSiteContent(normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed }));
+          setSiteContent(prev =>
+            shouldAcceptIncomingSiteContent(parsed, prev)
+              ? normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed })
+              : prev
+          );
         } catch {}
       } else if (e.key === SITE_CONTENT_DRAFT_STORAGE_KEY) {
         setDraftRecord(readSiteContentDraftFromStorage());
@@ -405,7 +430,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         bc = new BroadcastChannel('th_site_content_sync');
         bc.onmessage = (event) => {
           if (event.data && typeof event.data === 'object') {
-            setSiteContent(normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...event.data }));
+            setSiteContent(prev =>
+              shouldAcceptIncomingSiteContent(event.data, prev)
+                ? normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...event.data })
+                : prev
+            );
           }
         };
       }
@@ -456,6 +485,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
     hasLocalSiteMutationRef.current = true;
+    const nowMs = Date.now();
+    lastLocalSaveTsRef.current = nowMs;
     const normalizedVal =
       typeof value === 'string' && (path.toLowerCase().includes('image') || path.toLowerCase().includes('logo') || path.toLowerCase().includes('avatar'))
         ? normalizeProductAssetUrl(value)
@@ -471,6 +502,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         current = current[parts[i]];
       }
       current[parts[parts.length - 1]] = normalizedVal;
+      (clone as any).siteContentUpdatedAt = nowMs;
       updatedSnapshot = clone;
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(clone));
@@ -497,18 +529,25 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const auth = isUserAuthorized(effectiveUser);
     if (!auth.isAuthorized) return { success: false, message: 'Permission Denied' };
 
+    const nowMs = Date.now();
+    lastLocalSaveTsRef.current = nowMs;
     hasLocalSiteMutationRef.current = true;
+    const stampedContent: SiteContent = {
+      ...(content as any),
+      siteContentUpdatedAt: nowMs
+    };
+
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(content));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stampedContent));
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('th_site_content_sync');
-        bc.postMessage(content);
+        bc.postMessage(stampedContent);
         bc.close();
       }
     } catch {}
 
     setSaveStatus('saving');
-    const apiResult = await apiClient.saveSiteContent(content, effectiveUser);
+    const apiResult = await apiClient.saveSiteContent(stampedContent, effectiveUser);
 
     if (!apiResult.success) {
       console.warn('Offline persistence active for site content');
@@ -533,14 +572,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
 
+    const nowMs = Date.now();
+    lastLocalSaveTsRef.current = nowMs;
     hasLocalSiteMutationRef.current = true;
+    const stampedContent: SiteContent = {
+      ...(newContent as any),
+      siteContentUpdatedAt: nowMs
+    };
     const prevCats = siteContent?.homepage?.categoriesList || [];
-    const nextCats = newContent?.homepage?.categoriesList || [];
+    const nextCats = stampedContent?.homepage?.categoriesList || [];
+    const prevSlides = siteContent?.homepage?.heroSlides || [];
+    const nextSlides = stampedContent?.homepage?.heroSlides || [];
 
-    setSiteContent(newContent);
+    setSiteContent(stampedContent);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newContent));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stampedContent));
     } catch {}
+
+    const syncTasks: Promise<any>[] = [];
 
     // Keep productImageManagerService overrides in sync for any updated category cover images
     for (const cat of nextCats) {
@@ -550,12 +599,29 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const prevCat = prevCats.find(c => c.id === cat.id);
       const prevImg = prevCat?.image ? normalizeProductAssetUrl(prevCat.image) : '';
       const existingOv = productImageManagerService.getProductImage(cat.id);
-      if (cleanImg !== prevImg || !existingOv || existingOv !== cleanImg) {
-        void productImageManagerService.setProductImage(cat.id, cleanImg, [cleanImg]).catch(() => {});
+      if (cleanImg !== prevImg || !existingOv || existingOv.split('?')[0] !== cleanImg.split('?')[0]) {
+        syncTasks.push(productImageManagerService.setProductImage(cat.id, cleanImg, [cleanImg]).catch(() => {}));
       }
     }
 
-    return await forceSaveNow(newContent, effectiveUser);
+    // Keep productImageManagerService overrides in sync for any updated Hero Carousel Slides
+    for (const slide of nextSlides) {
+      if (!slide?.id || !slide?.image) continue;
+      const cleanSlideImg = normalizeProductAssetUrl(slide.image);
+      if (!cleanSlideImg) continue;
+      const prevSlide = prevSlides.find(s => s.id === slide.id);
+      const prevSlideImg = prevSlide?.image ? normalizeProductAssetUrl(prevSlide.image) : '';
+      const existingOv = productImageManagerService.getProductImage(slide.id);
+      if (cleanSlideImg !== prevSlideImg || !existingOv || existingOv.split('?')[0] !== cleanSlideImg.split('?')[0]) {
+        syncTasks.push(productImageManagerService.setProductImage(slide.id, cleanSlideImg, [cleanSlideImg]).catch(() => {}));
+      }
+    }
+
+    if (syncTasks.length > 0) {
+      await Promise.allSettled(syncTasks);
+    }
+
+    return await forceSaveNow(stampedContent, effectiveUser);
   };
 
   const updatePageContent = async <K extends keyof SiteContent>(

@@ -44,13 +44,16 @@ export const LiveSectionEditModal: React.FC<Props> = ({
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
 
+  const wasOpenRef = React.useRef(false);
+
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       setFormData(draftRecord?.content || siteContent);
       setDraftFeedback(null);
       setErrorMsg(null);
       setSavedSuccess(false);
     }
+    wasOpenRef.current = isOpen;
   }, [siteContent, draftRecord, isOpen]);
 
   if (!isOpen || !sectionKey || !isAdmin) return null;
