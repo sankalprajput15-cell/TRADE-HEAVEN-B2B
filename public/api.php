@@ -4079,13 +4079,18 @@ switch ($action) {
             $state['productActivityTimestamps'] = [];
         }
         $affectedIds = [];
+        $uploadedBase = th_strip_url_base($uploadedUrl);
         if ($productId) {
             $existingOv = $state['overrides'][$productId] ?? null;
             $existingGallery = is_array($existingOv['gallery'] ?? null) ? $existingOv['gallery'] : [];
             $gallery = array_values(array_unique(array_merge([$uploadedUrl], $existingGallery)));
-            $prevPrimary = (!empty($existingOv['primary']) && $existingOv['primary'] !== $uploadedUrl)
+            $prevPrimary = (!empty($existingOv['primary']) && th_strip_url_base($existingOv['primary']) !== $uploadedBase)
                 ? $existingOv['primary']
                 : ($existingOv['previousPrimary'] ?? null);
+            $repOld = array_values(array_filter(
+                th_merge_replaced_old_urls($existingOv['replacedOldUrls'] ?? [], [$existingOv['primary'] ?? null, $prevPrimary]),
+                function($u) use ($uploadedBase) { return th_strip_url_base($u) !== $uploadedBase; }
+            ));
             $state['overrides'][$productId] = [
                 "primary" => $uploadedUrl,
                 "previousPrimary" => $prevPrimary,
@@ -4093,7 +4098,11 @@ switch ($action) {
                 "format" => strtoupper($ext),
                 "updatedAt" => $nowIso,
                 "imageUpdatedAt" => $nowMs,
-                "updatedBy" => "admin-manual"
+                "updatedBy" => "admin-manual",
+                "locked" => true,
+                "serverVerified" => true,
+                "verifiedAt" => $nowIso,
+                "replacedOldUrls" => $repOld
             ];
             $state['productActivityTimestamps'][$productId] = $nowMs;
             $affectedIds[$productId] = $gallery;
@@ -4104,9 +4113,13 @@ switch ($action) {
                 $existingOv = $state['overrides'][$pid] ?? null;
                 $existingGallery = is_array($existingOv['gallery'] ?? null) ? $existingOv['gallery'] : [];
                 $gallery = array_values(array_unique(array_merge([$uploadedUrl], $existingGallery)));
-                $prevPrimary = (!empty($existingOv['primary']) && $existingOv['primary'] !== $uploadedUrl)
+                $prevPrimary = (!empty($existingOv['primary']) && th_strip_url_base($existingOv['primary']) !== $uploadedBase)
                     ? $existingOv['primary']
                     : ($existingOv['previousPrimary'] ?? null);
+                $repOld = array_values(array_filter(
+                    th_merge_replaced_old_urls($existingOv['replacedOldUrls'] ?? [], [$existingOv['primary'] ?? null, $prevPrimary]),
+                    function($u) use ($uploadedBase) { return th_strip_url_base($u) !== $uploadedBase; }
+                ));
                 $state['overrides'][$pid] = [
                     "primary" => $uploadedUrl,
                     "previousPrimary" => $prevPrimary,
@@ -4114,7 +4127,11 @@ switch ($action) {
                     "format" => strtoupper($ext),
                     "updatedAt" => $nowIso,
                     "imageUpdatedAt" => $nowMs,
-                    "updatedBy" => "admin-manual"
+                    "updatedBy" => "admin-manual",
+                    "locked" => true,
+                    "serverVerified" => true,
+                    "verifiedAt" => $nowIso,
+                    "replacedOldUrls" => $repOld
                 ];
                 $state['productActivityTimestamps'][$pid] = $nowMs;
                 $affectedIds[$pid] = $gallery;
@@ -4123,13 +4140,18 @@ switch ($action) {
 
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         header("Pragma: no-cache");
-        th_save_image_state_atomic($uploads_dir, $state);
+        $savedUploadOk = th_save_image_state_atomic($uploads_dir, $state);
         foreach ($affectedIds as $affPid => $affGallery) {
             th_sync_image_override_to_db_and_cms($affPid, $uploadedUrl, $affGallery, $pdo, $db_connected);
         }
+        $uploadDiskVerified = $savedUploadOk && (!$productId || th_verify_override_on_disk($uploads_dir, $productId, $uploadedUrl));
         echo json_encode([
             "status" => "success",
             "success" => true,
+            "serverSavedVerified" => $uploadDiskVerified,
+            "diskVerified" => $uploadDiskVerified,
+            "locked" => true,
+            "verifiedAt" => $nowIso,
             "url" => $uploadedUrl,
             "mediaEntry" => $mediaEntry,
             "state" => $state

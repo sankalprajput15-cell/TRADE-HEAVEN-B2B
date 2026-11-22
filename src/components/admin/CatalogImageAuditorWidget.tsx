@@ -893,7 +893,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           replacedOldUrls: result.replacedOldUrls
         }
       ]);
-      await syncMarketplaceImageListeners();
+      await syncMarketplaceImageListeners(true);
 
       if (!options?.customImageUrl && !options?.revert && !candidatesByRecord[rid]?.length) {
         void handleLoadVisualCandidates(row);
@@ -1098,6 +1098,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     let succeededCount = 0;
     let failedCount = 0;
     let lastSucceededRow: UnifiedAuditRow | undefined;
+    const succeededRecordIds: string[] = [];
     let cursor = 0;
 
     const processSingleTarget = async (row: UnifiedAuditRow) => {
@@ -1164,6 +1165,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         }
 
         succeededCount += 1;
+        succeededRecordIds.push(rid);
         lastSucceededRow = {
           ...row,
           old_image_url: result.old_image_url || row.old_image_url,
@@ -1202,11 +1204,11 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         await processSingleTarget(targets[idx]);
       }
 
-      // Final server vault disk read-back confirmation across all saved items
+      // Final server vault disk read-back confirmation across newly saved items
       let vaultRes: ServerVerifyLockVaultResult | null = null;
       if (succeededCount > 0) {
         try {
-          vaultRes = await verifyAndLockSavedCatalogImages();
+          vaultRes = await verifyAndLockSavedCatalogImages(succeededRecordIds);
           setVaultStatus(vaultRes);
         } catch {
           // Per-item disk verification already succeeded
@@ -1307,10 +1309,14 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           url: result.new_image_url,
           previousUrl: preservedOldUrl || result.old_image_url,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
+          replacedOldUrls: result.replacedOldUrls
         }
       ]);
-      await syncMarketplaceImageListeners();
+      await syncMarketplaceImageListeners(true);
 
       setAlertMessage({
         type: 'success',
@@ -1387,10 +1393,14 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           url: result.new_image_url,
           previousUrl: preservedOldUrl || result.old_image_url,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
+          replacedOldUrls: result.replacedOldUrls
         }
       ]);
-      await syncMarketplaceImageListeners();
+      await syncMarketplaceImageListeners(true);
 
       setAlertMessage({
         type: 'success',

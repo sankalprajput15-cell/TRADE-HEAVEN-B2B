@@ -14544,6 +14544,10 @@ function loadServerProductImageState(
         if (!primaryClean.startsWith('/assets/uploads/')) continue;
         const resolvedPrimary = resolveValidLocalFile(pid, entry.primary);
         if (!resolvedPrimary) {
+          // NEVER delete locked, server-verified, or manual overrides even if directory scan misses a file
+          if (entry.locked === true || entry.serverVerified === true || isManualOverrideEntry(entry)) {
+            continue;
+          }
           delete defaultState.overrides[pid];
           continue;
         }
@@ -15105,7 +15109,14 @@ async function replicateImageOverrideToLiveServer(params: {
       });
       if (uploadRes.synced && uploadRes.remoteUrl) {
         resolvedPrimary = uploadRes.remoteUrl;
-        if (uploadRes.uploadedNow && !params.fullOverridesMap && (!params.galleryUrls || params.galleryUrls.length <= 1)) {
+        // Always still push set_product_images when updating individual/group records so locked/verified/replacedOldUrls commit on live server
+        if (
+          uploadRes.uploadedNow &&
+          !params.fullOverridesMap &&
+          !params.productId &&
+          (!params.productIds || params.productIds.length === 0) &&
+          (!params.galleryUrls || params.galleryUrls.length <= 1)
+        ) {
           alreadyBoundByUpload = true;
         }
       }
@@ -15134,14 +15145,68 @@ async function replicateImageOverrideToLiveServer(params: {
     let resolvedFullMap: Record<string, any> | undefined = undefined;
     if (params.fullOverridesMap && typeof params.fullOverridesMap === 'object') {
       resolvedFullMap = {};
-      for (const [pid, entry] of Object.entries(params.fullOverridesMap)) {
+      const entries = Object.entries(params.fullOverridesMap);
+      const uniqueLocalUrls = Array.from(
+        new Set(
+          entries
+            .map(([, entry]) =>
+              entry && typeof entry === 'object' && (entry as any).primary
+                ? normalizeServerAssetUrl((entry as any).primary).split('?')[0]
+                : ''
+            )
+            .filter(u => u.startsWith('/assets/uploads/'))
+        )
+      );
+      const uncachedLocalUrls = uniqueLocalUrls.filter(u => !liveRemoteUploadUrlCache.has(u));
+      const resolvedUrlByLocal = new Map<string, string>();
+      for (const u of uniqueLocalUrls) {
+        const cached = liveRemoteUploadUrlCache.get(u);
+        if (cached) resolvedUrlByLocal.set(u, cached);
+      }
+
+      if (uncachedLocalUrls.length > 0) {
+        const foregroundLimit = uncachedLocalUrls.length <= 24 ? uncachedLocalUrls.length : 12;
+        const foregroundUrls = uncachedLocalUrls.slice(0, foregroundLimit);
+        const backgroundUrls = uncachedLocalUrls.slice(foregroundLimit);
+        const deadlineMs = Date.now() + 4500;
+        let idx = 0;
+        const workerCount = Math.min(6, foregroundUrls.length);
+        await Promise.all(
+          Array.from({ length: workerCount }, async () => {
+            while (idx < foregroundUrls.length && Date.now() < deadlineMs) {
+              const localUrl = foregroundUrls[idx++];
+              const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl });
+              if (ensured.synced && ensured.remoteUrl) {
+                resolvedUrlByLocal.set(localUrl, ensured.remoteUrl);
+              }
+            }
+          })
+        );
+
+        const remainingForBg = [
+          ...foregroundUrls.slice(idx),
+          ...backgroundUrls
+        ];
+        if (remainingForBg.length > 0) {
+          void (async () => {
+            let bgIdx = 0;
+            const bgWorkers = Math.min(4, remainingForBg.length);
+            await Promise.all(
+              Array.from({ length: bgWorkers }, async () => {
+                while (bgIdx < remainingForBg.length) {
+                  const localUrl = remainingForBg[bgIdx++];
+                  await ensureLocalImagePresentOnLiveServer({ localUrl }).catch(() => null);
+                }
+              })
+            );
+          })();
+        }
+      }
+
+      for (const [pid, entry] of entries) {
         if (!entry || typeof entry !== 'object' || !(entry as any).primary) continue;
         const cleanP = normalizeServerAssetUrl((entry as any).primary).split('?')[0];
-        let remoteP = cleanP;
-        if (cleanP.startsWith('/assets/uploads/')) {
-          const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanP });
-          if (ensured.synced && ensured.remoteUrl) remoteP = ensured.remoteUrl;
-        }
+        const remoteP = resolvedUrlByLocal.get(cleanP) || cleanP;
         resolvedFullMap[pid] = {
           ...(entry as any),
           primary: remoteP,
@@ -15155,7 +15220,18 @@ async function replicateImageOverrideToLiveServer(params: {
     }
 
     const payload: Record<string, any> = {};
-    if (params.productId) payload.productId = params.productId;
+    if (params.productId) {
+      payload.productId = params.productId;
+      const localOv = serverProductImageState.overrides[params.productId];
+      if (localOv) {
+        payload.locked = localOv.locked ?? true;
+        payload.serverVerified = localOv.serverVerified ?? true;
+        if (localOv.verifiedAt) payload.verifiedAt = localOv.verifiedAt;
+        if (Array.isArray(localOv.replacedOldUrls) && localOv.replacedOldUrls.length > 0) {
+          payload.replacedOldUrls = localOv.replacedOldUrls;
+        }
+      }
+    }
     if (Array.isArray(params.productIds) && params.productIds.length > 0) payload.productIds = params.productIds;
     if (resolvedPrimary) payload.primaryUrl = resolvedPrimary;
     if (resolvedGallery && resolvedGallery.length > 0) payload.galleryUrls = resolvedGallery;
@@ -15690,6 +15766,10 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
             })
           ]
         : [uploadedUrl];
+      const replacedOldUrls = mergeReplacedOldUrls(
+        existing?.replacedOldUrls,
+        prevPrimaryBase && prevPrimaryBase !== uploadedUrl ? prevPrimaryBase : undefined
+      ).filter(u => u !== stripUrlQueryBase(uploadedUrl));
       (serverProductImageState.overrides as any)[cleanId] = {
         primary: uploadedUrl,
         previousPrimary: prevPrimary,
@@ -15697,7 +15777,11 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
         format: ext.toUpperCase(),
         updatedAt: nowIso,
         imageUpdatedAt: nowMs,
-        updatedBy: 'admin-manual'
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        replacedOldUrls
       };
       recordCurrentServerImageEdit(cleanId, nowMs);
       recordServerProductActivityTimestamp(cleanId, nowMs);
@@ -15748,13 +15832,21 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
               })
             ]
           : [uploadedUrl];
+        const replacedOldUrls = mergeReplacedOldUrls(
+          existing?.replacedOldUrls,
+          oldPrimaryBase && oldPrimaryBase !== uploadedUrl ? oldPrimaryBase : undefined
+        ).filter(u => u !== stripUrlQueryBase(uploadedUrl));
         serverProductImageState.overrides[cleanPid] = {
           primary: uploadedUrl,
           gallery,
           format: ext.toUpperCase(),
           updatedAt: nowIso,
           imageUpdatedAt: nowMs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso,
+          replacedOldUrls
         };
         recordCurrentServerImageEdit(cleanPid, nowMs);
         recordServerProductActivityTimestamp(cleanPid, nowMs);
@@ -16619,8 +16711,14 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
               parseServerTimestampMs(incomingEntry?.imageUpdatedAt),
               parseServerTimestampMs(incomingEntry?.updatedAt)
             );
-            // Strictly reject stale open-tab overwrites (even if marked admin-manual) when server has a newer entry
+            // Strictly reject stale open-tab overwrites or reverts to blocked old URLs
             if (existingEntry) {
+              if ((existingEntry.locked || existingEntry.serverVerified) && isUrlBlockedForOverride(existingEntry, incomingEntry.primary) && incomingTime <= existingTime) {
+                continue;
+              }
+              if ((existingEntry.locked || existingEntry.serverVerified) && !incomingEntry.locked && !incomingEntry.serverVerified && existingTime >= incomingTime) {
+                continue;
+              }
               if (existingTime > 0 && incomingTime > 0 && existingTime > incomingTime) {
                 continue;
               }
@@ -16631,12 +16729,17 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
                 continue;
               }
             }
-            if (!existingEntry || incomingTime > existingTime || (incomingTime === existingTime && incomingManual)) {
+            if (!existingEntry || incomingTime > existingTime || (incomingTime === existingTime && (incomingManual || incomingEntry.locked || incomingEntry.serverVerified))) {
+              const mergedBlocked = mergeReplacedOldUrls(
+                existingEntry?.replacedOldUrls,
+                ...(Array.isArray(incomingEntry.replacedOldUrls) ? incomingEntry.replacedOldUrls : [])
+              ).filter(u => u !== stripUrlQueryBase(incomingEntry.primary));
               serverProductImageState.overrides[pid] = {
                 ...incomingEntry,
                 primary: normalizeServerAssetUrl(incomingEntry.primary),
                 updatedAt: incomingEntry.updatedAt || nowIso,
-                ...(incomingTime > 0 ? { imageUpdatedAt: incomingTime } : { imageUpdatedAt: nowMs })
+                ...(incomingTime > 0 ? { imageUpdatedAt: incomingTime } : { imageUpdatedAt: nowMs }),
+                ...(mergedBlocked.length > 0 ? { replacedOldUrls: mergedBlocked } : {})
               };
             }
           }
@@ -16758,6 +16861,11 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
         );
       }
 
+      const cleanPrimBase = stripUrlQueryBase(cleanPrim);
+      const replacedOldUrls = mergeReplacedOldUrls(
+        existing?.replacedOldUrls,
+        prevPrimary ? stripUrlQueryBase(prevPrimary) : undefined
+      ).filter(u => u !== cleanPrimBase);
       (serverProductImageState.overrides as any)[cleanId] = {
         primary: cleanPrim,
         previousPrimary: prevPrimary,
@@ -16765,7 +16873,11 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
         format: format || (cleanPrim.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
         updatedAt: nowIso,
         imageUpdatedAt: nowMs,
-        updatedBy: 'admin-manual'
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        replacedOldUrls
       };
       recordCurrentServerImageEdit(cleanId, nowMs);
       recordServerProductActivityTimestamp(cleanId, nowMs);
@@ -16812,13 +16924,23 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
       for (const pid of productIds) {
         if (!pid) continue;
         const cleanPid = String(pid).trim();
+        const existingPid = serverProductImageState.overrides[cleanPid];
+        const cleanPrimBase = stripUrlQueryBase(cleanPrim);
+        const replacedOldUrls = mergeReplacedOldUrls(
+          existingPid?.replacedOldUrls,
+          existingPid?.primary && stripUrlQueryBase(existingPid.primary) !== cleanPrimBase ? existingPid.primary : undefined
+        ).filter(u => u !== cleanPrimBase);
         serverProductImageState.overrides[cleanPid] = {
           primary: cleanPrim,
           gallery: resolvedGallery,
           format: format || (cleanPrim.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
           updatedAt: nowIso,
           imageUpdatedAt: nowMs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso,
+          replacedOldUrls
         };
         recordCurrentServerImageEdit(cleanPid, nowMs);
         recordServerProductActivityTimestamp(cleanPid, nowMs);
@@ -16867,16 +16989,25 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
           : undefined
     });
 
+    const singleDiskVerified =
+      productId && primaryUrl
+        ? verifyOverridePersistedOnDisk(String(productId).trim(), String(primaryUrl).trim()).verified
+        : true;
+
     return res.json({
       success: true,
+      serverSavedVerified: singleDiskVerified,
+      diskVerified: singleDiskVerified,
+      locked: true,
+      verifiedAt: nowIso,
       data: serverProductImageState,
       liveSynced: liveSyncResult.synced,
       liveUrl: liveSyncResult.remoteUrl,
       imageUpdatedAt: nowMs,
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
       message: liveSyncResult.synced
-        ? 'Product image configuration updated and synced across servers.'
-        : 'Product image configuration updated successfully.'
+        ? 'Product image configuration updated, locked on disk, and synced across servers.'
+        : 'Product image configuration updated and locked on server disk.'
     });
   } catch (err: any) {
     return res.status(500).json({
@@ -22577,8 +22708,13 @@ function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
 function shouldBindOverrideForKey(key: string): boolean {
   const existing = serverProductImageState.overrides[key];
   if (!existing || !existing.primary) return true;
-  if (isManualOverrideEntry(existing)) {
-    if (existing.primary.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(existing.primary)) {
+  if (
+    existing.locked === true ||
+    existing.serverVerified === true ||
+    isManualOverrideEntry(existing) ||
+    isAuditVerifiedOverrideEntry(existing)
+  ) {
+    if (existing.primary.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(existing.primary) && !existing.locked && !existing.serverVerified) {
       return true;
     }
     return false;
@@ -22632,28 +22768,37 @@ function bindAutoSavedImageOverride(params: {
 
   if (pid) {
     const existingPidEntry = serverProductImageState.overrides[pid];
+    const blockedOld = !params.isManual && isUrlBlockedForOverride(existingPidEntry, cleanLocal);
     const existingIsProtected =
-      !params.isManual &&
-      !params.forceOverwrite &&
-      isManualOverrideEntry(existingPidEntry) &&
-      (!existingPidEntry.primary.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(existingPidEntry.primary));
+      blockedOld ||
+      (!params.isManual &&
+        !params.forceOverwrite &&
+        (existingPidEntry?.locked === true ||
+          existingPidEntry?.serverVerified === true ||
+          isManualOverrideEntry(existingPidEntry) ||
+          isAuditVerifiedOverrideEntry(existingPidEntry)));
     if (!existingIsProtected && (params.isManual || params.forceOverwrite || shouldBindOverrideForKey(pid))) {
       serverProductImageState.overrides[pid] = {
+        ...(existingPidEntry || {}),
         primary: cleanLocal,
         gallery: resolvedGallery,
         format: (path.extname(cleanLocal).replace('.', '') || 'WEBP').toUpperCase(),
         updatedAt: nowIso,
         ...(params.isManual || params.forceOverwrite ? { imageUpdatedAt: nowMs } : {}),
-        updatedBy: params.isManual ? 'admin-manual' : params.forceOverwrite ? 'catalog-image-auditor' : 'auto-site-upload'
+        updatedBy: params.isManual ? 'admin-manual' : params.forceOverwrite ? 'catalog-image-auditor' : 'auto-site-upload',
+        ...(params.isManual || params.forceOverwrite
+          ? { locked: true, serverVerified: true, verifiedAt: nowIso }
+          : {})
       };
       if (params.isManual || params.forceOverwrite) {
         recordServerProductActivityTimestamp(pid, nowMs);
+        recordCurrentServerImageEdit(pid, nowMs);
       }
       stateUpdated = true;
     }
   }
 
-  if (!params.isManual && params.bindByTitle !== false && cleanSubjectName.length >= 3 && shouldBindOverrideForKey(cleanSubjectName)) {
+  if (!params.isManual && params.bindByTitle !== false && !pid && cleanSubjectName.length >= 3 && shouldBindOverrideForKey(cleanSubjectName)) {
     serverProductImageState.overrides[cleanSubjectName] = {
       primary: cleanLocal,
       gallery: resolvedGallery,

@@ -656,6 +656,9 @@ class ProductImageManagerService {
             .filter((u: string) => Boolean(u) && (isManual || !this.isPlaceholderOverrideUrl(u)))
         : [primary];
       const numericImgTs = this.parseTimestampMs(v.imageUpdatedAt);
+      const replacedOldUrls: string[] | undefined = Array.isArray(v.replacedOldUrls)
+        ? Array.from(new Set(v.replacedOldUrls.map((u: any) => String(u || '').trim().split('?')[0]).filter((u: string): u is string => Boolean(u))))
+        : undefined;
       out[k] = {
         primary,
         ...(previousPrimary ? { previousPrimary } : {}),
@@ -663,7 +666,11 @@ class ProductImageManagerService {
         format: v.format || this.detectFormatFromUrl(primary),
         updatedAt: v.updatedAt || '2024-01-01T00:00:00.000Z',
         ...(numericImgTs > 0 ? { imageUpdatedAt: numericImgTs } : {}),
-        updatedBy: v.updatedBy
+        updatedBy: v.updatedBy,
+        ...(v.locked === true ? { locked: true } : {}),
+        ...(v.serverVerified === true ? { serverVerified: true } : {}),
+        ...(v.verifiedAt ? { verifiedAt: String(v.verifiedAt) } : {}),
+        ...(replacedOldUrls && replacedOldUrls.length > 0 ? { replacedOldUrls } : {})
       };
     }
     return out;
@@ -1384,7 +1391,7 @@ class ProductImageManagerService {
               ? normalizeProductAssetUrl(entry.primary)
               : '';
         if (candidateUrl) {
-          if (this.isManualEntry(entry)) {
+          if (this.isProtectedManualOrAuditEntry(entry)) {
             return candidateUrl;
           }
           const lowerCand = candidateUrl.toLowerCase();
@@ -1416,7 +1423,7 @@ class ProductImageManagerService {
       const matchedEntry = this.state.overrides[cleanTitle] || this.state.overrides[lowerTitle];
 
       if (matchedEntry?.primary) {
-        if (this.isManualEntry(matchedEntry)) {
+        if (this.isProtectedManualOrAuditEntry(matchedEntry)) {
           return normalizeProductAssetUrl(matchedEntry.primary);
         }
         const candidatePrimary = normalizeProductAssetUrl(matchedEntry.primary);
@@ -1496,7 +1503,7 @@ class ProductImageManagerService {
       if (entry && entry.primary) {
         const cleanPrimary = normalizeProductAssetUrl(entry.primary);
         const entryAllowed =
-          this.isManualEntry(entry) ||
+          this.isProtectedManualOrAuditEntry(entry) ||
           (!isGenericOrPlaceholderImageUrl(cleanPrimary) &&
             !isMismatchedProductImageUrl(cleanPrimary, product.title, product.category));
         if (entryAllowed) {
@@ -1506,7 +1513,7 @@ class ProductImageManagerService {
               .filter(
                 u =>
                   Boolean(u) &&
-                  (this.isManualEntry(entry) || !isMismatchedProductImageUrl(u, product.title, product.category))
+                  (this.isProtectedManualOrAuditEntry(entry) || !isMismatchedProductImageUrl(u, product.title, product.category))
               );
             return cleanGallery.length > 0 ? [cleanPrimary, ...cleanGallery.filter(u => u !== cleanPrimary)] : [cleanPrimary];
           }
@@ -1519,7 +1526,7 @@ class ProductImageManagerService {
       const entry = this.state.overrides[product.title.trim()];
       const cleanPrimary = normalizeProductAssetUrl(entry.primary);
       const entryAllowed =
-        this.isManualEntry(entry) ||
+        this.isProtectedManualOrAuditEntry(entry) ||
         (!isGenericOrPlaceholderImageUrl(cleanPrimary) &&
           !isMismatchedProductImageUrl(cleanPrimary, product.title, product.category));
       if (entryAllowed) {
@@ -2568,14 +2575,27 @@ class ProductImageManagerService {
           : [cleanPrimary];
 
       const format = this.detectFormatFromUrl(cleanPrimary);
+      const nowIso = new Date(versionTs).toISOString();
+      const replacedOldUrls = Array.from(
+        new Set([
+          ...(Array.isArray(existing?.replacedOldUrls) ? existing!.replacedOldUrls : []),
+          ...(existingBase && existingBase !== cleanPrimaryBase ? [existingBase] : []),
+          ...(existing?.previousPrimary ? [existing.previousPrimary.split('?')[0]] : [])
+        ])
+      ).filter(u => u && u !== cleanPrimaryBase);
+
       this.state.overrides[cleanId] = {
         primary: cleanPrimary,
         ...(previousPrimary ? { previousPrimary } : {}),
         gallery: resolvedGallery,
         format,
-        updatedAt: new Date(versionTs).toISOString(),
+        updatedAt: nowIso,
         imageUpdatedAt: versionTs,
-        updatedBy: 'admin-manual'
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        ...(replacedOldUrls.length > 0 ? { replacedOldUrls } : {})
       };
       this.recordProductActivityTimestamp(cleanId, versionTs, false);
 
@@ -2603,8 +2623,12 @@ class ProductImageManagerService {
         galleryUrls: resolvedGallery,
         format,
         imageUpdatedAt: versionTs,
-        updatedAt: new Date(versionTs).toISOString(),
-        updatedBy: 'admin-manual'
+        updatedAt: nowIso,
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        replacedOldUrls
       });
 
       let primaryPersisted = false;
@@ -2744,13 +2768,26 @@ class ProductImageManagerService {
             ? [cleanPrimary, ...existing.gallery.map(u => normalizeProductAssetUrl(u)).filter(u => u && u !== cleanPrimary)]
             : [cleanPrimary];
 
+        const cleanPrimaryBase = cleanPrimary.split('?')[0];
+        const existingBase = existing?.primary ? existing.primary.split('?')[0] : '';
+        const replacedOldUrls = Array.from(
+          new Set([
+            ...(Array.isArray(existing?.replacedOldUrls) ? existing!.replacedOldUrls : []),
+            ...(existingBase && existingBase !== cleanPrimaryBase ? [existingBase] : [])
+          ])
+        ).filter(u => u && u !== cleanPrimaryBase);
+
         this.state.overrides[pid] = {
           primary: cleanPrimary,
           gallery: resolvedGallery,
           format,
           updatedAt: nowIso,
           imageUpdatedAt: nowMs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso,
+          ...(replacedOldUrls.length > 0 ? { replacedOldUrls } : {})
         };
         this.recordProductActivityTimestamp(pid, nowMs, false);
       }
@@ -2784,7 +2821,10 @@ class ProductImageManagerService {
         format,
         imageUpdatedAt: nowMs,
         updatedAt: nowIso,
-        updatedBy: 'admin-manual'
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso
       });
 
       let bulkPersisted = false;
