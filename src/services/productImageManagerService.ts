@@ -968,11 +968,18 @@ class ProductImageManagerService {
     return this.state;
   }
 
-  public async syncFromServer(force = true, includeFullMedia = false): Promise<ProductImageSystemState> {
-    if (this.inFlightWriteCount > 0 || Date.now() - this.lastLocalMutationAt < 2500) {
+  public async syncFromServer(
+    force = true,
+    includeFullMedia = false,
+    opts?: { bypassCooldown?: boolean; emitEvenIfUnchanged?: boolean }
+  ): Promise<ProductImageSystemState> {
+    if (this.inFlightWriteCount > 0) {
       return this.state;
     }
-    if (!force && Date.now() - this.lastServerSyncAt < 5000) {
+    if (!opts?.bypassCooldown && Date.now() - this.lastLocalMutationAt < 2500) {
+      return this.state;
+    }
+    if (!force && !opts?.bypassCooldown && Date.now() - this.lastServerSyncAt < 5000) {
       return this.state;
     }
     const syncStartVersion = this.stateWriteVersion;
@@ -1167,12 +1174,15 @@ class ProductImageManagerService {
         const nextVisualHash = this.getCanonicalVisualHash(this.state);
         this.isHydratedFromServer = true;
 
-        // Save and notify UI components on initial hydration or whenever image URLs / activity timestamps change
-        if (wasUnhydrated || prevVisualHash !== nextVisualHash || activityTimestampsChanged) {
+        // Save and notify UI components on initial hydration, whenever image URLs / activity timestamps change, or on explicit Refresh All
+        if (wasUnhydrated || prevVisualHash !== nextVisualHash || activityTimestampsChanged || opts?.emitEvenIfUnchanged) {
           this.saveToLocalStorage({ action: 'sync_from_server' });
         }
       } else {
         this.isHydratedFromServer = true;
+        if (opts?.emitEvenIfUnchanged) {
+          this.notifyListeners();
+        }
       }
     } catch {
       this.isHydratedFromServer = true;

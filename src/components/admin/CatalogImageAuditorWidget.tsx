@@ -48,6 +48,8 @@ interface CatalogImageAuditorWidgetProps {
   products?: Product[];
   onAuditCompleted?: (summary: CatalogImageAuditSummary) => void;
   onViewOnHomepage?: (record: { recordId: string; recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' }) => void;
+  hideRefreshAllButton?: boolean;
+  refreshTrigger?: number;
 }
 
 type AuditorFilterTab = 'ALL_ISSUES' | 'DUPLICATE' | 'MISMATCHED' | 'CATEGORIES' | 'FIXED' | 'ALL_SCANNED';
@@ -85,7 +87,9 @@ function withDisplayCacheBust(url: string | undefined, versionTag?: string): str
 export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps> = ({
   products = EMPTY_PRODUCTS,
   onAuditCompleted,
-  onViewOnHomepage
+  onViewOnHomepage,
+  hideRefreshAllButton = false,
+  refreshTrigger
 }) => {
   const [summary, setSummary] = useState<CatalogImageAuditSummary | null>(null);
   const [auditRows, setAuditRows] = useState<UnifiedAuditRow[]>([]);
@@ -266,9 +270,12 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     }));
   }, []);
 
-  const syncMarketplaceImageListeners = useCallback(async () => {
+  const syncMarketplaceImageListeners = useCallback(async (bypassCooldown = false) => {
     try {
-      await productImageManagerService.syncFromServer(true);
+      await productImageManagerService.syncFromServer(true, true, {
+        bypassCooldown,
+        emitEvenIfUnchanged: bypassCooldown
+      });
     } catch {
       // ignore sync errors
     }
@@ -279,13 +286,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   }, []);
 
   const fetchPreviewStats = useCallback(
-    async (opts?: { includeCatalog?: boolean; clearSessionTouched?: boolean }) => {
+    async (opts?: { includeCatalog?: boolean; clearSessionTouched?: boolean; bypassCooldown?: boolean }) => {
       const includeCat = Boolean(opts?.includeCatalog);
       if (includeCat) setIsLoadingCatalog(true);
       setIsScanningPreview(true);
       try {
         if (opts?.clearSessionTouched) {
-          await syncMarketplaceImageListeners();
+          await syncMarketplaceImageListeners(Boolean(opts?.bypassCooldown));
         }
         const res = await runCatalogImageAuditAndCleanup({
           dryRun: true,
@@ -412,16 +419,29 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       }
     };
 
+    const handleManualRefreshAll = () => {
+      if (isBusyMutatingRef.current) return;
+      void fetchPreviewStats({ includeCatalog: true, clearSessionTouched: true, bypassCooldown: true });
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('tradeheaven_catalog_refresh_all', handleManualRefreshAll);
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       if (refreshTimer) window.clearTimeout(refreshTimer);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('tradeheaven_catalog_refresh_all', handleManualRefreshAll);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [fetchPreviewStats]);
+
+  useEffect(() => {
+    if (typeof refreshTrigger === 'number' && refreshTrigger > 0) {
+      void fetchPreviewStats({ includeCatalog: true, clearSessionTouched: true, bypassCooldown: true });
+    }
+  }, [refreshTrigger, fetchPreviewStats]);
 
   const combinedSourceRows = useMemo<UnifiedAuditRow[]>(() => {
     const mapById = new Map<string, UnifiedAuditRow>();
@@ -1542,13 +1562,41 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {!hideRefreshAllButton && (
+            <button
+              type="button"
+              disabled={isScanningPreview || isRunningFix || isBulkRefetching}
+              onClick={async () => {
+                setAlertMessage(null);
+                await fetchPreviewStats({
+                  includeCatalog: true,
+                  clearSessionTouched: true,
+                  bypassCooldown: true
+                });
+                const total = summary?.total_scanned || cleanRecords.length || 0;
+                setAlertMessage({
+                  type: 'success',
+                  title: 'Refreshed All Images from Server in Real Time',
+                  detail: `Synced latest server overrides and updated local image state across ${total.toLocaleString()} catalog records.`
+                });
+              }}
+              data-testid="auditor-refresh-all-btn"
+              className="px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              title="Re-fetch all current images and sync local state from server in real time"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isScanningPreview ? 'animate-spin text-indigo-600' : 'text-indigo-600'}`} />
+              <span>{isScanningPreview ? 'Refreshing...' : 'Refresh All'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             disabled={isScanningPreview || isRunningFix}
             onClick={() =>
               void fetchPreviewStats({
                 includeCatalog: true,
-                clearSessionTouched: true
+                clearSessionTouched: true,
+                bypassCooldown: true
               })
             }
             className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"

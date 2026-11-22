@@ -4,13 +4,15 @@ import { MOCK_PRODUCTS } from '../../data/mockData';
 import { api, getDeletedProductIdsSet } from '../../services/apiService';
 import {
   productImageManagerService,
-  OutputImageFormat,
-  MediaLibraryItem,
-  ProductImageSystemState,
-  ImageEditFilters,
   DEFAULT_IMAGE_EDIT_FILTERS,
   buildCssFilterString,
   hasActiveImageFilters
+} from '../../services/productImageManagerService';
+import type {
+  OutputImageFormat,
+  MediaLibraryItem,
+  ProductImageSystemState,
+  ImageEditFilters
 } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
@@ -20,6 +22,7 @@ import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
 import { ImageCdnAcceleratorWidget } from './ImageCdnAcceleratorWidget';
 import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
+import { useSiteContent } from '../../context/SiteContentContext';
 import {
   Image as ImageIcon,
   Upload,
@@ -113,6 +116,10 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
   const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
+  const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [auditorRefreshTrigger, setAuditorRefreshTrigger] = useState<number>(0);
+  const { refreshFromServer: refreshSiteContentFromServer } = useSiteContent();
   const [toast, setToast] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -205,14 +212,53 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       list.filter(
         p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
       );
+    let refreshedProducts: Product[] = [];
     try {
       const fetched = await api.getProducts();
       const base = Array.isArray(fetched) ? fetched : filterDeleted(MOCK_PRODUCTS);
-      setAllProducts(productImageManagerService.applyOverridesToProductList(filterDeleted(base)));
+      refreshedProducts = productImageManagerService.applyOverridesToProductList(filterDeleted(base));
     } catch {
-      setAllProducts(productImageManagerService.applyOverridesToProductList(filterDeleted(MOCK_PRODUCTS)));
+      refreshedProducts = productImageManagerService.applyOverridesToProductList(filterDeleted(MOCK_PRODUCTS));
     }
+    setAllProducts(refreshedProducts);
     if (onProductsUpdated) onProductsUpdated();
+    return { state: st, productsCount: refreshedProducts.length };
+  };
+
+  // Real-time Refresh All: force re-fetch all current image overrides, catalog products, and CMS images from server
+  const handleRefreshAll = async () => {
+    if (isRefreshingAll) return;
+    setIsRefreshingAll(true);
+    try {
+      const [latestState] = await Promise.all([
+        productImageManagerService.syncFromServer(true, true, {
+          bypassCooldown: true,
+          emitEvenIfUnchanged: true
+        }),
+        refreshSiteContentFromServer()
+      ]);
+      const { productsCount } = await refreshState();
+      setSeoRecords(autoSeoEngine.getAllSeoRecords());
+      setAuditorRefreshTrigger(prev => prev + 1);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated', { detail: latestState }));
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+      }
+
+      const overrideCount = Object.keys(latestState?.overrides || {}).length;
+      const mediaCount = Array.isArray(latestState?.mediaLibrary) ? latestState.mediaLibrary.length : 0;
+      const nowLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLastRefreshedAt(nowLabel);
+      showToast(
+        'success',
+        `Refreshed all current images from server in real time (${overrideCount.toLocaleString()} overrides, ${productsCount.toLocaleString()} products, ${mediaCount.toLocaleString()} media files synced at ${nowLabel}).`
+      );
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to refresh images from server');
+    } finally {
+      setIsRefreshingAll(false);
+    }
   };
 
   // Full Product Edit / Create Modal State
@@ -1152,26 +1198,48 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
             </button>
           </div>
 
-          {(customizedCount > 0 || systemState.globalDefaultImage) && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={async () => {
-                await productImageManagerService.resetAllProductImages();
-                await refreshState();
-                showToast('success', 'All product images restored to default catalog images.');
-              }}
-              className="px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800/70 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              disabled={isRefreshingAll}
+              onClick={() => void handleRefreshAll()}
+              data-testid="refresh-all-images-btn"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white border border-indigo-400/50 text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              title="Re-fetch all current images and update local state from server in real time"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset All Overrides</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingAll ? 'animate-spin' : ''}`} />
+              <span>{isRefreshingAll ? 'Refreshing All...' : 'Refresh All'}</span>
             </button>
-          )}
+
+            {lastRefreshedAt && (
+              <span className="text-[11px] font-semibold text-emerald-300 px-2 py-1 rounded-lg bg-slate-800 border border-slate-700">
+                Synced {lastRefreshedAt}
+              </span>
+            )}
+
+            {(customizedCount > 0 || systemState.globalDefaultImage) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await productImageManagerService.resetAllProductImages();
+                  await refreshState();
+                  showToast('success', 'All product images restored to default catalog images.');
+                }}
+                className="px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800/70 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset All Overrides</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* AUTOMATED CATALOG IMAGE QUALITY & DUPLICATE AUDITOR WIDGET */}
       <CatalogImageAuditorWidget
         products={allProducts}
+        hideRefreshAllButton={true}
+        refreshTrigger={auditorRefreshTrigger}
         onViewOnHomepage={onViewOnHomepage}
         onAuditCompleted={async (res) => {
           await refreshState();

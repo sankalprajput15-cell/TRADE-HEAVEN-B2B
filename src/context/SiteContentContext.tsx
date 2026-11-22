@@ -84,6 +84,7 @@ interface SiteContentContextType {
   updateSection: <K extends keyof SiteContent>(sectionKey: K, data: Partial<SiteContent[K]>) => Promise<{ success: boolean; message?: string }>;
   updateField: (path: string, value: any) => void;
   forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
+  refreshFromServer: () => Promise<boolean>;
   // Local Draft Persistence (non-deploying)
   draftRecord: SiteContentDraftRecord | null;
   hasSavedDraft: boolean;
@@ -449,6 +450,40 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
   }, []);
+
+  const refreshFromServer = async (): Promise<boolean> => {
+    try {
+      const contentRes = await apiClient.getSiteContent();
+      if (
+        !hasLocalSiteMutationRef.current &&
+        contentRes.success &&
+        contentRes.data &&
+        typeof contentRes.data === 'object' &&
+        !Array.isArray(contentRes.data)
+      ) {
+        setSiteContent(prev => {
+          if (hasLocalSiteMutationRef.current) return prev;
+          const prevTs = Number((prev as any)?.siteContentUpdatedAt || 0);
+          const incomingTs = Number((contentRes.data as any)?.siteContentUpdatedAt || 0);
+          if (prevTs > 0 && incomingTs > 0 && prevTs > incomingTs) {
+            return prev;
+          }
+          if (lastLocalSaveTsRef.current > 0 && (incomingTs === 0 || lastLocalSaveTsRef.current > incomingTs)) {
+            return prev;
+          }
+          const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
 
   // Helper to check if a specific user is authorized to edit CMS or access admin areas
   const isUserAuthorized = (user: AuthUser | null = currentUser): UserAuthorizationResult => {
@@ -836,6 +871,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updateSection,
         updateField,
         forceSaveNow,
+        refreshFromServer,
         draftRecord,
         hasSavedDraft,
         saveDraft,
