@@ -22,7 +22,10 @@ import {
   Crop,
   X,
   Maximize2,
-  ExternalLink
+  ExternalLink,
+  CheckSquare,
+  Square,
+  StopCircle
 } from 'lucide-react';
 import {
   runCatalogImageAuditAndCleanup,
@@ -120,6 +123,16 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const [croppingRowTarget, setCroppingRowTarget] = useState<{ row: UnifiedAuditRow; imageSrc: string } | null>(null);
   const [copiedRecordLinkId, setCopiedRecordLinkId] = useState<string | null>(null);
   const [isEmbeddingSeo, setIsEmbeddingSeo] = useState<boolean>(false);
+  const [selectedBulkIds, setSelectedBulkIds] = useState<Record<string, boolean>>({});
+  const [isBulkRefetching, setIsBulkRefetching] = useState<boolean>(false);
+  const [bulkRefetchProgress, setBulkRefetchProgress] = useState<{
+    total: number;
+    completed: number;
+    succeeded: number;
+    failed: number;
+    currentTitle: string;
+  } | null>(null);
+  const bulkRefetchAbortRef = useRef<boolean>(false);
 
   const handleEmbedTradeHeavenSeoImages = useCallback(async () => {
     setIsEmbeddingSeo(true);
@@ -216,6 +229,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   const isBusyMutatingRef = useRef<boolean>(false);
   isBusyMutatingRef.current =
     isRunningFix ||
+    isBulkRefetching ||
     Object.values(fixingRecordIds).some(Boolean) ||
     Object.values(uploadingRecordIds).some(Boolean);
 
@@ -663,7 +677,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         is_fallback_card?: boolean;
         status: 'FIXED' | 'FLAGGED';
         updatedAt?: string;
-      }
+      },
+      opts?: { preserveSelection?: boolean }
     ) => {
       const wasFlagged = targetRow.status === 'FLAGGED';
       const nowFixed = res.status === 'FIXED';
@@ -753,32 +768,34 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         };
       });
 
-      if (nowFixed && isFlaggedQueue) {
-        if (nextFlaggedRow) {
-          setSelectedRecordId(nextFlaggedRow.record_id);
-          setCandidateSearchQuery(cleanProductSearchSubject(nextFlaggedRow.title) || nextFlaggedRow.title);
-          setStagedPreviewUrl('');
-          setCustomUrlInput(
-            nextFlaggedRow.old_image_url && nextFlaggedRow.old_image_url !== '(empty)'
-              ? nextFlaggedRow.old_image_url
-              : ''
-          );
-        } else {
-          setSelectedRecordId(null);
-          setStagedPreviewUrl('');
-          setCustomUrlInput('');
-          if (isInspectorModalOpenRef.current) {
-            setIsInspectorModalOpen(false);
+      if (!opts?.preserveSelection) {
+        if (nowFixed && isFlaggedQueue) {
+          if (nextFlaggedRow) {
+            setSelectedRecordId(nextFlaggedRow.record_id);
+            setCandidateSearchQuery(cleanProductSearchSubject(nextFlaggedRow.title) || nextFlaggedRow.title);
+            setStagedPreviewUrl('');
+            setCustomUrlInput(
+              nextFlaggedRow.old_image_url && nextFlaggedRow.old_image_url !== '(empty)'
+                ? nextFlaggedRow.old_image_url
+                : ''
+            );
+          } else {
+            setSelectedRecordId(null);
+            setStagedPreviewUrl('');
+            setCustomUrlInput('');
+            if (isInspectorModalOpenRef.current) {
+              setIsInspectorModalOpen(false);
+            }
           }
-        }
-      } else {
-        setSelectedRecordId(targetRow.record_id);
-        if (nowFixed) {
-          setStagedPreviewUrl(res.new_image_url);
-          setCustomUrlInput(res.new_image_url);
         } else {
-          setStagedPreviewUrl('');
-          setCustomUrlInput(res.old_image_url !== '(empty)' ? res.old_image_url : '');
+          setSelectedRecordId(targetRow.record_id);
+          if (nowFixed) {
+            setStagedPreviewUrl(res.new_image_url);
+            setCustomUrlInput(res.new_image_url);
+          } else {
+            setStagedPreviewUrl('');
+            setCustomUrlInput(res.old_image_url !== '(empty)' ? res.old_image_url : '');
+          }
         }
       }
     },
@@ -863,6 +880,265 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       });
     } finally {
       setFixingRecordIds(prev => ({ ...prev, [rid]: false }));
+    }
+  };
+
+  const selectedBulkIdList = useMemo(
+    () => Object.keys(selectedBulkIds).filter(id => Boolean(selectedBulkIds[id])),
+    [selectedBulkIds]
+  );
+  const selectedBulkCount = selectedBulkIdList.length;
+
+  const allVisiblePageSelected = useMemo(
+    () => paginatedRows.length > 0 && paginatedRows.every(r => Boolean(selectedBulkIds[r.record_id])),
+    [paginatedRows, selectedBulkIds]
+  );
+
+  const someVisiblePageSelected = useMemo(
+    () => paginatedRows.some(r => Boolean(selectedBulkIds[r.record_id])),
+    [paginatedRows, selectedBulkIds]
+  );
+
+  const toggleBulkSelectRow = useCallback((recordId: string) => {
+    setSelectedBulkIds(prev => {
+      const next = { ...prev };
+      if (next[recordId]) {
+        delete next[recordId];
+      } else {
+        next[recordId] = true;
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectCurrentPage = useCallback(() => {
+    setSelectedBulkIds(prev => {
+      const next = { ...prev };
+      if (paginatedRows.length > 0 && paginatedRows.every(r => Boolean(next[r.record_id]))) {
+        for (const r of paginatedRows) {
+          delete next[r.record_id];
+        }
+      } else {
+        for (const r of paginatedRows) {
+          next[r.record_id] = true;
+        }
+      }
+      return next;
+    });
+  }, [paginatedRows]);
+
+  const handleSelectAllFiltered = useCallback(() => {
+    setSelectedBulkIds(prev => {
+      const next = { ...prev };
+      for (const r of filteredRows) {
+        next[r.record_id] = true;
+      }
+      return next;
+    });
+  }, [filteredRows]);
+
+  const handleClearBulkSelection = useCallback(() => {
+    setSelectedBulkIds({});
+  }, []);
+
+  const handleStopBulkRefetch = useCallback(() => {
+    bulkRefetchAbortRef.current = true;
+  }, []);
+
+  const handleBulkRefetchSelected = async () => {
+    if (isBulkRefetching || isRunningFix || selectedBulkCount === 0) return;
+
+    // Resolve all selected row objects across visible & cached records
+    const rowLookup = new Map<string, UnifiedAuditRow>();
+    for (const r of combinedSourceRows) rowLookup.set(r.record_id, r);
+    for (const r of auditRows) {
+      if (!rowLookup.has(r.record_id)) rowLookup.set(r.record_id, r);
+    }
+    for (const c of cleanRecords) {
+      if (!rowLookup.has(c.record_id)) {
+        rowLookup.set(c.record_id, {
+          record_id: c.record_id,
+          record_type: c.record_type,
+          title: c.title,
+          category: c.category,
+          issue_type: 'HEALTHY',
+          issue_reason: 'Selected for batch re-fetch',
+          old_image_url: c.previous_image_url || c.current_image_url || '(empty)',
+          new_image_url: c.current_image_url || '',
+          query_used: c.title,
+          status: c.status === 'FIXED' ? 'FIXED' : 'CLEAN',
+          updatedAt: c.updated_at
+        });
+      }
+    }
+    for (const cat of homepageCategories) {
+      if (!rowLookup.has(cat.id)) {
+        rowLookup.set(cat.id, {
+          record_id: cat.id,
+          record_type: 'CATEGORY',
+          title: cat.name,
+          category: cat.name,
+          issue_type: 'HEALTHY',
+          issue_reason: 'Homepage Top International Procurement Sector card',
+          old_image_url: cat.image || '(empty)',
+          new_image_url: cat.image || '',
+          query_used: cat.name,
+          status: 'CLEAN'
+        });
+      }
+    }
+
+    const targets = selectedBulkIdList
+      .map(id => rowLookup.get(id))
+      .filter((r): r is UnifiedAuditRow => Boolean(r));
+
+    if (targets.length === 0) {
+      setSelectedBulkIds({});
+      return;
+    }
+
+    bulkRefetchAbortRef.current = false;
+    setIsBulkRefetching(true);
+    setAlertMessage(null);
+    lastLocalMutationAtRef.current = Date.now();
+    setBulkRefetchProgress({
+      total: targets.length,
+      completed: 0,
+      succeeded: 0,
+      failed: 0,
+      currentTitle: targets[0].title
+    });
+
+    let completedCount = 0;
+    let succeededCount = 0;
+    let failedCount = 0;
+    let lastSucceededRow: UnifiedAuditRow | undefined;
+    let cursor = 0;
+
+    const processSingleTarget = async (row: UnifiedAuditRow) => {
+      const rid = row.record_id;
+      setFixingRecordIds(prev => ({ ...prev, [rid]: true }));
+      setBulkRefetchProgress(prev =>
+        prev
+          ? { ...prev, currentTitle: row.title }
+          : {
+              total: targets.length,
+              completed: completedCount,
+              succeeded: succeededCount,
+              failed: failedCount,
+              currentTitle: row.title
+            }
+      );
+
+      try {
+        const currentUrlForExclusion =
+          row.new_image_url && row.new_image_url !== '(pending audit fix)'
+            ? row.new_image_url
+            : row.old_image_url && row.old_image_url !== '(empty)'
+              ? row.old_image_url
+              : undefined;
+
+        const result = await fixSingleCatalogImage({
+          recordId: rid,
+          recordType: row.record_type,
+          title: row.title,
+          category: row.category,
+          previousImageUrl: currentUrlForExclusion
+        });
+
+        // Immediately reflect and persist in real time per image
+        lastLocalMutationAtRef.current = Date.now();
+        applySingleRecordMutationResult(row, result, { preserveSelection: true });
+        const activityMs = result.imageUpdatedAt || Date.now();
+        productImageManagerService.recordProductActivityTimestamp(rid, activityMs, false);
+        productImageManagerService.applyServerOverrideSnapshot([
+          {
+            id: rid,
+            url: result.new_image_url,
+            previousUrl:
+              result.old_image_url && result.old_image_url !== '(empty)'
+                ? result.old_image_url
+                : currentUrlForExclusion,
+            updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
+            updatedBy: 'catalog-image-auditor'
+          }
+        ]);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
+          window.dispatchEvent(new Event('tradeheaven_products_updated'));
+        }
+
+        succeededCount += 1;
+        lastSucceededRow = {
+          ...row,
+          old_image_url: result.old_image_url || row.old_image_url,
+          new_image_url: result.new_image_url,
+          status: 'FIXED',
+          updatedAt: result.updatedAt || new Date(activityMs).toISOString()
+        };
+
+        // Deselect successfully re-fetched item in real time
+        setSelectedBulkIds(prev => {
+          const next = { ...prev };
+          delete next[rid];
+          return next;
+        });
+      } catch {
+        failedCount += 1;
+      } finally {
+        completedCount += 1;
+        setFixingRecordIds(prev => ({ ...prev, [rid]: false }));
+        setBulkRefetchProgress({
+          total: targets.length,
+          completed: completedCount,
+          succeeded: succeededCount,
+          failed: failedCount,
+          currentTitle: row.title
+        });
+      }
+    };
+
+    try {
+      const workerCount = Math.min(2, targets.length);
+      const workers = Array.from({ length: workerCount }, async () => {
+        while (!bulkRefetchAbortRef.current) {
+          const idx = cursor++;
+          if (idx >= targets.length) break;
+          await processSingleTarget(targets[idx]);
+        }
+      });
+      await Promise.all(workers);
+
+      await syncMarketplaceImageListeners();
+
+      const wasStopped = bulkRefetchAbortRef.current && completedCount < targets.length;
+      if (succeededCount > 0) {
+        setAlertMessage({
+          type: failedCount > 0 || wasStopped ? 'info' : 'success',
+          title: wasStopped
+            ? `Batch Re-Fetch Stopped: ${succeededCount} Saved Live to Server (${completedCount}/${targets.length} Processed)`
+            : `Batch Re-Fetch Complete: ${succeededCount} Image${succeededCount === 1 ? '' : 's'} Re-Fetched & Saved Live to Server`,
+          detail:
+            failedCount > 0
+              ? `${succeededCount} image${succeededCount === 1 ? '' : 's'} were automatically saved in real time on the server. ${failedCount} item${failedCount === 1 ? '' : 's'} stayed selected because no auto-match was found — you can retry or click Upload manually.`
+              : `All ${succeededCount} selected image${succeededCount === 1 ? '' : 's'} were fetched and automatically saved to the server in real time and synced across the site.`,
+          actionRow: lastSucceededRow
+        });
+      } else {
+        setAlertMessage({
+          type: 'error',
+          title: `Batch Re-Fetch Could Not Update Selected Images (${failedCount} Failed)`,
+          detail:
+            'No matching verified external photos were found automatically for the selected items. They remain checked so you can upload photos manually or inspect them individually.'
+        });
+      }
+    } finally {
+      setIsBulkRefetching(false);
+      bulkRefetchAbortRef.current = false;
+      window.setTimeout(() => {
+        setBulkRefetchProgress(null);
+      }, 1500);
     }
   };
 
@@ -1296,7 +1572,51 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
 
           <button
             type="button"
-            disabled={isRunningFix}
+            disabled={isRunningFix || isBulkRefetching || selectedBulkCount === 0}
+            onClick={() => void handleBulkRefetchSelected()}
+            data-testid="bulk-refetch-selected-btn"
+            className={`px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 ${
+              selectedBulkCount > 0
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                : 'border border-indigo-200 bg-indigo-50 text-indigo-700'
+            }`}
+            title={
+              selectedBulkCount > 0
+                ? `Re-fetch ${selectedBulkCount} selected image${selectedBulkCount === 1 ? '' : 's'} and save each to server in real time`
+                : 'Select one or more rows below to batch re-fetch & save to server'
+            }
+          >
+            {isBulkRefetching && bulkRefetchProgress ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>
+                  Re-Fetching {bulkRefetchProgress.completed}/{bulkRefetchProgress.total} (Saving Live)...
+                </span>
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4" />
+                <span>Re-Fetch Selected ({selectedBulkCount})</span>
+              </>
+            )}
+          </button>
+
+          {isBulkRefetching && (
+            <button
+              type="button"
+              onClick={handleStopBulkRefetch}
+              data-testid="stop-bulk-refetch-btn"
+              className="px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              title="Stop remaining items (already re-fetched images remain saved on server)"
+            >
+              <StopCircle className="w-4 h-4" />
+              <span>Stop</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            disabled={isRunningFix || isBulkRefetching}
             onClick={() => void handleRunAuditAndClean()}
             data-testid="run-image-audit-btn"
             className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-black flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60"
@@ -1584,15 +1904,71 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 bg-white">
             {/* LEFT PANE: CLICKABLE RECORDS QUEUE */}
             <div className="lg:col-span-7 flex flex-col">
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-600">
-                <span>
-                  {isLoadingCatalog
-                    ? 'Loading full catalog...'
-                    : `Showing ${paginatedRows.length > 0 ? (safePage - 1) * ITEMS_PER_PAGE + 1 : 0}–${Math.min(
-                        safePage * ITEMS_PER_PAGE,
-                        filteredRows.length
-                      )} of ${filteredRows.length} record${filteredRows.length === 1 ? '' : 's'} — Click any row to preview, Fix Now, or Upload`}
-                </span>
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-600">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={paginatedRows.length === 0 || isBulkRefetching}
+                    onClick={handleToggleSelectCurrentPage}
+                    data-testid="select-page-rows-btn"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                    title="Select or deselect all rows on this page"
+                  >
+                    {allVisiblePageSelected ? (
+                      <CheckSquare className="w-3.5 h-3.5 text-indigo-600" />
+                    ) : (
+                      <Square className={`w-3.5 h-3.5 ${someVisiblePageSelected ? 'text-indigo-500' : 'text-slate-400'}`} />
+                    )}
+                    <span>{allVisiblePageSelected ? 'Unselect Page' : `Select Page (${paginatedRows.length})`}</span>
+                  </button>
+
+                  {filteredRows.length > paginatedRows.length && (
+                    <button
+                      type="button"
+                      disabled={isBulkRefetching}
+                      onClick={handleSelectAllFiltered}
+                      data-testid="select-all-filtered-btn"
+                      className="px-2 py-1 rounded-md border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                    >
+                      Select All ({filteredRows.length})
+                    </button>
+                  )}
+
+                  {selectedBulkCount > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isBulkRefetching || isRunningFix}
+                        onClick={() => void handleBulkRefetchSelected()}
+                        className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <Wand2 className={`w-3 h-3 ${isBulkRefetching ? 'animate-spin' : ''}`} />
+                        <span>
+                          {isBulkRefetching && bulkRefetchProgress
+                            ? `Saving ${bulkRefetchProgress.completed}/${bulkRefetchProgress.total}...`
+                            : `Re-Fetch & Save (${selectedBulkCount})`}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBulkRefetching}
+                        onClick={handleClearBulkSelection}
+                        className="px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+
+                  <span className="text-slate-500">
+                    {isLoadingCatalog
+                      ? 'Loading full catalog...'
+                      : `${paginatedRows.length > 0 ? (safePage - 1) * ITEMS_PER_PAGE + 1 : 0}–${Math.min(
+                          safePage * ITEMS_PER_PAGE,
+                          filteredRows.length
+                        )} of ${filteredRows.length}`}
+                  </span>
+                </div>
                 {totalPages > 1 && (
                   <div className="flex items-center gap-1">
                     <button
@@ -1620,6 +1996,37 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                 )}
               </div>
 
+              {bulkRefetchProgress && (
+                <div
+                  data-testid="bulk-refetch-progress-bar"
+                  className="px-4 py-2.5 bg-indigo-950 text-indigo-50 border-b border-indigo-800 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+                    <span className="truncate">
+                      Re-fetching &amp; auto-saving to server in real time: {bulkRefetchProgress.completed}/
+                      {bulkRefetchProgress.total} ({bulkRefetchProgress.succeeded} saved
+                      {bulkRefetchProgress.failed > 0 ? `, ${bulkRefetchProgress.failed} failed` : ''}) —{' '}
+                      <span className="text-indigo-200">{bulkRefetchProgress.currentTitle}</span>
+                    </span>
+                    {isBulkRefetching && (
+                      <button
+                        type="button"
+                        onClick={handleStopBulkRefetch}
+                        className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black shrink-0 cursor-pointer"
+                      >
+                        Stop
+                      </button>
+                    )}
+                  </div>
+                  <progress
+                    value={bulkRefetchProgress.completed}
+                    max={Math.max(1, bulkRefetchProgress.total)}
+                    aria-label="Batch image re-fetch progress"
+                    className="w-full h-1.5 rounded-full overflow-hidden block bg-indigo-900 [&::-webkit-progress-bar]:bg-indigo-900 [&::-webkit-progress-value]:bg-emerald-400 [&::-webkit-progress-value]:transition-all [&::-moz-progress-bar]:bg-emerald-400"
+                  />
+                </div>
+              )}
+
               <div className="max-h-[540px] overflow-y-auto divide-y divide-slate-100">
                 {paginatedRows.length === 0 ? (
                   <div className="p-8 text-center space-y-2">
@@ -1636,6 +2043,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                 ) : (
                   paginatedRows.map(row => {
                     const isSelected = selectedRecord?.record_id === row.record_id;
+                    const isBulkChecked = Boolean(selectedBulkIds[row.record_id]);
                     const isRowFixing = Boolean(fixingRecordIds[row.record_id]);
                     const isRowUploading = Boolean(uploadingRecordIds[row.record_id]);
                     const hasNewImg = Boolean(row.new_image_url && row.new_image_url !== '(pending audit fix)');
@@ -1662,10 +2070,27 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
                         className={`p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-blue-50/90 border-l-4 border-l-blue-600'
+                            : isBulkChecked
+                            ? 'bg-indigo-50/60 border-l-4 border-l-indigo-500'
                             : 'bg-white hover:bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <label
+                            onClick={e => e.stopPropagation()}
+                            className="flex items-center justify-center shrink-0 p-1 -ml-1 rounded hover:bg-indigo-100/70 cursor-pointer"
+                            title="Select this image for batch re-fetch"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isBulkChecked}
+                              disabled={isBulkRefetching}
+                              onChange={() => toggleBulkSelectRow(row.record_id)}
+                              data-testid={`bulk-select-checkbox-${row.record_id}`}
+                              aria-label={`Select ${row.title} for batch re-fetch`}
+                              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                            />
+                          </label>
                           {row.status === 'FIXED' && hasNewImg ? (
                             <div className="flex items-center gap-1 shrink-0">
                               <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 opacity-70">
