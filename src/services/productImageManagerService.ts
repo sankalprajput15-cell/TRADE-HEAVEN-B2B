@@ -1,7 +1,11 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
 import { imageCdnService } from './imageCdnService';
-import { isMismatchedProductImageUrl, isGenericOrPlaceholderImageUrl } from './visualProductImageService';
+import {
+  isMismatchedProductImageUrl,
+  isGenericOrPlaceholderImageUrl,
+  registerAttachedCatalogUrlsProvider
+} from './visualProductImageService';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 
@@ -3240,3 +3244,19 @@ class ProductImageManagerService {
 }
 
 export const productImageManagerService = new ProductImageManagerService();
+
+registerAttachedCatalogUrlsProvider((excludeProductId?: string) => {
+  const exclude = String(excludeProductId || '').trim();
+  const state = productImageManagerService.getState();
+  const attached: string[] = [];
+  for (const [key, entry] of Object.entries(state.overrides || {})) {
+    if (!entry || (exclude && key === exclude)) continue;
+    if (entry.primary) attached.push(entry.primary);
+    if (Array.isArray(entry.gallery)) {
+      for (const g of entry.gallery) {
+        if (g) attached.push(g);
+      }
+    }
+  }
+  return attached;
+});

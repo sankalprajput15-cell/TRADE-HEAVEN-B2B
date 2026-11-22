@@ -8084,13 +8084,44 @@ switch ($action) {
         $final_url = '';
         $source_sf = 'manual_custom_url';
 
-        // CRITICAL: Build complete set of already-used URLs across ALL other catalog overrides + old/replaced URLs for this record
-        // so fix_single_catalog_image NEVER picks a duplicate URL or re-selects an old replaced image!
+        // CRITICAL: Build complete global 1-to-1 uniqueness sets across ALL other catalog overrides
+        // (local paths, external sourceUrls, 12-char URL hash tokens, and binary file SHA-1 content hashes)
         $used_urls_sf = [];
+        $used_url_hashes_sf = [];
+        $used_content_hashes_sf = [];
+        $extract_hash_tok_sf = function($u) {
+            $clean = trim(explode('#', explode('?', (string)$u)[0])[0]);
+            if ($clean === '') return '';
+            if (preg_match('/^https?:\/\//i', $clean)) {
+                return substr(sha1($clean), 0, 12);
+            }
+            if (preg_match('/[-_]([0-9a-f]{12})\.(?:webp|jpe?g|png|avif)$/i', $clean, $hm)) {
+                return strtolower($hm[1]);
+            }
+            return '';
+        };
         foreach (($ov_state_sf['overrides'] ?? []) as $other_id => $other_ov) {
             if ($other_id === $rec_id || !is_array($other_ov)) continue;
             $ou = th_strip_url_base($other_ov['primary'] ?? '');
-            if ($ou !== '') $used_urls_sf[$ou] = true;
+            if ($ou !== '') {
+                $used_urls_sf[$ou] = true;
+                $otok = $extract_hash_tok_sf($ou);
+                if ($otok !== '') $used_url_hashes_sf[$otok] = true;
+                if (strpos($ou, '/assets/uploads/') === 0) {
+                    $ofp = $uploads_dir_sf . '/' . basename($ou);
+                    if (is_file($ofp) && filesize($ofp) > 64) {
+                        $ofh = @sha1_file($ofp);
+                        if ($ofh) $used_content_hashes_sf[$ofh] = true;
+                    }
+                }
+            }
+            $osrc = trim((string)($other_ov['sourceUrl'] ?? ''));
+            if ($osrc !== '') {
+                $used_urls_sf[th_strip_url_base($osrc)] = true;
+                $used_url_hashes_sf[substr(sha1($osrc), 0, 12)] = true;
+            }
+            $och = trim((string)($other_ov['imageContentHash'] ?? ''));
+            if ($och !== '') $used_content_hashes_sf[$och] = true;
         }
         $clean_old_sf = th_strip_url_base($old_url);
         if ($clean_old_sf !== '') $used_urls_sf[$clean_old_sf] = true;
@@ -8104,6 +8135,8 @@ switch ($action) {
                 if ($rb !== '') $used_urls_sf[$rb] = true;
             }
         }
+        $resolved_source_url_sf = null;
+        $resolved_content_hash_sf = null;
 
         if ($is_revert && $prev_url !== '' && $prev_url !== '(empty)') {
             $final_url = trim(explode('?', $prev_url)[0]);
@@ -8206,11 +8239,25 @@ switch ($action) {
                         $local_fname = "auto-{$auto_slug_sf}-{$u_hash}.{$dl_ext}";
                         $local_fpath = $uploads_dir_sf . '/' . $local_fname;
                         $local_web_url = '/assets/uploads/' . $local_fname;
-                        // Never pick an old URL or any URL already used by another catalog item
-                        if (isset($used_urls_sf[$local_web_url]) || isset($used_urls_sf[th_strip_url_base($ext_u)])) continue;
+                        // STRICT GLOBAL 1-TO-1 UNIQUENESS: Never pick an old URL or any URL / 12-char hash already attached to another product
+                        if (
+                            isset($used_urls_sf[$local_web_url]) ||
+                            isset($used_urls_sf[th_strip_url_base($ext_u)]) ||
+                            isset($used_url_hashes_sf[$u_hash])
+                        ) {
+                            continue;
+                        }
 
-                        $ok_dl = (file_exists($local_fpath) && filesize($local_fpath) > 2500);
-                        if (!$ok_dl && th_is_safe_public_http_url($ext_u)) {
+                        $ok_dl = false;
+                        $dl_content_hash = null;
+                        if (file_exists($local_fpath) && filesize($local_fpath) > 2500) {
+                            $eh = @sha1_file($local_fpath);
+                            if ($eh && isset($used_content_hashes_sf[$eh])) {
+                                continue;
+                            }
+                            $dl_content_hash = $eh ?: null;
+                            $ok_dl = true;
+                        } elseif (th_is_safe_public_http_url($ext_u)) {
                             $ch_dl = curl_init($ext_u);
                             curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
                             curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
@@ -8222,12 +8269,20 @@ switch ($action) {
                             $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
                             curl_close($ch_dl);
                             if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
+                                $bin_hash = sha1($bin_dl);
+                                // Reject identical image bytes already attached to another product under a different filename!
+                                if (isset($used_content_hashes_sf[$bin_hash])) {
+                                    continue;
+                                }
                                 $ok_dl = (@file_put_contents($local_fpath, $bin_dl, LOCK_EX) !== false);
+                                if ($ok_dl) $dl_content_hash = $bin_hash;
                             }
                         }
                         if ($ok_dl) {
                             $final_url = $local_web_url;
                             $source_sf = 'wikimedia_commons_verified';
+                            $resolved_source_url_sf = $ext_u;
+                            $resolved_content_hash_sf = $dl_content_hash;
                             break;
                         }
                     }
@@ -8238,12 +8293,16 @@ switch ($action) {
             if ($final_url === '' && !empty($title_words_sf)) {
                 $best_url = '';
                 $best_score = 0;
+                $best_hash = null;
                 foreach (@scandir($uploads_dir_sf) ?: [] as $uf) {
                     if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf) || preg_match('/(diwali-offer|unsplash|placeholder|vecteezy)/i', $uf)) continue;
                     $fp = $uploads_dir_sf . '/' . $uf;
                     if (!is_file($fp) || filesize($fp) < 2000) continue;
                     $web_u = '/assets/uploads/' . $uf;
-                    if (isset($used_urls_sf[$web_u])) continue;
+                    $wtok = $extract_hash_tok_sf($web_u);
+                    if (isset($used_urls_sf[$web_u]) || ($wtok !== '' && isset($used_url_hashes_sf[$wtok]))) continue;
+                    $wfh = @sha1_file($fp);
+                    if ($wfh && isset($used_content_hashes_sf[$wfh])) continue;
                     $low_u = strtolower($uf);
                     $sc = 0;
                     foreach ($title_words_sf as $w) {
@@ -8254,11 +8313,13 @@ switch ($action) {
                     if ($sc > $best_score) {
                         $best_score = $sc;
                         $best_url = $web_u;
+                        $best_hash = $wfh ?: null;
                     }
                 }
                 if ($best_score >= 4 && $best_url !== '') {
                     $final_url = $best_url;
                     $source_sf = 'server_media_library_verified';
+                    $resolved_content_hash_sf = $best_hash;
                 }
             }
         }
@@ -8293,6 +8354,8 @@ switch ($action) {
             'updatedBy' => $is_revert ? 'auto-site-upload' : ($custom_url !== '' ? 'admin-manual' : 'catalog-image-auditor'),
             'locked' => !$is_revert,
             'serverVerified' => !$is_revert,
+            'sourceUrl' => $resolved_source_url_sf,
+            'imageContentHash' => $resolved_content_hash_sf,
             'verifiedAt' => $now_iso_sf,
             'replacedOldUrls' => $replaced_sf
         ];

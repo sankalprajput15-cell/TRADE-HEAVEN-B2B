@@ -14,7 +14,10 @@ import {
   HelpCircle,
   Sparkles
 } from 'lucide-react';
-import { fetchVisualProductImages, isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
+import {
+  ensureUniqueVerifiedProductImageForUpload,
+  isManuallyUploadedImageUrl
+} from '../../services/visualProductImageService';
 
 interface ImportedProduct {
   id: string;
@@ -167,38 +170,43 @@ export const BulkCsvProductImporter: React.FC<{
 
     setIsImporting(true);
     try {
-      const enrichedRows = await Promise.all(
-        validRows.map(async (row) => {
-          if (isManuallyUploadedImageUrl(row.imageUrl)) {
-            return {
-              ...row,
-              images: row.images && row.images.length > 0 ? row.images : [row.imageUrl],
-              isAutoMatchedImage: false
-            };
-          }
-          const searchRes = await fetchVisualProductImages({
-            productName: row.title,
-            category: row.category,
-            specifications: row.description,
-            count: 15
+      const batchUsedUrls = new Set<string>();
+      const enrichedRows: typeof validRows = [];
+      for (const row of validRows) {
+        if (isManuallyUploadedImageUrl(row.imageUrl)) {
+          const cleanManual = row.imageUrl.split('?')[0];
+          if (cleanManual) batchUsedUrls.add(cleanManual);
+          enrichedRows.push({
+            ...row,
+            images: row.images && row.images.length > 0 ? row.images : [row.imageUrl],
+            isAutoMatchedImage: false
           });
-          if (searchRes.success && searchRes.images.length > 0) {
-            const gallery = searchRes.images.slice(0, 4).map(i => i.url);
-            return {
-              ...row,
-              imageUrl: gallery[0],
-              images: gallery,
-              isAutoMatchedImage: true
-            };
-          }
-          return {
+          continue;
+        }
+        const uniqueImg = await ensureUniqueVerifiedProductImageForUpload({
+          productId: row.id,
+          productName: row.title,
+          category: row.category,
+          specifications: row.description,
+          usedUrls: batchUsedUrls
+        });
+        if (uniqueImg.primaryUrl) {
+          batchUsedUrls.add(uniqueImg.primaryUrl.split('?')[0]);
+          enrichedRows.push({
+            ...row,
+            imageUrl: uniqueImg.primaryUrl,
+            images: uniqueImg.gallery.length > 0 ? uniqueImg.gallery : [uniqueImg.primaryUrl],
+            isAutoMatchedImage: uniqueImg.autoAssigned
+          });
+        } else {
+          enrichedRows.push({
             ...row,
             imageUrl: '',
             images: [],
             isAutoMatchedImage: false
-          };
-        })
-      );
+          });
+        }
+      }
 
       setParsedProducts(prev =>
         prev.map(p => enrichedRows.find(e => e.id === p.id) || p)

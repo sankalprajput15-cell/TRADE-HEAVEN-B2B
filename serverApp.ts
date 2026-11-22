@@ -21377,6 +21377,7 @@ interface VisualImageCandidate {
   thumbnailUrl?: string;
   title?: string;
   sourceDomain?: string;
+  sourcePageUrl?: string;
   width?: number;
   height?: number;
   relevanceScore?: number;

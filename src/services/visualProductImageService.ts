@@ -782,49 +782,68 @@ export async function fetchVisualProductImages(params: {
   }
 
   const key = normalizeVisualQueryKey(productName, category);
+  const attachedRegistry = buildClientAttachedRegistry(productId);
+  const filterUnused = (list: VisualProductImageCandidate[]): VisualProductImageCandidate[] => {
+    const seen = new Set<string>();
+    return list.filter(img => {
+      const rawU = String(img?.url || '').trim();
+      if (!rawU || BROKEN_EXTERNAL_URLS.has(rawU)) return false;
+      const mapped = resolveLocalMirroredImageUrl(rawU);
+      const base = mapped.split('?')[0].split('#')[0];
+      const tok = extractClientUploadUrlHashToken(mapped) || extractClientUploadUrlHashToken(rawU);
+      if (seen.has(base) || (tok && seen.has(`h:${tok}`))) return false;
+      if (attachedRegistry.isUsed(mapped) || attachedRegistry.isUsed(rawU)) return false;
+      seen.add(base);
+      if (tok) seen.add(`h:${tok}`);
+      return true;
+    });
+  };
 
   // Instant Fisher-Yates shuffle on cached session pool when user clicks Shuffle/Refresh
   if (params.shuffleOnly && SESSION_CACHE.has(key)) {
     const cached = SESSION_CACHE.get(key)!.data;
     if (cached.success && Array.isArray(cached.pool) && cached.pool.length > 0) {
-      const healthyPool = cached.pool
-        .filter(img => img?.url && !BROKEN_EXTERNAL_URLS.has(img.url))
-        .map(img => ({
-          ...img,
-          url: resolveLocalMirroredImageUrl(img.url),
-          thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
-        }));
-      const shuffled = fisherYatesShuffle(healthyPool.length > 0 ? healthyPool : cached.pool);
-      return {
-        ...cached,
-        fromCache: true,
-        images: shuffled.slice(0, count),
-        pool: shuffled
-      };
+      const healthyPool = filterUnused(cached.pool).map(img => ({
+        ...img,
+        url: resolveLocalMirroredImageUrl(img.url),
+        thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
+      }));
+      if (healthyPool.length > 0) {
+        const shuffled = fisherYatesShuffle(healthyPool);
+        return {
+          ...cached,
+          fromCache: true,
+          images: shuffled.slice(0, count),
+          pool: shuffled,
+          totalVerified: shuffled.length
+        };
+      }
     }
   }
 
   if (!params.forceRefresh && SESSION_CACHE.has(key)) {
     const entry = SESSION_CACHE.get(key)!;
     if (Date.now() - entry.cachedAt < CACHE_TTL_MS && entry.data.success && entry.data.pool.length > 0) {
-      const healthyPool = entry.data.pool
-        .filter(img => img?.url && !BROKEN_EXTERNAL_URLS.has(img.url))
-        .map(img => ({
-          ...img,
-          url: resolveLocalMirroredImageUrl(img.url),
-          thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
-        }));
-      const shuffled = fisherYatesShuffle(healthyPool.length > 0 ? healthyPool : entry.data.pool);
-      return {
-        ...entry.data,
-        fromCache: true,
-        images: shuffled.slice(0, count),
-        pool: shuffled
-      };
+      const healthyPool = filterUnused(entry.data.pool).map(img => ({
+        ...img,
+        url: resolveLocalMirroredImageUrl(img.url),
+        thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
+      }));
+      // Only serve from client session cache if there are still genuinely unused photos left!
+      if (healthyPool.length >= 3) {
+        const shuffled = fisherYatesShuffle(healthyPool);
+        return {
+          ...entry.data,
+          fromCache: true,
+          images: shuffled.slice(0, count),
+          pool: shuffled,
+          totalVerified: shuffled.length
+        };
+      }
     }
   }
 
-  const inflightKey = `${key}::${params.forceRefresh ? 'fresh' : 'std'}`;
+  const inflightKey = `${key}::${productId || 'anon'}::${params.forceRefresh ? 'fresh' : 'std'}`;
   if (INFLIGHT_REQUESTS.has(inflightKey)) {
     return INFLIGHT_REQUESTS.get(inflightKey)!;
   }
@@ -836,7 +855,8 @@ export async function fetchVisualProductImages(params: {
       category,
       specifications,
       count,
-      force_refresh: Boolean(params.forceRefresh)
+      force_refresh: Boolean(params.forceRefresh),
+      exclude_urls: Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
     };
 
     const parsePayload = (raw: any): VisualProductSearchResponse => {
@@ -884,8 +904,8 @@ export async function fetchVisualProductImages(params: {
         if (!json || typeof json !== 'object') return null;
         if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
         const normalized = parsePayload(json);
-        // Reject off-topic or single-word false-match candidates returned by older caches/fallbacks
-        const cleanPool = normalized.pool.filter(
+        // Reject off-topic, single-word false-match, AND already-attached duplicate candidates
+        const cleanPool = filterUnused(normalized.pool).filter(
           c =>
             !isGenericOrPlaceholderImageUrl(c.url) &&
             !isMismatchedProductImageUrl(c.url, productName, category) &&
@@ -916,7 +936,7 @@ export async function fetchVisualProductImages(params: {
 
     // Standalone Chrome fallback: query Wikimedia Commons directly via CORS (origin=*) with crisp focused queries
     try {
-      const wikiCandidates = await fetchWikimediaCommonsCorsCandidates(productName, category, count);
+      const wikiCandidates = filterUnused(await fetchWikimediaCommonsCorsCandidates(productName, category, count));
       if (wikiCandidates.length > 0) {
         const wikiResp: VisualProductSearchResponse = {
           success: true,
@@ -935,9 +955,9 @@ export async function fetchVisualProductImages(params: {
       // ignore Wikimedia fallback errors
     }
 
-    // Only return verified server media library assets that actually match this product's tokens (never score-0 random images)
+    // Only return verified UNUSED server media library assets that actually match this product's tokens
     try {
-      const serverMediaCandidates = await buildServerMediaLibraryCandidates(productName, category, count);
+      const serverMediaCandidates = filterUnused(await buildServerMediaLibraryCandidates(productName, category, count));
       if (serverMediaCandidates.length > 0) {
         const fallbackResp: VisualProductSearchResponse = {
           success: true,
@@ -974,10 +994,77 @@ export async function fetchVisualProductImages(params: {
 }
 
 const ASSIGNED_UPLOAD_IMAGE_URLS = new Set<string>();
+let attachedCatalogUrlsProvider: ((excludeProductId?: string) => string[]) | null = null;
+
+export function registerAttachedCatalogUrlsProvider(
+  provider: (excludeProductId?: string) => string[]
+): void {
+  attachedCatalogUrlsProvider = provider;
+}
+
+function extractClientUploadUrlHashToken(rawUrl: string | undefined | null): string {
+  const clean = String(rawUrl || '').trim().split('?')[0].split('#')[0];
+  if (!clean) return '';
+  const m = clean.match(/[-_]([0-9a-f]{12})\.(?:webp|jpe?g|png|avif)$/i);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function buildClientAttachedRegistry(excludeProductId?: string, extraUsed?: Iterable<string>) {
+  const urls = new Set<string>();
+  const hashTokens = new Set<string>();
+
+  const addOne = (raw: string | undefined | null) => {
+    const clean = String(raw || '').trim().split('?')[0].split('#')[0];
+    if (!clean || isGenericOrPlaceholderImageUrl(clean)) return;
+    urls.add(clean);
+    const tok = extractClientUploadUrlHashToken(clean);
+    if (tok) hashTokens.add(tok);
+    const mirrored = LOCAL_MIRROR_MAP.get(clean);
+    if (mirrored) {
+      const cleanMirrored = mirrored.split('?')[0].split('#')[0];
+      if (cleanMirrored) {
+        urls.add(cleanMirrored);
+        const mt = extractClientUploadUrlHashToken(cleanMirrored);
+        if (mt) hashTokens.add(mt);
+      }
+    }
+  };
+
+  for (const u of ASSIGNED_UPLOAD_IMAGE_URLS) addOne(u);
+  if (attachedCatalogUrlsProvider) {
+    try {
+      for (const u of attachedCatalogUrlsProvider(excludeProductId)) addOne(u);
+    } catch {}
+  }
+  if (extraUsed) {
+    for (const u of extraUsed) addOne(u);
+  }
+
+  return {
+    urls,
+    hashTokens,
+    isUsed(candidate: string | undefined | null): boolean {
+      const clean = String(candidate || '').trim().split('?')[0].split('#')[0];
+      if (!clean) return false;
+      if (urls.has(clean)) return true;
+      const tok = extractClientUploadUrlHashToken(clean);
+      if (tok && hashTokens.has(tok)) return true;
+      const mirrored = LOCAL_MIRROR_MAP.get(clean);
+      if (mirrored) {
+        const cleanMirrored = mirrored.split('?')[0].split('#')[0];
+        if (cleanMirrored && urls.has(cleanMirrored)) return true;
+        const mt = extractClientUploadUrlHashToken(cleanMirrored);
+        if (mt && hashTokens.has(mt)) return true;
+      }
+      return false;
+    },
+    add: addOne
+  };
+}
 
 /**
  * Ensures any new product or RFQ posted without a manual image upload (or with a placeholder/duplicate image)
- * automatically receives a verified, unique, category-relevant image from our >10 randomized relevant results pool.
+ * automatically receives a verified, 100% globally unique, category-relevant image that is NOT attached to any other product.
  */
 export async function ensureUniqueVerifiedProductImageForUpload(params: {
   productId?: string;
@@ -988,13 +1075,7 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
   existingGallery?: string[];
   usedUrls?: Iterable<string>;
 }): Promise<{ primaryUrl: string; gallery: string[]; autoAssigned: boolean }> {
-  const used = new Set<string>(ASSIGNED_UPLOAD_IMAGE_URLS);
-  if (params.usedUrls) {
-    for (const u of params.usedUrls) {
-      const clean = String(u || '').trim().split('?')[0];
-      if (clean) used.add(clean);
-    }
-  }
+  const attached = buildClientAttachedRegistry(params.productId, params.usedUrls);
 
   const rawPrimary = String(
     params.existingImageUrl ||
@@ -1007,10 +1088,11 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
   if (
     cleanPrimary &&
     !isGenericOrPlaceholderImageUrl(cleanPrimary) &&
-    !used.has(cleanPrimary) &&
+    !attached.isUsed(cleanPrimary) &&
     isManuallyUploadedImageUrl(cleanPrimary)
   ) {
     ASSIGNED_UPLOAD_IMAGE_URLS.add(cleanPrimary);
+    attached.add(cleanPrimary);
     const gallery =
       Array.isArray(params.existingGallery) && params.existingGallery.length > 0
         ? params.existingGallery.filter(Boolean)
@@ -1018,56 +1100,61 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
     return { primaryUrl: rawPrimary, gallery, autoAssigned: false };
   }
 
-  // Otherwise automatically fetch from our >10 randomized relevant results pool
+  // Otherwise automatically fetch from our >10 randomized relevant results pool (strictly excluding already-attached photos)
   try {
-    const searchRes = await fetchVisualProductImages({
-      productName: params.productName || 'Wholesale Commodity',
-      productId: params.productId,
-      category: params.category,
-      specifications: params.specifications,
-      count: 15,
-      forceRefresh: false
-    });
+    const pickFromSearch = async (forceRefresh: boolean) => {
+      const searchRes = await fetchVisualProductImages({
+        productName: params.productName || 'Wholesale Commodity',
+        productId: params.productId,
+        category: params.category,
+        specifications: params.specifications,
+        count: 15,
+        forceRefresh
+      });
 
-    const pool = fisherYatesShuffle(
-      Array.isArray(searchRes.pool) && searchRes.pool.length > 0
-        ? searchRes.pool
-        : Array.isArray(searchRes.images)
-        ? searchRes.images
-        : []
-    );
+      const pool = fisherYatesShuffle(
+        Array.isArray(searchRes.pool) && searchRes.pool.length > 0
+          ? searchRes.pool
+          : Array.isArray(searchRes.images)
+          ? searchRes.images
+          : []
+      );
 
-    const pickedGallery: string[] = [];
-    for (const cand of pool) {
-      const candUrl = resolveLocalMirroredImageUrl(String(cand?.url || '').trim());
-      const cleanCand = candUrl.split('?')[0];
-      if (!cleanCand || isGenericOrPlaceholderImageUrl(cleanCand) || used.has(cleanCand)) continue;
-      pickedGallery.push(candUrl);
-      used.add(cleanCand);
-      if (pickedGallery.length >= 3) break;
-    }
+      for (const cand of pool) {
+        const candUrl = resolveLocalMirroredImageUrl(String(cand?.url || '').trim());
+        const cleanCand = candUrl.split('?')[0];
+        if (!cleanCand || isGenericOrPlaceholderImageUrl(cleanCand) || attached.isUsed(cleanCand)) continue;
 
-    if (pickedGallery.length > 0) {
-      let finalPrimary = pickedGallery[0];
-      if (/^https?:\/\//i.test(finalPrimary)) {
-        const mirrored = await autoUploadDisplayedProductImage({
-          imageUrl: finalPrimary,
-          productId: params.productId,
-          productName: params.productName,
-          category: params.category
-        });
-        if (mirrored) {
+        let finalPrimary = candUrl;
+        if (/^https?:\/\//i.test(finalPrimary)) {
+          const mirrored = await autoUploadDisplayedProductImage({
+            imageUrl: finalPrimary,
+            productId: params.productId,
+            productName: params.productName,
+            category: params.category
+          });
+          if (!mirrored) continue;
+          const cleanMirrored = mirrored.split('?')[0];
+          if (attached.isUsed(cleanMirrored)) continue;
           finalPrimary = mirrored;
-          pickedGallery[0] = mirrored;
         }
+
+        ASSIGNED_UPLOAD_IMAGE_URLS.add(finalPrimary.split('?')[0]);
+        attached.add(finalPrimary);
+        return {
+          primaryUrl: finalPrimary,
+          gallery: [finalPrimary],
+          autoAssigned: true
+        };
       }
-      ASSIGNED_UPLOAD_IMAGE_URLS.add(finalPrimary.split('?')[0]);
-      return {
-        primaryUrl: finalPrimary,
-        gallery: pickedGallery,
-        autoAssigned: true
-      };
-    }
+      return null;
+    };
+
+    const firstAttempt = await pickFromSearch(false);
+    if (firstAttempt) return firstAttempt;
+
+    const freshAttempt = await pickFromSearch(true);
+    if (freshAttempt) return freshAttempt;
   } catch {
     // Backend submit_rfq / submit_listing / POST /api/v1/products will also enforce server-side visual resolution
   }
