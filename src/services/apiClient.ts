@@ -165,14 +165,14 @@ export const apiClient = {
    * Fetch live CMS Site Content from the backend API.
    * Uses ./api.php?action=get_content
    */
-  async getSiteContent(): Promise<{ success: boolean; data?: any; message?: string }> {
+  async getSiteContent(force = false): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-      // 1. Try primary Express backend
+      // 1. Try primary Express backend (leverage ETag/304 & stale-while-revalidate unless forced)
       try {
-        const res = await fetch(`/api/site-content?t=${Date.now()}`, {
+        const res = await fetch(force ? `/api/site-content?t=${Date.now()}` : '/api/site-content', {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
-          cache: 'no-store'
+          cache: force ? 'no-store' : 'default'
         });
         if (res.ok) {
           const json = await safeParseJson(res);

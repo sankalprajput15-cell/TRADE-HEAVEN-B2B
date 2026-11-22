@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import zlib from 'zlib';
 import net from 'net';
 import dns from 'dns';
@@ -32,8 +33,9 @@ import { MOCK_COMPANIES } from './src/data/mockData';
 dotenv.config();
 
 try {
-  sharp.cache(false);
-  sharp.concurrency(1);
+  // Enable bounded libvips cache and multi-core concurrency for rapid on-the-fly image optimization
+  sharp.cache({ memory: 64, files: 24, items: 200 });
+  sharp.concurrency(Math.min(4, Math.max(2, os.cpus().length)));
 } catch {}
 
 process.on('uncaughtException', (err) => {
@@ -198,10 +200,12 @@ app.use('/api', (req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Fast lightweight gzip compression for JSON & text API responses > 1KB
+// High-speed Brotli + Gzip compression for JSON & text API responses > 1KB
 app.use((req, res, next) => {
   const acceptEncoding = String(req.headers['accept-encoding'] || '');
-  if (!acceptEncoding.includes('gzip')) return next();
+  const supportsBr = acceptEncoding.includes('br');
+  const supportsGzip = acceptEncoding.includes('gzip');
+  if (!supportsBr && !supportsGzip) return next();
   if (req.path.startsWith('/assets/uploads/') || req.path.startsWith('/uploads/')) return next();
 
   const origJson = res.json.bind(res);
@@ -214,7 +218,21 @@ app.use((req, res, next) => {
       if (!jsonStr || jsonStr.length < 1024) {
         return origJson(body);
       }
-      const compressed = zlib.gzipSync(Buffer.from(jsonStr, 'utf-8'), { level: 4 });
+      const rawBuf = Buffer.from(jsonStr, 'utf-8');
+      if (supportsBr) {
+        const compressed = zlib.brotliCompressSync(rawBuf, {
+          params: {
+            [zlib.constants.BROTLI_PARAM_QUALITY]: rawBuf.length > 200_000 ? 2 : 3,
+            [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+          }
+        });
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Content-Encoding', 'br');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.setHeader('Content-Length', String(compressed.length));
+        return res.end(compressed);
+      }
+      const compressed = zlib.gzipSync(rawBuf, { level: 3 });
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Content-Encoding', 'gzip');
       res.setHeader('Vary', 'Accept-Encoding');
@@ -329,9 +347,11 @@ interface CachedOptimizedImage {
   etag: string;
 }
 
-const IMAGE_CACHE_MAX_ENTRIES = 60;
+const IMAGE_CACHE_MAX_ENTRIES = 600;
+const IMAGE_CACHE_MAX_BYTES = 48 * 1024 * 1024; // 48MB bounded hot RAM image cache
+let currentImageCacheBytes = 0;
 const AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes automatically, zero permission required
-const IMAGE_WIDTH_BUCKETS = [160, 320, 480, 720, 960, 1280, 1600];
+const IMAGE_WIDTH_BUCKETS = [160, 240, 320, 480, 640, 800, 960, 1280, 1600];
 const optimizedImageBufferCache = new Map<string, CachedOptimizedImage>();
 const inFlightImageOptimizations = new Map<string, Promise<CachedOptimizedImage>>();
 
@@ -379,11 +399,26 @@ function getDiskCacheFilePath(cacheKey: string, mtime: number, formatKey: string
 }
 
 function putInMemoryImageCache(cacheKey: string, entry: CachedOptimizedImage) {
-  if (optimizedImageBufferCache.size >= IMAGE_CACHE_MAX_ENTRIES) {
+  const existing = optimizedImageBufferCache.get(cacheKey);
+  if (existing) {
+    currentImageCacheBytes = Math.max(0, currentImageCacheBytes - existing.buffer.length);
+    optimizedImageBufferCache.delete(cacheKey);
+  }
+  while (
+    (optimizedImageBufferCache.size >= IMAGE_CACHE_MAX_ENTRIES ||
+      currentImageCacheBytes + entry.buffer.length > IMAGE_CACHE_MAX_BYTES) &&
+    optimizedImageBufferCache.size > 0
+  ) {
     const oldestKey = optimizedImageBufferCache.keys().next().value;
-    if (oldestKey) optimizedImageBufferCache.delete(oldestKey);
+    if (!oldestKey) break;
+    const evicted = optimizedImageBufferCache.get(oldestKey);
+    if (evicted) {
+      currentImageCacheBytes = Math.max(0, currentImageCacheBytes - evicted.buffer.length);
+    }
+    optimizedImageBufferCache.delete(oldestKey);
   }
   optimizedImageBufferCache.set(cacheKey, entry);
+  currentImageCacheBytes += entry.buffer.length;
 }
 
 function snapImageWidthBucket(rawWidth?: number): number {
@@ -461,7 +496,7 @@ function getOrBuildOptimizedImage(
       if (formatKey === 'orig') {
         outBuffer = fs.readFileSync(targetPath);
       } else {
-        const quality = width <= 360 ? 74 : width <= 640 ? 78 : 82;
+        const quality = width <= 240 ? 70 : width <= 400 ? 74 : width <= 760 ? 78 : 80;
         let pipeline = sharp(targetPath, { failOn: 'none' }).rotate();
 
         if (width > 0 && width < 3000) {
@@ -469,7 +504,7 @@ function getOrBuildOptimizedImage(
         }
 
         if (formatKey === 'webp') {
-          outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
+          outBuffer = await pipeline.webp({ quality, effort: 2, smartSubsample: true }).toBuffer();
         } else {
           outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
         }
@@ -592,13 +627,15 @@ async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOM
 
 // Autonomous 60s background image optimizer timer disabled to prevent continuous disk writes
 
-// Automated Image Optimization & High-Speed Cache Middleware (covers uploads, aistudio, tradeheaven, renewal-branding, and non-import src/assets/images)
+// Automated Image Optimization & High-Speed Cache Middleware (covers uploads, aistudio, tradeheaven, renewal-branding, bundled dist/assets raster images, and non-import src/assets/images)
+const distAssetsStaticDir = path.join(process.cwd(), 'dist', 'assets');
 app.get([
   '/assets/uploads/:filename',
   '/assets/aistudio/:filename',
   '/assets/tradeheaven/:filename',
   '/uploads/renewal-branding/:filename',
-  '/src/assets/images/:filename'
+  '/src/assets/images/:filename',
+  '/assets/:filename'
 ], async (req, res, next) => {
   // Never intercept Vite JS module queries on /src/assets
   if (
@@ -617,22 +654,38 @@ app.get([
     return next();
   }
 
-  const primaryPath = path.join(uploadsStaticDir, filename);
-  const fallbackPath = path.join(legacyAssetsStaticDir, filename);
-  const distFallbackPath = path.join(distUploadsStaticDir, filename);
-  const renewalPath = path.join(renewalBrandingStaticDir, filename);
-  const srcPath = path.join(srcImagesStaticDir, filename);
-  const targetPath = req.path.startsWith('/src/assets')
-    ? (fs.existsSync(srcPath) ? srcPath : null)
-    : req.path.startsWith('/uploads/renewal-branding')
-      ? (fs.existsSync(renewalPath) ? renewalPath : null)
-      : (fs.existsSync(primaryPath)
-          ? primaryPath
-          : fs.existsSync(fallbackPath)
-            ? fallbackPath
-            : fs.existsSync(distFallbackPath)
-              ? distFallbackPath
-              : null);
+  // Prevent path traversal
+  const safeFilename = path.basename(filename);
+  if (safeFilename !== filename || safeFilename.includes('..')) {
+    return next();
+  }
+
+  const primaryPath = path.join(uploadsStaticDir, safeFilename);
+  const fallbackPath = path.join(legacyAssetsStaticDir, safeFilename);
+  const distFallbackPath = path.join(distUploadsStaticDir, safeFilename);
+  const renewalPath = path.join(renewalBrandingStaticDir, safeFilename);
+  const srcPath = path.join(srcImagesStaticDir, safeFilename);
+  const distAssetPath = path.join(distAssetsStaticDir, safeFilename);
+
+  const isBundledDistAsset =
+    req.path.startsWith('/assets/') &&
+    !req.path.startsWith('/assets/uploads/') &&
+    !req.path.startsWith('/assets/aistudio/') &&
+    !req.path.startsWith('/assets/tradeheaven/');
+
+  const targetPath = isBundledDistAsset
+    ? (fs.existsSync(distAssetPath) ? distAssetPath : null)
+    : req.path.startsWith('/src/assets')
+      ? (fs.existsSync(srcPath) ? srcPath : null)
+      : req.path.startsWith('/uploads/renewal-branding')
+        ? (fs.existsSync(renewalPath) ? renewalPath : null)
+        : (fs.existsSync(primaryPath)
+            ? primaryPath
+            : fs.existsSync(fallbackPath)
+              ? fallbackPath
+              : fs.existsSync(distFallbackPath)
+                ? distFallbackPath
+                : null);
 
   if (!targetPath) {
     return next();
@@ -647,17 +700,24 @@ app.get([
     const acceptsWebp = (req.headers.accept || '').includes('image/webp');
 
     const wasCachedBefore = optimizedImageBufferCache.has(
-      `${targetPath}_w${isOrig ? 'orig' : width}_${isOrig ? 'orig' : acceptsWebp || filename.toLowerCase().endsWith('.webp') ? 'webp' : 'jpeg'}`
+      `${targetPath}_w${isOrig ? 'orig' : width}_${isOrig ? 'orig' : acceptsWebp || safeFilename.toLowerCase().endsWith('.webp') ? 'webp' : 'jpeg'}`
     );
 
-    const { entry: optimized } = await getOrBuildOptimizedImage(targetPath, filename, width, acceptsWebp, isOrig);
+    const { entry: optimized } = await getOrBuildOptimizedImage(targetPath, safeFilename, width, acceptsWebp, isOrig);
 
     const hasNumericVersion = typeof req.query.v === 'string' && /^\d{8,}$/.test(req.query.v.trim());
+    const hasContentHashInName =
+      isBundledDistAsset ||
+      /[-_][a-f0-9]{6,}\.[a-z0-9]+$/i.test(safeFilename) ||
+      /^auto-[a-z0-9-]+-[a-f0-9]{8,}\./i.test(safeFilename);
+
     res.setHeader('ETag', optimized.etag);
     res.setHeader('Vary', 'Accept');
     res.setHeader(
       'Cache-Control',
-      hasNumericVersion ? 'public, max-age=31536000, immutable' : 'public, max-age=3600, must-revalidate'
+      hasNumericVersion || hasContentHashInName
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=86400, stale-while-revalidate=604800'
     );
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -668,8 +728,9 @@ app.get([
     }
 
     res.setHeader('Content-Type', optimized.contentType);
+    res.setHeader('Content-Length', String(optimized.buffer.length));
     res.setHeader('X-Image-Cache', wasCachedBefore ? 'HIT' : 'OPTIMIZED');
-    return res.send(optimized.buffer);
+    return res.end(optimized.buffer);
   } catch {
     return next();
   }
@@ -15017,6 +15078,7 @@ function saveServerProductImageState(): boolean {
       } catch {}
     }
     lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
+    invalidatePublicProductImagesCache();
     return true;
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
@@ -15696,27 +15758,113 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
   return pulledCount;
 }
 
+// Pre-compressed RAM cache for ultra-fast public product image overrides hydration
+interface PrecompressedJsonCacheEntry {
+  sig: string;
+  etag: string;
+  raw: Buffer;
+  gzipped: Buffer;
+  brotli: Buffer;
+}
+let publicProductImagesCache: PrecompressedJsonCacheEntry | null = null;
+let publicProductImagesCacheEpoch = 1;
+
+function invalidatePublicProductImagesCache() {
+  publicProductImagesCacheEpoch += 1;
+  publicProductImagesCache = null;
+}
+
+function buildSlimPublicProductImageState(state: ProductImageSystemState) {
+  const rawOverrides = state?.overrides || {};
+  const slimOverrides: Record<string, any> = {};
+  for (const [k, ov] of Object.entries(rawOverrides)) {
+    if (!ov || typeof ov !== 'object') continue;
+    const entry: Record<string, any> = {
+      primary: (ov as any).primary
+    };
+    if (Array.isArray((ov as any).gallery) && (ov as any).gallery.length > 0) {
+      entry.gallery = (ov as any).gallery.slice(0, 6);
+    }
+    if ((ov as any).updatedBy) entry.updatedBy = (ov as any).updatedBy;
+    if ((ov as any).updatedAt) entry.updatedAt = (ov as any).updatedAt;
+    if ((ov as any).altText) entry.altText = (ov as any).altText;
+    if ((ov as any).deleted) entry.deleted = true;
+    slimOverrides[k] = entry;
+  }
+  return {
+    overrides: slimOverrides,
+    urlReplacements: state?.urlReplacements || {},
+    deletedUrls: Array.isArray((state as any)?.deletedUrls) ? (state as any).deletedUrls : [],
+    mediaLibrary: Array.isArray(state?.mediaLibrary) ? state.mediaLibrary.slice(0, 24) : [],
+    updatedAt: (state as any)?.updatedAt || new Date().toISOString()
+  };
+}
+
+function getOrBuildPublicProductImagesCache(): PrecompressedJsonCacheEntry {
+  const sig = `${publicProductImagesCacheEpoch}:${lastLoadedProductImageDiskSig}:${Object.keys(serverProductImageState.overrides || {}).length}`;
+  if (publicProductImagesCache && publicProductImagesCache.sig === sig) {
+    return publicProductImagesCache;
+  }
+  const payload = JSON.stringify({
+    success: true,
+    data: buildSlimPublicProductImageState(serverProductImageState)
+  });
+  const raw = Buffer.from(payload, 'utf-8');
+  const hash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16);
+  const etag = `"th-pimg-${hash}-${raw.length}"`;
+  const gzipped = zlib.gzipSync(raw, { level: 5 });
+  const brotli = zlib.brotliCompressSync(raw, {
+    params: {
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+      [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+    }
+  });
+  publicProductImagesCache = { sig, etag, raw, gzipped, brotli };
+  return publicProductImagesCache;
+}
+
 // GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch product image overrides & media library
 const handleGetProductImages = (req: express.Request, res: express.Response) => {
   void pullNewerManualOverridesFromLiveServer();
   const isAdminRoute = req.path.includes('/admin/') || req.query.includeMedia === '1';
+  const prevSig = lastLoadedProductImageDiskSig;
   serverProductImageState = loadServerProductImageState(serverProductImageState, {
     skipDirectoryScan: !isAdminRoute && !hasCompletedUploadsDirScan
   });
+  if (lastLoadedProductImageDiskSig !== prevSig) {
+    invalidatePublicProductImagesCache();
+  }
+
+  if (!isAdminRoute) {
+    const cached = getOrBuildPublicProductImagesCache();
+    res.setHeader('ETag', cached.etag);
+    res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=120');
+    res.setHeader('Vary', 'Accept-Encoding');
+    if (req.headers['if-none-match'] === cached.etag) {
+      return res.status(304).end();
+    }
+    const acceptEncoding = String(req.headers['accept-encoding'] || '');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    if (acceptEncoding.includes('br')) {
+      res.setHeader('Content-Encoding', 'br');
+      res.setHeader('Content-Length', String(cached.brotli.length));
+      return res.status(200).end(cached.brotli);
+    }
+    if (acceptEncoding.includes('gzip')) {
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Content-Length', String(cached.gzipped.length));
+      return res.status(200).end(cached.gzipped);
+    }
+    res.setHeader('Content-Length', String(cached.raw.length));
+    return res.status(200).end(cached.raw);
+  }
+
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  const responseData = isAdminRoute
-    ? serverProductImageState
-    : {
-        ...serverProductImageState,
-        mediaLibrary: Array.isArray(serverProductImageState.mediaLibrary)
-          ? serverProductImageState.mediaLibrary.slice(0, 30)
-          : []
-      };
   res.json({
     success: true,
-    data: responseData
+    data: serverProductImageState
   });
 };
 app.get('/api/v1/admin/product-images', handleGetProductImages);
@@ -17451,13 +17599,62 @@ let serverAccessRequests = [
   }
 ];
 
+let siteContentResponseCache: PrecompressedJsonCacheEntry | null = null;
+let siteContentCacheEpoch = 1;
+
+function invalidateSiteContentResponseCache() {
+  siteContentCacheEpoch += 1;
+  siteContentResponseCache = null;
+}
+
+function getOrBuildSiteContentResponseCache(): PrecompressedJsonCacheEntry {
+  const sig = `${siteContentCacheEpoch}:${Number((serverSiteContent as any)?.siteContentUpdatedAt || 0)}`;
+  if (siteContentResponseCache && siteContentResponseCache.sig === sig) {
+    return siteContentResponseCache;
+  }
+  const raw = Buffer.from(
+    JSON.stringify({
+      success: true,
+      data: serverSiteContent || {}
+    }),
+    'utf-8'
+  );
+  const hash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16);
+  const etag = `"th-sc-${hash}-${raw.length}"`;
+  const gzipped = zlib.gzipSync(raw, { level: 5 });
+  const brotli = zlib.brotliCompressSync(raw, {
+    params: {
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+      [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+    }
+  });
+  siteContentResponseCache = { sig, etag, raw, gzipped, brotli };
+  return siteContentResponseCache;
+}
+
 // GET /api/site-content
 app.get('/api/site-content', (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.json({
-    success: true,
-    data: serverSiteContent || {}
-  });
+  const cached = getOrBuildSiteContentResponseCache();
+  res.setHeader('ETag', cached.etag);
+  res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=60');
+  res.setHeader('Vary', 'Accept-Encoding');
+  if (req.headers['if-none-match'] === cached.etag) {
+    return res.status(304).end();
+  }
+  const acceptEncoding = String(req.headers['accept-encoding'] || '');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (acceptEncoding.includes('br')) {
+    res.setHeader('Content-Encoding', 'br');
+    res.setHeader('Content-Length', String(cached.brotli.length));
+    return res.status(200).end(cached.brotli);
+  }
+  if (acceptEncoding.includes('gzip')) {
+    res.setHeader('Content-Encoding', 'gzip');
+    res.setHeader('Content-Length', String(cached.gzipped.length));
+    return res.status(200).end(cached.gzipped);
+  }
+  res.setHeader('Content-Length', String(cached.raw.length));
+  return res.status(200).end(cached.raw);
 });
 
 // PUT /api/site-content
@@ -17498,6 +17695,7 @@ app.put('/api/site-content', async (req, res) => {
     ...cleanPayload,
     siteContentUpdatedAt: Math.max(incomingTs || 0, nowMs)
   };
+  invalidateSiteContentResponseCache();
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
   saveServerSiteContentToDisk();
   const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
@@ -25952,11 +26150,14 @@ app.post('/api/v1/admin/sync-images-to-live', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// FAST STATIC DIST + GZIP SERVING WITH VITE FALLBACK
+// FAST STATIC DIST + BROTLI & GZIP SERVING WITH ETAG & VITE FALLBACK
 // -------------------------------------------------------------
 async function startServer() {
   const distPath = path.join(process.cwd(), 'dist');
-  const gzipCache = new Map<string, { mtimeMs: number; gzipped: Buffer; raw: Buffer; contentType: string }>();
+  const distAssetCache = new Map<
+    string,
+    { mtimeMs: number; etag: string; brotli: Buffer; gzipped: Buffer; raw: Buffer; contentType: string }
+  >();
 
   const getContentType = (filePath: string): string => {
     const ext = path.extname(filePath).toLowerCase();
@@ -25972,11 +26173,34 @@ async function startServer() {
       case '.jpg':
       case '.jpeg': return 'image/jpeg';
       case '.webp': return 'image/webp';
+      case '.avif': return 'image/avif';
       case '.ico': return 'image/x-icon';
       case '.xml': return 'application/xml; charset=utf-8';
       case '.txt': return 'text/plain; charset=utf-8';
       default: return 'application/octet-stream';
     }
+  };
+
+  const getOrCompressDistAsset = (filePath: string, stat: fs.Stats, contentType: string) => {
+    let entry = distAssetCache.get(filePath);
+    if (!entry || entry.mtimeMs !== stat.mtimeMs) {
+      const raw = fs.readFileSync(filePath);
+      const etag = `"th-dist-${Math.round(stat.mtimeMs)}-${raw.length}"`;
+      const gzipped = zlib.gzipSync(raw, { level: 6 });
+      const brotli = zlib.brotliCompressSync(raw, {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: raw.length > 1_000_000 ? 4 : 5,
+          [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+        }
+      });
+      entry = { mtimeMs: stat.mtimeMs, etag, brotli, gzipped, raw, contentType };
+      if (distAssetCache.size >= 80) {
+        const oldestKey = distAssetCache.keys().next().value;
+        if (oldestKey) distAssetCache.delete(oldestKey);
+      }
+      distAssetCache.set(filePath, entry);
+    }
+    return entry;
   };
 
   const serveCachedDistFile = (req: express.Request, res: express.Response, filePath: string, isImmutableAsset: boolean): boolean => {
@@ -26000,8 +26224,14 @@ async function startServer() {
         res.setHeader('Cache-Control', 'no-cache');
       }
 
-      // For binary files or very large files > 12MB, stream directly from disk; compress JS/CSS/JSON/HTML up to 12MB
+      // For binary files or very large files > 12MB, stream directly with ETag/304 support
       if (!isCompressible || stat.size > 12 * 1024 * 1024) {
+        const binEtag = `"th-bin-${Math.round(stat.mtimeMs)}-${stat.size}"`;
+        res.setHeader('ETag', binEtag);
+        if (req.headers['if-none-match'] === binEtag) {
+          res.status(304).end();
+          return true;
+        }
         res.setHeader('Content-Length', String(stat.size));
         const stream = fs.createReadStream(filePath);
         stream.on('error', () => {
@@ -26011,22 +26241,22 @@ async function startServer() {
         return true;
       }
 
-      let entry = gzipCache.get(filePath);
-      if (!entry || entry.mtimeMs !== stat.mtimeMs) {
-        const raw = fs.readFileSync(filePath);
-        const gzipped = zlib.gzipSync(raw, { level: 6 });
-        entry = { mtimeMs: stat.mtimeMs, gzipped, raw, contentType };
-        if (gzipCache.size >= 50) {
-          const oldestKey = gzipCache.keys().next().value;
-          if (oldestKey) gzipCache.delete(oldestKey);
-        }
-        gzipCache.set(filePath, entry);
+      const entry = getOrCompressDistAsset(filePath, stat, contentType);
+      res.setHeader('ETag', entry.etag);
+      res.setHeader('Vary', 'Accept-Encoding');
+
+      if (req.headers['if-none-match'] === entry.etag) {
+        res.status(304).end();
+        return true;
       }
 
       const acceptEncoding = String(req.headers['accept-encoding'] || '');
-      if (acceptEncoding.includes('gzip')) {
+      if (acceptEncoding.includes('br')) {
+        res.setHeader('Content-Encoding', 'br');
+        res.setHeader('Content-Length', String(entry.brotli.length));
+        res.status(200).end(entry.brotli);
+      } else if (acceptEncoding.includes('gzip')) {
         res.setHeader('Content-Encoding', 'gzip');
-        res.setHeader('Vary', 'Accept-Encoding');
         res.setHeader('Content-Length', String(entry.gzipped.length));
         res.status(200).end(entry.gzipped);
       } else {
@@ -26179,13 +26409,73 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
-    // Defer heavy background media directory indexing & Vite pre-warming until after port 3000 is open
+    // Non-blocking startup prewarm: pre-compress entry HTML/JS/CSS, API caches, and hero/top-fold images into RAM
     setImmediate(() => {
       try {
         if (!hasCompletedUploadsDirScan) {
           serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: false });
         }
+        getOrBuildPublicProductImagesCache();
+        getOrBuildSiteContentResponseCache();
       } catch {}
+
+      // Pre-compress dist/index.html and primary entry chunks into RAM for instant first visit
+      try {
+        const distIndexHtml = path.join(distPath, 'index.html');
+        if (fs.existsSync(distIndexHtml)) {
+          const htmlStat = fs.statSync(distIndexHtml);
+          const htmlEntry = getOrCompressDistAsset(distIndexHtml, htmlStat, 'text/html; charset=utf-8');
+          const htmlText = htmlEntry.raw.toString('utf-8');
+          const assetMatches = Array.from(htmlText.matchAll(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/g));
+          for (const m of assetMatches) {
+            const rel = m[1];
+            const fullPath = path.join(distPath, rel);
+            if (fullPath.startsWith(distPath) && fs.existsSync(fullPath)) {
+              const st = fs.statSync(fullPath);
+              if (st.isFile() && st.size <= 12 * 1024 * 1024) {
+                getOrCompressDistAsset(fullPath, st, getContentType(fullPath));
+              }
+            }
+          }
+        }
+      } catch {}
+
+      // Prewarm bundled hero banner images & top homepage thumbnails asynchronously without blocking event loop
+      setTimeout(async () => {
+        try {
+          const heroCandidates: string[] = [];
+          if (fs.existsSync(distAssetsStaticDir)) {
+            for (const f of fs.readdirSync(distAssetsStaticDir)) {
+              if (/^b2b_.*hero.*\.(jpg|jpeg|png)$/i.test(f)) {
+                heroCandidates.push(path.join(distAssetsStaticDir, f));
+              }
+            }
+          }
+          for (const hp of heroCandidates.slice(0, 4)) {
+            const bn = path.basename(hp);
+            await getOrBuildOptimizedImage(hp, bn, 960, true, false).catch(() => null);
+            await getOrBuildOptimizedImage(hp, bn, 1280, true, false).catch(() => null);
+            await new Promise<void>(r => setImmediate(r));
+          }
+          // Prewarm top 14 local product override images at card width (320w & 480w)
+          const overrides = serverProductImageState?.overrides || {};
+          const warmedPaths = new Set<string>();
+          for (const ov of Object.values(overrides)) {
+            if (warmedPaths.size >= 14) break;
+            const rawUrl = String((ov as any)?.primary || '').split('?')[0];
+            if (!rawUrl.startsWith('/assets/uploads/')) continue;
+            const fn = path.basename(rawUrl);
+            if (!/\.(jpg|jpeg|png|webp)$/i.test(fn)) continue;
+            const full = path.join(uploadsStaticDir, fn);
+            if (warmedPaths.has(full) || !fs.existsSync(full)) continue;
+            warmedPaths.add(full);
+            await getOrBuildOptimizedImage(full, fn, 320, true, false).catch(() => null);
+            await getOrBuildOptimizedImage(full, fn, 480, true, false).catch(() => null);
+            await new Promise<void>(r => setImmediate(r));
+          }
+        } catch {}
+      }, 200);
+
       if (prewarmVite) {
         prewarmVite();
       }

@@ -182,23 +182,57 @@ export function optimizeImageUrl(
     queryParams.set('auto', 'format');
     queryParams.set('fit', 'crop');
     queryParams.set('w', String(targetWidth));
-    queryParams.set('q', String(options.quality || (targetWidth <= 360 ? 72 : 76)));
+    queryParams.set('q', String(options.quality || (targetWidth <= 360 ? 70 : 75)));
     return `${base}?${queryParams.toString()}`;
   }
 
-  if (
-    base.startsWith('/assets/uploads/') ||
-    base.startsWith('/assets/tradeheaven/') ||
-    base.startsWith('/src/assets/images/')
-  ) {
-    if (base.toLowerCase().endsWith('.svg') || base.toLowerCase().endsWith('.gif')) {
-      return normalized;
-    }
+  const isLocalOptimizableRaster =
+    (base.startsWith('/assets/uploads/') ||
+      base.startsWith('/assets/tradeheaven/') ||
+      base.startsWith('/assets/aistudio/') ||
+      base.startsWith('/uploads/renewal-branding/') ||
+      base.startsWith('/src/assets/images/') ||
+      base.startsWith('/assets/')) &&
+    /\.(jpg|jpeg|png|webp|avif)$/i.test(base);
+
+  if (isLocalOptimizableRaster) {
     queryParams.set('w', String(targetWidth));
     return `${base}?${queryParams.toString()}`;
   }
 
   return normalized;
+}
+
+export function buildResponsiveImageSrcSet(
+  rawUrl: string | undefined | null,
+  targetWidth: number,
+  isThumbnail = false
+): string | undefined {
+  const normalized = normalizeProductAssetUrl(rawUrl);
+  if (!normalized || normalized.startsWith('data:') || normalized.startsWith('blob:')) return undefined;
+  const base = normalized.split('?')[0];
+  const isLocalRaster =
+    (base.startsWith('/assets/uploads/') ||
+      base.startsWith('/assets/tradeheaven/') ||
+      base.startsWith('/assets/aistudio/') ||
+      base.startsWith('/src/assets/images/') ||
+      base.startsWith('/assets/')) &&
+    /\.(jpg|jpeg|png|webp|avif)$/i.test(base);
+
+  if (!isLocalRaster && !base.includes('images.unsplash.com')) return undefined;
+
+  const widths = isThumbnail
+    ? [160, 320, 480]
+    : targetWidth >= 900
+      ? [480, 800, 1280]
+      : [240, 320, 480, 640];
+
+  const uniqueWidths = Array.from(new Set(widths.filter((w) => w <= Math.max(targetWidth * 1.5, 480))));
+  if (uniqueWidths.length < 2) return undefined;
+
+  return uniqueWidths
+    .map((w) => `${optimizeImageUrl(normalized, { width: w, isThumbnail })} ${w}w`)
+    .join(', ');
 }
 
 const RAW_BUILTIN_BASE: Record<string, ProductImageOverrideEntry> = {
@@ -1004,15 +1038,19 @@ class ProductImageManagerService {
 
     try {
       let srv: ProductImageSystemState | null = null;
-      const mediaParam = includeFullMedia ? 'includeMedia=1&' : '';
-
-      // 1. Try public & admin Node/Express endpoints (non-admin path first for visitor/proxy safety)
-      for (const apiEndpoint of [
-        `/api/v1/public/product-images?${mediaParam}_t=${Date.now()}`,
-        `/api/v1/admin/product-images?_t=${Date.now()}`
-      ]) {
+      // 1. Try public & admin Node/Express endpoints (allow HTTP ETag/304 & stale-while-revalidate on public boot)
+      const bustQuery = force || includeFullMedia ? `_t=${Date.now()}` : '';
+      const publicQueryParts = [includeFullMedia ? 'includeMedia=1' : '', bustQuery].filter(Boolean).join('&');
+      const publicUrl = publicQueryParts
+        ? `/api/v1/public/product-images?${publicQueryParts}`
+        : '/api/v1/public/product-images';
+      const endpoints: Array<{ url: string; cacheMode: RequestCache }> = [
+        { url: publicUrl, cacheMode: force || includeFullMedia ? 'no-store' : 'default' },
+        { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
+      ];
+      for (const ep of endpoints) {
         try {
-          const res = await fetch(apiEndpoint, { cache: 'no-store' });
+          const res = await fetch(ep.url, { cache: ep.cacheMode });
           if (res.ok) {
             const json = await res.json();
             if (json?.success && json?.data) {

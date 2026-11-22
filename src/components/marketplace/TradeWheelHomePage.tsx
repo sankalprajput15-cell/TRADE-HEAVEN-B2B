@@ -689,7 +689,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
       {/* 5. AUDITED GLOBAL MANUFACTURERS & SUPPLIERS SHOWCASE */}
       {sectionVisibility.verifiedSuppliers && (
-      <section className="bg-[#F8FAFC] text-slate-900 rounded-2xl p-5 sm:p-8 space-y-6 border border-slate-200 shadow-2xs">
+      <section className="cv-auto bg-[#F8FAFC] text-slate-900 rounded-2xl p-5 sm:p-8 space-y-6 border border-slate-200 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 inline-flex items-center gap-1.5">
@@ -814,7 +814,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
       {/* 6. PARTNER ONBOARDING BANNER */}
       {sectionVisibility.onboardingBanner && (
-      <section className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs">
+      <section className="cv-auto bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 max-w-2xl text-center sm:text-left">
             <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-200 bg-slate-100">
@@ -886,7 +886,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
       {/* 8. WHY CHOOSE TRADE HEAVEN & DIRECT DESK */}
       {sectionVisibility.whyChooseSection && (
-      <section className="bg-white text-slate-900 rounded-2xl p-6 sm:p-9 space-y-7 border border-slate-200 shadow-2xs">
+      <section className="cv-auto bg-white text-slate-900 rounded-2xl p-6 sm:p-9 space-y-7 border border-slate-200 shadow-2xs">
         <div className="max-w-3xl space-y-2">
           <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
             <ShieldCheck className="w-4 h-4 shrink-0" />

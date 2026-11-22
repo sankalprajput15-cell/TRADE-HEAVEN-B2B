@@ -90,6 +90,12 @@
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Skip off-screen layout & paint until scrolled near viewport for instant FCP/LCP */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 460px;
+}
+
 /* Skeleton Shimmer Animation */
 @keyframes shimmer {
   0% {

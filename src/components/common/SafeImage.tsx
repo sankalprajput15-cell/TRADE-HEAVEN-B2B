@@ -6,7 +6,8 @@ import {
   productImageManagerService,
   PRODUCT_IMAGE_SAVED_EVENT,
   normalizeProductAssetUrl,
-  optimizeImageUrl
+  optimizeImageUrl,
+  buildResponsiveImageSrcSet
 } from '../../services/productImageManagerService';
 import {
   fetchVisualProductImages,
@@ -498,6 +499,21 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     } else {
       setIsLoaded(false);
     }
+
+    // Fast stall guard: if a slow external third-party URL hangs > 4.5s and a local fallback candidate exists, advance immediately
+    if (
+      /^https?:\/\//i.test(currentCandidate) &&
+      effectiveAttemptIndex < candidates.length - 1
+    ) {
+      const stallTimer = setTimeout(() => {
+        const el = imgRef.current;
+        if (el && (!el.complete || el.naturalWidth === 0)) {
+          FAILED_IMAGE_URLS.add(currentCandidate);
+          setAttemptIndex((prev) => (prev === effectiveAttemptIndex ? prev + 1 : prev));
+        }
+      }, 4500);
+      return () => clearTimeout(stallTimer);
+    }
   }, [currentCandidate, effectiveAttemptIndex, candidates.length]);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -555,25 +571,33 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           !isGenericOrPlaceholderImageUrl(cleanCandidate) &&
           !isMismatchedProductImageUrl(cleanCandidate, resolvedTitle, category)
         ) {
-          void autoUploadDisplayedProductImage({
-            imageUrl: cleanCandidate,
-            productId,
-            productName: resolvedTitle,
-            category
-          }).then(localUrl => {
-            if (
-              localUrl &&
-              !isMismatchedProductImageUrl(localUrl, resolvedTitle, category) &&
-              (productId || resolvedTitle.length >= 3)
-            ) {
-              productImageManagerService.registerAutoSavedImage({
-                productId,
-                productTitle: resolvedTitle || undefined,
-                url: localUrl,
-                originalUrl: /^https?:\/\//i.test(cleanCandidate) ? cleanCandidate : undefined
-              });
-            }
-          });
+          const scheduleBackgroundPersist = () => {
+            void autoUploadDisplayedProductImage({
+              imageUrl: cleanCandidate,
+              productId,
+              productName: resolvedTitle,
+              category
+            }).then(localUrl => {
+              if (
+                localUrl &&
+                !isMismatchedProductImageUrl(localUrl, resolvedTitle, category) &&
+                (productId || resolvedTitle.length >= 3)
+              ) {
+                productImageManagerService.registerAutoSavedImage({
+                  productId,
+                  productTitle: resolvedTitle || undefined,
+                  url: localUrl,
+                  originalUrl: /^https?:\/\//i.test(cleanCandidate) ? cleanCandidate : undefined
+                });
+              }
+            });
+          };
+          // Defer background mirroring until browser idle so visible images & LCP never compete for network sockets
+          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(scheduleBackgroundPersist, { timeout: 4000 });
+          } else {
+            setTimeout(scheduleBackgroundPersist, 2000);
+          }
         }
       }
     }
@@ -653,13 +677,22 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   };
 
   const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail && !isLogoOrAvatar;
-  const effectiveLoading = callerLoading || 'eager';
+  const effectiveLoading = callerLoading || (priority ? 'eager' : 'lazy');
   const effectiveDecoding = callerDecoding || (priority ? 'sync' : 'async');
   const effectiveFetchPriority = callerFetchPriority || (priority ? 'high' : undefined);
+  const responsiveSrcSet = useMemo(() => {
+    if (!currentCandidate || effectiveAttemptIndex > 0 || currentCandidate.startsWith('data:') || currentCandidate.startsWith('blob:')) {
+      return undefined;
+    }
+    return buildResponsiveImageSrcSet(currentCandidate, optimalWidth, Boolean(isThumbnail));
+  }, [currentCandidate, effectiveAttemptIndex, optimalWidth, isThumbnail]);
+  const responsiveSizes = responsiveSrcSet
+    ? (props.sizes || (isThumbnail ? '(max-width: 640px) 45vw, 240px' : priority ? '(max-width: 1024px) 100vw, 800px' : '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px'))
+    : props.sizes;
 
   return (
     <div
-      className={`relative overflow-hidden flex items-center justify-center ${isLoaded ? 'bg-transparent' : 'bg-slate-100/80'} ${className}`}
+      className={`relative overflow-hidden flex items-center justify-center ${isLoaded ? 'bg-transparent' : 'bg-slate-100 animate-pulse'} ${className}`}
     >
       {hasError || !currentCandidate ? (
         isLogoOrAvatar ? (
@@ -679,6 +712,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         <img
           ref={imgRef}
           src={currentCandidate}
+          srcSet={responsiveSrcSet}
+          sizes={responsiveSizes}
           alt={resolvedAlt || alt || (isLogoOrAvatar ? 'User Avatar' : 'Verified B2B Wholesale Product')}
           {...(/^https?:\/\//i.test(currentCandidate) ? { referrerPolicy: 'no-referrer' as const } : {})}
           loading={effectiveLoading}
@@ -687,7 +722,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           onLoad={handleLoad}
           onError={handleError}
           style={callerStyle}
-          className={`w-full h-full object-cover opacity-100 ${imgClassName}`}
+          className={`w-full h-full object-cover transition-opacity duration-150 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}
           {...props}
         />
       )}

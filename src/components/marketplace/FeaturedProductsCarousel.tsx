@@ -4,6 +4,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { CountryFlag } from '../common/CountryFlag';
 import { getResponsiveGridColsClass, clampGridInt } from '../../utils/gridLayoutUtils';
+import { optimizeImageUrl } from '../../services/productImageManagerService';
+
+const PREFETCHED_DETAIL_URLS = new Set<string>();
 import {
   Star,
   Mail,
@@ -280,9 +283,20 @@ export const FeaturedProductsCarousel: React.FC<FeaturedProductsCarouselProps> =
     const isCardFixing = Boolean(fixingProductIds[prod.id]);
     const isCardUploading = Boolean(uploadingProductIds[prod.id]);
 
+    const prefetchDetailPhoto = () => {
+      if (!imgUrl || imgUrl.startsWith('data:') || typeof window === 'undefined') return;
+      const optDetail = optimizeImageUrl(imgUrl, { width: 800 });
+      if (PREFETCHED_DETAIL_URLS.has(optDetail)) return;
+      PREFETCHED_DETAIL_URLS.add(optDetail);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = optDetail;
+    };
+
     return (
       <article
         id={`featured-product-card-${prod.id}`}
+        onMouseEnter={prefetchDetailPhoto}
         onClick={() => onSelectProduct(prod)}
         className="h-full bg-white rounded-xl border border-slate-200 hover:border-[#0F294D] hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group"
       >

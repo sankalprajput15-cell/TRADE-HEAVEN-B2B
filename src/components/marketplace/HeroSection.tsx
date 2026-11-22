@@ -49,6 +49,7 @@ import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
 import { OptimizedHeroImage } from '../common/OptimizedHeroImage';
 import { getDynamicHeroImageForView } from '../../utils/heroImageOptimization';
+import { optimizeImageUrl } from '../../services/productImageManagerService';
 import {
   useSearchAutoSuggest,
   HighlightedMatch,
@@ -597,7 +598,29 @@ export const HeroSection: React.FC<Props> = ({
   const hp = siteContent.homepage;
   const safeSlideIndex = heroSlides.length > 0 ? activeSlideIndex % heroSlides.length : 0;
   const activeSlide = heroSlides[safeSlideIndex] || DEFAULT_HERO_BANNER_SLIDES[0];
-  const currentSlideImageSrc = resolveHeroSlideImageSrc(activeSlide, safeSlideIndex, hp.heroBgImage);
+  const rawSlideImageSrc = resolveHeroSlideImageSrc(activeSlide, safeSlideIndex, hp.heroBgImage);
+  const currentSlideImageSrc = optimizeImageUrl(rawSlideImageSrc, { width: 960 });
+  const currentSlideSrcSet =
+    rawSlideImageSrc && !rawSlideImageSrc.startsWith('data:') && !rawSlideImageSrc.startsWith('blob:')
+      ? `${optimizeImageUrl(rawSlideImageSrc, { width: 640 })} 640w, ${optimizeImageUrl(rawSlideImageSrc, { width: 960 })} 960w, ${optimizeImageUrl(rawSlideImageSrc, { width: 1280 })} 1280w`
+      : undefined;
+
+  // Idle-prefetch next hero carousel slide so transitions are instantaneous without competing with LCP
+  useEffect(() => {
+    if (heroSlides.length <= 1 || typeof window === 'undefined') return;
+    const nextIdx = (safeSlideIndex + 1) % heroSlides.length;
+    const nextSlide = heroSlides[nextIdx];
+    const nextRaw = resolveHeroSlideImageSrc(nextSlide, nextIdx, hp.heroBgImage);
+    if (!nextRaw || nextRaw.startsWith('data:')) return;
+    const nextOpt = optimizeImageUrl(nextRaw, { width: 960 });
+    const timer = setTimeout(() => {
+      const preloadImg = new Image();
+      preloadImg.decoding = 'async';
+      preloadImg.src = nextOpt;
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [safeSlideIndex, heroSlides, hp.heroBgImage]);
+
   const isFirstDefaultSlideCopy =
     safeSlideIndex === 0 &&
     activeSlide.title === DEFAULT_HERO_BANNER_SLIDES[0].title &&
@@ -1892,10 +1915,13 @@ export const HeroSection: React.FC<Props> = ({
           <div className="relative flex-1 min-h-[280px] sm:min-h-[325px] rounded-xl overflow-hidden bg-[#0F294D] border border-slate-200 group">
             <img
               src={currentSlideImageSrc}
+              srcSet={currentSlideSrcSet}
+              sizes="(max-width: 1024px) 100vw, 50vw"
               alt={activeSlide.imageAlt}
               loading="eager"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500"
+              decoding="sync"
+              fetchPriority="high"
+              className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0B1F3A]/92 via-[#0B1F3A]/72 to-[#0B1F3A]/15" />
 
