@@ -253,7 +253,7 @@ export const WholeSitePagePreviewModal: React.FC<WholeSitePagePreviewModalProps>
           {/* Page-Specific Preview Content */}
           <div className="p-4 sm:p-6 space-y-6">
             {/* HOMEPAGE / SITE GRID MATRIX PREVIEW */}
-            {(pageKey === 'HOMEPAGE' || pageKey === 'SITE_GRID_MATRIX') && (
+            {(pageKey === 'HOMEPAGE' || pageKey === 'SITE_GRID_MATRIX' || pageKey === 'SITE_IMAGES') && (
               <>
                 {/* Hero Banner Preview */}
                 <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 text-white relative">

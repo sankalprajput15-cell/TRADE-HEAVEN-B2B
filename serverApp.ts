@@ -12558,6 +12558,19 @@ Message: ${formattedInquiry.message}`
     }
   }
 
+  if (action === 'verify_and_lock_catalog_images') {
+    try {
+      const result = await handleVerifyAndLockCatalogImages(input);
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        serverSavedVerified: false,
+        message: err?.message || 'Failed to verify and lock catalog images.'
+      });
+    }
+  }
+
   if (action === 'upload_product_image') {
     return await handleUploadProductImageRequest(req, res, input);
   }
@@ -17850,6 +17863,24 @@ app.put('/api/site-content', async (req, res) => {
       message: 'Newer site content is already live on server; stale payload ignored.'
     });
   }
+  const collectSiteUploadUrls = (node: any, out: Set<string>, depth = 0): void => {
+    if (!node || depth > 8) return;
+    if (typeof node === 'string') {
+      const base = stripUrlQueryBase(node);
+      if (base.startsWith('/assets/uploads/')) out.add(base);
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const item of node) collectSiteUploadUrls(item, out, depth + 1);
+      return;
+    }
+    if (typeof node === 'object') {
+      for (const val of Object.values(node)) collectSiteUploadUrls(val, out, depth + 1);
+    }
+  };
+  const prevSiteUploadUrls = new Set<string>();
+  collectSiteUploadUrls(serverSiteContent, prevSiteUploadUrls);
+
   const nowMs = Date.now();
   serverSiteContent = {
     ...(serverSiteContent || {}),
@@ -17858,12 +17889,26 @@ app.put('/api/site-content', async (req, res) => {
   };
   invalidateSiteContentResponseCache();
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
+
+  // Permanently delete any old site-content uploaded images that were replaced or removed
+  const nextSiteUploadUrls = new Set<string>();
+  collectSiteUploadUrls(serverSiteContent, nextSiteUploadUrls);
+  const removedSiteUploadUrls = Array.from(prevSiteUploadUrls).filter(u => !nextSiteUploadUrls.has(u));
+  let deletedOldUrls: string[] = [];
+  if (removedSiteUploadUrls.length > 0) {
+    deletedOldUrls = permanentlyDeleteReplacedUploadFiles(removedSiteUploadUrls, []);
+    if (deletedOldUrls.length > 0) {
+      saveServerProductImageState();
+    }
+  }
+
   saveServerSiteContentToDisk();
   const liveSync = await awaitLiveSyncBounded(replicateSiteContentToLiveServer(serverSiteContent), 900);
   res.json({
     success: true,
     liveSynced: liveSync.synced,
     liveSyncQueued: liveSync.liveSyncQueued,
+    deletedOldUrls,
     data: serverSiteContent,
     message: 'Site content updated and published successfully.'
   });
@@ -26282,17 +26327,13 @@ app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
   }
 });
 
-// Dedicated Server Save Vault & Permanent Lock endpoint:
-// Self-heals any missing/duplicate overrides, verifies every saved override physically on disk,
-// permanently locks them, blocks all replaced old URLs, and queues non-blocking sync to live server.
-app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  try {
-    serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
-    const requestedIds: string[] = Array.isArray(req.body?.record_ids || req.body?.recordIds)
-      ? (req.body.record_ids || req.body.recordIds).map((id: any) => String(id || '').trim()).filter(Boolean)
-      : [];
-    const nowMs = Date.now();
+// Shared helper for Server Save Vault & Permanent Lock (used by both Express REST and /api.php shim)
+async function handleVerifyAndLockCatalogImages(bodyInput: any) {
+  serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
+  const requestedIds: string[] = Array.isArray(bodyInput?.record_ids || bodyInput?.recordIds)
+    ? (bodyInput.record_ids || bodyInput.recordIds).map((id: any) => String(id || '').trim()).filter(Boolean)
+    : [];
+  const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
     const allOverrides = serverProductImageState.overrides || {};
     const candidateIds = requestedIds.length > 0 ? requestedIds : Object.keys(allOverrides);
@@ -26518,7 +26559,7 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
       }
     }
 
-    return res.json({
+    return {
       success: savedOk && (lockedCount === 0 || verifiedCount === lockedCount),
       serverSavedVerified: savedOk && (lockedCount === 0 || verifiedCount === lockedCount),
       verifiedCount,
@@ -26531,7 +26572,14 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
       liveSyncError,
       verifiedAt: nowIso,
       diskFiles: ['product-image-overrides.json', 'productImageSystemState.json']
-    });
+    };
+}
+
+app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    const result = await handleVerifyAndLockCatalogImages(req.body || {});
+    return res.json(result);
   } catch (err: any) {
     return res.status(500).json({
       success: false,
@@ -26540,6 +26588,460 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
     });
   }
 });
+
+// ============================================================================
+// BRAND-NEW FROM-SCRATCH WHOLE-SITE IMAGE CONTROL & PERMANENT-DELETE ENGINE
+// ============================================================================
+function setNestedSiteContentValue(obj: any, dotPath: string, value: string): string {
+  if (!obj || typeof obj !== 'object' || !dotPath) return '';
+  const parts = dotPath.split('.').map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return '';
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') {
+      cur[parts[i]] = {};
+    }
+    cur = cur[parts[i]];
+  }
+  const lastKey = parts[parts.length - 1];
+  const prevVal = typeof cur[lastKey] === 'string' ? cur[lastKey] : '';
+  cur[lastKey] = value;
+  return prevVal;
+}
+
+// POST /api/v1/admin/site-images/replace
+// Replaces ANY image across the entire site (Product, Category, RFQ, Hero Slide, Site Banner/Asset),
+// saves the new image to disk, updates every authoritative store, and PERMANENTLY deletes the old image file from server disk & caches.
+app.post('/api/v1/admin/site-images/replace', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    ensureUploadsDir();
+    const {
+      targetId,
+      targetType = 'PRODUCT',
+      fieldPath,
+      title,
+      category,
+      fileName,
+      mimeType,
+      base64Data,
+      imageUrl,
+      oldImageUrl
+    } = req.body || {};
+
+    const cleanTargetId = String(targetId || '').trim();
+    const cleanFieldPath = String(fieldPath || '').trim();
+    const cleanType = String(targetType || 'PRODUCT').toUpperCase();
+    if (!cleanTargetId && !cleanFieldPath) {
+      return res.status(400).json({ success: false, message: 'targetId or fieldPath is required.' });
+    }
+
+    let finalUrl = '';
+    let finalFileName = '';
+    let finalFormat = 'WEBP';
+    let finalSizeBytes = 0;
+
+    if (base64Data && typeof base64Data === 'string') {
+      const parsed = parseBase64DataUrl(base64Data, mimeType || 'image/webp');
+      if (!parsed) {
+        return res.status(400).json({ success: false, message: 'Invalid image file payload.' });
+      }
+      let ext = 'webp';
+      if (parsed.mimeType.includes('png')) ext = 'png';
+      else if (parsed.mimeType.includes('jpeg') || parsed.mimeType.includes('jpg')) ext = 'jpg';
+      else if (parsed.mimeType.includes('gif')) ext = 'gif';
+      else if (parsed.mimeType.includes('svg')) ext = 'svg';
+      else if (parsed.mimeType.includes('avif')) ext = 'avif';
+      else if (parsed.mimeType.includes('webp')) ext = 'webp';
+      if (fileName && /\.webp$/i.test(String(fileName))) ext = 'webp';
+
+      const seoTitle = String(title || cleanTargetId || cleanFieldPath || 'site-image').trim();
+      finalFileName = buildTradeHeavenSeoImageFilename(seoTitle, String(Date.now()), ext);
+      const filePath = path.join(UPLOADS_DIR, finalFileName);
+      const seoBuffer = await embedTradeHeavenSeoExifBuffer(parsed.buffer, {
+        title: seoTitle,
+        category: typeof category === 'string' ? category : undefined,
+        ext
+      });
+      fs.writeFileSync(filePath, seoBuffer);
+      const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
+      if (fs.existsSync(distUpDir)) {
+        try { fs.writeFileSync(path.join(distUpDir, finalFileName), seoBuffer); } catch {}
+      }
+      void prewarmSingleImageFile(filePath);
+      finalUrl = `/assets/uploads/${finalFileName}`;
+      finalFormat = ext.toUpperCase();
+      finalSizeBytes = seoBuffer.length;
+    } else if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
+      const rawU = imageUrl.trim();
+      if (/^https?:\/\//i.test(rawU)) {
+        const mirrored = await mirrorExternalProductImageToLocalUploads({
+          externalUrl: rawU,
+          productId: cleanTargetId || undefined,
+          productName: String(title || cleanTargetId || 'site-image'),
+          category: typeof category === 'string' ? category : undefined,
+          isManual: true,
+          skipBind: true
+        });
+        if (!mirrored) {
+          return res.status(400).json({ success: false, message: 'Could not download external image URL onto server.' });
+        }
+        finalUrl = stripUrlQueryBase(mirrored);
+      } else {
+        finalUrl = stripUrlQueryBase(rawU);
+      }
+      finalFileName = path.basename(finalUrl);
+      finalFormat = (path.extname(finalFileName).replace('.', '') || 'WEBP').toUpperCase();
+    } else {
+      return res.status(400).json({ success: false, message: 'Provide either base64Data or imageUrl.' });
+    }
+
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    const oldCandidates: string[] = [];
+    if (oldImageUrl && typeof oldImageUrl === 'string') oldCandidates.push(oldImageUrl);
+
+    // Collect existing URLs before replacing
+    const existingOv = cleanTargetId ? serverProductImageState.overrides[cleanTargetId] : undefined;
+    if (existingOv?.primary) oldCandidates.push(existingOv.primary);
+    if (existingOv?.previousPrimary) oldCandidates.push(existingOv.previousPrimary);
+    if (Array.isArray(existingOv?.gallery)) oldCandidates.push(...existingOv.gallery);
+
+    const matchedProd = cleanTargetId ? serverProductsStore.find(p => String(p.id) === cleanTargetId) : undefined;
+    if (matchedProd?.image) oldCandidates.push(matchedProd.image);
+    if (Array.isArray(matchedProd?.images)) oldCandidates.push(...matchedProd.images);
+
+    const matchedListing = cleanTargetId
+      ? serverListingsStore.find(l => `prod-db-${l.id}` === cleanTargetId || String(l.id) === cleanTargetId)
+      : undefined;
+    if (matchedListing?.image) oldCandidates.push(matchedListing.image);
+
+    const matchedRfq = cleanTargetId
+      ? serverRfqsStore.find(r => String(r.id) === cleanTargetId || `rfq-${r.id}` === cleanTargetId)
+      : undefined;
+    if (matchedRfq?.image) oldCandidates.push(matchedRfq.image);
+
+    // 1. Update Site Content (Hero Slides, Site Banners, Brand Logos, Category Covers) FIRST
+    let siteContentDirty = false;
+    if (cleanType === 'CATEGORY' && cleanTargetId) {
+      if (Array.isArray(serverSiteContent?.homepage?.categoriesList)) {
+        const catObj = serverSiteContent.homepage.categoriesList.find((c: any) => String(c?.id || '') === cleanTargetId);
+        if (catObj?.image) oldCandidates.push(catObj.image);
+      }
+      syncCategoryHeaderUrlIntoSiteContent(cleanTargetId, String(title || ''), finalUrl);
+      siteContentDirty = true;
+    } else if (cleanType === 'HERO_SLIDE' && cleanTargetId) {
+      if (Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
+        for (const slide of serverSiteContent.homepage.heroSlides) {
+          if (String(slide?.id || '') === cleanTargetId) {
+            if (slide.image) oldCandidates.push(slide.image);
+            slide.image = finalUrl;
+            siteContentDirty = true;
+          }
+        }
+      }
+    } else if (cleanFieldPath) {
+      const prevSiteUrl = setNestedSiteContentValue(serverSiteContent, cleanFieldPath, finalUrl);
+      if (prevSiteUrl) oldCandidates.push(prevSiteUrl);
+      siteContentDirty = true;
+    }
+
+    if (siteContentDirty) {
+      (serverSiteContent as any).siteContentUpdatedAt = nowMs;
+      invalidateSiteContentResponseCache();
+      saveServerSiteContentToDisk();
+    }
+
+    // 2. Update Product / Listing / RFQ Stores
+    if (matchedProd) {
+      matchedProd.image = finalUrl;
+      matchedProd.image_url = finalUrl;
+      matchedProd.images = [finalUrl];
+      matchedProd.updatedAt = nowMs;
+      matchedProd.imageUpdatedAt = nowMs;
+      saveServerProductsToDisk();
+    }
+    if (matchedListing) {
+      matchedListing.image = finalUrl;
+      matchedListing.image_url = finalUrl;
+      matchedListing.images = [finalUrl];
+      matchedListing.updatedAt = nowMs;
+      matchedListing.imageUpdatedAt = nowMs;
+    }
+    if (matchedRfq) {
+      matchedRfq.image = finalUrl;
+      matchedRfq.image_url = finalUrl;
+      matchedRfq.images = [finalUrl];
+      matchedRfq.persisted = true;
+      matchedRfq.updatedAt = nowMs;
+      matchedRfq.imageUpdatedAt = nowMs;
+      saveRfqMarketStoreToDisk();
+    }
+
+    // 3. Update Authoritative Override Store (zero previousPrimary so old image is never kept alive)
+    const replacedOldUrls = Array.from(
+      new Set([
+        ...(Array.isArray(existingOv?.replacedOldUrls) ? existingOv!.replacedOldUrls : []),
+        ...oldCandidates.map(u => stripUrlQueryBase(u))
+      ])
+    ).filter(u => Boolean(u) && u !== finalUrl);
+
+    if (cleanTargetId) {
+      serverProductImageState.overrides[cleanTargetId] = {
+        primary: finalUrl,
+        gallery: [finalUrl],
+        format: finalFormat,
+        updatedAt: nowIso,
+        imageUpdatedAt: nowMs,
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso,
+        ...(replacedOldUrls.length > 0 ? { replacedOldUrls } : {})
+      };
+      if (!serverProductImageState.productActivityTimestamps) {
+        serverProductImageState.productActivityTimestamps = {};
+      }
+      serverProductImageState.productActivityTimestamps[cleanTargetId] = nowMs;
+      updateFullCatalogSnapshotRecords([{ id: cleanTargetId, imageUrl: finalUrl, gallery: [finalUrl] }]);
+    }
+
+    // Add new file to mediaLibrary
+    if (finalUrl.startsWith('/assets/uploads/')) {
+      const mediaEntry = {
+        id: `media-${nowMs}-${Math.random().toString(36).slice(2, 6)}`,
+        url: finalUrl,
+        name: finalFileName,
+        format: finalFormat,
+        sizeBytes: finalSizeBytes,
+        uploadedAt: nowIso
+      };
+      serverProductImageState.mediaLibrary = [
+        mediaEntry,
+        ...(serverProductImageState.mediaLibrary || []).filter(m => stripUrlQueryBase(m?.url) !== finalUrl)
+      ];
+    }
+
+    // 4. PERMANENTLY DELETE old replaced file(s) from server disk, dist fallback, RAM cache & mediaLibrary
+    const deletedOldUrls = permanentlyDeleteReplacedUploadFiles(
+      oldCandidates,
+      [finalUrl],
+      cleanTargetId ? new Set([cleanTargetId]) : new Set()
+    );
+
+    // 5. Persist state atomically to disk & invalidate public cache
+    const savedOk = saveServerProductImageState();
+    const verifiedOnDisk =
+      !finalUrl.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(finalUrl);
+
+    return res.json({
+      success: savedOk && verifiedOnDisk,
+      targetId: cleanTargetId || cleanFieldPath,
+      targetType: cleanType,
+      newUrl: finalUrl,
+      deletedOldUrls,
+      diskDeletedCount: deletedOldUrls.length,
+      replacedOldUrls,
+      verifiedOnDisk,
+      locked: true,
+      serverVerified: true,
+      updatedAt: nowIso,
+      imageUpdatedAt: nowMs
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to replace site image.'
+    });
+  }
+});
+
+// POST /api/v1/admin/site-images/auto-fix
+// Automatically fixes one or many site images (Product, Category, RFQ, Hero Slide, Site Banner),
+// assigns a unique topic-matched photo stored locally, and permanently deletes every replaced old file from server disk.
+app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    const rawItems = Array.isArray(req.body?.items)
+      ? req.body.items
+      : req.body?.targetId || req.body?.id
+        ? [req.body]
+        : [];
+
+    if (rawItems.length === 0) {
+      return res.status(400).json({ success: false, message: 'No items provided for Auto-Fix.' });
+    }
+
+    const batchItems = rawItems.slice(0, 25);
+    const results: Array<{
+      id: string;
+      type: string;
+      success: boolean;
+      newUrl?: string;
+      oldUrl?: string;
+      deletedOldUrls?: string[];
+      updatedAt?: string;
+      imageUpdatedAt?: number;
+      error?: string;
+    }> = [];
+    const allDeletedOldUrls: string[] = [];
+    let fixedCount = 0;
+    let failedCount = 0;
+
+    for (const item of batchItems) {
+      const id = String(item?.id || item?.targetId || item?.record_id || '').trim();
+      const type = String(item?.type || item?.targetType || item?.record_type || 'PRODUCT').toUpperCase();
+      const title = String(item?.title || id).trim();
+      const category = String(item?.category || 'General').trim();
+      const currentUrl = String(item?.currentUrl || item?.oldImageUrl || '').trim();
+      const fieldPath = String(item?.fieldPath || '').trim();
+      if (!id) continue;
+
+      try {
+        const recordTypeArg: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
+          type === 'CATEGORY' ? 'CATEGORY' : type === 'RFQ' ? 'RFQ' : type === 'PRODUCT' ? 'PRODUCT' : 'OVERRIDE';
+
+        const fixed = await fixSingleCatalogImageRecord({
+          recordId: id,
+          recordType: recordTypeArg,
+          title,
+          category,
+          previousImageUrl: currentUrl || undefined
+        });
+
+        // If this was a HERO_SLIDE or SITE_ASSET with fieldPath, also sync into serverSiteContent & delete old upload
+        let extraDeleted: string[] = [];
+        if ((type === 'HERO_SLIDE' || type === 'SITE_ASSET' || fieldPath) && fixed.new_image_url) {
+          let siteDirty = false;
+          const oldSiteUrls: string[] = [];
+          if (type === 'HERO_SLIDE' && Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
+            for (const slide of serverSiteContent.homepage.heroSlides) {
+              if (String(slide?.id || '') === id) {
+                if (slide.image) oldSiteUrls.push(slide.image);
+                slide.image = fixed.new_image_url;
+                siteDirty = true;
+              }
+            }
+          } else if (fieldPath) {
+            const prevV = setNestedSiteContentValue(serverSiteContent, fieldPath, fixed.new_image_url);
+            if (prevV) oldSiteUrls.push(prevV);
+            siteDirty = true;
+          }
+          if (siteDirty) {
+            (serverSiteContent as any).siteContentUpdatedAt = Date.now();
+            invalidateSiteContentResponseCache();
+            saveServerSiteContentToDisk();
+            if (oldSiteUrls.length > 0) {
+              extraDeleted = permanentlyDeleteReplacedUploadFiles(oldSiteUrls, [fixed.new_image_url], new Set([id]));
+              if (extraDeleted.length > 0) saveServerProductImageState();
+            }
+          }
+        }
+
+        const itemDeleted = Array.from(
+          new Set([...(Array.isArray(fixed.deletedOldUrls) ? fixed.deletedOldUrls : []), ...extraDeleted])
+        );
+        allDeletedOldUrls.push(...itemDeleted);
+        fixedCount++;
+        results.push({
+          id,
+          type,
+          success: true,
+          newUrl: fixed.new_image_url,
+          oldUrl: fixed.old_image_url,
+          deletedOldUrls: itemDeleted,
+          updatedAt: fixed.updatedAt,
+          imageUpdatedAt: fixed.imageUpdatedAt
+        });
+      } catch (err: any) {
+        failedCount++;
+        results.push({
+          id,
+          type,
+          success: false,
+          oldUrl: currentUrl,
+          error: err?.message || 'Auto-fix failed for this item.'
+        });
+      }
+    }
+
+    return res.json({
+      success: fixedCount > 0 || failedCount === 0,
+      fixedCount,
+      failedCount,
+      deletedOldUrls: Array.from(new Set(allDeletedOldUrls)),
+      results
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Batch Auto-Fix failed.'
+    });
+  }
+});
+
+// POST /api/v1/admin/site-images/delete-file
+// Permanently removes a specified uploaded image file from server disk, dist fallback, RAM cache & media library.
+app.post('/api/v1/admin/site-images/delete-file', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    const rawUrl = String(req.body?.url || '').trim();
+    const forceDelete = Boolean(req.body?.force);
+    const cleanBase = stripUrlQueryBase(rawUrl);
+    if (!cleanBase.startsWith('/assets/uploads/')) {
+      return res.status(400).json({ success: false, message: 'Only /assets/uploads/ files can be permanently deleted.' });
+    }
+    const fileName = path.basename(cleanBase);
+    if (!fileName || fileName.includes('..') || fileName.includes('/')) {
+      return res.status(400).json({ success: false, message: 'Invalid file name.' });
+    }
+
+    if (!forceDelete && isUploadUrlStillReferenced(cleanBase)) {
+      return res.status(409).json({
+        success: false,
+        message: 'This image is currently assigned to an active item. Replace that item image first or pass force=true.'
+      });
+    }
+
+    const targets = [
+      path.join(UPLOADS_DIR, fileName),
+      path.join(distUploadsStaticDir, fileName),
+      path.join(legacyAssetsStaticDir, 'uploads', fileName)
+    ];
+    let deletedAny = false;
+    for (const p of targets) {
+      try {
+        if (fs.existsSync(p)) {
+          fs.unlinkSync(p);
+          deletedAny = true;
+        }
+      } catch {}
+    }
+    evictDeletedUploadFromCaches(cleanBase, fileName);
+    serverProductImageState.mediaLibrary = (serverProductImageState.mediaLibrary || []).filter(
+      m => stripUrlQueryBase(m?.url) !== cleanBase
+    );
+    const existingDeletedList: string[] = Array.isArray((serverProductImageState as any).deletedUrls)
+      ? (serverProductImageState as any).deletedUrls
+      : [];
+    if (!existingDeletedList.includes(cleanBase)) {
+      (serverProductImageState as any).deletedUrls = [cleanBase, ...existingDeletedList].slice(0, 500);
+    }
+    saveServerProductImageState();
+
+    return res.json({
+      success: true,
+      deletedUrl: cleanBase,
+      deletedFromDisk: deletedAny
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to delete image file.'
+    });
+  }
+});
+
 
 // Real-time Cross-Server Image Sync endpoint (pushes specified or all local overrides & binaries to live server)
 app.post('/api/v1/admin/sync-images-to-live', async (req, res) => {

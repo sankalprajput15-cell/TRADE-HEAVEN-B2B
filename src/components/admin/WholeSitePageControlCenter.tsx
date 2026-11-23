@@ -50,10 +50,12 @@ import { SafeImage } from '../common/SafeImage';
 import { WholeSitePagePreviewModal } from './WholeSitePagePreviewModal';
 import { HeroBannerSlidesEditor } from '../cms/HeroBannerSlidesEditor';
 import { SectionGridLayoutControlBar } from './SectionGridLayoutControlBar';
+import { WholeSiteImageStudio } from './WholeSiteImageStudio';
 
 const WHOLE_SITE_DRAFT_STORAGE_KEY = 'th_whole_site_draft_v1';
 
 type SitePageKey =
+  | 'SITE_IMAGES'
   | 'HOMEPAGE'
   | 'SITE_GRID_MATRIX'
   | 'PRODUCT_DIRECTORY'
@@ -92,6 +94,15 @@ interface SitePageMeta {
 }
 
 const SITE_PAGES: SitePageMeta[] = [
+  {
+    key: 'SITE_IMAGES',
+    group: 'Marketplace',
+    label: 'All Site Images & Auto-Fix',
+    routeView: 'HOMEPAGE',
+    routeQuery: 'Products · Categories · RFQs · Banners',
+    summary: 'Upload, replace, bulk-assign, or auto-fix any image across the entire site. Every replaced image file is permanently deleted from server storage immediately.',
+    icon: ImageIcon
+  },
   {
     key: 'HOMEPAGE',
     group: 'Marketplace',
@@ -289,7 +300,7 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
 }) => {
   const { siteContent, updateSiteContent, draftRecord, saveDraft: saveContextDraft, discardDraft: discardContextDraft } = useSiteContent();
 
-  const [selectedPage, setSelectedPage] = useState<SitePageKey>('HOMEPAGE');
+  const [selectedPage, setSelectedPage] = useState<SitePageKey>('SITE_IMAGES');
   const [homepageSubTab, setHomepageSubTab] = useState<HomepageSubTab>('FEATURED_PRODUCTS');
   const [pageSearch, setPageSearch] = useState('');
 
@@ -1518,6 +1529,35 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
         {/* Right Main Viewport */}
         <div className="flex-1 min-w-0 p-6 space-y-6 bg-white">
           <p className="text-sm text-slate-600">{activePageMeta.summary}</p>
+
+          {/* ================= 0. ALL SITE IMAGES & AUTO-FIX STUDIO ================= */}
+          {selectedPage === 'SITE_IMAGES' && (
+            <WholeSiteImageStudio
+              onViewLiveItem={(record) => {
+                onNavigate('HOMEPAGE');
+                window.setTimeout(() => {
+                  const el =
+                    record.recordType === 'CATEGORY'
+                      ? document.getElementById(`category-card-${record.recordId}`) ||
+                        document.getElementById('category-mega-menu')
+                      : record.recordType === 'RFQ'
+                        ? document.getElementById('recent-rfqs-section')
+                        : document.getElementById(`featured-product-card-${record.recordId}`) ||
+                          document.getElementById('featured-products-section') ||
+                          document.getElementById('category-mega-menu');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (el.id.startsWith('featured-product-card-')) {
+                      el.classList.add('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      window.setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+                      }, 3200);
+                    }
+                  }
+                }, 300);
+              }}
+            />
+          )}
 
           {/* ================= 1. HOMEPAGE WORKSPACE ================= */}
           {selectedPage === 'HOMEPAGE' && (

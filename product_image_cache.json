@@ -7053,5 +7053,85 @@
     ],
     "updatedAt": "2026-11-23T07:24:42.108Z",
     "provider": "gemini_google_search_grounding"
+  },
+  "v2:industrial cnc lathe machine::industrial machinery": {
+    "keyword": "v2:industrial cnc lathe machine::industrial machinery",
+    "queryUsed": "\"Industrial CNC Lathe Machine\" Industrial CNC Lathe Machine product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme",
+    "images": [
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-0d30fd4da33b.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-0d30fd4da33b.webp",
+        "title": "Wasino CNC lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 1024,
+        "height": 768,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-40938eb110eb.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-40938eb110eb.webp",
+        "title": "Denford Novaturn CNC Lathe   Nottingham Hackspace",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 3264,
+        "height": 2448,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a257bb830c95.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a257bb830c95.webp",
+        "title": "Cnc lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 799,
+        "height": 560,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-d5cddca91706.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-d5cddca91706.webp",
+        "title": "Internal Roller Burnishing Tool on a CNC Lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 5472,
+        "height": 3648,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-d024d87d2177.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-d024d87d2177.webp",
+        "title": "Tsugami CNC Lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 4096,
+        "height": 3072,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a7775a82be32.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a7775a82be32.webp",
+        "title": "CNC Lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 5280,
+        "height": 6000,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-3034d3befad2.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-3034d3befad2.webp",
+        "title": "CNC Lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 2592,
+        "height": 1944,
+        "relevanceScore": 34
+      },
+      {
+        "url": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a66cac6cacb6.webp",
+        "thumbnailUrl": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-a66cac6cacb6.webp",
+        "title": "Big bore 14\"  Hollow spindle   CNC oil field lathe   Oil country Lathe   Pipe Threading Lathe",
+        "sourceDomain": "commons.wikimedia.org",
+        "width": 4000,
+        "height": 3000,
+        "relevanceScore": 24
+      }
+    ],
+    "updatedAt": "2026-11-23T09:44:00.557Z",
+    "provider": "gemini_google_search_grounding"
   }
 }

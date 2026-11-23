@@ -40,7 +40,7 @@ import {
 import { AdminBuyerChatDeskModule } from './AdminBuyerChatDeskModule';
 import { AdminWalletManagerModule } from './AdminWalletManagerModule';
 import { WholeSitePageControlCenter } from './WholeSitePageControlCenter';
-import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
+import { WholeSiteImageStudio } from './WholeSiteImageStudio';
 import { CountryPortalCmsManager } from './CountryPortalCmsManager';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
@@ -1126,14 +1126,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'ADMIN_MENU_OVERVIEW' && (
           <div className="space-y-6" data-testid="admin-menu-overview">
-            <CatalogImageAuditorWidget
-              onAuditCompleted={(res) => {
-                triggerToast(
-                  'success',
-                  `Catalog Image Audit Complete: Cleaned ${res.duplicates_detected} duplicate(s) & fixed ${res.mismatched_detected || 0} mismatched/placeholder photo(s)!`
-                );
-              }}
-              onViewOnHomepage={(record) => {
+            <WholeSiteImageStudio
+              onViewLiveItem={(record) => {
                 onNavigate('HOMEPAGE');
                 window.setTimeout(() => {
                   const el =

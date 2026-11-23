@@ -19,7 +19,7 @@ import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
 import { isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
-import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
+import { WholeSiteImageStudio } from './WholeSiteImageStudio';
 import { ImageCdnAcceleratorWidget } from './ImageCdnAcceleratorWidget';
 import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
 import { useSiteContent } from '../../context/SiteContentContext';
@@ -118,7 +118,6 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
   const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
-  const [auditorRefreshTrigger, setAuditorRefreshTrigger] = useState<number>(0);
   const { refreshFromServer: refreshSiteContentFromServer } = useSiteContent();
   const [toast, setToast] = useState<{
     type: 'success' | 'error';
@@ -239,7 +238,6 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       ]);
       const { productsCount } = await refreshState();
       setSeoRecords(autoSeoEngine.getAllSeoRecords());
-      setAuditorRefreshTrigger(prev => prev + 1);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated', { detail: latestState }));
@@ -1235,19 +1233,20 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         </div>
       </div>
 
-      {/* AUTOMATED CATALOG IMAGE QUALITY & DUPLICATE AUDITOR WIDGET */}
-      <CatalogImageAuditorWidget
-        products={allProducts}
-        hideRefreshAllButton={true}
-        refreshTrigger={auditorRefreshTrigger}
-        onViewOnHomepage={onViewOnHomepage}
-        onAuditCompleted={async (res) => {
-          await refreshState();
-          showToast(
-            'success',
-            `Cleaned ${res.duplicates_detected} duplicate(s) & fixed ${res.mismatched_detected || 0} mismatched/placeholder photo(s) across ${res.total_scanned} catalog records!`
-          );
-        }}
+      {/* WHOLE-SITE IMAGE CONTROL, UPLOAD & AUTO-FIX STUDIO */}
+      <WholeSiteImageStudio
+        onViewLiveItem={
+          onViewOnHomepage
+            ? (item) =>
+                onViewOnHomepage({
+                  recordId: item.recordId,
+                  recordType:
+                    item.recordType === 'CATEGORY' || item.recordType === 'RFQ' || item.recordType === 'PRODUCT'
+                      ? item.recordType
+                      : 'OVERRIDE'
+                })
+            : undefined
+        }
       />
 
       {/* =====================================================================
