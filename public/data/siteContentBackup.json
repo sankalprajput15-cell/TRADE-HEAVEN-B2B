@@ -83,7 +83,7 @@
         "name": "Machinery & Industrial Equipment",
         "description": "CNC milling machines, packaging lines, hydraulic presses, automation.",
         "iconName": "Cpu",
-        "image": "/assets/uploads/auto-machinery-industrial-equipment-0f837bff532d.webp",
+        "image": "/assets/uploads/auto-machinery-industrial-equipment-f179ddb867f3.webp",
         "badge": "Top Sourced",
         "productCount": "48,200+ Products"
       },
@@ -92,7 +92,7 @@
         "name": "Automotive & Electric Vehicles",
         "description": "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         "iconName": "Car",
-        "image": "/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp?v=1794990147586",
+        "image": "/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp",
         "badge": "High Growth",
         "productCount": "32,900+ Products"
       },
@@ -101,7 +101,7 @@
         "name": "Electronics & Semiconductors",
         "description": "SMD microcontrollers, OLED display panels, power transformers, sensors.",
         "iconName": "Radio",
-        "image": "/assets/uploads/auto-electronics-semiconductors-9adbc522036b.webp?v=1795010071850",
+        "image": "/assets/uploads/auto-electronics-semiconductors-99666af2557c.webp",
         "badge": "Verified OEM",
         "productCount": "64,100+ Products"
       },
@@ -110,7 +110,7 @@
         "name": "Chemicals & Raw Polymers",
         "description": "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         "iconName": "FlaskConical",
-        "image": "/assets/uploads/auto-chemicals-raw-polymers-25c533d81ea6.webp",
+        "image": "/assets/uploads/auto-chemicals-raw-polymers-a7f050a9b406.webp",
         "badge": "REACH Compliant",
         "productCount": "28,500+ Products"
       },
@@ -119,7 +119,7 @@
         "name": "Textiles, Garments & Fabrics",
         "description": "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
         "iconName": "Scissors",
-        "image": "/assets/uploads/auto-premium-used-shoes-bales-uk-origin-1adeead8fb74.webp?v=1795010830137",
+        "image": "/assets/uploads/auto-textiles-garments-fabrics-b91ce4a69f47.webp",
         "badge": "OEKO-TEX",
         "productCount": "52,400+ Products"
       },
@@ -128,7 +128,7 @@
         "name": "Renewable Energy & Solar",
         "description": "Tier-1 N-Type TOPCon solar panels, commercial hybrid inverters, BESS.",
         "iconName": "Sun",
-        "image": "/assets/uploads/auto-renewable-energy-solar-104de63a5ca6.webp?v=1795011303598",
+        "image": "/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp",
         "badge": "CE / TÜV Certified",
         "productCount": "19,800+ Products"
       },
@@ -137,7 +137,7 @@
         "name": "Agriculture & Agro Commodities",
         "description": "Refined ICUMSA 45 sugar, Non-GMO soy, Robusta coffee, cashew nuts.",
         "iconName": "Wheat",
-        "image": "/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp?v=1794999221114",
+        "image": "/assets/uploads/auto-agriculture-agro-commodities-1beccb643abd.webp",
         "badge": "Phytosanitary Cert",
         "productCount": "41,300+ Products"
       },
@@ -146,7 +146,7 @@
         "name": "Medical & Diagnostic Supplies",
         "description": "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         "iconName": "Stethoscope",
-        "image": "/assets/uploads/auto-medical-diagnostic-supplies-32643f07f92e.webp?v=1794999222799",
+        "image": "/assets/uploads/auto-medical-diagnostic-supplies-642c58c9a2ff.webp",
         "badge": "FDA 510(k) / CE",
         "productCount": "15,700+ Products"
       },
@@ -155,7 +155,7 @@
         "name": "Building & Construction Materials",
         "description": "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         "iconName": "Box",
-        "image": "/assets/uploads/auto-building-construction-materials-c3f3a1415b58.webp?v=1794999222871",
+        "image": "/assets/uploads/auto-building-construction-materials-0cf6edcfd5d5.webp",
         "badge": "ASTM / ISO",
         "productCount": "37,000+ Products"
       }
@@ -351,5 +351,5 @@
       "regionBar": true
     }
   },
-  "siteContentUpdatedAt": 1795337114609
+  "siteContentUpdatedAt": 1795418961782
 }

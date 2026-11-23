@@ -14852,7 +14852,7 @@ const inFlightCatalogFixReservedSourceUrls = new Set<string>();
 const inFlightCatalogFixReservedUrlHashes = new Set<string>();
 const inFlightCatalogFixReservedContentHashes = new Set<string>();
 
-const fileContentHashCache = new Map<string, { mtimeMs: number; size: number; sha256: string }>();
+const fileContentHashCache = new Map<string, { mtimeMs: number; size: number; sha256: string; checkedAtMs?: number }>();
 const mirroredAssetMetaByLocalUrl = new Map<string, { sourceUrl?: string; rawSha256?: string; fileSha256?: string }>();
 let cachedSnapshotImageEntries: { mtimeMs: number; entries: Array<{ id: string; urls: string[] }> } | null = null;
 
@@ -14871,15 +14871,20 @@ function getLocalUploadFileSha256(rawUrl: string | undefined | null): string {
   if (!clean || !clean.startsWith('/assets/uploads/')) return '';
   const diskPath = resolveLocalUploadDiskPath(clean);
   if (!diskPath) return '';
+  const nowMs = Date.now();
+  const cached = fileContentHashCache.get(diskPath);
+  if (cached && cached.checkedAtMs && nowMs - cached.checkedAtMs < 15_000) {
+    return cached.sha256;
+  }
   try {
     const st = fs.statSync(diskPath);
     if (!st.isFile() || st.size < 64) return '';
-    const cached = fileContentHashCache.get(diskPath);
     if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
+      cached.checkedAtMs = nowMs;
       return cached.sha256;
     }
     const sha256 = crypto.createHash('sha256').update(fs.readFileSync(diskPath)).digest('hex');
-    fileContentHashCache.set(diskPath, { mtimeMs: st.mtimeMs, size: st.size, sha256 });
+    fileContentHashCache.set(diskPath, { mtimeMs: st.mtimeMs, size: st.size, sha256, checkedAtMs: nowMs });
     return sha256;
   } catch {
     return '';
@@ -24516,9 +24521,8 @@ function findMatchingLocalMasterImageOnDisk(
 
   const entries = preindexedFiles || buildPreindexedLocalUploadFiles();
   for (const item of entries) {
-    // STRICT GLOBAL 1-TO-1 UNIQUENESS: Never attach OR clone-as-template any image already attached to another product!
-    const alreadyAttached = usedUrls.has(item.webUrl) || Boolean(registry && registry.isCandidateUsed(item.webUrl));
-    if (alreadyAttached) continue;
+    // Fast O(1) exclusion before token scoring to avoid hashing unrelated files
+    if (usedUrls.has(item.webUrl) || (registry && registry.usedLocalUrls.has(item.webUrl))) continue;
 
     let score = 0;
     let titleHits = 0;
@@ -24537,7 +24541,9 @@ function findMatchingLocalMasterImageOnDisk(
       }
     }
 
-    if (titleHits === 0) continue;
+    if (titleHits === 0 || (score < 10 && score <= bestUnusedScore && score <= bestTemplateScore)) continue;
+    // STRICT GLOBAL 1-TO-1 UNIQUENESS (URL hash + SHA-256 content hash) checked only on strong candidates
+    if (registry && registry.isCandidateUsed(item.webUrl)) continue;
     const mismatchChk = detectCatalogImageIssue(
       { id: 'probe', type: 'PRODUCT', title, category, imageUrl: item.webUrl },
       new Map()
@@ -24706,6 +24712,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   wallDeadlineMs?: number;
   maxMirrorAttempts?: number;
   preindexedFiles?: IndexedUploadFileEntry[];
+  sharedRegistry?: GlobalAttachedImageRegistry;
 }): Promise<{
   newImageUrl: string;
   queryUsed: string;
@@ -24721,8 +24728,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : params.wallDeadlineMs ? 2 : 6;
   const withinNetworkDeadline = () => !params.wallDeadlineMs || Date.now() < params.wallDeadlineMs;
 
-  // Build global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
-  const globalRegistry = buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
+  // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
+  const globalRegistry = params.sharedRegistry || buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
 
   const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
     try {
@@ -24974,6 +24981,13 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let recordsFixed = 0;
   let liveNetworkBudget = dryRun ? 0 : 3;
   const preindexedFiles = dryRun ? undefined : buildPreindexedLocalUploadFiles();
+  let sharedAuditRegistry: GlobalAttachedImageRegistry | undefined;
+  const getSharedAuditRegistry = () => {
+    if (!sharedAuditRegistry) {
+      sharedAuditRegistry = buildGlobalAttachedImageRegistry(undefined, usedUrlsSet);
+    }
+    return sharedAuditRegistry;
+  };
 
   const recordNewlyFixedOverride = (args: {
     id: string;
@@ -25208,7 +25222,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       geminiTimeoutMs: 2200,
       wallDeadlineMs: networkWallDeadline,
       maxMirrorAttempts: 2,
-      preindexedFiles
+      preindexedFiles,
+      sharedRegistry: getSharedAuditRegistry()
     });
 
     listing.image_url = resolved.newImageUrl;
@@ -25318,7 +25333,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       geminiTimeoutMs: 2200,
       wallDeadlineMs: networkWallDeadline,
       maxMirrorAttempts: 2,
-      preindexedFiles
+      preindexedFiles,
+      sharedRegistry: getSharedAuditRegistry()
     });
 
     prod.image = resolved.newImageUrl;
@@ -25429,7 +25445,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       geminiTimeoutMs: 2200,
       wallDeadlineMs: networkWallDeadline,
       maxMirrorAttempts: 2,
-      preindexedFiles
+      preindexedFiles,
+      sharedRegistry: getSharedAuditRegistry()
     });
 
     rfq.image = resolved.newImageUrl;
@@ -25561,7 +25578,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       geminiTimeoutMs: 2200,
       wallDeadlineMs: networkWallDeadline,
       maxMirrorAttempts: 2,
-      preindexedFiles
+      preindexedFiles,
+      sharedRegistry: getSharedAuditRegistry()
     });
     if (newlyFixedCount % 20 === 0) {
       await new Promise(resolve => setImmediate(resolve));
@@ -25671,9 +25689,21 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     }
     scheduleSaveOverridesState(true);
     const fixedEntries = Object.entries(newlyFixedOverridesMap);
-    for (const [fid, fEntry] of fixedEntries) {
-      const v = verifyOverridePersistedOnDisk(fid, String(fEntry?.primary || ''));
-      if (v.verified) diskVerifiedCount++;
+    if (fixedEntries.length > 0) {
+      try {
+        const diskPrimary = JSON.parse(fs.readFileSync(IMAGE_OVERRIDES_FILE, 'utf-8'))?.overrides || {};
+        const diskMirror = JSON.parse(fs.readFileSync(PUBLIC_DATA_OVERRIDES_FILE, 'utf-8'))?.overrides || {};
+        for (const [fid, fEntry] of fixedEntries) {
+          const expBase = stripUrlQueryBase(String(fEntry?.primary || ''));
+          const pBase = stripUrlQueryBase(diskPrimary[fid]?.primary);
+          const mBase = stripUrlQueryBase(diskMirror[fid]?.primary);
+          if (expBase && pBase === expBase && mBase === expBase) {
+            diskVerifiedCount++;
+          }
+        }
+      } catch {
+        diskVerifiedCount = 0;
+      }
     }
     serverSavedVerified = fixedEntries.length === 0 || diskVerifiedCount === fixedEntries.length;
     if (fixedEntries.length > 0) {
@@ -26192,7 +26222,31 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
     let healedCount = 0;
     let blockedOldUrlsCount = 0;
     const seenLockUrls = new Set<string>();
-    const preindexedFiles = buildPreindexedLocalUploadFiles();
+    let preindexedFiles: IndexedUploadFileEntry[] | undefined;
+    let sharedLockRegistry: GlobalAttachedImageRegistry | undefined;
+    const listingById = new Map<string, any>();
+    for (const l of serverListingsStore) {
+      if (!l) continue;
+      listingById.set(`prod-db-${l.id}`, l);
+      listingById.set(String(l.id), l);
+    }
+    const productById = new Map<string, any>();
+    for (const p of serverProductsStore) {
+      if (p && p.id !== undefined) productById.set(String(p.id), p);
+    }
+    const rfqById = new Map<string, any>();
+    for (const r of serverRfqsStore) {
+      if (!r) continue;
+      const rStr = String(r.id);
+      rfqById.set(rStr, r);
+      if (!rStr.startsWith('rfq-')) rfqById.set(`rfq-${rStr}`, r);
+    }
+    const catById = new Map<string, any>();
+    if (Array.isArray(serverSiteContent?.homepage?.categoriesList)) {
+      for (const c of serverSiteContent.homepage.categoriesList) {
+        if (c && c.id) catById.set(String(c.id).trim(), c);
+      }
+    }
     const snapshotBatch: Array<{ id: string; imageUrl: string; gallery: string[] }> = [];
     const livePushMap: Record<string, any> = {};
     let siteContentUpdated = false;
@@ -26214,12 +26268,10 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
 
       if (requestedIds.length === 0 && !isAuditVerifiedOverrideEntry(entry)) continue;
 
-      const matchedListing = serverListingsStore.find((l: any) => l && (`prod-db-${l.id}` === id || String(l.id) === id));
-      const matchedProduct = serverProductsStore.find((p: any) => p && String(p.id) === id);
-      const matchedRfq = serverRfqsStore.find((r: any) => r && (r.id === id || `rfq-${r.id}` === id));
-      const matchedCat = Array.isArray(serverSiteContent?.homepage?.categoriesList)
-        ? serverSiteContent.homepage.categoriesList.find((c: any) => c && String(c.id || '').trim() === id)
-        : undefined;
+      const matchedListing = listingById.get(id);
+      const matchedProduct = productById.get(id);
+      const matchedRfq = rfqById.get(id);
+      const matchedCat = catById.get(id);
       const recType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
         matchedCat || id.startsWith('cat-')
           ? 'CATEGORY'
@@ -26243,6 +26295,8 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
 
       if (needsRepair) {
         try {
+          if (!preindexedFiles) preindexedFiles = buildPreindexedLocalUploadFiles();
+          if (!sharedLockRegistry) sharedLockRegistry = buildGlobalAttachedImageRegistry(undefined, seenLockUrls);
           const repaired = await resolveUniqueVerifiedCatalogImage({
             recordId: id,
             recordType: recType,
@@ -26250,12 +26304,16 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
             category: recCat,
             usedUrls: seenLockUrls,
             allowLiveGeminiNetwork: false,
-            preindexedFiles
+            preindexedFiles,
+            sharedRegistry: sharedLockRegistry
           });
           if (repaired.newImageUrl) {
             prevToBlock = cleanBase || prevToBlock;
             cleanBase = stripUrlQueryBase(repaired.newImageUrl);
             healedCount++;
+            if (healedCount % 20 === 0) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
           }
         } catch {}
       }
@@ -26288,7 +26346,24 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
       };
       allOverrides[id] = updatedEntry;
       recordCurrentServerImageEdit(id, nowMs);
-      clearConflictingTitleOverridesForProductId(id, cleanBase);
+      if (matchedProduct?.title) {
+        const t1 = String(matchedProduct.title).trim();
+        const t2 = cleanProductSearchSubject(t1);
+        for (const tk of [t1, t2]) {
+          if (tk && !/^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(tk) && allOverrides[tk] && stripUrlQueryBase(allOverrides[tk].primary) !== cleanBase) {
+            delete allOverrides[tk];
+          }
+        }
+      }
+      if (matchedListing?.title) {
+        const t1 = String(matchedListing.title).trim();
+        const t2 = cleanProductSearchSubject(t1);
+        for (const tk of [t1, t2]) {
+          if (tk && !/^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(tk) && allOverrides[tk] && stripUrlQueryBase(allOverrides[tk].primary) !== cleanBase) {
+            delete allOverrides[tk];
+          }
+        }
+      }
       if (recType === 'CATEGORY' || id.startsWith('cat-')) {
         syncCategoryHeaderUrlIntoSiteContent(id, recTitle, cleanBase);
         siteContentUpdated = true;

@@ -1,6 +1,114 @@
 {
   "rfqs": [
     {
+      "id": 100,
+      "name": "Robert MacLeod (VP Infrastructure Procurement)",
+      "email": "rmacleod@canadianpowergrid.ca",
+      "phone": "+1 416 555 0198",
+      "subject": "🌟 GOLDEN LEAD [VIP Member Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali Offer",
+      "product_name": "10 Units CAT / Cummins Heavy-Duty Industrial Diesel Generators (500kW - 2000kW)",
+      "message": "Urgent Canadian infrastructure & northern mining procurement for 10 Units Industrial Diesel Generators (CAT Power / Cummins Power Generation) for delivery to Canada (Toronto, Ontario / Calgary, Alberta). Payment Terms: 100% Advance Payment via Direct Wire / TT upon Proforma Invoice.",
+      "status": "pending",
+      "target_quantity": 10,
+      "quantity_unit": "Units (Generators)",
+      "target_price": 95000,
+      "incoterm": "DDP / CIF Canada",
+      "destination_port": "Toronto / Vancouver / Calgary, Canada",
+      "category": "Industrial Machinery",
+      "company_name": "Canadian Northern Grid & Energy Corp.",
+      "country": "Canada",
+      "created_at": "2026-11-23T07:13:32.075Z",
+      "image": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-2e40f0b00c9e.webp",
+      "image_url": "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-2e40f0b00c9e.webp",
+      "images": [
+        "/assets/uploads/auto-heavy-duty-industrial-diesel-generat-2e40f0b00c9e.webp"
+      ],
+      "persisted": true,
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
+    },
+    {
+      "id": 101,
+      "name": "Sarah Jenkins",
+      "email": "procurement@nordicsteel.se",
+      "phone": "+46 8 123 4567",
+      "subject": "Buy Lead RFQ: 5,000 MT Grade 316 Stainless Steel Coils",
+      "product_name": "Grade 316 Stainless Steel Coils",
+      "message": "Requesting binding CIF Port of Gothenburg quotation with SGS mill test certification.",
+      "status": "pending",
+      "target_quantity": 5000,
+      "quantity_unit": "Metric Tons",
+      "target_price": 1850,
+      "incoterm": "CIF",
+      "destination_port": "Port of Gothenburg",
+      "category": "Raw Materials & Industrial Metals",
+      "company_name": "Nordic Steel Works AB",
+      "country": "Sweden",
+      "created_at": "2026-11-23T05:13:32.075Z",
+      "image": "/assets/uploads/auto-stainless-steel-heavy-coils-26a1ae17e2e8.webp",
+      "image_url": "/assets/uploads/auto-stainless-steel-heavy-coils-26a1ae17e2e8.webp",
+      "images": [
+        "/assets/uploads/auto-stainless-steel-heavy-coils-26a1ae17e2e8.webp"
+      ],
+      "persisted": true,
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
+    },
+    {
+      "id": 102,
+      "name": "Carlos Mendez",
+      "email": "cmendez@iberiaparts.es",
+      "phone": "+34 91 555 0192",
+      "subject": "Buy Lead RFQ: 2,500 Units Solar Lithium ESS Battery Packs",
+      "product_name": "Solar Lithium ESS Battery Packs",
+      "message": "Looking for Tier-1 UN38.3 certified 48V 100Ah server rack battery modules.",
+      "status": "pending",
+      "target_quantity": 2500,
+      "quantity_unit": "Units",
+      "target_price": 680,
+      "incoterm": "FOB",
+      "destination_port": "Port of Valencia",
+      "category": "Renewable Energy & Solar Power",
+      "company_name": "Iberia Clean Energy Solutions",
+      "country": "Spain",
+      "created_at": "2026-11-23T02:13:32.075Z",
+      "image": "/assets/uploads/auto-solar-lithium-ess-battery-packs-4ce4dac7034c.webp",
+      "image_url": "/assets/uploads/auto-solar-lithium-ess-battery-packs-4ce4dac7034c.webp",
+      "images": [
+        "/assets/uploads/auto-solar-lithium-ess-battery-packs-4ce4dac7034c.webp"
+      ],
+      "persisted": true,
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
+    },
+    {
+      "id": 103,
+      "name": "Vikram Mehta",
+      "email": "vmehta@apexmachinery.in",
+      "phone": "+91 22 2847 9000",
+      "subject": "Buy Lead RFQ: 10 Sets 5-Axis CNC Milling Centers",
+      "product_name": "5-Axis CNC Milling Centers",
+      "message": "Direct factory procurement for heavy aerospace tooling with CE/ISO9001 compliance.",
+      "status": "pending",
+      "target_quantity": 10,
+      "quantity_unit": "Sets",
+      "target_price": 45000,
+      "incoterm": "CIF",
+      "destination_port": "Nhava Sheva Port (JNPT), Mumbai",
+      "category": "Industrial Machinery & CNC",
+      "company_name": "Apex Precision Engineering Ltd.",
+      "country": "India",
+      "created_at": "2026-11-22T19:13:32.075Z",
+      "image": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1846c0ee382a.webp",
+      "image_url": "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1846c0ee382a.webp",
+      "images": [
+        "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1846c0ee382a.webp"
+      ],
+      "persisted": true,
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
+    },
+    {
       "id": "rfq-mkt-1794641915954",
       "raw_id": 1794641915954,
       "title": "Fresh Royal Gala & Honeycrisp Apple - Export Grade Extra Fancy",
@@ -578,7 +686,9 @@
       "image_url": "/assets/uploads/auto-heavy-duty-hydraulic-4133e907e828.webp",
       "images": [
         "/assets/uploads/auto-heavy-duty-hydraulic-4133e907e828.webp"
-      ]
+      ],
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794680044953",
@@ -810,7 +920,9 @@
       "image_url": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-039cac0fd2af.webp",
       "images": [
         "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-039cac0fd2af.webp"
-      ]
+      ],
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794680044957",
@@ -926,7 +1038,9 @@
       "image_url": "/assets/uploads/auto-hybrid-solar-inverter-06a9b3ec1537.webp",
       "images": [
         "/assets/uploads/auto-hybrid-solar-inverter-06a9b3ec1537.webp"
-      ]
+      ],
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794681155689",
@@ -2144,7 +2258,9 @@
       "images": [
         "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-21d95e43903e.webp"
       ],
-      "image": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-21d95e43903e.webp"
+      "image": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-21d95e43903e.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794693467855",
@@ -2202,7 +2318,9 @@
       "image_url": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-29b3179610f7.webp",
       "images": [
         "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-29b3179610f7.webp"
-      ]
+      ],
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794693467856",
@@ -3594,7 +3712,9 @@
       "persisted": true,
       "created_at": "2026-11-15T13:26:21.469Z",
       "image": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-d7211078b69f.webp",
-      "image_url": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-d7211078b69f.webp"
+      "image_url": "/assets/uploads/auto-heavy-duty-industrial-monocrystallin-d7211078b69f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785475",
@@ -3652,7 +3772,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:05.475Z",
       "image": "/assets/uploads/auto-hide-leather-belts-lifetime-061ecea9061f.webp",
-      "image_url": "/assets/uploads/auto-hide-leather-belts-lifetime-061ecea9061f.webp"
+      "image_url": "/assets/uploads/auto-hide-leather-belts-lifetime-061ecea9061f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785476",
@@ -3705,12 +3827,14 @@
       "market_insight": "Strong global import demand recorded for Su across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-43f1d67ef363.webp"
+        "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-07ca2fe8b70b.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:48:05.475Z",
-      "image": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-43f1d67ef363.webp",
-      "image_url": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-43f1d67ef363.webp"
+      "image": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-07ca2fe8b70b.webp",
+      "image_url": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-07ca2fe8b70b.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785477",
@@ -3768,7 +3892,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:05.475Z",
       "image": "/assets/uploads/trade-heaven-wholesale-buffalo-grain-perforated-c-9a08c499b6bd.webp",
-      "image_url": "/assets/uploads/trade-heaven-wholesale-buffalo-grain-perforated-c-9a08c499b6bd.webp"
+      "image_url": "/assets/uploads/trade-heaven-wholesale-buffalo-grain-perforated-c-9a08c499b6bd.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785478",
@@ -3821,12 +3947,14 @@
       "market_insight": "Strong global import demand recorded for Su across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/trade-heaven-classic-top-grain-leather-casual-for-0221c2e9e46e.webp"
+        "/assets/uploads/auto-classic-top-grain-leather-casual-f-ee98c1cbbabb.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:13:05.475Z",
-      "image": "/assets/uploads/trade-heaven-classic-top-grain-leather-casual-for-0221c2e9e46e.webp",
-      "image_url": "/assets/uploads/trade-heaven-classic-top-grain-leather-casual-for-0221c2e9e46e.webp"
+      "image": "/assets/uploads/auto-classic-top-grain-leather-casual-f-ee98c1cbbabb.webp",
+      "image_url": "/assets/uploads/auto-classic-top-grain-leather-casual-f-ee98c1cbbabb.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785479",
@@ -3879,12 +4007,14 @@
       "market_insight": "Strong global import demand recorded for Su across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-classic-top-grain-leather-casual-f-1b71d3d0ac1a.webp"
+        "/assets/uploads/auto-bulk-commercial-classic-top-grain--bf52365de75f.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:13:05.475Z",
-      "image": "/assets/uploads/auto-classic-top-grain-leather-casual-f-1b71d3d0ac1a.webp",
-      "image_url": "/assets/uploads/auto-classic-top-grain-leather-casual-f-1b71d3d0ac1a.webp"
+      "image": "/assets/uploads/auto-bulk-commercial-classic-top-grain--bf52365de75f.webp",
+      "image_url": "/assets/uploads/auto-bulk-commercial-classic-top-grain--bf52365de75f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785480",
@@ -3937,12 +4067,14 @@
       "market_insight": "Strong global import demand recorded for Su across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-bulk-commercial-classic-top-grain--0f2869041320.webp"
+        "/assets/uploads/auto-bulk-commercial-classic-top-grain--960b3eaef12f.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T10:38:05.475Z",
-      "image": "/assets/uploads/auto-bulk-commercial-classic-top-grain--0f2869041320.webp",
-      "image_url": "/assets/uploads/auto-bulk-commercial-classic-top-grain--0f2869041320.webp"
+      "image": "/assets/uploads/auto-bulk-commercial-classic-top-grain--960b3eaef12f.webp",
+      "image_url": "/assets/uploads/auto-bulk-commercial-classic-top-grain--960b3eaef12f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785481",
@@ -4000,7 +4132,9 @@
       "persisted": true,
       "created_at": "2026-11-16T10:38:05.475Z",
       "image": "/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg",
-      "image_url": "/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg"
+      "image_url": "/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785482",
@@ -4058,7 +4192,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:05.475Z",
       "image": "/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg",
-      "image_url": "/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg"
+      "image_url": "/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785483",
@@ -4116,7 +4252,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:05.475Z",
       "image": "/assets/uploads/auto-sulfur-automotive-diesel-fuel-a93f83a46e4f.webp",
-      "image_url": "/assets/uploads/auto-sulfur-automotive-diesel-fuel-a93f83a46e4f.webp"
+      "image_url": "/assets/uploads/auto-sulfur-automotive-diesel-fuel-a93f83a46e4f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785484",
@@ -4174,7 +4312,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:05.475Z",
       "image": "/assets/uploads/auto-automotive-diesel-fuel-590-7dcf9ede6689.webp",
-      "image_url": "/assets/uploads/auto-automotive-diesel-fuel-590-7dcf9ede6689.webp"
+      "image_url": "/assets/uploads/auto-automotive-diesel-fuel-590-7dcf9ede6689.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785485",
@@ -4232,7 +4372,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:05.475Z",
       "image": "/assets/uploads/auto-jet-fuel-aviation-fuel-48a255869d85.webp",
-      "image_url": "/assets/uploads/auto-jet-fuel-aviation-fuel-48a255869d85.webp"
+      "image_url": "/assets/uploads/auto-jet-fuel-aviation-fuel-48a255869d85.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785486",
@@ -4290,7 +4432,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:13:05.475Z",
       "image": "/assets/uploads/auto-jet-fuel-aviation-fuel-c7d88d26ac08.webp",
-      "image_url": "/assets/uploads/auto-jet-fuel-aviation-fuel-c7d88d26ac08.webp"
+      "image_url": "/assets/uploads/auto-jet-fuel-aviation-fuel-c7d88d26ac08.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785487",
@@ -4348,7 +4492,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:13:05.475Z",
       "image": "/assets/uploads/auto-iqf-broccoli-florets-frozen-iqf-49c266e827b5.webp",
-      "image_url": "/assets/uploads/auto-iqf-broccoli-florets-frozen-iqf-49c266e827b5.webp"
+      "image_url": "/assets/uploads/auto-iqf-broccoli-florets-frozen-iqf-49c266e827b5.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831785488",
@@ -4406,7 +4552,9 @@
         "/assets/uploads/auto-iqf-frozen-broccoli-f8dad37522de.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T10:38:05.475Z"
+      "created_at": "2026-11-16T10:38:05.475Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824274",
@@ -4459,12 +4607,14 @@
       "market_insight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-sug-export-77a9400a84c4.webp"
+        "/assets/uploads/auto-sug-export-819af37c5a1b.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T12:23:44.274Z",
-      "image": "/assets/uploads/auto-sug-export-77a9400a84c4.webp",
-      "image_url": "/assets/uploads/auto-sug-export-77a9400a84c4.webp"
+      "image": "/assets/uploads/auto-sug-export-819af37c5a1b.webp",
+      "image_url": "/assets/uploads/auto-sug-export-819af37c5a1b.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824275",
@@ -4517,12 +4667,14 @@
       "market_insight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-bulk-commercial-sug-verified-impor-20b4e4b961f2.webp"
+        "/assets/uploads/auto-bulk-commercial-sug-verified-impor-fbfb5d38333f.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:48:44.274Z",
-      "image": "/assets/uploads/auto-bulk-commercial-sug-verified-impor-20b4e4b961f2.webp",
-      "image_url": "/assets/uploads/auto-bulk-commercial-sug-verified-impor-20b4e4b961f2.webp"
+      "image": "/assets/uploads/auto-bulk-commercial-sug-verified-impor-fbfb5d38333f.webp",
+      "image_url": "/assets/uploads/auto-bulk-commercial-sug-verified-impor-fbfb5d38333f.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824276",
@@ -4574,13 +4726,15 @@
       "marketInsight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "market_insight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
-      "image": "/assets/uploads/auto-ready-sug-private-label-distributi-7058f9822f3f.webp",
-      "image_url": "/assets/uploads/auto-ready-sug-private-label-distributi-7058f9822f3f.webp",
+      "image": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-665c3acf2ad5.webp",
+      "image_url": "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-665c3acf2ad5.webp",
       "images": [
-        "/assets/uploads/auto-ready-sug-private-label-distributi-7058f9822f3f.webp"
+        "/assets/uploads/trade-heaven-bulk-commercial-custom-private-label-665c3acf2ad5.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:13:44.274Z"
+      "created_at": "2026-11-16T11:13:44.274Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824277",
@@ -4633,12 +4787,14 @@
       "market_insight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-industrial-specification-sug-direc-f57905b16c07.webp"
+        "/assets/uploads/auto-industrial-specification-sug-direc-f1db03ea7121.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T10:38:44.274Z",
-      "image": "/assets/uploads/auto-industrial-specification-sug-direc-f57905b16c07.webp",
-      "image_url": "/assets/uploads/auto-industrial-specification-sug-direc-f57905b16c07.webp"
+      "image": "/assets/uploads/auto-industrial-specification-sug-direc-f1db03ea7121.webp",
+      "image_url": "/assets/uploads/auto-industrial-specification-sug-direc-f1db03ea7121.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824278",
@@ -4696,7 +4852,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:44.274Z",
       "image": "/assets/uploads/verified-prod-iqf-yafurui-broccoli-snap-peas.webp",
-      "image_url": "/assets/uploads/verified-prod-iqf-yafurui-broccoli-snap-peas.webp"
+      "image_url": "/assets/uploads/verified-prod-iqf-yafurui-broccoli-snap-peas.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824279",
@@ -4754,7 +4912,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:44.274Z",
       "image": "/assets/uploads/auto-organic-residue-free-refined-sunflow-dd7986df8a46.webp",
-      "image_url": "/assets/uploads/auto-organic-residue-free-refined-sunflow-dd7986df8a46.webp"
+      "image_url": "/assets/uploads/auto-organic-residue-free-refined-sunflow-dd7986df8a46.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824280",
@@ -4812,7 +4972,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:44.274Z",
       "image": "/assets/uploads/auto-deodorized-sunflower-cooking-oil-e7aaac9f476c.webp",
-      "image_url": "/assets/uploads/auto-deodorized-sunflower-cooking-oil-e7aaac9f476c.webp"
+      "image_url": "/assets/uploads/auto-deodorized-sunflower-cooking-oil-e7aaac9f476c.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824281",
@@ -4870,7 +5032,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:13:44.274Z",
       "image": "/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp",
-      "image_url": "/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp"
+      "image_url": "/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824282",
@@ -4928,7 +5092,9 @@
         "/assets/uploads/auto-sugar-free-fruit-spread-04793c68f6c2.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:13:44.274Z"
+      "created_at": "2026-11-16T11:13:44.274Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824283",
@@ -4986,7 +5152,9 @@
       "persisted": true,
       "created_at": "2026-11-16T10:38:44.274Z",
       "image": "/assets/uploads/auto-certified-hms-1-2-germany-origin-bee83ca17c87.webp",
-      "image_url": "/assets/uploads/auto-certified-hms-1-2-germany-origin-bee83ca17c87.webp"
+      "image_url": "/assets/uploads/auto-certified-hms-1-2-germany-origin-bee83ca17c87.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824284",
@@ -5044,7 +5212,9 @@
       "persisted": true,
       "created_at": "2026-11-16T10:38:44.274Z",
       "image": "/assets/uploads/auto-certified-hms-1-2-japan-origin-329bac09a790.webp",
-      "image_url": "/assets/uploads/auto-certified-hms-1-2-japan-origin-329bac09a790.webp"
+      "image_url": "/assets/uploads/auto-certified-hms-1-2-japan-origin-329bac09a790.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824285",
@@ -5102,7 +5272,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:44.274Z",
       "image": "/assets/uploads/auto-certified-hms-1-2-uae-origin-a78aae3e874b.webp",
-      "image_url": "/assets/uploads/auto-certified-hms-1-2-uae-origin-a78aae3e874b.webp"
+      "image_url": "/assets/uploads/auto-certified-hms-1-2-uae-origin-a78aae3e874b.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824286",
@@ -5160,7 +5332,9 @@
       "persisted": true,
       "created_at": "2026-11-16T12:23:44.274Z",
       "image": "/assets/uploads/auto-fresh-bulk-sugar-free-fruit-spread-7f40e8fda8dd.webp",
-      "image_url": "/assets/uploads/auto-fresh-bulk-sugar-free-fruit-spread-7f40e8fda8dd.webp"
+      "image_url": "/assets/uploads/auto-fresh-bulk-sugar-free-fruit-spread-7f40e8fda8dd.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824287",
@@ -5218,7 +5392,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:48:44.274Z",
       "image": "/assets/uploads/auto-certified-hms-1-2-uae-origin-e3637cc5ef84.webp",
-      "image_url": "/assets/uploads/auto-certified-hms-1-2-uae-origin-e3637cc5ef84.webp"
+      "image_url": "/assets/uploads/auto-certified-hms-1-2-uae-origin-e3637cc5ef84.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824288",
@@ -5276,7 +5452,9 @@
         "/assets/uploads/auto-fresh-high-quality-sugar-free-frui-719641f108d0.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:48:44.274Z"
+      "created_at": "2026-11-16T11:48:44.274Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824289",
@@ -5334,7 +5512,9 @@
       "persisted": true,
       "created_at": "2026-11-16T11:13:44.274Z",
       "image": "/assets/uploads/auto-certified-hms-1-2-uk-origin-4df0d9fa068b.webp",
-      "image_url": "/assets/uploads/auto-certified-hms-1-2-uk-origin-4df0d9fa068b.webp"
+      "image_url": "/assets/uploads/auto-certified-hms-1-2-uk-origin-4df0d9fa068b.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824290",
@@ -5392,7 +5572,9 @@
         "/assets/uploads/auto-fresh-high-quality-sugar-free-frui-83b3036c7526.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:13:44.274Z"
+      "created_at": "2026-11-16T11:13:44.274Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831824291",
@@ -5445,12 +5627,14 @@
       "market_insight": "Strong global import demand recorded for Sug across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $950 – $1,850 per Metric Ton (CIF / FOB) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-organic-certified-high-quality-sug-ad75ccce509c.webp"
+        "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T10:38:44.274Z",
-      "image": "/assets/uploads/auto-organic-certified-high-quality-sug-ad75ccce509c.webp",
-      "image_url": "/assets/uploads/auto-organic-certified-high-quality-sug-ad75ccce509c.webp"
+      "image": "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp",
+      "image_url": "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825138",
@@ -5508,7 +5692,9 @@
         "/assets/uploads/auto-premium-export-sortex-cleaned-d8f47f6ea45a.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T12:23:45.138Z"
+      "created_at": "2026-11-16T12:23:45.138Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825139",
@@ -5560,13 +5746,15 @@
       "marketInsight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "market_insight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
-      "image": "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp",
-      "image_url": "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp",
+      "image": "/assets/uploads/auto-organic-residue-free-premium-quali-78894465c262.webp",
+      "image_url": "/assets/uploads/auto-organic-residue-free-premium-quali-78894465c262.webp",
       "images": [
-        "/assets/uploads/auto-organic-residue-free-sugar-retail--ab734ccc2906.webp"
+        "/assets/uploads/auto-organic-residue-free-premium-quali-78894465c262.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:48:45.138Z"
+      "created_at": "2026-11-16T11:48:45.138Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825140",
@@ -5619,12 +5807,14 @@
       "market_insight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-ffb7cb35e655.webp"
+        "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-903475362d63.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:13:45.138Z",
-      "image": "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-ffb7cb35e655.webp",
-      "image_url": "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-ffb7cb35e655.webp"
+      "image": "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-903475362d63.webp",
+      "image_url": "/assets/uploads/auto-bulk-commodity-sugar-mill-processo-903475362d63.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825141",
@@ -5682,7 +5872,9 @@
       "persisted": true,
       "created_at": "2026-11-16T10:38:45.138Z",
       "image": "/assets/uploads/auto-steam-sugar-food-ingredient-spec-655a96049f9a.webp",
-      "image_url": "/assets/uploads/auto-steam-sugar-food-ingredient-spec-655a96049f9a.webp"
+      "image_url": "/assets/uploads/auto-steam-sugar-food-ingredient-spec-655a96049f9a.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825142",
@@ -5734,13 +5926,15 @@
       "marketInsight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "market_insight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
-      "image": "/assets/uploads/auto-premium-export-quality-refined-icu-340ff2c08eba.webp",
-      "image_url": "/assets/uploads/auto-premium-export-quality-refined-icu-340ff2c08eba.webp",
+      "image": "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp",
+      "image_url": "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp",
       "images": [
-        "/assets/uploads/auto-premium-export-quality-refined-icu-340ff2c08eba.webp"
+        "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T12:23:45.138Z"
+      "created_at": "2026-11-16T12:23:45.138Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825143",
@@ -5792,13 +5986,15 @@
       "marketInsight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "market_insight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
-      "image": "/assets/uploads/auto-organic-residue-free-premium-quali-9efd4246a9f4.webp",
-      "image_url": "/assets/uploads/auto-organic-residue-free-premium-quali-9efd4246a9f4.webp",
+      "image": "/assets/uploads/auto-organic-residue-free-premium-quali-70c988730573.webp",
+      "image_url": "/assets/uploads/auto-organic-residue-free-premium-quali-70c988730573.webp",
       "images": [
-        "/assets/uploads/auto-organic-residue-free-premium-quali-9efd4246a9f4.webp"
+        "/assets/uploads/auto-organic-residue-free-premium-quali-70c988730573.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:48:45.138Z"
+      "created_at": "2026-11-16T11:48:45.138Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825144",
@@ -5851,12 +6047,14 @@
       "market_insight": "Strong global import demand recorded for Sugar across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $780 – $1,650 per Metric Ton (FOB / CIF) under CIF/CFR LC & TT terms. Live trade signals (\"India weighs limited duty-free sugar imports to rein in record prices, sources say - Reuters\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp"
+        "/assets/uploads/auto-premium-export-sortex-cleaned-396ed887b4bd.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-16T11:48:45.138Z",
-      "image": "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp",
-      "image_url": "/assets/uploads/auto-premium-export-sortex-cleaned-ff43ec44e9ef.webp"
+      "image": "/assets/uploads/auto-premium-export-sortex-cleaned-396ed887b4bd.webp",
+      "image_url": "/assets/uploads/auto-premium-export-sortex-cleaned-396ed887b4bd.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1794831825145",
@@ -5914,7 +6112,9 @@
         "/assets/uploads/auto-organic-residue-free-sugar-retail--4351f1d807fd.webp"
       ],
       "persisted": true,
-      "created_at": "2026-11-16T11:13:45.138Z"
+      "created_at": "2026-11-16T11:13:45.138Z",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1795066285681",
@@ -5967,12 +6167,14 @@
       "market_insight": "Strong global import demand recorded for Industrial Solvents across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $540 – $980 per Metric Ton (CIF / FOB Tanker or ISO Tank) under CIF/CFR LC & TT terms. Live trade signals (\"Oxo Octyl Acetate Market in Germany: Size, Trends and Forecast to 2035 - IndexBox\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-industrial-export-solvents-verifie-b9ad68ab32e4.webp"
+        "/assets/uploads/auto-industrial-export-solvents-verifie-bd0a561365c9.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-19T05:31:25.681Z",
-      "image": "/assets/uploads/auto-industrial-export-solvents-verifie-b9ad68ab32e4.webp",
-      "image_url": "/assets/uploads/auto-industrial-export-solvents-verifie-b9ad68ab32e4.webp"
+      "image": "/assets/uploads/auto-industrial-export-solvents-verifie-bd0a561365c9.webp",
+      "image_url": "/assets/uploads/auto-industrial-export-solvents-verifie-bd0a561365c9.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1795066285682",
@@ -6025,12 +6227,14 @@
       "market_insight": "Strong global import demand recorded for Industrial Solvents across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $540 – $980 per Metric Ton (CIF / FOB Tanker or ISO Tank) under CIF/CFR LC & TT terms. Live trade signals (\"Oxo Octyl Acetate Market in Germany: Size, Trends and Forecast to 2035 - IndexBox\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-high-purity-technical-industrial-s-059c76b9376e.webp"
+        "/assets/uploads/auto-high-purity-technical-industrial-s-8dce16acd19d.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-19T04:56:25.681Z",
-      "image": "/assets/uploads/auto-high-purity-technical-industrial-s-059c76b9376e.webp",
-      "image_url": "/assets/uploads/auto-high-purity-technical-industrial-s-059c76b9376e.webp"
+      "image": "/assets/uploads/auto-high-purity-technical-industrial-s-8dce16acd19d.webp",
+      "image_url": "/assets/uploads/auto-high-purity-technical-industrial-s-8dce16acd19d.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1795066285683",
@@ -6083,12 +6287,14 @@
       "market_insight": "Strong global import demand recorded for Industrial Solvents across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $540 – $980 per Metric Ton (CIF / FOB Tanker or ISO Tank) under CIF/CFR LC & TT terms. Live trade signals (\"Oxo Octyl Acetate Market in Germany: Size, Trends and Forecast to 2035 - IndexBox\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-bulk-contract-industrial-solvents--5ec8bf0c6b99.webp"
+        "/assets/uploads/auto-bulk-contract-industrial-solvents--1454b30c8ebc.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-19T04:21:25.681Z",
-      "image": "/assets/uploads/auto-bulk-contract-industrial-solvents--5ec8bf0c6b99.webp",
-      "image_url": "/assets/uploads/auto-bulk-contract-industrial-solvents--5ec8bf0c6b99.webp"
+      "image": "/assets/uploads/auto-bulk-contract-industrial-solvents--1454b30c8ebc.webp",
+      "image_url": "/assets/uploads/auto-bulk-contract-industrial-solvents--1454b30c8ebc.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     },
     {
       "id": "rfq-mkt-1795066285684",
@@ -6141,12 +6347,14 @@
       "market_insight": "Strong global import demand recorded for Industrial Solvents across major maritime hubs including Jebel Ali (UAE), Rotterdam (Netherlands), Singapore, and Jeddah (KSA). Wholesale buyers are actively contracting metric tons shipments at $540 – $980 per Metric Ton (CIF / FOB Tanker or ISO Tank) under CIF/CFR LC & TT terms. Live trade signals (\"Oxo Octyl Acetate Market in Germany: Size, Trends and Forecast to 2035 - IndexBox\") indicate active restocking across Middle East, European, and Asian import terminals.",
       "marketDemandVerified": true,
       "images": [
-        "/assets/uploads/auto-refined-industrial-solvents-commer-a152ec4c66cf.webp"
+        "/assets/uploads/auto-refined-industrial-solvents-commer-1fd39181ff2b.webp"
       ],
       "persisted": true,
       "created_at": "2026-11-19T03:46:25.681Z",
-      "image": "/assets/uploads/auto-refined-industrial-solvents-commer-a152ec4c66cf.webp",
-      "image_url": "/assets/uploads/auto-refined-industrial-solvents-commer-a152ec4c66cf.webp"
+      "image": "/assets/uploads/auto-refined-industrial-solvents-commer-1fd39181ff2b.webp",
+      "image_url": "/assets/uploads/auto-refined-industrial-solvents-commer-1fd39181ff2b.webp",
+      "updatedAt": 1795418961693,
+      "imageUpdatedAt": 1795418961693
     }
   ],
   "insights": {
