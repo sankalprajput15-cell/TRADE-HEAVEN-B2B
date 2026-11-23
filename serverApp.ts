@@ -7735,11 +7735,14 @@ function saveRfqMarketStoreToDisk(): void {
     serverMarketInsightsStore.forEach((v, k) => {
       insightsObj[k] = v;
     });
-    fs.writeFileSync(
-      RFQ_MARKET_STORE_FILE,
-      JSON.stringify({ rfqs: autoOrSubmitted, insights: insightsObj }, null, 2),
-      'utf-8'
-    );
+    const serialized = JSON.stringify({ rfqs: autoOrSubmitted, insights: insightsObj }, null, 2);
+    atomicWriteTextFileSync(RFQ_MARKET_STORE_FILE, serialized);
+    const distRfqFile = path.join(process.cwd(), 'dist', 'assets', 'uploads', 'rfq-market-store.json');
+    if (fs.existsSync(path.join(process.cwd(), 'dist'))) {
+      try {
+        atomicWriteTextFileSync(distRfqFile, serialized);
+      } catch {}
+    }
   } catch (err) {
     console.warn('[ServerRfqsStore] Failed to save rfq-market-store.json:', err);
   }
@@ -7753,9 +7756,26 @@ function loadRfqMarketStoreFromDisk(): void {
     const parsed = JSON.parse(raw);
     let mutated = false;
     if (Array.isArray(parsed?.rfqs)) {
-      const existingIds = new Set(serverRfqsStore.map(r => String(r.id)));
+      const existingById = new Map<string, number>();
+      serverRfqsStore.forEach((r, idx) => {
+        if (r?.id !== undefined && r?.id !== null) existingById.set(String(r.id), idx);
+      });
       parsed.rfqs.forEach((item: any) => {
-        if (!item || !item.id || existingIds.has(String(item.id))) return;
+        if (!item || !item.id) return;
+        const itemId = String(item.id);
+        const existingIdx = existingById.get(itemId);
+        if (existingIdx !== undefined) {
+          // Apply persisted image/field updates onto seeded initial RFQs instead of discarding them
+          const persistedImg = item.image_url || item.image || (Array.isArray(item.images) && item.images[0]);
+          if (persistedImg) {
+            serverRfqsStore[existingIdx] = {
+              ...serverRfqsStore[existingIdx],
+              ...item,
+              persisted: true
+            };
+          }
+          return;
+        }
         const rawKw = String(item.searchKeyword || item.search_keyword || '');
         if (rawKw.includes('|')) {
           const ownLabel = sanitizeMarketKeyword(rawKw.split('|').pop() || '');
@@ -7779,7 +7799,7 @@ function loadRfqMarketStoreFromDisk(): void {
           mutated = true;
         }
         serverRfqsStore.push(item);
-        existingIds.add(String(item.id));
+        existingById.set(itemId, serverRfqsStore.length - 1);
       });
     }
     if (parsed?.insights && typeof parsed.insights === 'object') {
@@ -12177,16 +12197,18 @@ Message: ${formattedInquiry.message}`
 
   if (action === 'save_content' || action === 'save_homepage_config') {
     const cleanPayload = extractSiteContentPayload(input);
-    serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload };
+    serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload, siteContentUpdatedAt: Date.now() };
+    invalidateSiteContentResponseCache();
     syncSiteContentCategoriesToImageOverrides(serverSiteContent);
     saveServerSiteContentToDisk();
-    const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
+    const liveSync = await awaitLiveSyncBounded(replicateSiteContentToLiveServer(serverSiteContent), 900);
 
     return res.json({
       success: true,
       status: 'success',
       data: serverSiteContent,
       liveSynced: liveSync.synced,
+      liveSyncQueued: liveSync.liveSyncQueued,
       message: 'Site content updated and published successfully.'
     });
   }
@@ -13679,7 +13701,13 @@ function saveServerProductsToDisk() {
   try {
     const dir = path.dirname(CUSTOM_PRODUCTS_DB_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(CUSTOM_PRODUCTS_DB_FILE, JSON.stringify(serverProductsStore, null, 2), 'utf8');
+    const serialized = JSON.stringify(serverProductsStore, null, 2);
+    atomicWriteTextFileSync(CUSTOM_PRODUCTS_DB_FILE, serialized);
+    if (fs.existsSync(path.join(process.cwd(), 'dist'))) {
+      try {
+        atomicWriteTextFileSync(path.join(process.cwd(), 'dist', 'data', 'customProductsBackup.json'), serialized);
+      } catch {}
+    }
   } catch {}
 }
 
@@ -14238,7 +14266,14 @@ function updateFullCatalogSnapshotRecords(
     });
 
     if (changed) {
-      fs.writeFileSync(FULL_CATALOG_SNAPSHOT_PATH, JSON.stringify(nextSnap), 'utf8');
+      const serialized = JSON.stringify(nextSnap);
+      atomicWriteTextFileSync(FULL_CATALOG_SNAPSHOT_PATH, serialized);
+      if (fs.existsSync(path.join(process.cwd(), 'dist'))) {
+        try {
+          atomicWriteTextFileSync(path.join(process.cwd(), 'dist', 'data', 'fullCatalogSnapshot.json'), serialized);
+        } catch {}
+      }
+      cachedSnapshotImageEntries = null;
     }
   } catch (err) {
     console.warn('[ProductImageSystem] Snapshot sync warning:', err);
@@ -15254,6 +15289,22 @@ async function postJsonToLiveServerWithRetry(
   return { ok: false, status: 0, parsed: null, error: lastError };
 }
 
+async function awaitLiveSyncBounded<T extends { synced: boolean }>(
+  syncPromise: Promise<T>,
+  maxWaitMs = 900
+): Promise<T & { liveSyncQueued?: boolean }> {
+  const sentinel = Symbol('live_sync_bounded_timeout');
+  syncPromise.catch(() => {});
+  const result = await Promise.race([
+    syncPromise,
+    new Promise<typeof sentinel>(resolve => setTimeout(() => resolve(sentinel), maxWaitMs))
+  ]);
+  if (result === sentinel) {
+    return { synced: false, liveSyncQueued: true } as unknown as T & { liveSyncQueued: boolean };
+  }
+  return { ...result, liveSyncQueued: false };
+}
+
 async function ensureLocalImagePresentOnLiveServer(params: {
   localUrl: string;
   base64Data?: string;
@@ -15474,12 +15525,12 @@ async function replicateImageOverrideToLiveServer(params: {
       }
 
       if (uncachedLocalUrls.length > 0) {
-        const foregroundLimit = uncachedLocalUrls.length <= 24 ? uncachedLocalUrls.length : 12;
+        const foregroundLimit = uncachedLocalUrls.length <= 6 ? uncachedLocalUrls.length : 4;
         const foregroundUrls = uncachedLocalUrls.slice(0, foregroundLimit);
         const backgroundUrls = uncachedLocalUrls.slice(foregroundLimit);
-        const deadlineMs = Date.now() + 4500;
+        const deadlineMs = Date.now() + 1200;
         let idx = 0;
-        const workerCount = Math.min(6, foregroundUrls.length);
+        const workerCount = Math.min(4, foregroundUrls.length);
         await Promise.all(
           Array.from({ length: workerCount }, async () => {
             while (idx < foregroundUrls.length && Date.now() < deadlineMs) {
@@ -15670,9 +15721,11 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
     if (!remoteOverrides || typeof remoteOverrides !== 'object') return 0;
 
     const liveOrigin = getLiveTradeHeavenOrigin();
+    const globalRegistry = buildGlobalAttachedImageRegistry();
     let changed = false;
 
     for (const [pid, rawEntry] of Object.entries(remoteOverrides)) {
+      if (!/^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(pid)) continue;
       const remoteEntry = rawEntry as ProductImageOverrideEntry | undefined;
       if (!remoteEntry || !remoteEntry.primary || remoteEntry.updatedBy !== 'admin-manual') continue;
       const remoteMs = Math.max(
@@ -15681,32 +15734,36 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
       );
       if (remoteMs <= 0) continue;
 
-      // Current-server-wins protection: never let remote server sync overwrite an override
-      // edited on this server, locked/verified on disk, or pointing back to a replaced old URL.
+      // Current-server-wins protection: never let remote server sync overwrite an existing healthy local override,
+      // locked/verified entry, or URL already attached elsewhere.
       if (currentServerImageEdits.has(pid)) continue;
       const localEntry = serverProductImageState.overrides[pid];
       if (localEntry && (localEntry.locked === true || localEntry.serverVerified === true)) {
         continue;
       }
+      if (localEntry?.primary) {
+        const localBase = normalizeServerAssetUrl(localEntry.primary).split('?')[0];
+        if (!isGenericOrPlaceholderServerUrl(localBase) && (!localBase.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(localBase))) {
+          continue;
+        }
+      }
       if (localEntry && isUrlBlockedForOverride(localEntry, remoteEntry.primary)) {
         continue;
       }
-      if (localEntry && isAuditVerifiedOverrideEntry(localEntry)) {
-        const localMs = Math.max(
-          parseServerTimestampMs(localEntry.imageUpdatedAt),
-          parseServerTimestampMs(localEntry.updatedAt)
-        );
-        // Only adopt from remote if local was NOT already manually set with a valid timestamp,
-        // or if local lacks a manual entry and remote is strictly newer.
-        if (isManualOverrideEntry(localEntry) || localMs >= remoteMs) continue;
-      }
 
       const cleanRemotePrimary = normalizeServerAssetUrl(remoteEntry.primary).split('?')[0];
-      let localPrimary = cleanRemotePrimary;
+      if (!cleanRemotePrimary || isGenericOrPlaceholderServerUrl(cleanRemotePrimary)) continue;
+      if (globalRegistry.isCandidateUsed(cleanRemotePrimary)) continue;
 
+      const mismatchChk = detectCatalogImageIssue(
+        { id: pid, type: 'OVERRIDE', title: pid, category: 'General', imageUrl: cleanRemotePrimary },
+        new Map()
+      );
+      if (mismatchChk.flagged && mismatchChk.issueType !== 'BROKEN_ASSET') continue;
+
+      let localPrimary = cleanRemotePrimary;
       if (cleanRemotePrimary.startsWith('/assets/uploads/')) {
-        const diskPath = resolveLocalUploadDiskPath(cleanRemotePrimary);
-        if (!diskPath) {
+        if (!isLocalUploadPresentOnDisk(cleanRemotePrimary)) {
           // Download binary from live server so local disk always has the exact image
           try {
             const imgRes = await fetch(`${liveOrigin}${cleanRemotePrimary}`, {
@@ -15733,14 +15790,19 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
         }
       }
 
+      const nowIso = new Date(now).toISOString();
       serverProductImageState.overrides[pid] = {
         ...remoteEntry,
         primary: localPrimary,
         gallery: [localPrimary],
         imageUpdatedAt: remoteMs,
         updatedAt: remoteEntry.updatedAt || new Date(remoteMs).toISOString(),
-        updatedBy: 'admin-manual'
+        updatedBy: 'admin-manual',
+        locked: true,
+        serverVerified: true,
+        verifiedAt: nowIso
       };
+      globalRegistry.claim({ localUrl: localPrimary });
       recordServerProductActivityTimestamp(pid, remoteMs);
       changed = true;
       pulledCount++;
@@ -17292,7 +17354,7 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
       serverRfqsStore = serverRfqsStore.map(r => {
         const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
         return String(r.id) === cleanId || rid === cleanId
-          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery }
+          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: resolvedGallery, persisted: true, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : r;
       });
     }
@@ -17356,7 +17418,7 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
       serverRfqsStore = serverRfqsStore.map(r => {
         const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
         return idSet.has(String(r.id)) || idSet.has(rid)
-          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: [cleanPrim, ...(r.images || []).filter((u: string) => u !== cleanPrim)] }
+          ? { ...r, image: cleanPrim, image_url: cleanPrim, images: [cleanPrim, ...(r.images || []).filter((u: string) => u !== cleanPrim)], persisted: true, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : r;
       });
     }
@@ -17368,21 +17430,24 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
-    // Real-time cross-server replication: ensure image binary exists + override saved on https://tradeheaven.net
-    const liveSyncResult = await replicateImageOverrideToLiveServer({
-      productId: productId ? String(productId).trim() : undefined,
-      productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
-      primaryUrl: primaryUrl ? String(primaryUrl).trim() : undefined,
-      galleryUrls: Array.isArray(galleryUrls) ? galleryUrls : undefined,
-      format: format ? String(format) : undefined,
-      category: category ? String(category).trim() : undefined,
-      applyToAll: Boolean(applyToAll),
-      oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
-      fullOverridesMap:
-        !productId && !(Array.isArray(productIds) && productIds.length > 0) && fullOverridesMap && typeof fullOverridesMap === 'object'
-          ? fullOverridesMap
-          : undefined
-    });
+    // Bounded non-blocking cross-server replication (fast response guaranteed)
+    const liveSyncResult = await awaitLiveSyncBounded(
+      replicateImageOverrideToLiveServer({
+        productId: productId ? String(productId).trim() : undefined,
+        productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
+        primaryUrl: primaryUrl ? String(primaryUrl).trim() : undefined,
+        galleryUrls: Array.isArray(galleryUrls) ? galleryUrls : undefined,
+        format: format ? String(format) : undefined,
+        category: category ? String(category).trim() : undefined,
+        applyToAll: Boolean(applyToAll),
+        oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
+        fullOverridesMap:
+          !productId && !(Array.isArray(productIds) && productIds.length > 0) && fullOverridesMap && typeof fullOverridesMap === 'object'
+            ? fullOverridesMap
+            : undefined
+      }),
+      900
+    );
 
     const singleDiskVerified =
       productId && primaryUrl
@@ -17397,6 +17462,7 @@ async function handleSetProductImagesRequest(req: express.Request, res: express.
       verifiedAt: nowIso,
       data: serverProductImageState,
       liveSynced: liveSyncResult.synced,
+      liveSyncQueued: liveSyncResult.liveSyncQueued,
       liveUrl: liveSyncResult.remoteUrl,
       imageUpdatedAt: nowMs,
       deletedOldUrls: Array.from(new Set(deletedOldUrls)),
@@ -17443,16 +17509,20 @@ async function handleDeleteProductImagesRequest(req: express.Request, res: expre
   }
 
   saveServerProductImageState();
-  const liveSyncResult = await replicateImageDeletionToLiveServer({
-    productId: productId ? String(productId) : undefined,
-    productIds: Array.isArray(productIds) ? productIds.map(String) : undefined,
-    category: category ? String(category) : undefined,
-    clearGlobal: Boolean(clearGlobal),
-    resetAll: Boolean(resetAll)
-  });
+  const liveSyncResult = await awaitLiveSyncBounded(
+    replicateImageDeletionToLiveServer({
+      productId: productId ? String(productId) : undefined,
+      productIds: Array.isArray(productIds) ? productIds.map(String) : undefined,
+      category: category ? String(category) : undefined,
+      clearGlobal: Boolean(clearGlobal),
+      resetAll: Boolean(resetAll)
+    }),
+    900
+  );
   return res.json({
     success: true,
     liveSynced: liveSyncResult.synced,
+    liveSyncQueued: liveSyncResult.liveSyncQueued,
     data: serverProductImageState,
     message: 'Product image association(s) deleted successfully.'
   });
@@ -17496,7 +17566,14 @@ function loadServerSiteContentFromDisk(): any {
 function saveServerSiteContentToDisk() {
   try {
     if (!serverSiteContent || typeof serverSiteContent !== 'object') return;
-    atomicWriteTextFileSync(SITE_CONTENT_BACKUP_FILE, JSON.stringify(serverSiteContent, null, 2));
+    const serialized = JSON.stringify(serverSiteContent, null, 2);
+    atomicWriteTextFileSync(SITE_CONTENT_BACKUP_FILE, serialized);
+    if (fs.existsSync(path.join(process.cwd(), 'dist'))) {
+      try {
+        atomicWriteTextFileSync(path.join(process.cwd(), 'dist', 'data', 'siteContentBackup.json'), serialized);
+      } catch {}
+    }
+    invalidateSiteContentResponseCache();
   } catch (err) {
     console.warn('[SiteContent] Failed to save site content to disk:', err);
   }
@@ -17511,20 +17588,26 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
     for (const cat of cats) {
       if (!cat || !cat.id || !cat.image) continue;
       const cid = String(cat.id).trim();
-      const cleanImg = normalizeServerAssetUrl(String(cat.image).trim());
-      if (!cleanImg) continue;
+      const cleanImg = normalizeServerAssetUrl(String(cat.image).trim()).split('?')[0];
+      if (!cleanImg || isGenericOrPlaceholderServerUrl(cleanImg)) continue;
+      if (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) continue;
       const existing = serverProductImageState.overrides[cid];
-      if (!existing || normalizeServerAssetUrl(existing.primary) !== cleanImg || !isManualOverrideEntry(existing)) {
+      if (!existing || normalizeServerAssetUrl(existing.primary).split('?')[0] !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
         serverProductImageState.overrides[cid] = {
+          ...(existing || {}),
           primary: cleanImg,
           gallery: [cleanImg],
-          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG',
+          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP',
           updatedAt: nowIso,
           imageUpdatedAt: nowMs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso
         };
         recordCurrentServerImageEdit(cid, nowMs);
         recordServerProductActivityTimestamp(cid, nowMs);
+        clearConflictingTitleOverridesForProductId(cid, cleanImg);
         updated = true;
       }
     }
@@ -17533,17 +17616,22 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
     for (const slide of slides) {
       if (!slide || !slide.id || !slide.image) continue;
       const sid = String(slide.id).trim();
-      const cleanImg = normalizeServerAssetUrl(String(slide.image).trim());
-      if (!cleanImg) continue;
+      const cleanImg = normalizeServerAssetUrl(String(slide.image).trim()).split('?')[0];
+      if (!cleanImg || isGenericOrPlaceholderServerUrl(cleanImg)) continue;
+      if (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) continue;
       const existing = serverProductImageState.overrides[sid];
-      if (!existing || normalizeServerAssetUrl(existing.primary) !== cleanImg || !isManualOverrideEntry(existing)) {
+      if (!existing || normalizeServerAssetUrl(existing.primary).split('?')[0] !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
         serverProductImageState.overrides[sid] = {
+          ...(existing || {}),
           primary: cleanImg,
           gallery: [cleanImg],
-          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG',
+          format: cleanImg.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP',
           updatedAt: nowIso,
           imageUpdatedAt: nowMs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso
         };
         recordCurrentServerImageEdit(sid, nowMs);
         recordServerProductActivityTimestamp(sid, nowMs);
@@ -17698,10 +17786,11 @@ app.put('/api/site-content', async (req, res) => {
   invalidateSiteContentResponseCache();
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
   saveServerSiteContentToDisk();
-  const liveSync = await replicateSiteContentToLiveServer(serverSiteContent);
+  const liveSync = await awaitLiveSyncBounded(replicateSiteContentToLiveServer(serverSiteContent), 900);
   res.json({
     success: true,
     liveSynced: liveSync.synced,
+    liveSyncQueued: liveSync.liveSyncQueued,
     data: serverSiteContent,
     message: 'Site content updated and published successfully.'
   });
@@ -21250,34 +21339,32 @@ Strict requirements:
           attachedImg = diskMatch.exactUnusedUrl;
         }
       }
-      if (!attachedImg) {
+      if (!attachedImg || batchUsedUrls.has(attachedImg.split('?')[0])) {
         const cachedEntry =
           serverProductImageCacheMap.get(normalizedKeyword) ||
           serverProductImageCacheMap.get(rawKeyword.toLowerCase()) ||
           serverProductImageCacheMap.get(cleanProductSearchSubject(resolvedTitle).toLowerCase());
         if (cachedEntry && Array.isArray(cachedEntry.images) && cachedEntry.images.length > 0) {
-          const unusedFromPool = cachedEntry.images.find(
-            img => img?.url && !batchUsedUrls.has(String(img.url).split('?')[0])
-          );
-          attachedImg = unusedFromPool?.url || cachedEntry.images[idx % cachedEntry.images.length]?.url || '';
-        } else if (serverProductImageState.overrides[normalizedKeyword]?.primary) {
-          attachedImg = serverProductImageState.overrides[normalizedKeyword].primary;
-        } else if (serverProductImageState.overrides[rawKeyword.toLowerCase()]?.primary) {
-          attachedImg = serverProductImageState.overrides[rawKeyword.toLowerCase()].primary;
-        } else if (serverProductImageState.overrides[resolvedTitle]?.primary) {
-          attachedImg = serverProductImageState.overrides[resolvedTitle].primary;
+          const unusedFromPool = cachedEntry.images.find(img => {
+            const u = String(img?.url || '').split('?')[0];
+            return Boolean(u) && !batchUsedUrls.has(u) && (!u.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(u));
+          });
+          if (unusedFromPool?.url) {
+            attachedImg = unusedFromPool.url.split('?')[0];
+          }
         }
       }
-      if (attachedImg) {
-        batchUsedUrls.add(attachedImg.split('?')[0]);
+      if (!attachedImg || batchUsedUrls.has(attachedImg.split('?')[0]) || (attachedImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(attachedImg))) {
+        attachedImg = '';
       }
-
       if (attachedImg) {
+        const cleanU = attachedImg.split('?')[0];
+        batchUsedUrls.add(cleanU);
         bindAutoSavedImageOverride({
-          localUrl: attachedImg,
+          localUrl: cleanU,
           productId: `rfq-mkt-${uid}`,
           productName: resolvedTitle,
-          gallery: [attachedImg],
+          gallery: [cleanU],
           flushNow: false
         });
       }
@@ -23144,10 +23231,25 @@ function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
   if (!clean.startsWith('/assets/uploads/')) return false;
   try {
     const baseName = path.basename(clean);
-    const fileOnDisk = path.join(UPLOADS_DIR, baseName);
-    if (!fs.existsSync(fileOnDisk)) return false;
-    const size = fs.statSync(fileOnDisk).size;
-    return baseName.startsWith('auto-') ? size > 1500 : size > 0;
+    if (!baseName || baseName.includes('..')) return false;
+    const publicPath = path.join(UPLOADS_DIR, baseName);
+    const minBytes = baseName.startsWith('auto-') ? 1500 : 100;
+    if (fs.existsSync(publicPath)) {
+      const size = fs.statSync(publicPath).size;
+      if (size > minBytes) return true;
+    }
+    const distPath = path.join(process.cwd(), 'dist', 'assets', 'uploads', baseName);
+    if (fs.existsSync(distPath)) {
+      const size = fs.statSync(distPath).size;
+      if (size > minBytes) {
+        try {
+          ensureUploadsDir();
+          fs.copyFileSync(distPath, publicPath);
+        } catch {}
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -23300,7 +23402,7 @@ function bindAutoSavedImageOverride(params: {
         const curRfqImg = String(r.image_url || r.imageUrl || r.images?.[0] || '').trim();
         if (params.isManual || params.forceOverwrite || !curRfqImg || isGenericOrPlaceholderServerUrl(curRfqImg) || /^https?:\/\//i.test(curRfqImg)) {
           rfqUpdated = true;
-          return { ...r, image: cleanLocal, image_url: cleanLocal, images: resolvedGallery };
+          return { ...r, image: cleanLocal, image_url: cleanLocal, images: resolvedGallery, persisted: true, updatedAt: nowMs, imageUpdatedAt: nowMs };
         }
         return r;
       });
@@ -23865,6 +23967,7 @@ function syncCategoryHeaderUrlIntoSiteContent(catId: string, catName: string, lo
   if (updated) {
     serverSiteContent = { ...serverSiteContent, homepage: { ...hp }, siteContentUpdatedAt: Date.now() };
     saveServerSiteContentToDisk();
+    invalidateSiteContentResponseCache();
   }
 }
 
@@ -24316,11 +24419,14 @@ function detectCatalogImageIssue(
     };
   }
 
-  // Check trade-heaven-<slug>-<hash>.webp / auto-<slug>-<hash>.webp / verified-<slug>.webp relevance
+  // Check trade-heaven-<slug>-<hash>.webp / auto-<slug>-<hash>.webp / verified-<slug>.webp / verified-belt-NN.webp relevance
   const baseFile = path.basename(cleanUrl);
-  const autoMatch = baseFile.match(/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i);
+  const autoMatch =
+    baseFile.match(/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i) ||
+    baseFile.match(/^(?:verified-belt)-\d+\.(?:webp|jpe?g|png)$/i);
   if (autoMatch && targetTokens.length >= 1) {
-    const slugTokens = extractMeaningfulAuditTokens(autoMatch[1].replace(/-/g, ' '));
+    const rawSlug = autoMatch[1] || 'leather-belt';
+    const slugTokens = extractMeaningfulAuditTokens(rawSlug.replace(/-/g, ' '));
     if (slugTokens.length >= 1) {
       const hasTokenOverlap = slugTokens.some(st =>
         targetTokens.some(tt => tt === st || (tt.length >= 4 && st.length >= 4 && (tt.includes(st) || st.includes(tt))))
@@ -24329,7 +24435,7 @@ function detectCatalogImageIssue(
         return {
           flagged: true,
           issueType: 'MISMATCHED',
-          reason: `Visual subject mismatch: asset "${autoMatch[1]}" does not match "${record.title}"`
+          reason: `Visual subject mismatch: asset "${rawSlug}" does not match "${record.title}"`
         };
       }
     }
@@ -24537,6 +24643,10 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
 
       if (outBuf && outBuf.length > 2000) {
         fs.writeFileSync(filePath, outBuf);
+        const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
+        if (fs.existsSync(distUpDir)) {
+          try { fs.writeFileSync(path.join(distUpDir, fileName), outBuf); } catch {}
+        }
         return localUrl;
       }
     }
@@ -24568,6 +24678,10 @@ async function generateUniqueLocalVerifiedProductWebp(params: {
 
   const fallbackBuf = await sharp(fullSvg).webp({ quality: 82, effort: 1 }).toBuffer();
   fs.writeFileSync(filePath, fallbackBuf);
+  const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
+  if (fs.existsSync(distUpDir)) {
+    try { fs.writeFileSync(path.join(distUpDir, fileName), fallbackBuf); } catch {}
+  }
   return localUrl;
 }
 
@@ -24954,16 +25068,41 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
 
   const isVerifiedCleanOverride = (
     ov: ProductImageOverrideEntry | undefined | null,
-    currentImg: string
+    currentImg: string,
+    record: { id: string; type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE'; title: string; category: string }
   ): boolean => {
     if (!ov || !currentImg) return false;
     if (isGenericOrPlaceholderServerUrl(currentImg)) return false;
+    if (seenUrls.has(currentImg)) return false;
     if (currentImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(currentImg)) {
       return false;
     }
-    if (isManualOverrideEntry(ov)) return true;
-    if (isAuditVerifiedOverrideEntry(ov)) {
-      return !seenUrls.has(currentImg);
+    if (isManualOverrideEntry(ov) || isAuditVerifiedOverrideEntry(ov)) {
+      // Custom uploaded/manual photos bypass auto-slug guessing unless they carry an explicit auto-generated wrong-product slug or known cross-category asset
+      const baseFn = path.basename(currentImg).toLowerCase();
+      const isAutoOrBeltSlug =
+        baseFn.startsWith('auto-') ||
+        baseFn.startsWith('verified-belt-') ||
+        baseFn.includes('agricultural_rice_husk_powder') ||
+        baseFn.includes('leather_belt') ||
+        baseFn.includes('saree') ||
+        baseFn.includes('shree') ||
+        baseFn.includes('image002_50ab7837') ||
+        baseFn.includes('image003_6c1f0619') ||
+        baseFn.includes('image004_fa37a57a') ||
+        baseFn.includes('image005_20fe3db0') ||
+        baseFn.includes('stainless-steel-heavy-coils') ||
+        baseFn.includes('mineral-coal') ||
+        baseFn.includes('lithium-battery') ||
+        baseFn.includes('en590-diesel') ||
+        baseFn.includes('gold-bullion') ||
+        baseFn.includes('sidath-vimukthi') ||
+        baseFn.includes('whatsapp_image_');
+      if (isAutoOrBeltSlug) {
+        const issueCheck = detectCatalogImageIssue({ ...record, imageUrl: currentImg }, seenUrls);
+        if (issueCheck.flagged) return false;
+      }
+      return true;
     }
     return false;
   };
@@ -24983,7 +25122,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(listing.title || 'Wholesale Listing');
     const category = String(listing.category || 'General');
 
-    if (isVerifiedCleanOverride(ov, currentImg)) {
+    if (isVerifiedCleanOverride(ov, currentImg, { id: lid, type: 'PRODUCT', title, category })) {
       seenUrls.set(currentImg, { id: lid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
       const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
@@ -25093,7 +25232,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(prod.title || 'Catalog Product');
     const category = String(prod.category || 'General');
 
-    if (isVerifiedCleanOverride(ov, currentImg)) {
+    if (isVerifiedCleanOverride(ov, currentImg, { id: pid, type: 'PRODUCT', title, category })) {
       seenUrls.set(currentImg, { id: pid, title, type: 'PRODUCT' });
       usedUrlsSet.add(currentImg);
       const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
@@ -25204,7 +25343,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(rfq.productName || rfq.product_name || rfq.title || rfq.subject || 'Sourcing Requirement');
     const category = String(rfq.category || 'Global Sourcing');
 
-    if (isVerifiedCleanOverride(ov, currentImg)) {
+    if (isVerifiedCleanOverride(ov, currentImg, { id: rid, type: 'RFQ', title, category })) {
       seenUrls.set(currentImg, { id: rid, title, type: 'RFQ' });
       usedUrlsSet.add(currentImg);
       const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
@@ -25287,6 +25426,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     rfq.image = resolved.newImageUrl;
     rfq.image_url = resolved.newImageUrl;
     rfq.images = [resolved.newImageUrl];
+    rfq.persisted = true;
+    rfq.updatedAt = Date.now();
+    rfq.imageUpdatedAt = Date.now();
     recordNewlyFixedOverride({
       id: rid,
       recordType: 'RFQ',
@@ -25300,9 +25442,21 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     });
   }
 
-  // 4. Scan full catalog items passed by Frontend OR loaded from fullCatalogSnapshot.json
+  // 4. Scan Homepage categories + full catalog items passed by Frontend + fullCatalogSnapshot.json
+  const siteContentCategoryItems = Array.isArray(serverSiteContent?.homepage?.categoriesList)
+    ? serverSiteContent.homepage.categoriesList
+        .filter((c: any) => c && c.id)
+        .map((c: any) => ({
+          id: String(c.id).trim(),
+          type: 'CATEGORY' as const,
+          title: String(c.name || c.title || c.id).trim(),
+          category: String(c.name || 'Procurement Sector').trim(),
+          image_url: String(c.image || '').trim()
+        }))
+    : [];
   const combinedCatalogExtras = [
     ...(Array.isArray(options?.extraCatalogItems) ? options!.extraCatalogItems! : []),
+    ...siteContentCategoryItems,
     ...snapshotItems
   ];
   for (const item of combinedCatalogExtras) {
@@ -25312,7 +25466,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     scannedIds.add(cid);
     totalScanned++;
     const rType: 'PRODUCT' | 'RFQ' | 'CATEGORY' =
-      item.type === 'RFQ' ? 'RFQ' : item.type === 'CATEGORY' ? 'CATEGORY' : 'PRODUCT';
+      item.type === 'RFQ' ? 'RFQ' : item.type === 'CATEGORY' || cid.startsWith('cat-') ? 'CATEGORY' : 'PRODUCT';
     if (rType === 'RFQ') rfqsScanned++;
     else if (rType === 'CATEGORY') categoriesScanned++;
     else productsScanned++;
@@ -25322,7 +25476,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const title = String(item.title || cid);
     const category = String(item.category || 'General');
 
-    if (isVerifiedCleanOverride(ov, currentImg)) {
+    if (isVerifiedCleanOverride(ov, currentImg, { id: cid, type: rType, title, category })) {
       seenUrls.set(currentImg, { id: cid, title, type: rType });
       usedUrlsSet.add(currentImg);
       const wasExplicitlyFixed = isAuditVerifiedOverrideEntry(ov);
@@ -25417,7 +25571,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     });
   }
 
-  // 5. Audit remaining overrides in serverProductImageState.overrides (clean broken or duplicate overrides)
+  // 5. Audit remaining overrides in serverProductImageState.overrides (clean broken or duplicate overrides & title keys)
   const overrideKeys = Object.keys(serverProductImageState?.overrides || {});
   for (const key of overrideKeys) {
     if (scannedIds.has(key)) continue;
@@ -25428,19 +25582,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     const isIdLikeKey = /^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(key);
     const currentImg = normalizeAuditImageUrl(entry.primary);
 
-    if (isVerifiedCleanOverride(entry, currentImg)) {
-      scannedIds.add(key);
-      totalScanned++;
-      if (key.startsWith('rfq-')) rfqsScanned++;
-      else if (key.startsWith('cat-')) categoriesScanned++;
-      else productsScanned++;
-      seenUrls.set(currentImg, { id: key, title: key, type: 'OVERRIDE' });
-      usedUrlsSet.add(currentImg);
-      continue;
-    }
-
     if (!isIdLikeKey) {
-      // If a title-based override is broken, placeholder, or already claimed by an ID record, remove it so it cannot cause duplicates
+      // Title-based keys that are broken, placeholder, or duplicate an ID-keyed image must be pruned so they never re-create duplicates
       if (
         !currentImg ||
         isGenericOrPlaceholderServerUrl(currentImg) ||
@@ -25450,7 +25593,27 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
         if (!dryRun) {
           delete serverProductImageState.overrides[key];
         }
+      } else if (isVerifiedCleanOverride(entry, currentImg, { id: key, type: 'OVERRIDE', title: key, category: 'General' })) {
+        scannedIds.add(key);
+        totalScanned++;
+        productsScanned++;
+        seenUrls.set(currentImg, { id: key, title: key, type: 'OVERRIDE' });
+        usedUrlsSet.add(currentImg);
       }
+      continue;
+    }
+
+    const rType: 'PRODUCT' | 'RFQ' | 'CATEGORY' =
+      key.startsWith('rfq-') ? 'RFQ' : key.startsWith('cat-') ? 'CATEGORY' : 'PRODUCT';
+
+    if (isVerifiedCleanOverride(entry, currentImg, { id: key, type: rType, title: key, category: 'General' })) {
+      scannedIds.add(key);
+      totalScanned++;
+      if (rType === 'RFQ') rfqsScanned++;
+      else if (rType === 'CATEGORY') categoriesScanned++;
+      else productsScanned++;
+      seenUrls.set(currentImg, { id: key, title: key, type: 'OVERRIDE' });
+      usedUrlsSet.add(currentImg);
       continue;
     }
 
@@ -25478,8 +25641,8 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
 
     scannedIds.add(key);
     totalScanned++;
-    if (key.startsWith('rfq-')) rfqsScanned++;
-    else if (key.startsWith('cat-')) categoriesScanned++;
+    if (rType === 'RFQ') rfqsScanned++;
+    else if (rType === 'CATEGORY') categoriesScanned++;
     else productsScanned++;
     seenUrls.set(ovCheckUrl, { id: key, title: key, type: 'OVERRIDE' });
     usedUrlsSet.add(ovCheckUrl);
@@ -25495,6 +25658,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     if (recordsFixed > 0) {
       saveServerProductsToDisk();
       saveRfqMarketStoreToDisk();
+      saveServerSiteContentToDisk();
     }
     scheduleSaveOverridesState(true);
     const fixedEntries = Object.entries(newlyFixedOverridesMap);
@@ -25505,9 +25669,12 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     serverSavedVerified = fixedEntries.length === 0 || diskVerifiedCount === fixedEntries.length;
     if (fixedEntries.length > 0) {
       try {
-        const repRes = await replicateImageOverrideToLiveServer({
-          fullOverridesMap: newlyFixedOverridesMap
-        });
+        const repRes = await awaitLiveSyncBounded(
+          replicateImageOverrideToLiveServer({
+            fullOverridesMap: newlyFixedOverridesMap
+          }),
+          900
+        );
         liveSynced = repRes.synced;
       } catch {
         liveSynced = false;
@@ -25694,6 +25861,10 @@ async function fixSingleCatalogImageRecord(params: {
           outBuf = parsed.buffer;
         }
         fs.writeFileSync(outFilePath, outBuf);
+        const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
+        if (fs.existsSync(distUpDir)) {
+          try { fs.writeFileSync(path.join(distUpDir, outFileName), outBuf); } catch {}
+        }
         void prewarmSingleImageFile(outFilePath);
         resolvedCustom = `/assets/uploads/${outFileName}`;
         resolvedContentHash = crypto.createHash('sha256').update(outBuf).digest('hex');
@@ -25852,6 +26023,7 @@ async function fixSingleCatalogImageRecord(params: {
       matchedRfq.image = finalImageUrl;
       matchedRfq.image_url = finalImageUrl;
       matchedRfq.images = [finalImageUrl];
+      matchedRfq.persisted = true;
       if (!params.revert) {
         matchedRfq.updatedAt = activityMs;
         matchedRfq.imageUpdatedAt = activityMs;
@@ -25878,12 +26050,15 @@ async function fixSingleCatalogImageRecord(params: {
 
     let liveSynced = false;
     if (finalImageUrl) {
-      const syncRes = await replicateImageOverrideToLiveServer({
-        productId: cleanId,
-        primaryUrl: finalImageUrl,
-        galleryUrls: [finalImageUrl],
-        format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
-      });
+      const syncRes = await awaitLiveSyncBounded(
+        replicateImageOverrideToLiveServer({
+          productId: cleanId,
+          primaryUrl: finalImageUrl,
+          galleryUrls: [finalImageUrl],
+          format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
+        }),
+        900
+      );
       liveSynced = syncRes.synced;
     }
 
@@ -25988,7 +26163,8 @@ app.post('/api/v1/admin/fix-single-catalog-image', async (req, res) => {
 });
 
 // Dedicated Server Save Vault & Permanent Lock endpoint:
-// Verifies every saved override physically on disk, permanently locks them, blocks all replaced old URLs, and pushes to live server.
+// Self-heals any missing/duplicate overrides, verifies every saved override physically on disk,
+// permanently locks them, blocks all replaced old URLs, and queues non-blocking sync to live server.
 app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   try {
@@ -26004,34 +26180,98 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
     let lockedCount = 0;
     let verifiedCount = 0;
     let missingOnDiskCount = 0;
+    let healedCount = 0;
     let blockedOldUrlsCount = 0;
+    const seenLockUrls = new Set<string>();
+    const preindexedFiles = buildPreindexedLocalUploadFiles();
     const snapshotBatch: Array<{ id: string; imageUrl: string; gallery: string[] }> = [];
     const livePushMap: Record<string, any> = {};
+    let siteContentUpdated = false;
 
     for (const id of candidateIds) {
       const entry = allOverrides[id];
       if (!entry || !entry.primary) continue;
+      const isIdLikeKey = /^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(id);
+      let cleanBase = stripUrlQueryBase(entry.primary);
+
+      if (!isIdLikeKey) {
+        if (!cleanBase || isGenericOrPlaceholderServerUrl(cleanBase) || (cleanBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanBase)) || seenLockUrls.has(cleanBase)) {
+          delete allOverrides[id];
+        } else {
+          seenLockUrls.add(cleanBase);
+        }
+        continue;
+      }
+
       if (requestedIds.length === 0 && !isAuditVerifiedOverrideEntry(entry)) continue;
-      const cleanBase = stripUrlQueryBase(entry.primary);
-      if (!cleanBase || isGenericOrPlaceholderServerUrl(cleanBase)) continue;
-      if (cleanBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanBase)) {
+
+      const matchedListing = serverListingsStore.find((l: any) => l && (`prod-db-${l.id}` === id || String(l.id) === id));
+      const matchedProduct = serverProductsStore.find((p: any) => p && String(p.id) === id);
+      const matchedRfq = serverRfqsStore.find((r: any) => r && (r.id === id || `rfq-${r.id}` === id));
+      const matchedCat = Array.isArray(serverSiteContent?.homepage?.categoriesList)
+        ? serverSiteContent.homepage.categoriesList.find((c: any) => c && String(c.id || '').trim() === id)
+        : undefined;
+      const recType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
+        matchedCat || id.startsWith('cat-')
+          ? 'CATEGORY'
+          : matchedRfq || id.startsWith('rfq-')
+            ? 'RFQ'
+            : matchedListing || matchedProduct
+              ? 'PRODUCT'
+              : 'OVERRIDE';
+      const recTitle = String(
+        matchedCat?.name || matchedProduct?.title || matchedListing?.title || matchedRfq?.productName || matchedRfq?.title || id
+      );
+      const recCat = String(matchedCat?.name || matchedProduct?.category || matchedListing?.category || matchedRfq?.category || 'General');
+
+      const needsRepair =
+        !cleanBase ||
+        isGenericOrPlaceholderServerUrl(cleanBase) ||
+        (cleanBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanBase)) ||
+        seenLockUrls.has(cleanBase);
+
+      let prevToBlock: string | undefined = stripUrlQueryBase(entry.previousPrimary) !== cleanBase ? entry.previousPrimary : undefined;
+
+      if (needsRepair) {
+        try {
+          const repaired = await resolveUniqueVerifiedCatalogImage({
+            recordId: id,
+            recordType: recType,
+            title: recTitle,
+            category: recCat,
+            usedUrls: seenLockUrls,
+            allowLiveGeminiNetwork: false,
+            preindexedFiles
+          });
+          if (repaired.newImageUrl) {
+            prevToBlock = cleanBase || prevToBlock;
+            cleanBase = stripUrlQueryBase(repaired.newImageUrl);
+            healedCount++;
+          }
+        } catch {}
+      }
+
+      if (!cleanBase || isGenericOrPlaceholderServerUrl(cleanBase) || (cleanBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanBase))) {
         missingOnDiskCount++;
         continue;
       }
 
+      seenLockUrls.add(cleanBase);
+
       const replacedOldUrls = mergeReplacedOldUrls(
         entry.replacedOldUrls,
-        stripUrlQueryBase(entry.previousPrimary) !== cleanBase ? entry.previousPrimary : undefined
+        prevToBlock
       ).filter(u => u !== cleanBase);
       blockedOldUrlsCount += replacedOldUrls.length;
 
       const updatedEntry: ProductImageOverrideEntry = {
         ...entry,
         primary: cleanBase,
+        ...(prevToBlock ? { previousPrimary: prevToBlock } : {}),
         gallery: [cleanBase],
         updatedAt: entry.updatedAt || nowIso,
         imageUpdatedAt: Math.max(parseServerTimestampMs(entry.imageUpdatedAt), parseServerTimestampMs(entry.updatedAt), nowMs),
-        updatedBy: isManualOverrideEntry(entry) ? entry.updatedBy : 'catalog-image-auditor',
+        updatedBy: needsRepair ? 'catalog-image-auditor' : (isManualOverrideEntry(entry) ? entry.updatedBy : 'catalog-image-auditor'),
         locked: true,
         serverVerified: true,
         verifiedAt: nowIso,
@@ -26040,6 +26280,31 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
       allOverrides[id] = updatedEntry;
       recordCurrentServerImageEdit(id, nowMs);
       clearConflictingTitleOverridesForProductId(id, cleanBase);
+      if (recType === 'CATEGORY' || id.startsWith('cat-')) {
+        syncCategoryHeaderUrlIntoSiteContent(id, recTitle, cleanBase);
+        siteContentUpdated = true;
+      }
+      if (matchedListing) {
+        matchedListing.image_url = cleanBase;
+        matchedListing.images = [cleanBase];
+        matchedListing.updatedAt = nowMs;
+        matchedListing.imageUpdatedAt = nowMs;
+      }
+      if (matchedProduct) {
+        matchedProduct.image = cleanBase;
+        matchedProduct.image_url = cleanBase;
+        matchedProduct.images = [cleanBase];
+        matchedProduct.updatedAt = nowMs;
+        matchedProduct.imageUpdatedAt = nowMs;
+      }
+      if (matchedRfq) {
+        matchedRfq.image = cleanBase;
+        matchedRfq.image_url = cleanBase;
+        matchedRfq.images = [cleanBase];
+        matchedRfq.persisted = true;
+        matchedRfq.updatedAt = nowMs;
+        matchedRfq.imageUpdatedAt = nowMs;
+      }
       snapshotBatch.push({ id, imageUrl: cleanBase, gallery: [cleanBase] });
       livePushMap[id] = updatedEntry;
       lockedCount++;
@@ -26051,6 +26316,9 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
     const savedOk = saveServerProductImageState();
     saveServerProductsToDisk();
     saveRfqMarketStoreToDisk();
+    if (siteContentUpdated) {
+      saveServerSiteContentToDisk();
+    }
 
     // Synchronous disk read-back audit across both JSON stores
     let diskReadBackOverrides: Record<string, any> = {};
@@ -26074,7 +26342,10 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
     let liveSyncError: string | undefined;
     if (LIVE_UPSTREAM_PROXY_ENABLED && Object.keys(livePushMap).length > 0) {
       try {
-        const rep = await replicateImageOverrideToLiveServer({ fullOverridesMap: livePushMap });
+        const rep = await awaitLiveSyncBounded(
+          replicateImageOverrideToLiveServer({ fullOverridesMap: livePushMap }),
+          900
+        );
         liveSynced = rep.synced;
         liveSyncError = rep.error;
       } catch (err: any) {
@@ -26088,6 +26359,7 @@ app.post('/api/v1/admin/verify-and-lock-catalog-images', async (req, res) => {
       verifiedCount,
       lockedCount,
       missingOnDiskCount,
+      healedCount,
       blockedOldUrlsCount,
       totalOverridesOnDisk: Object.keys(diskReadBackOverrides).length,
       liveSynced,
