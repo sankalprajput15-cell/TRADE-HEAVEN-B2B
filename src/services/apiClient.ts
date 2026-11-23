@@ -172,7 +172,7 @@ export const apiClient = {
         const res = await fetch(force ? `/api/site-content?t=${Date.now()}` : '/api/site-content', {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
-          cache: force ? 'no-store' : 'default'
+          cache: force ? 'no-store' : 'no-cache'
         });
         if (res.ok) {
           const json = await safeParseJson(res);

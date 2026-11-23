@@ -124,20 +124,31 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   }, [currentUser]);
 
   const broadcastHomeImageChange = React.useCallback(
-    async (prodId: string, newUrl: string, prevUrl: string, updatedAt?: string, imageUpdatedAt?: number) => {
+    async (
+      prodId: string,
+      newUrl: string,
+      prevUrl: string,
+      updatedAt?: string,
+      imageUpdatedAt?: number,
+      replacedOldUrls?: string[],
+      deletedOldUrls?: string[]
+    ) => {
       const activityMs = imageUpdatedAt || Date.now();
       productImageManagerService.recordProductActivityTimestamp(prodId, activityMs, false);
       productImageManagerService.applyServerOverrideSnapshot([
         {
           id: prodId,
           url: newUrl,
-          previousUrl: prevUrl || undefined,
           updatedAt: updatedAt || new Date(activityMs).toISOString(),
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          replacedOldUrls: replacedOldUrls || (prevUrl ? [prevUrl] : undefined),
+          deletedOldUrls
         }
       ]);
       try {
-        await productImageManagerService.syncFromServer(true);
+        await productImageManagerService.syncFromServer(true, false, { bypassCooldown: true });
       } catch {
         // ignore sync errors
       }
@@ -165,7 +176,15 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           category: prod.category,
           previousImageUrl: currentUrl
         });
-        await broadcastHomeImageChange(pid, res.new_image_url, currentUrl, res.updatedAt, res.imageUpdatedAt);
+        await broadcastHomeImageChange(
+          pid,
+          res.new_image_url,
+          currentUrl,
+          res.updatedAt,
+          res.imageUpdatedAt,
+          res.replacedOldUrls,
+          res.deletedOldUrls
+        );
         setAdminImageNotice({
           type: 'success',
           text: `Fixed image for "${prod.title}" (${res.new_image_url}).`
@@ -240,10 +259,18 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           customImageUrl: cleanUrl,
           previousImageUrl: currentUrl
         });
-        await broadcastHomeImageChange(pid, res.new_image_url, currentUrl, res.updatedAt, res.imageUpdatedAt);
+        await broadcastHomeImageChange(
+          pid,
+          res.new_image_url,
+          currentUrl,
+          res.updatedAt,
+          res.imageUpdatedAt,
+          res.replacedOldUrls,
+          res.deletedOldUrls
+        );
         setAdminImageNotice({
           type: 'success',
-          text: `Uploaded & saved SEO image for "${prod.title}" (${cleanUrl}).`
+          text: `Uploaded & saved SEO image for "${prod.title}" (${cleanUrl}) — old image deleted from server.`
         });
       } catch (err: any) {
         setAdminImageNotice({
@@ -263,6 +290,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
     window.addEventListener('tradeheaven_product_images_updated', handleImageUpdate);
     window.addEventListener('tradeheaven_product_image_saved', handleImageUpdate);
     window.addEventListener('tradeheaven_products_updated', handleImageUpdate);
+    window.addEventListener('tradeheaven_auth_changed', handleImageUpdate);
     productImageManagerService.ensureHydrated().then(() => {
       setImageSyncVersion(v => v + 1);
     }).catch(() => {});
@@ -270,6 +298,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       window.removeEventListener('tradeheaven_product_images_updated', handleImageUpdate);
       window.removeEventListener('tradeheaven_product_image_saved', handleImageUpdate);
       window.removeEventListener('tradeheaven_products_updated', handleImageUpdate);
+      window.removeEventListener('tradeheaven_auth_changed', handleImageUpdate);
     };
   }, []);
 

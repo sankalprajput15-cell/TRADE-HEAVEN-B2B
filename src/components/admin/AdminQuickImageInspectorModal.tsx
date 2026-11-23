@@ -55,7 +55,14 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const syncAfterUpdate = useCallback(
-    async (newUrl: string, prevUrl: string, updatedAt?: string, imageUpdatedAt?: number) => {
+    async (
+      newUrl: string,
+      prevUrl: string,
+      updatedAt?: string,
+      imageUpdatedAt?: number,
+      replacedOldUrls?: string[],
+      deletedOldUrls?: string[]
+    ) => {
       const activityMs = imageUpdatedAt || Date.now();
       setPreviousUrl(prevUrl);
       setLiveUrl(newUrl);
@@ -64,13 +71,16 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         {
           id: product.id,
           url: newUrl,
-          previousUrl: prevUrl || undefined,
           updatedAt: updatedAt || new Date(activityMs).toISOString(),
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          replacedOldUrls,
+          deletedOldUrls
         }
       ]);
       try {
-        await productImageManagerService.syncFromServer(true);
+        await productImageManagerService.syncFromServer(true, false, { bypassCooldown: true });
       } catch {
         // ignore sync errors
       }
@@ -122,7 +132,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         category: product.category,
         previousImageUrl: liveUrl
       });
-      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt);
+      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt, res.replacedOldUrls, res.deletedOldUrls);
       setStatusMessage({
         type: 'success',
         text: `Auto-fixed with verified Trade Heaven SEO image (${res.new_image_url}).`
@@ -149,7 +159,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         customImageUrl: candidateUrl,
         previousImageUrl: liveUrl
       });
-      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt);
+      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt, res.replacedOldUrls, res.deletedOldUrls);
       setStatusMessage({
         type: 'success',
         text: 'Selected photo saved locally with Trade Heaven SEO metadata and updated live.'
@@ -188,10 +198,10 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         customImageUrl: cleanUrl,
         previousImageUrl: liveUrl
       });
-      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt);
+      await syncAfterUpdate(res.new_image_url, liveUrl, res.updatedAt, res.imageUpdatedAt, res.replacedOldUrls, res.deletedOldUrls);
       setStatusMessage({
         type: 'success',
-        text: `Uploaded & saved (${cleanUrl}) with embedded Trade Heaven EXIF SEO metadata.`
+        text: `Uploaded & saved (${cleanUrl}) — old image deleted from server and updated live.`
       });
     } catch (err: any) {
       setStatusMessage({

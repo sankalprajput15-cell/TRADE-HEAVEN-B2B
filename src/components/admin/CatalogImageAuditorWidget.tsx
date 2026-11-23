@@ -879,7 +879,6 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         {
           id: rid,
           url: result.new_image_url,
-          previousUrl: result.old_image_url && result.old_image_url !== '(empty)' ? result.old_image_url : undefined,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
           updatedBy: options?.revert
             ? 'auto-site-upload'
@@ -890,7 +889,8 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           locked: !options?.revert && Boolean(result.locked ?? result.serverSavedVerified ?? true),
           serverVerified: !options?.revert && Boolean(result.serverSavedVerified ?? result.diskVerified ?? true),
           verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
-          replacedOldUrls: result.replacedOldUrls
+          replacedOldUrls: result.replacedOldUrls,
+          deletedOldUrls: result.deletedOldUrls
         }
       ]);
       await syncMarketplaceImageListeners(true);
@@ -1146,16 +1146,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           {
             id: rid,
             url: result.new_image_url,
-            previousUrl:
-              result.old_image_url && result.old_image_url !== '(empty)'
-                ? result.old_image_url
-                : currentUrlForExclusion,
             updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
             updatedBy: 'catalog-image-auditor',
             locked: true,
             serverVerified: true,
             verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
-            replacedOldUrls: result.replacedOldUrls
+            replacedOldUrls: result.replacedOldUrls,
+            deletedOldUrls: result.deletedOldUrls
           }
         ]);
 
@@ -1307,13 +1304,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         {
           id: rid,
           url: result.new_image_url,
-          previousUrl: preservedOldUrl || result.old_image_url,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
           updatedBy: 'admin-manual',
           locked: true,
           serverVerified: true,
           verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
-          replacedOldUrls: result.replacedOldUrls
+          replacedOldUrls: result.replacedOldUrls,
+          deletedOldUrls: result.deletedOldUrls
         }
       ]);
       await syncMarketplaceImageListeners(true);
@@ -1391,13 +1388,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         {
           id: rid,
           url: result.new_image_url,
-          previousUrl: preservedOldUrl || result.old_image_url,
           updatedAt: result.updatedAt || new Date(activityMs).toISOString(),
           updatedBy: 'admin-manual',
           locked: true,
           serverVerified: true,
           verifiedAt: result.verifiedAt || result.updatedAt || new Date(activityMs).toISOString(),
-          replacedOldUrls: result.replacedOldUrls
+          replacedOldUrls: result.replacedOldUrls,
+          deletedOldUrls: result.deletedOldUrls
         }
       ]);
       await syncMarketplaceImageListeners(true);
@@ -1490,12 +1487,12 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           .map(r => ({
             id: r.record_id,
             url: r.new_image_url,
-            previousUrl: r.old_image_url !== '(empty)' ? r.old_image_url : undefined,
             updatedAt: result.timestamp || new Date().toISOString(),
             updatedBy: 'catalog-image-auditor',
             locked: true,
             serverVerified: true,
-            verifiedAt: result.timestamp || new Date().toISOString()
+            verifiedAt: result.timestamp || new Date().toISOString(),
+            replacedOldUrls: r.old_image_url && r.old_image_url !== '(empty)' ? [r.old_image_url] : undefined
           }));
         if (fixedSnapshotEntries.length > 0) {
           productImageManagerService.applyServerOverrideSnapshot(fixedSnapshotEntries);

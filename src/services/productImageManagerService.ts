@@ -71,6 +71,7 @@ export interface ProductImageSystemState {
   categoryOverrides: Record<string, string>;
   urlReplacements: Record<string, string>;
   mediaLibrary: MediaLibraryItem[];
+  deletedUrls?: string[];
 }
 
 export type OutputImageFormat = 'jpg' | 'png' | 'webp' | 'original';
@@ -452,6 +453,16 @@ class ProductImageManagerService {
           this.syncFromServer(true).catch(() => {});
         }
       });
+
+      // Immediately refresh authoritative server image state on login/logout so guests never see stale pre-upload images
+      window.addEventListener('tradeheaven_auth_changed', () => {
+        if (this.inFlightWriteCount === 0) {
+          this.syncFromServer(true, false, {
+            bypassCooldown: true,
+            emitEvenIfUnchanged: true
+          }).catch(() => {});
+        }
+      });
     }
   }
 
@@ -492,7 +503,7 @@ class ProductImageManagerService {
     return normalized;
   }
 
-  private pruneDeletedUrlsFromMemory(deletedUrls: string[]): void {
+  public pruneDeletedUrlsFromMemory(deletedUrls: string[]): void {
     if (!Array.isArray(deletedUrls) || deletedUrls.length === 0) return;
     const deletedSet = new Set(
       deletedUrls
@@ -500,9 +511,77 @@ class ProductImageManagerService {
         .map(u => String(u).trim().split('?')[0])
     );
     if (deletedSet.size === 0) return;
+
     this.state.mediaLibrary = (this.state.mediaLibrary || []).filter(
       m => !m?.url || !deletedSet.has(String(m.url).trim().split('?')[0])
     );
+
+    const mergedDeleted = new Set<string>([
+      ...(Array.isArray(this.state.deletedUrls) ? this.state.deletedUrls : []),
+      ...deletedSet
+    ]);
+    this.state.deletedUrls = Array.from(mergedDeleted).slice(-500);
+
+    // Strip any stale previousPrimary or gallery references pointing to permanently deleted files
+    for (const entry of Object.values(this.state.overrides || {})) {
+      if (!entry) continue;
+      if (entry.previousPrimary && deletedSet.has(String(entry.previousPrimary).trim().split('?')[0])) {
+        delete entry.previousPrimary;
+      }
+      if (Array.isArray(entry.gallery) && entry.gallery.length > 0) {
+        const cleanedGallery = entry.gallery.filter(
+          u => u && !deletedSet.has(String(u).trim().split('?')[0])
+        );
+        entry.gallery = cleanedGallery.length > 0 ? cleanedGallery : (entry.primary ? [entry.primary] : []);
+      }
+    }
+
+    // Remove urlReplacements entries whose target points to a permanently deleted file
+    if (this.state.urlReplacements && typeof this.state.urlReplacements === 'object') {
+      for (const [k, v] of Object.entries(this.state.urlReplacements)) {
+        if (v && deletedSet.has(String(v).trim().split('?')[0])) {
+          delete this.state.urlReplacements[k];
+        }
+      }
+    }
+  }
+
+  public isUrlReplacedOrDeleted(
+    url: string | undefined | null,
+    productId?: string,
+    productTitle?: string
+  ): boolean {
+    if (!url || typeof url !== 'string') return false;
+    const cleanBase = normalizeProductAssetUrl(url).split('?')[0];
+    if (!cleanBase) return false;
+    if (Array.isArray(this.state.deletedUrls) && this.state.deletedUrls.includes(cleanBase)) {
+      return true;
+    }
+    const checkEntry = (entry?: ProductImageOverrideEntry | null): boolean => {
+      if (!entry) return false;
+      const primaryBase = entry.primary ? normalizeProductAssetUrl(entry.primary).split('?')[0] : '';
+      if (primaryBase && primaryBase === cleanBase) return false;
+      if (Array.isArray(entry.replacedOldUrls)) {
+        for (const oldU of entry.replacedOldUrls) {
+          const oldBase = String(oldU || '').trim().split('?')[0];
+          if (oldBase && oldBase === cleanBase) return true;
+        }
+      }
+      return false;
+    };
+    if (productId) {
+      const cleanId = productId.trim();
+      if (checkEntry(this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()])) {
+        return true;
+      }
+    }
+    if (productTitle) {
+      const cleanTitle = productTitle.trim();
+      if (checkEntry(this.state.overrides[cleanTitle] || this.state.overrides[cleanTitle.toLowerCase()])) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private parseTimestampMs(val: number | string | undefined | null): number {
@@ -1038,7 +1117,7 @@ class ProductImageManagerService {
 
     try {
       let srv: ProductImageSystemState | null = null;
-      // 1. Try public & admin Node/Express endpoints (allow HTTP ETag/304 & stale-while-revalidate on public boot)
+      // 1. Try public & admin Node/Express endpoints (always revalidate cleanly with server ETag / no-store so logout never shows stale images)
       const bustQuery = force || includeFullMedia ? `_t=${Date.now()}` : '';
       const publicQueryParts = [includeFullMedia ? 'includeMedia=1' : '', bustQuery].filter(Boolean).join('&');
       const publicUrl = publicQueryParts
@@ -1050,7 +1129,7 @@ class ProductImageManagerService {
             { url: publicUrl, cacheMode: 'no-store' }
           ]
         : [
-            { url: publicUrl, cacheMode: force ? 'no-store' : 'default' },
+            { url: publicUrl, cacheMode: force ? 'no-store' : 'no-cache' },
             { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
           ];
       for (const ep of endpoints) {
@@ -1206,19 +1285,17 @@ class ProductImageManagerService {
         this.state.globalDefaultImage = srv.globalDefaultImage !== undefined
           ? (srv.globalDefaultImage ? normalizeProductAssetUrl(srv.globalDefaultImage) : null)
           : (this.state.globalDefaultImage ?? null);
-        this.state.categoryOverrides = {
-          ...(srv.categoryOverrides || {}),
-          ...(this.state.categoryOverrides || {})
-        };
-        this.state.urlReplacements = {
-          ...(srv.urlReplacements || {}),
-          ...(this.state.urlReplacements || {})
-        };
+        if (srv.categoryOverrides && typeof srv.categoryOverrides === 'object') {
+          this.state.categoryOverrides = { ...srv.categoryOverrides };
+        }
+        if (srv.urlReplacements && typeof srv.urlReplacements === 'object') {
+          this.state.urlReplacements = { ...srv.urlReplacements };
+        }
 
         if (Array.isArray(srv.mediaLibrary)) {
           const seen = new Set<string>();
           const mergedMedia: MediaLibraryItem[] = [];
-          for (const item of [...srv.mediaLibrary, ...this.state.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
+          for (const item of [...srv.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
             if (!item || !item.url) continue;
             if (String(item.url).includes('WhatsApp_Image_2026-11-02_at_5.43.28_PM_f16b3ccd')) continue;
             const cleanUrl = normalizeProductAssetUrl(item.url);
@@ -1228,6 +1305,10 @@ class ProductImageManagerService {
             }
           }
           this.state.mediaLibrary = mergedMedia;
+        }
+
+        if (Array.isArray((srv as any).deletedUrls) && (srv as any).deletedUrls.length > 0) {
+          this.pruneDeletedUrlsFromMemory((srv as any).deletedUrls);
         }
 
         const wasUnhydrated = !this.isHydratedFromServer;
@@ -1266,11 +1347,13 @@ class ProductImageManagerService {
       serverVerified?: boolean;
       verifiedAt?: string;
       replacedOldUrls?: string[];
+      deletedOldUrls?: string[];
     }>
   ): void {
     if (!Array.isArray(entries) || entries.length === 0) return;
     let changed = false;
     const nowIso = new Date().toISOString();
+    const allDeletedToPrune: string[] = [];
 
     for (const item of entries) {
       const cleanId = String(item?.id || '').trim();
@@ -1295,6 +1378,7 @@ class ProductImageManagerService {
       this.locallyDeletedIds.delete(cleanId);
       this.localMutationTimes.set(cleanId, nowMs);
       const existing = this.state.overrides[cleanId];
+      const existingPrimaryBase = existing?.primary ? normalizeProductAssetUrl(existing.primary).split('?')[0] : '';
       const existingGallery = Array.isArray(existing?.gallery) ? existing!.gallery : [];
       const resolvedTs = this.parseTimestampMs(item.updatedAt) || nowMs;
       const cleanBase = cleanUrl.split('?')[0];
@@ -1302,14 +1386,25 @@ class ProductImageManagerService {
         new Set([
           ...(Array.isArray(existing?.replacedOldUrls) ? existing!.replacedOldUrls : []),
           ...(Array.isArray(item.replacedOldUrls) ? item.replacedOldUrls : []),
+          ...(Array.isArray(item.deletedOldUrls) ? item.deletedOldUrls : []),
+          ...(existingPrimaryBase && existingPrimaryBase !== cleanBase ? [existingPrimaryBase] : []),
           ...(item.previousUrl ? [item.previousUrl.split('?')[0]] : [])
         ])
       ).filter(u => u && u !== '(empty)' && u !== cleanBase);
+      const replacedSet = new Set(mergedReplaced);
+      if (Array.isArray(item.deletedOldUrls) && item.deletedOldUrls.length > 0) {
+        allDeletedToPrune.push(...item.deletedOldUrls);
+      }
 
       this.state.overrides[cleanId] = {
         primary: cleanUrl,
-        ...(item.previousUrl ? { previousPrimary: normalizeProductAssetUrl(item.previousUrl) } : {}),
-        gallery: [cleanUrl, ...existingGallery.filter(u => u && normalizeProductAssetUrl(u) !== cleanUrl)],
+        gallery: [
+          cleanUrl,
+          ...existingGallery.filter(u => {
+            const ub = u ? normalizeProductAssetUrl(u).split('?')[0] : '';
+            return Boolean(ub) && ub !== cleanBase && !replacedSet.has(ub);
+          })
+        ],
         format: this.detectFormatFromUrl(cleanUrl),
         updatedAt: item.updatedAt || nowIso,
         imageUpdatedAt: resolvedTs,
@@ -1324,7 +1419,6 @@ class ProductImageManagerService {
       }
 
       if (cleanUrl.startsWith('/assets/uploads/')) {
-        const cleanBase = cleanUrl.split('?')[0];
         const existsInMedia = this.state.mediaLibrary.some(m => m?.url && m.url.split('?')[0] === cleanBase);
         if (!existsInMedia) {
           const fname = cleanBase.split('/').pop() || 'catalog-image.webp';
@@ -1343,6 +1437,10 @@ class ProductImageManagerService {
       }
 
       changed = true;
+    }
+
+    if (allDeletedToPrune.length > 0) {
+      this.pruneDeletedUrlsFromMemory(allDeletedToPrune);
     }
 
     if (changed) {
@@ -2216,7 +2314,12 @@ class ProductImageManagerService {
       if (options?.applyToAll) {
         this.state.globalDefaultImage = finalUrl;
       }
-      if (options?.category) {
+      // Only set categoryOverrides when explicitly updating a category without targeting specific product(s)
+      if (
+        options?.category &&
+        !options?.productId &&
+        !(Array.isArray(options?.productIds) && options.productIds.length > 0)
+      ) {
         this.state.categoryOverrides[options.category] = finalUrl;
       }
       if (cleanOldUrl) {
@@ -2229,9 +2332,13 @@ class ProductImageManagerService {
         for (const [k, entry] of Object.entries(this.state.overrides)) {
           if (entry?.primary && entry.primary.split('?')[0] === cleanOldBase) {
             this.localMutationTimes.set(k, activityTs);
+            const mergedOldUrls = Array.from(
+              new Set([
+                ...(Array.isArray(entry.replacedOldUrls) ? entry.replacedOldUrls : []),
+                cleanOldBase
+              ])
+            ).filter(u => u && u !== finalBaseUrl);
             this.state.overrides[k] = {
-              ...entry,
-              previousPrimary: entry.primary,
               primary: finalUrl,
               gallery: [
                 finalUrl,
@@ -2243,7 +2350,11 @@ class ProductImageManagerService {
               format: finalFormat,
               updatedAt: nowIso,
               imageUpdatedAt: activityTs,
-              updatedBy: 'admin-manual'
+              updatedBy: 'admin-manual',
+              locked: true,
+              serverVerified: true,
+              verifiedAt: nowIso,
+              ...(mergedOldUrls.length > 0 ? { replacedOldUrls: mergedOldUrls } : {})
             };
             this.recordProductActivityTimestamp(k, activityTs, false);
           }
@@ -2255,10 +2366,6 @@ class ProductImageManagerService {
         this.localMutationTimes.set(cleanPid, activityTs);
         const existing = this.state.overrides[cleanPid];
         const prevPrimaryBase = existing?.primary ? existing.primary.split('?')[0] : '';
-        const previousPrimary =
-          existing?.primary && prevPrimaryBase !== finalBaseUrl
-            ? existing.primary
-            : existing?.previousPrimary;
         const existingGallery =
           existing?.gallery && existing.gallery.length > 0
             ? existing.gallery
@@ -2275,22 +2382,26 @@ class ProductImageManagerService {
               }),
               finalUrl
             ]
-          : [
-              finalUrl,
-              ...existingGallery.filter(u => {
-                const ub = String(u || '').split('?')[0];
-                return Boolean(ub) && ub !== finalBaseUrl && ub !== prevPrimaryBase && !deletedBaseSet.has(ub);
-              })
-            ];
+          : [finalUrl];
+        const replacedOldUrls = Array.from(
+          new Set([
+            ...(Array.isArray(existing?.replacedOldUrls) ? existing!.replacedOldUrls : []),
+            ...(!isAppend && prevPrimaryBase && prevPrimaryBase !== finalBaseUrl ? [prevPrimaryBase] : []),
+            ...deletedOldUrls.map(u => String(u).trim().split('?')[0])
+          ])
+        ).filter(u => u && u !== finalBaseUrl);
 
         this.state.overrides[cleanPid] = {
           primary,
-          ...(previousPrimary ? { previousPrimary } : {}),
           gallery,
           format: finalFormat,
           updatedAt: nowIso,
           imageUpdatedAt: activityTs,
-          updatedBy: 'admin-manual'
+          updatedBy: 'admin-manual',
+          locked: true,
+          serverVerified: true,
+          verifiedAt: nowIso,
+          ...(replacedOldUrls.length > 0 ? { replacedOldUrls } : {})
         };
         this.recordProductActivityTimestamp(cleanPid, activityTs, false);
 
@@ -2603,23 +2714,9 @@ class ProductImageManagerService {
 
       const existing = this.state.overrides[cleanId];
       const existingBase = existing?.primary ? existing.primary.split('?')[0] : '';
-      const previousPrimary =
-        existing?.primary && existingBase !== cleanPrimaryBase
-          ? existing.primary
-          : existing?.previousPrimary;
       const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
         ? galleryUrls.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
-        : existing?.gallery
-          ? [
-              cleanPrimary,
-              ...existing.gallery
-                .map(u => normalizeProductAssetUrl(u))
-                .filter(u => {
-                  const ub = String(u || '').split('?')[0];
-                  return Boolean(ub) && ub !== cleanPrimaryBase && ub !== existingBase;
-                })
-            ]
-          : [cleanPrimary];
+        : [cleanPrimary];
 
       const format = this.detectFormatFromUrl(cleanPrimary);
       const nowIso = new Date(versionTs).toISOString();
@@ -2633,7 +2730,6 @@ class ProductImageManagerService {
 
       this.state.overrides[cleanId] = {
         primary: cleanPrimary,
-        ...(previousPrimary ? { previousPrimary } : {}),
         gallery: resolvedGallery,
         format,
         updatedAt: nowIso,

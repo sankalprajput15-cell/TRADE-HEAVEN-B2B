@@ -435,10 +435,38 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } catch {}
 
+    const handleAuthChanged = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      // On logout or auth switch, clear local mutation guard and fetch fresh authoritative server site content
+      if (!detail?.user) {
+        hasLocalSiteMutationRef.current = false;
+      }
+      void apiClient.getSiteContent(true).then(contentRes => {
+        if (
+          !isMounted ||
+          !contentRes.success ||
+          !contentRes.data ||
+          typeof contentRes.data !== 'object' ||
+          Array.isArray(contentRes.data)
+        ) {
+          return;
+        }
+        setSiteContent(prev => {
+          const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }).catch(() => {});
+    };
+
     window.addEventListener('storage', handleStorageSync);
+    window.addEventListener('tradeheaven_auth_changed', handleAuthChanged);
     return () => {
       isMounted = false;
       window.removeEventListener('storage', handleStorageSync);
+      window.removeEventListener('tradeheaven_auth_changed', handleAuthChanged);
       if (bc) {
         try { bc.close(); } catch {}
       }
@@ -447,7 +475,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const refreshFromServer = async (): Promise<boolean> => {
     try {
-      const contentRes = await apiClient.getSiteContent();
+      const contentRes = await apiClient.getSiteContent(true);
       if (
         !hasLocalSiteMutationRef.current &&
         contentRes.success &&

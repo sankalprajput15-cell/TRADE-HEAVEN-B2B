@@ -102,11 +102,16 @@ function initSafeImageGlobalHub() {
     liveModeSubscribers.forEach(cb => cb(cachedLiveMode));
   };
 
+  const notifyAuthChanged = () => {
+    notifyLiveMode();
+    notifyOverrides();
+  };
+
   window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, notifyOverrides);
   window.addEventListener('tradeheaven_product_images_updated', notifyOverrides);
   window.addEventListener('storage', notifyOverrides);
   window.addEventListener('tradeheaven_live_edit_mode_changed', notifyLiveMode);
-  window.addEventListener('tradeheaven_auth_changed', notifyLiveMode);
+  window.addEventListener('tradeheaven_auth_changed', notifyAuthChanged);
 
   // Automatic 60-second background sweep disabled to prevent continuous re-renders and network writes
 }
@@ -312,7 +317,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       typeof effectiveSrc === 'string' &&
       effectiveSrc.trim() &&
       !isGenericOrPlaceholderImageUrl(effectiveSrc.trim()) &&
-      !isCrossCompanyAsset(effectiveSrc.trim())
+      !isCrossCompanyAsset(effectiveSrc.trim()) &&
+      !productImageManagerService.isUrlReplacedOrDeleted(effectiveSrc.trim(), productId, isLogoOrAvatar ? undefined : productTitle)
     ) {
       const mirroredEff = resolveLocalMirroredImageUrl(effectiveSrc.trim());
       const optEff = mirroredEff.startsWith('data:image/')
@@ -322,12 +328,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     if (
+      !optManualEff &&
       src &&
       typeof src === 'string' &&
       src.trim() &&
       src.trim() !== (effectiveSrc || '').trim() &&
       !isGenericOrPlaceholderImageUrl(src.trim()) &&
-      !isCrossCompanyAsset(src.trim())
+      !isCrossCompanyAsset(src.trim()) &&
+      !productImageManagerService.isUrlReplacedOrDeleted(src.trim(), productId, isLogoOrAvatar ? undefined : productTitle)
     ) {
       const mirroredRawSrc = resolveLocalMirroredImageUrl(src.trim());
       const optRawSrc = mirroredRawSrc.startsWith('data:image/')
@@ -625,14 +633,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       setBeforeImageUrl(oldImgBefore);
       const cleanOldTarget = normalizeProductAssetUrl(src || currentCandidate || '');
       const res = await productImageManagerService.uploadAndAssignImageFile(file, {
-        targetFormat: 'jpg',
+        targetFormat: 'webp',
+        autoWebpLossless: true,
         quality: 0.92,
         productId: productId || undefined,
         oldUrlToReplace: !productId && cleanOldTarget ? cleanOldTarget : undefined
       });
-      if (productId) {
-        await productImageManagerService.setProductImage(productId, res.url);
-      } else if (cleanOldTarget) {
+      if (!productId && cleanOldTarget) {
         await productImageManagerService.replaceImageUrlEverywhere(cleanOldTarget, res.url);
       }
       setHasError(false);
@@ -641,7 +648,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       setAfterImageUrl(res.url);
       setCustomUrlInput(res.url);
       setOverrideVersion(v => v + 1);
-      setUploadStatusMsg('Uploaded & synced live! Visible immediately in Incognito & all tabs.');
+      setUploadStatusMsg('Uploaded, old image deleted from server & synced live for all visitors!');
     } catch (err: any) {
       setUploadStatusMsg(err?.message || 'Upload failed');
     } finally {

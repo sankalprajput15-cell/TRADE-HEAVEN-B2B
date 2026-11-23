@@ -1224,6 +1224,7 @@ export interface SingleCatalogImageFixResult {
   verifiedAt?: string;
   liveSynced?: boolean;
   replacedOldUrls?: string[];
+  deletedOldUrls?: string[];
   record_id: string;
   record_type: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title: string;
