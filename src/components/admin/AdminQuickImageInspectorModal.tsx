@@ -24,6 +24,11 @@ import {
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import {
+  replaceSiteImage,
+  autoFixSiteImages,
+  deleteSiteImageFile
+} from '../../services/siteImageControlService';
 import { SafeImage } from '../common/SafeImage';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 
@@ -171,71 +176,35 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   }, [loadCandidates, product.title]);
 
   const replaceViaWholeSiteEndpoint = async (source: { file?: File; imageUrl?: string }) => {
-    let base64Data: string | undefined;
-    let fileName: string | undefined;
-    let mimeType: string | undefined;
-    if (source.file) {
-      const converted = await productImageManagerService.convertImageFile(
-        source.file,
-        'webp',
-        0.92,
-        1400,
-        true
-      );
-      base64Data = converted.dataUrl;
-      fileName = converted.fileName;
-      mimeType = converted.mimeType;
-    }
-
-    const res = await fetch('/api/v1/admin/site-images/replace', {
-      method: 'POST',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        targetId: product.id,
-        targetType,
-        fieldPath,
-        title: product.title,
-        category: product.category,
-        fileName,
-        mimeType,
-        base64Data,
-        imageUrl: source.imageUrl,
-        oldImageUrl: liveUrl
-      })
+    return replaceSiteImage({
+      targetId: product.id,
+      targetType,
+      fieldPath,
+      title: product.title,
+      category: product.category,
+      oldImageUrl: liveUrl,
+      file: source.file,
+      imageUrl: source.imageUrl
     });
-    const json = await res.json().catch(() => null);
-    if (!res.ok || !json?.success || !json?.newUrl) {
-      throw new Error(json?.message || `Server returned HTTP ${res.status}`);
-    }
-    return json;
   };
 
   const handleAutoFix = async () => {
     setIsApplying(true);
     setStatusMessage(null);
     try {
-      const res = await fetch('/api/v1/admin/site-images/auto-fix', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          items: [
-            {
-              id: product.id,
-              type: targetType,
-              title: product.title,
-              category: product.category,
-              currentUrl: liveUrl,
-              fieldPath
-            }
-          ]
-        })
-      });
-      const json = await res.json().catch(() => null);
+      const json = await autoFixSiteImages([
+        {
+          id: product.id,
+          type: targetType,
+          title: product.title,
+          category: product.category,
+          currentUrl: liveUrl,
+          fieldPath
+        }
+      ]);
       const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
-      if (!res.ok || !rowRes?.success || !rowRes?.newUrl) {
-        throw new Error(rowRes?.error || json?.message || 'Could not auto-fetch a replacement photo.');
+      if (!rowRes?.success || !rowRes?.newUrl) {
+        throw new Error(rowRes?.error || 'Could not auto-fetch a replacement photo.');
       }
       const deletedOldUrls: string[] = Array.isArray(rowRes.deletedOldUrls) ? rowRes.deletedOldUrls : [];
       await syncAfterUpdate(
@@ -357,26 +326,12 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     setIsApplying(true);
     setStatusMessage(null);
     try {
-      let deletedFile = false;
-      if (liveUrl && liveUrl.startsWith('/assets/uploads/')) {
-        const res = await fetch('/api/v1/admin/site-images/delete-file', {
-          method: 'POST',
-          cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            url: liveUrl,
-            force: true,
-            targetId: product.id,
-            targetType,
-            fieldPath
-          })
-        });
-        const json = await res.json().catch(() => null);
-        if (res.ok && json?.success) {
-          deletedFile = true;
-        }
-      }
-      await productImageManagerService.resetProductImage(product.id);
+      const { deletedFile } = await deleteSiteImageFile({
+        url: liveUrl,
+        targetId: product.id,
+        targetType,
+        fieldPath
+      });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
         window.dispatchEvent(new Event('tradeheaven_products_updated'));

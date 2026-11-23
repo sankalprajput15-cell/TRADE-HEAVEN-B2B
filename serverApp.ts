@@ -26855,18 +26855,51 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
 
     // 5. Persist state atomically to disk & invalidate public cache
     const savedOk = saveServerProductImageState();
-    const verifiedOnDisk =
-      !finalUrl.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(finalUrl);
+    let verifiedOnDisk = true;
+    if (finalUrl.startsWith('/assets/uploads/')) {
+      const uploadedDiskPath = path.join(UPLOADS_DIR, path.basename(finalUrl));
+      try {
+        verifiedOnDisk = fs.existsSync(uploadedDiskPath) && fs.statSync(uploadedDiskPath).size > 0;
+      } catch {
+        verifiedOnDisk = isLocalUploadPresentOnDisk(finalUrl);
+      }
+    }
+
+    if (!savedOk || !verifiedOnDisk) {
+      return res.status(500).json({
+        success: false,
+        message: !verifiedOnDisk
+          ? 'Uploaded file could not be verified on server disk.'
+          : 'Failed to persist updated image state to server disk.',
+        savedOk,
+        verifiedOnDisk,
+        newUrl: finalUrl
+      });
+    }
+
+    if (LIVE_UPSTREAM_PROXY_ENABLED) {
+      if (cleanTargetId && serverProductImageState.overrides[cleanTargetId]) {
+        void replicateImageOverrideToLiveServer({
+          productId: cleanTargetId,
+          primaryUrl: finalUrl,
+          galleryUrls: [finalUrl],
+          format: finalFormat
+        }).catch(() => {});
+      }
+      if (siteContentDirty) {
+        void replicateSiteContentToLiveServer(serverSiteContent).catch(() => {});
+      }
+    }
 
     return res.json({
-      success: savedOk && verifiedOnDisk,
+      success: true,
       targetId: cleanTargetId || cleanFieldPath,
       targetType: cleanType,
       newUrl: finalUrl,
       deletedOldUrls,
       diskDeletedCount: deletedOldUrls.length,
       replacedOldUrls,
-      verifiedOnDisk,
+      verifiedOnDisk: true,
       locked: true,
       serverVerified: true,
       updatedAt: nowIso,

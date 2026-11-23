@@ -1450,6 +1450,12 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'flash_deals';
     } elseif (strpos($clean_route, 'stats') !== false) {
         $raw_action = 'stats';
+    } elseif (strpos($clean_route, 'admin/site-images/replace') !== false || strpos($clean_route, 'site-images/replace') !== false) {
+        $raw_action = 'site_images_replace';
+    } elseif (strpos($clean_route, 'admin/site-images/auto-fix') !== false || strpos($clean_route, 'site-images/auto-fix') !== false) {
+        $raw_action = 'site_images_auto_fix';
+    } elseif (strpos($clean_route, 'admin/site-images/delete-file') !== false || strpos($clean_route, 'site-images/delete-file') !== false) {
+        $raw_action = 'site_images_delete_file';
     } elseif (strpos($clean_route, 'admin/audit-and-fix-catalog-images') !== false || strpos($clean_route, 'audit-and-fix-catalog-images') !== false) {
         $raw_action = 'audit_and_fix_catalog_images';
     } elseif (strpos($clean_route, 'admin/fix-single-catalog-image') !== false || strpos($clean_route, 'fix-single-catalog-image') !== false) {
@@ -1547,6 +1553,12 @@ if (empty($raw_action)) {
             $raw_action = 'custom_catalog';
         } elseif (strpos($sub, 'site-content') !== false) {
             $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
+        } elseif (strpos($sub, 'admin/site-images/replace') !== false || strpos($sub, 'site-images/replace') !== false) {
+            $raw_action = 'site_images_replace';
+        } elseif (strpos($sub, 'admin/site-images/auto-fix') !== false || strpos($sub, 'site-images/auto-fix') !== false) {
+            $raw_action = 'site_images_auto_fix';
+        } elseif (strpos($sub, 'admin/site-images/delete-file') !== false || strpos($sub, 'site-images/delete-file') !== false) {
+            $raw_action = 'site_images_delete_file';
         } elseif (strpos($sub, 'admin/audit-and-fix-catalog-images') !== false || strpos($sub, 'audit-and-fix-catalog-images') !== false) {
             $raw_action = 'audit_and_fix_catalog_images';
         } elseif (strpos($sub, 'admin/fix-single-catalog-image') !== false || strpos($sub, 'fix-single-catalog-image') !== false) {
@@ -8479,6 +8491,361 @@ switch ($action) {
             "liveSynced" => true,
             "verifiedAt" => $now_iso_vl,
             "diskFiles" => ['product-image-overrides.json', 'productImageSystemState.json']
+        ]);
+        break;
+
+    case 'site_images_replace':
+        $uploads_dir_sr = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_sr) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_sr = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_sr)) {
+            @mkdir($uploads_dir_sr, 0775, true);
+        }
+        $sr_target_id = trim((string)($input['targetId'] ?? ''));
+        $sr_target_type = strtoupper(trim((string)($input['targetType'] ?? 'PRODUCT')));
+        $sr_field_path = trim((string)($input['fieldPath'] ?? ''));
+        $sr_title = trim((string)($input['title'] ?? $sr_target_id ?: 'site-image'));
+        $sr_file_name = trim((string)($input['fileName'] ?? 'image.webp'));
+        $sr_mime = strtolower(trim((string)($input['mimeType'] ?? 'image/webp')));
+        $sr_b64 = (string)($input['base64Data'] ?? '');
+        $sr_img_url = trim((string)($input['imageUrl'] ?? ''));
+        $sr_old_url = trim((string)($input['oldImageUrl'] ?? ''));
+
+        if ($sr_target_id === '' && $sr_field_path === '') {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "targetId or fieldPath is required."]);
+            break;
+        }
+
+        $sr_final_url = '';
+        $sr_final_name = '';
+        $sr_final_format = 'WEBP';
+        $sr_final_size = 0;
+
+        if ($sr_b64 !== '') {
+            if (preg_match('/^data:([A-Za-z0-9\-\+\/\.]+);base64,(.+)$/s', $sr_b64, $m_sr)) {
+                $sr_mime = strtolower($m_sr[1]);
+                $raw_b64_sr = $m_sr[2];
+            } else {
+                $raw_b64_sr = $sr_b64;
+            }
+            $bin_sr = base64_decode(preg_replace('/\s+/', '', $raw_b64_sr), true);
+            if ($bin_sr === false || strlen($bin_sr) === 0) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Invalid base64 image payload."]);
+                break;
+            }
+            $ext_sr = 'webp';
+            if (strpos($sr_mime, 'png') !== false) $ext_sr = 'png';
+            elseif (strpos($sr_mime, 'jpeg') !== false || strpos($sr_mime, 'jpg') !== false) $ext_sr = 'jpg';
+            elseif (strpos($sr_mime, 'gif') !== false) $ext_sr = 'gif';
+            elseif (strpos($sr_mime, 'svg') !== false) $ext_sr = 'svg';
+            elseif (strpos($sr_mime, 'avif') !== false) $ext_sr = 'avif';
+            if (preg_match('/\.webp$/i', $sr_file_name)) $ext_sr = 'webp';
+
+            $slug_sr = preg_replace('/[^a-z0-9]+/', '-', strtolower($sr_title));
+            $slug_sr = trim(preg_replace('/^trade-?heaven-?/i', '', trim((string)$slug_sr, '-')), '-');
+            $slug_sr = substr($slug_sr ?: 'site-image', 0, 42);
+            $sr_final_name = 'trade-heaven-' . $slug_sr . '-' . round(microtime(true) * 1000) . '.' . $ext_sr;
+            $sr_dest = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($sr_final_name);
+            if (@file_put_contents($sr_dest, $bin_sr, LOCK_EX) === false) {
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "Failed to write uploaded image file to disk."]);
+                break;
+            }
+            $sr_final_url = '/assets/uploads/' . basename($sr_final_name);
+            $sr_final_format = strtoupper($ext_sr);
+            $sr_final_size = strlen($bin_sr);
+        } elseif ($sr_img_url !== '') {
+            if (preg_match('#^https?://#i', $sr_img_url)) {
+                if (!th_is_safe_public_http_url($sr_img_url)) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "message" => "Blocked unsafe external URL."]);
+                    break;
+                }
+                $ch_sr = curl_init($sr_img_url);
+                curl_setopt_array($ch_sr, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 4,
+                    CURLOPT_TIMEOUT => 15,
+                    CURLOPT_USERAGENT => 'TradeHeavenImageBot/1.0'
+                ]);
+                $img_bin_sr = curl_exec($ch_sr);
+                $img_ct_sr = strtolower((string)curl_getinfo($ch_sr, CURLINFO_CONTENT_TYPE));
+                $img_code_sr = (int)curl_getinfo($ch_sr, CURLINFO_HTTP_CODE);
+                curl_close($ch_sr);
+                if (!$img_bin_sr || $img_code_sr < 200 || $img_code_sr >= 400 || strlen($img_bin_sr) < 50) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "message" => "Could not download external image URL onto server."]);
+                    break;
+                }
+                $ext_sr = 'jpg';
+                if (strpos($img_ct_sr, 'webp') !== false) $ext_sr = 'webp';
+                elseif (strpos($img_ct_sr, 'png') !== false) $ext_sr = 'png';
+                elseif (strpos($img_ct_sr, 'gif') !== false) $ext_sr = 'gif';
+                $slug_sr = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($sr_title)), '-') ?: 'site-image', 0, 42);
+                $sr_final_name = 'trade-heaven-' . $slug_sr . '-' . round(microtime(true) * 1000) . '.' . $ext_sr;
+                $sr_dest = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($sr_final_name);
+                if (@file_put_contents($sr_dest, $img_bin_sr, LOCK_EX) === false) {
+                    http_response_code(500);
+                    echo json_encode(["success" => false, "message" => "Failed to save mirrored image file to disk."]);
+                    break;
+                }
+                $sr_final_url = '/assets/uploads/' . basename($sr_final_name);
+                $sr_final_format = strtoupper($ext_sr);
+                $sr_final_size = strlen($img_bin_sr);
+            } else {
+                $sr_final_url = th_strip_url_base($sr_img_url);
+                $sr_final_name = basename($sr_final_url);
+                $sr_final_format = strtoupper(pathinfo($sr_final_name, PATHINFO_EXTENSION) ?: 'WEBP');
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Provide either base64Data or imageUrl."]);
+            break;
+        }
+
+        $sr_state = th_load_merged_image_state($uploads_dir_sr);
+        $sr_now_ms = (int)round(microtime(true) * 1000);
+        $sr_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+        $sr_old_candidates = [];
+        if ($sr_old_url !== '') $sr_old_candidates[] = $sr_old_url;
+        $sr_existing_ov = ($sr_target_id !== '' && isset($sr_state['overrides'][$sr_target_id])) ? $sr_state['overrides'][$sr_target_id] : null;
+        if (is_array($sr_existing_ov)) {
+            if (!empty($sr_existing_ov['primary'])) $sr_old_candidates[] = $sr_existing_ov['primary'];
+            if (!empty($sr_existing_ov['previousPrimary'])) $sr_old_candidates[] = $sr_existing_ov['previousPrimary'];
+            if (!empty($sr_existing_ov['gallery']) && is_array($sr_existing_ov['gallery'])) {
+                foreach ($sr_existing_ov['gallery'] as $gu) $sr_old_candidates[] = $gu;
+            }
+        }
+
+        // Update site_content.json for HERO_SLIDE / CATEGORY / fieldPath
+        $sr_cms_file = __DIR__ . '/site_content.json';
+        $sr_cms = th_read_json_locked($sr_cms_file);
+        $sr_cms_dirty = false;
+        if (is_array($sr_cms)) {
+            if ($sr_target_type === 'HERO_SLIDE' && $sr_target_id !== '' && isset($sr_cms['homepage']['heroSlides']) && is_array($sr_cms['homepage']['heroSlides'])) {
+                foreach ($sr_cms['homepage']['heroSlides'] as &$sl_sr) {
+                    if ((string)($sl_sr['id'] ?? '') === $sr_target_id) {
+                        if (!empty($sl_sr['image'])) $sr_old_candidates[] = $sl_sr['image'];
+                        $sl_sr['image'] = $sr_final_url;
+                        $sr_cms_dirty = true;
+                    }
+                }
+                unset($sl_sr);
+            } elseif ($sr_target_type === 'CATEGORY' && $sr_target_id !== '' && isset($sr_cms['homepage']['categoriesList']) && is_array($sr_cms['homepage']['categoriesList'])) {
+                foreach ($sr_cms['homepage']['categoriesList'] as &$cat_sr) {
+                    if ((string)($cat_sr['id'] ?? '') === $sr_target_id) {
+                        if (!empty($cat_sr['image'])) $sr_old_candidates[] = $cat_sr['image'];
+                        $cat_sr['image'] = $sr_final_url;
+                        $sr_cms_dirty = true;
+                    }
+                }
+                unset($cat_sr);
+            } elseif ($sr_field_path !== '') {
+                $parts_sr = array_values(array_filter(explode('.', $sr_field_path), function($x) { return trim($x) !== ''; }));
+                if (count($parts_sr) > 0) {
+                    $ref_sr = &$sr_cms;
+                    for ($pi = 0; $pi < count($parts_sr) - 1; $pi++) {
+                        if (!isset($ref_sr[$parts_sr[$pi]]) || !is_array($ref_sr[$parts_sr[$pi]])) {
+                            $ref_sr[$parts_sr[$pi]] = [];
+                        }
+                        $ref_sr = &$ref_sr[$parts_sr[$pi]];
+                    }
+                    $last_k_sr = $parts_sr[count($parts_sr) - 1];
+                    if (isset($ref_sr[$last_k_sr]) && is_string($ref_sr[$last_k_sr]) && $ref_sr[$last_k_sr] !== '') {
+                        $sr_old_candidates[] = $ref_sr[$last_k_sr];
+                    }
+                    $ref_sr[$last_k_sr] = $sr_final_url;
+                    unset($ref_sr);
+                    $sr_cms_dirty = true;
+                }
+            }
+            if ($sr_cms_dirty) {
+                $sr_cms['siteContentUpdatedAt'] = $sr_now_ms;
+                th_write_json_atomic($sr_cms_file, $sr_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
+
+        $sr_rep_old = array_values(array_filter(
+            th_merge_replaced_old_urls(is_array($sr_existing_ov['replacedOldUrls'] ?? null) ? $sr_existing_ov['replacedOldUrls'] : [], $sr_old_candidates),
+            function($u) use ($sr_final_url) { return th_strip_url_base($u) !== th_strip_url_base($sr_final_url); }
+        ));
+
+        if ($sr_target_id !== '') {
+            $sr_state['overrides'][$sr_target_id] = [
+                "primary" => $sr_final_url,
+                "gallery" => [$sr_final_url],
+                "format" => $sr_final_format,
+                "updatedAt" => $sr_now_iso,
+                "imageUpdatedAt" => $sr_now_ms,
+                "updatedBy" => "admin-manual",
+                "locked" => true,
+                "serverVerified" => true,
+                "verifiedAt" => $sr_now_iso,
+                "replacedOldUrls" => $sr_rep_old
+            ];
+            if (!isset($sr_state['productActivityTimestamps']) || !is_array($sr_state['productActivityTimestamps'])) {
+                $sr_state['productActivityTimestamps'] = [];
+            }
+            $sr_state['productActivityTimestamps'][$sr_target_id] = $sr_now_ms;
+            th_sync_image_override_to_db_and_cms($sr_target_id, $sr_final_url, [$sr_final_url], $pdo, $db_connected);
+        }
+
+        if (strpos($sr_final_url, '/assets/uploads/') === 0) {
+            $sr_media_entry = [
+                "id" => "media-" . $sr_now_ms,
+                "url" => $sr_final_url,
+                "name" => $sr_final_name,
+                "format" => $sr_final_format,
+                "sizeBytes" => $sr_final_size,
+                "uploadedAt" => $sr_now_iso
+            ];
+            $sr_existing_ml = is_array($sr_state['mediaLibrary'] ?? null) ? $sr_state['mediaLibrary'] : [];
+            $sr_state['mediaLibrary'] = array_values(array_merge([$sr_media_entry], array_filter($sr_existing_ml, function($m) use ($sr_final_url) {
+                return th_strip_url_base($m['url'] ?? '') !== th_strip_url_base($sr_final_url);
+            })));
+        }
+
+        // Permanently delete old replaced /assets/uploads/ files from server disk if no longer referenced
+        $sr_deleted_old = [];
+        $sr_final_base = th_strip_url_base($sr_final_url);
+        $sr_unique_old = array_values(array_unique(array_filter(array_map('th_strip_url_base', $sr_old_candidates))));
+        $sr_cms_json_str = is_array($sr_cms) ? (string)json_encode($sr_cms) : '';
+        foreach ($sr_unique_old as $old_u_sr) {
+            if ($old_u_sr === $sr_final_base || strpos($old_u_sr, '/assets/uploads/') !== 0) continue;
+            $still_used = false;
+            foreach (($sr_state['overrides'] ?? []) as $ok_id => $ok_ov) {
+                if ((string)$ok_id === $sr_target_id) continue;
+                if (th_strip_url_base($ok_ov['primary'] ?? '') === $old_u_sr) {
+                    $still_used = true;
+                    break;
+                }
+            }
+            if (!$still_used && $sr_cms_json_str !== '' && strpos($sr_cms_json_str, $old_u_sr) !== false) {
+                $still_used = true;
+            }
+            if ($still_used) continue;
+            $old_bn = basename($old_u_sr);
+            if ($old_bn && strpos($old_bn, '..') === false) {
+                $old_fp = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $old_bn;
+                if (file_exists($old_fp) && @unlink($old_fp)) {
+                    $sr_deleted_old[] = $old_u_sr;
+                }
+            }
+            $sr_state['mediaLibrary'] = array_values(array_filter($sr_state['mediaLibrary'] ?? [], function($m) use ($old_u_sr) {
+                return th_strip_url_base($m['url'] ?? '') !== $old_u_sr;
+            }));
+        }
+
+        $sr_saved_ok = th_save_image_state_atomic($uploads_dir_sr, $sr_state);
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        if (!$sr_saved_ok) {
+            http_response_code(500);
+            echo json_encode(["success" => false, "message" => "Failed to save image overrides state on server."]);
+            break;
+        }
+        echo json_encode([
+            "success" => true,
+            "targetId" => $sr_target_id ?: $sr_field_path,
+            "targetType" => $sr_target_type,
+            "newUrl" => $sr_final_url,
+            "deletedOldUrls" => $sr_deleted_old,
+            "diskDeletedCount" => count($sr_deleted_old),
+            "replacedOldUrls" => $sr_rep_old,
+            "verifiedOnDisk" => true,
+            "locked" => true,
+            "serverVerified" => true,
+            "updatedAt" => $sr_now_iso,
+            "imageUpdatedAt" => $sr_now_ms
+        ]);
+        break;
+
+    case 'site_images_delete_file':
+        $uploads_dir_df = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_df) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_df = __DIR__ . '/public/assets/uploads';
+        }
+        $df_raw_url = trim((string)($input['url'] ?? ''));
+        $df_base = th_strip_url_base($df_raw_url);
+        $df_target_id = trim((string)($input['targetId'] ?? ''));
+        $df_target_type = strtoupper(trim((string)($input['targetType'] ?? '')));
+        $df_field_path = trim((string)($input['fieldPath'] ?? ''));
+        if (strpos($df_base, '/assets/uploads/') !== 0) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Only /assets/uploads/ files can be permanently deleted."]);
+            break;
+        }
+        $df_bn = basename($df_base);
+        if (!$df_bn || strpos($df_bn, '..') !== false) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Invalid file name."]);
+            break;
+        }
+        $df_state = th_load_merged_image_state($uploads_dir_df);
+        if ($df_target_id !== '' && isset($df_state['overrides'][$df_target_id])) {
+            unset($df_state['overrides'][$df_target_id]);
+        }
+        $df_cms_file = __DIR__ . '/site_content.json';
+        $df_cms = th_read_json_locked($df_cms_file);
+        $df_cms_dirty = false;
+        if (is_array($df_cms)) {
+            if ($df_target_type === 'HERO_SLIDE' && $df_target_id !== '' && isset($df_cms['homepage']['heroSlides']) && is_array($df_cms['homepage']['heroSlides'])) {
+                foreach ($df_cms['homepage']['heroSlides'] as &$sl_df) {
+                    if ((string)($sl_df['id'] ?? '') === $df_target_id && th_strip_url_base($sl_df['image'] ?? '') === $df_base) {
+                        $sl_df['image'] = '';
+                        $df_cms_dirty = true;
+                    }
+                }
+                unset($sl_df);
+            } elseif ($df_target_type === 'CATEGORY' && $df_target_id !== '' && isset($df_cms['homepage']['categoriesList']) && is_array($df_cms['homepage']['categoriesList'])) {
+                foreach ($df_cms['homepage']['categoriesList'] as &$cat_df) {
+                    if ((string)($cat_df['id'] ?? '') === $df_target_id && th_strip_url_base($cat_df['image'] ?? '') === $df_base) {
+                        $cat_df['image'] = '';
+                        $df_cms_dirty = true;
+                    }
+                }
+                unset($cat_df);
+            } elseif ($df_field_path !== '') {
+                $parts_df = array_values(array_filter(explode('.', $df_field_path), function($x) { return trim($x) !== ''; }));
+                if (count($parts_df) > 0) {
+                    $ref_df = &$df_cms;
+                    $ok_df = true;
+                    for ($pi = 0; $pi < count($parts_df) - 1; $pi++) {
+                        if (!isset($ref_df[$parts_df[$pi]]) || !is_array($ref_df[$parts_df[$pi]])) {
+                            $ok_df = false;
+                            break;
+                        }
+                        $ref_df = &$ref_df[$parts_df[$pi]];
+                    }
+                    $last_k_df = $parts_df[count($parts_df) - 1];
+                    if ($ok_df && isset($ref_df[$last_k_df])) {
+                        $ref_df[$last_k_df] = '';
+                        $df_cms_dirty = true;
+                    }
+                    unset($ref_df);
+                }
+            }
+            if ($df_cms_dirty) {
+                $df_cms['siteContentUpdatedAt'] = (int)round(microtime(true) * 1000);
+                th_write_json_atomic($df_cms_file, $df_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
+        $df_fp = rtrim(realpath($uploads_dir_df) ?: $uploads_dir_df, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $df_bn;
+        $df_deleted = file_exists($df_fp) ? @unlink($df_fp) : false;
+        $df_state['mediaLibrary'] = array_values(array_filter($df_state['mediaLibrary'] ?? [], function($m) use ($df_base) {
+            return th_strip_url_base($m['url'] ?? '') !== $df_base;
+        }));
+        th_save_image_state_atomic($uploads_dir_df, $df_state);
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        echo json_encode([
+            "success" => true,
+            "deletedUrl" => $df_base,
+            "deletedFromDisk" => $df_deleted,
+            "siteContentCleared" => $df_cms_dirty
         ]);
         break;
 

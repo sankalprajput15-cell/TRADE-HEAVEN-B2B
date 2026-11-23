@@ -215,9 +215,9 @@
       "category": "Leather Belts & Genuine Leather Goods"
     },
     "prod-atlantic-cat-generators": {
-      "primary": "/assets/uploads/auto-cat-power-heavy-duty-industrial-di-ab9a88004bea.webp",
+      "primary": "/assets/uploads/auto-cat-power-heavy-duty-industrial-di-ab9a88004bea.webp?v=1795431343197",
       "gallery": [
-        "/assets/uploads/auto-cat-power-heavy-duty-industrial-di-ab9a88004bea.webp"
+        "/assets/uploads/auto-cat-power-heavy-duty-industrial-di-ab9a88004bea.webp?v=1795431343197"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-23T10:55:43.197Z",
@@ -16613,7 +16613,9 @@
     "prod-blackstone-turquoise-rough-matrix": 1795431311926,
     "prod-atlantic-large-tanks": 1795431325034,
     "prod-atlantic-cummins-generators": 1795431331281,
-    "prod-atlantic-cat-earthmoving": 1795431337525
+    "prod-atlantic-cat-earthmoving": 1795431337525,
+    "prod-test-http200-debug": 1795436710119,
+    "prod-smoke-upload-fix": 1795439660168
   },
   "globalDefaultImage": null,
   "categoryOverrides": {
@@ -16990,6 +16992,182 @@
     "https://fuelchieftanks.com/wp-content/uploads/2021/11/IMG_6482-550x550.jpg": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-cd2b6d89ac15.webp?v=1795431332491"
   },
   "mediaLibrary": [
+    {
+      "id": "media-trade-heaven-machinery-industrial-equipment-eb53dd01504a.webp",
+      "url": "/assets/uploads/trade-heaven-machinery-industrial-equipment-eb53dd01504a.webp?v=1795435833282",
+      "name": "trade-heaven-machinery-industrial-equipment-eb53dd01504a.webp",
+      "format": "WEBP",
+      "sizeBytes": 189456,
+      "uploadedAt": "2026-11-23T12:10:33.282Z"
+    },
+    {
+      "id": "media-trade-heaven-machinery-industrial-equipment-2f15a4d98b1a.webp",
+      "url": "/assets/uploads/trade-heaven-machinery-industrial-equipment-2f15a4d98b1a.webp?v=1795435832950",
+      "name": "trade-heaven-machinery-industrial-equipment-2f15a4d98b1a.webp",
+      "format": "WEBP",
+      "sizeBytes": 120066,
+      "uploadedAt": "2026-11-23T12:10:32.950Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-f8126dbac996.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-f8126dbac996.webp?v=1795435882527",
+      "name": "trade-heaven-industrial-equipment-f8126dbac996.webp",
+      "format": "WEBP",
+      "sizeBytes": 78188,
+      "uploadedAt": "2026-11-23T12:11:22.527Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-f7a92a47b4d5.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-f7a92a47b4d5.webp?v=1795435885180",
+      "name": "trade-heaven-industrial-equipment-f7a92a47b4d5.webp",
+      "format": "WEBP",
+      "sizeBytes": 20058,
+      "uploadedAt": "2026-11-23T12:11:25.180Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-f023267cce5e.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-f023267cce5e.webp?v=1795435887481",
+      "name": "trade-heaven-industrial-equipment-f023267cce5e.webp",
+      "format": "WEBP",
+      "sizeBytes": 37130,
+      "uploadedAt": "2026-11-23T12:11:27.481Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-d5ad5d94d102.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-d5ad5d94d102.webp?v=1795435881002",
+      "name": "trade-heaven-industrial-equipment-d5ad5d94d102.webp",
+      "format": "WEBP",
+      "sizeBytes": 115606,
+      "uploadedAt": "2026-11-23T12:11:21.002Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-c76275c2ea29.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-c76275c2ea29.webp?v=1795435886299",
+      "name": "trade-heaven-industrial-equipment-c76275c2ea29.webp",
+      "format": "WEBP",
+      "sizeBytes": 57584,
+      "uploadedAt": "2026-11-23T12:11:26.299Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-c61a2ad067d6.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-c61a2ad067d6.webp?v=1795435884793",
+      "name": "trade-heaven-industrial-equipment-c61a2ad067d6.webp",
+      "format": "WEBP",
+      "sizeBytes": 33564,
+      "uploadedAt": "2026-11-23T12:11:24.793Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-c4993fd595d0.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-c4993fd595d0.webp?v=1795435888352",
+      "name": "trade-heaven-industrial-equipment-c4993fd595d0.webp",
+      "format": "WEBP",
+      "sizeBytes": 55570,
+      "uploadedAt": "2026-11-23T12:11:28.352Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-b7637b3ecf22.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-b7637b3ecf22.webp?v=1795435886090",
+      "name": "trade-heaven-industrial-equipment-b7637b3ecf22.webp",
+      "format": "WEBP",
+      "sizeBytes": 66336,
+      "uploadedAt": "2026-11-23T12:11:26.090Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-acaaa40b75fa.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-acaaa40b75fa.webp?v=1795435887636",
+      "name": "trade-heaven-industrial-equipment-acaaa40b75fa.webp",
+      "format": "WEBP",
+      "sizeBytes": 55162,
+      "uploadedAt": "2026-11-23T12:11:27.636Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-aa9a5686fe9a.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-aa9a5686fe9a.webp?v=1795435884431",
+      "name": "trade-heaven-industrial-equipment-aa9a5686fe9a.webp",
+      "format": "WEBP",
+      "sizeBytes": 66794,
+      "uploadedAt": "2026-11-23T12:11:24.431Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-a0a057d07f1c.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-a0a057d07f1c.webp?v=1795435887782",
+      "name": "trade-heaven-industrial-equipment-a0a057d07f1c.webp",
+      "format": "WEBP",
+      "sizeBytes": 71460,
+      "uploadedAt": "2026-11-23T12:11:27.782Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-95afe9b845f2.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-95afe9b845f2.webp?v=1795435885746",
+      "name": "trade-heaven-industrial-equipment-95afe9b845f2.webp",
+      "format": "WEBP",
+      "sizeBytes": 104148,
+      "uploadedAt": "2026-11-23T12:11:25.746Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-94e3ad25108e.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-94e3ad25108e.webp?v=1795435888151",
+      "name": "trade-heaven-industrial-equipment-94e3ad25108e.webp",
+      "format": "WEBP",
+      "sizeBytes": 133550,
+      "uploadedAt": "2026-11-23T12:11:28.151Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-6f22ce5dd0c8.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-6f22ce5dd0c8.webp?v=1795435884148",
+      "name": "trade-heaven-industrial-equipment-6f22ce5dd0c8.webp",
+      "format": "WEBP",
+      "sizeBytes": 66176,
+      "uploadedAt": "2026-11-23T12:11:24.148Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-4f922be0a935.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-4f922be0a935.webp?v=1795435884668",
+      "name": "trade-heaven-industrial-equipment-4f922be0a935.webp",
+      "format": "WEBP",
+      "sizeBytes": 27414,
+      "uploadedAt": "2026-11-23T12:11:24.668Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-4baf7bd6e538.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-4baf7bd6e538.webp?v=1795435884855",
+      "name": "trade-heaven-industrial-equipment-4baf7bd6e538.webp",
+      "format": "WEBP",
+      "sizeBytes": 143162,
+      "uploadedAt": "2026-11-23T12:11:24.855Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-3d83c2712658.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-3d83c2712658.webp?v=1795435885445",
+      "name": "trade-heaven-industrial-equipment-3d83c2712658.webp",
+      "format": "WEBP",
+      "sizeBytes": 68692,
+      "uploadedAt": "2026-11-23T12:11:25.445Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-3aee6cfb1612.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-3aee6cfb1612.webp?v=1795435880879",
+      "name": "trade-heaven-industrial-equipment-3aee6cfb1612.webp",
+      "format": "WEBP",
+      "sizeBytes": 58552,
+      "uploadedAt": "2026-11-23T12:11:20.879Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-35bea554c5bd.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-35bea554c5bd.webp?v=1795435885980",
+      "name": "trade-heaven-industrial-equipment-35bea554c5bd.webp",
+      "format": "WEBP",
+      "sizeBytes": 23482,
+      "uploadedAt": "2026-11-23T12:11:25.980Z"
+    },
+    {
+      "id": "media-trade-heaven-industrial-equipment-3249f7916d2d.webp",
+      "url": "/assets/uploads/trade-heaven-industrial-equipment-3249f7916d2d.webp?v=1795435885571",
+      "name": "trade-heaven-industrial-equipment-3249f7916d2d.webp",
+      "format": "WEBP",
+      "sizeBytes": 28138,
+      "uploadedAt": "2026-11-23T12:11:25.571Z"
+    },
     {
       "id": "media-trade-heaven-large-stationary-fuel-storage-tanks-cd2b6d89ac15.webp",
       "url": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-cd2b6d89ac15.webp?v=1795431331778",
@@ -44019,9 +44197,194 @@
       "format": "WEBP",
       "sizeBytes": 44374,
       "uploadedAt": "2026-11-23T10:55:25.647Z"
+    },
+    {
+      "id": "media-verified-prod-atlantic-cat-generators.webp",
+      "url": "/assets/uploads/verified-prod-atlantic-cat-generators.webp?v=1795002430405",
+      "name": "verified-prod-atlantic-cat-generators.webp",
+      "format": "WEBP",
+      "sizeBytes": 19034,
+      "uploadedAt": "2026-11-18T11:47:10.405Z"
+    },
+    {
+      "id": "media-verified-prod-rice-12.webp",
+      "url": "/assets/uploads/verified-prod-rice-12.webp?v=1795002419188",
+      "name": "verified-prod-rice-12.webp",
+      "format": "WEBP",
+      "sizeBytes": 17442,
+      "uploadedAt": "2026-11-18T11:46:59.188Z"
+    },
+    {
+      "id": "media-verified-prod-rice-10.webp",
+      "url": "/assets/uploads/verified-prod-rice-10.webp?v=1795002417215",
+      "name": "verified-prod-rice-10.webp",
+      "format": "WEBP",
+      "sizeBytes": 15438,
+      "uploadedAt": "2026-11-18T11:46:57.215Z"
+    },
+    {
+      "id": "media-verified-prod-rice-04.webp",
+      "url": "/assets/uploads/verified-prod-rice-04.webp?v=1795002426634",
+      "name": "verified-prod-rice-04.webp",
+      "format": "WEBP",
+      "sizeBytes": 16778,
+      "uploadedAt": "2026-11-18T11:47:06.634Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-yhbs-broccoli-export.webp",
+      "url": "/assets/uploads/verified-prod-iqf-yhbs-broccoli-export.webp?v=1795002419312",
+      "name": "verified-prod-iqf-yhbs-broccoli-export.webp",
+      "format": "WEBP",
+      "sizeBytes": 20312,
+      "uploadedAt": "2026-11-18T11:46:59.312Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-topsource-broccoli-chestnuts.webp",
+      "url": "/assets/uploads/verified-prod-iqf-topsource-broccoli-chestnuts.webp?v=1795002431701",
+      "name": "verified-prod-iqf-topsource-broccoli-chestnuts.webp",
+      "format": "WEBP",
+      "sizeBytes": 20950,
+      "uploadedAt": "2026-11-18T11:47:11.701Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-shangqing-broccoli-fruits.webp",
+      "url": "/assets/uploads/verified-prod-iqf-shangqing-broccoli-fruits.webp?v=1795002432048",
+      "name": "verified-prod-iqf-shangqing-broccoli-fruits.webp",
+      "format": "WEBP",
+      "sizeBytes": 20624,
+      "uploadedAt": "2026-11-18T11:47:12.048Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-hubgreen-broccoli.webp",
+      "url": "/assets/uploads/verified-prod-iqf-hubgreen-broccoli.webp?v=1795002431983",
+      "name": "verified-prod-iqf-hubgreen-broccoli.webp",
+      "format": "WEBP",
+      "sizeBytes": 19966,
+      "uploadedAt": "2026-11-18T11:47:11.983Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-hindam-broccoli-peas.webp",
+      "url": "/assets/uploads/verified-prod-iqf-hindam-broccoli-peas.webp?v=1795002426628",
+      "name": "verified-prod-iqf-hindam-broccoli-peas.webp",
+      "format": "WEBP",
+      "sizeBytes": 20140,
+      "uploadedAt": "2026-11-18T11:47:06.628Z"
+    },
+    {
+      "id": "media-verified-prod-iqf-cairofood-broccoli.webp",
+      "url": "/assets/uploads/verified-prod-iqf-cairofood-broccoli.webp?v=1795002419128",
+      "name": "verified-prod-iqf-cairofood-broccoli.webp",
+      "format": "WEBP",
+      "sizeBytes": 19918,
+      "uploadedAt": "2026-11-18T11:46:59.128Z"
+    },
+    {
+      "id": "media-verified-prod-blackstone-turquoise-rough-matrix.webp",
+      "url": "/assets/uploads/verified-prod-blackstone-turquoise-rough-matrix.webp?v=1795002419213",
+      "name": "verified-prod-blackstone-turquoise-rough-matrix.webp",
+      "format": "WEBP",
+      "sizeBytes": 20278,
+      "uploadedAt": "2026-11-18T11:46:59.213Z"
+    },
+    {
+      "id": "media-verified-prod-bamboo-03.webp",
+      "url": "/assets/uploads/verified-prod-bamboo-03.webp?v=1795002420651",
+      "name": "verified-prod-bamboo-03.webp",
+      "format": "WEBP",
+      "sizeBytes": 18530,
+      "uploadedAt": "2026-11-18T11:47:00.651Z"
+    },
+    {
+      "id": "media-verified-prod-bamboo-01.webp",
+      "url": "/assets/uploads/verified-prod-bamboo-01.webp?v=1795002432199",
+      "name": "verified-prod-bamboo-01.webp",
+      "format": "WEBP",
+      "sizeBytes": 18596,
+      "uploadedAt": "2026-11-18T11:47:12.199Z"
+    },
+    {
+      "id": "media-verified-prod-avo-06.webp",
+      "url": "/assets/uploads/verified-prod-avo-06.webp?v=1795002431860",
+      "name": "verified-prod-avo-06.webp",
+      "format": "WEBP",
+      "sizeBytes": 16734,
+      "uploadedAt": "2026-11-18T11:47:11.860Z"
+    },
+    {
+      "id": "media-verified-prod-avo-05.webp",
+      "url": "/assets/uploads/verified-prod-avo-05.webp?v=1795002419825",
+      "name": "verified-prod-avo-05.webp",
+      "format": "WEBP",
+      "sizeBytes": 15628,
+      "uploadedAt": "2026-11-18T11:46:59.825Z"
+    },
+    {
+      "id": "media-verified-prod-avo-04.webp",
+      "url": "/assets/uploads/verified-prod-avo-04.webp?v=1795002430498",
+      "name": "verified-prod-avo-04.webp",
+      "format": "WEBP",
+      "sizeBytes": 17030,
+      "uploadedAt": "2026-11-18T11:47:10.498Z"
+    },
+    {
+      "id": "media-verified-prod-avo-01.webp",
+      "url": "/assets/uploads/verified-prod-avo-01.webp?v=1795002419508",
+      "name": "verified-prod-avo-01.webp",
+      "format": "WEBP",
+      "sizeBytes": 17276,
+      "uploadedAt": "2026-11-18T11:46:59.508Z"
+    },
+    {
+      "id": "media-verified-prod-atlantic-large-tanks.webp",
+      "url": "/assets/uploads/verified-prod-atlantic-large-tanks.webp?v=1795002419204",
+      "name": "verified-prod-atlantic-large-tanks.webp",
+      "format": "WEBP",
+      "sizeBytes": 18618,
+      "uploadedAt": "2026-11-18T11:46:59.204Z"
+    },
+    {
+      "id": "media-verified-prod-atlantic-cummins-generators.webp",
+      "url": "/assets/uploads/verified-prod-atlantic-cummins-generators.webp?v=1795002431707",
+      "name": "verified-prod-atlantic-cummins-generators.webp",
+      "format": "WEBP",
+      "sizeBytes": 19416,
+      "uploadedAt": "2026-11-18T11:47:11.707Z"
+    },
+    {
+      "id": "media-verified-prod-atlantic-cat-earthmoving.webp",
+      "url": "/assets/uploads/verified-prod-atlantic-cat-earthmoving.webp?v=1795002425147",
+      "name": "verified-prod-atlantic-cat-earthmoving.webp",
+      "format": "WEBP",
+      "sizeBytes": 18994,
+      "uploadedAt": "2026-11-18T11:47:05.147Z"
+    },
+    {
+      "id": "media-auto-diesel-fuel-oil-0f1d4d0d90cf.webp",
+      "url": "/assets/uploads/auto-diesel-fuel-oil-0f1d4d0d90cf.webp?v=1795002426654",
+      "name": "auto-diesel-fuel-oil-0f1d4d0d90cf.webp",
+      "format": "WEBP",
+      "sizeBytes": 56110,
+      "uploadedAt": "2026-11-18T11:47:06.654Z"
+    },
+    {
+      "id": "media-auto-basmati-white-rice-grain-68c6b9b673ac.webp",
+      "url": "/assets/uploads/auto-basmati-white-rice-grain-68c6b9b673ac.webp?v=1795002432297",
+      "name": "auto-basmati-white-rice-grain-68c6b9b673ac.webp",
+      "format": "WEBP",
+      "sizeBytes": 36772,
+      "uploadedAt": "2026-11-18T11:47:12.297Z"
+    },
+    {
+      "id": "media-auto-agriculture-food-product-87fe77a48a80.webp",
+      "url": "/assets/uploads/auto-agriculture-food-product-87fe77a48a80.webp?v=1795002419747",
+      "name": "auto-agriculture-food-product-87fe77a48a80.webp",
+      "format": "WEBP",
+      "sizeBytes": 13696,
+      "uploadedAt": "2026-11-18T11:46:59.747Z"
     }
   ],
   "deletedUrls": [
-    "/assets/uploads/verified-prod-atlantic-cat-generators.webp"
+    "/assets/uploads/trade-heaven-smoke-upload-1795439660164.webp",
+    "/assets/uploads/trade-heaven-smoke-upload-1795439660098.webp"
   ]
 }

@@ -33,6 +33,11 @@ import {
   optimizeImageUrl
 } from '../../services/productImageManagerService';
 import { isGenericOrPlaceholderImageUrl } from '../../services/visualProductImageService';
+import {
+  replaceSiteImage,
+  autoFixSiteImages,
+  deleteSiteImageFile
+} from '../../services/siteImageControlService';
 
 export type SiteImageTargetType = 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'HERO_SLIDE' | 'SITE_ASSET';
 
@@ -702,62 +707,33 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     ): Promise<{ success: boolean; newUrl?: string; deletedCount: number; message?: string }> => {
       setBusyRowIds(prev => ({ ...prev, [item.id]: source.file ? 'Uploading...' : 'Saving URL...' }));
       try {
-        let base64Data: string | undefined;
-        let fileName: string | undefined;
-        let mimeType: string | undefined;
-
-        if (source.file) {
-          const converted = await productImageManagerService.convertImageFile(
-            source.file,
-            'webp',
-            0.92,
-            1400,
-            true
-          );
-          base64Data = converted.dataUrl;
-          fileName = converted.fileName;
-          mimeType = converted.mimeType;
-        }
-
-        const res = await fetch('/api/v1/admin/site-images/replace', {
-          method: 'POST',
-          cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            targetId: item.id,
-            targetType: item.type,
-            fieldPath: item.fieldPath,
-            title: item.title,
-            category: item.category,
-            fileName,
-            mimeType,
-            base64Data,
-            imageUrl: source.imageUrl,
-            oldImageUrl: item.currentUrl || item.baseUrl
-          })
+        const result = await replaceSiteImage({
+          targetId: item.id,
+          targetType: item.type,
+          fieldPath: item.fieldPath,
+          title: item.title,
+          category: item.category,
+          oldImageUrl: item.currentUrl || item.baseUrl,
+          file: source.file,
+          imageUrl: source.imageUrl
         });
 
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.success || !json?.newUrl) {
-          throw new Error(json?.message || `Server returned HTTP ${res.status}`);
-        }
-
-        const deletedOldUrls: string[] = Array.isArray(json.deletedOldUrls) ? json.deletedOldUrls : [];
+        const deletedOldUrls: string[] = Array.isArray(result.deletedOldUrls) ? result.deletedOldUrls : [];
         await applyLocalSync([
           {
             id: item.id,
             type: item.type,
-            newUrl: json.newUrl,
+            newUrl: result.newUrl,
             deletedOldUrls,
-            replacedOldUrls: Array.isArray(json.replacedOldUrls) ? json.replacedOldUrls : undefined,
-            updatedAt: json.updatedAt,
+            replacedOldUrls: result.replacedOldUrls,
+            updatedAt: result.updatedAt,
             action: source.file ? 'UPLOAD' : 'URL'
           }
         ]);
 
         return {
           success: true,
-          newUrl: json.newUrl,
+          newUrl: result.newUrl,
           deletedCount: deletedOldUrls.length
         };
       } catch (err: any) {
@@ -834,26 +810,12 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     setBusyRowIds(prev => ({ ...prev, [item.id]: 'Deleting...' }));
     setBannerNotice(null);
     try {
-      let deletedFileOk = false;
-      if (item.currentUrl && item.currentUrl.startsWith('/assets/uploads/')) {
-        const delRes = await fetch('/api/v1/admin/site-images/delete-file', {
-          method: 'POST',
-          cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            url: item.currentUrl,
-            force: true,
-            targetId: item.id,
-            targetType: item.type,
-            fieldPath: item.fieldPath
-          })
-        });
-        const delJson = await delRes.json().catch(() => null);
-        if (delRes.ok && delJson?.success) {
-          deletedFileOk = true;
-        }
-      }
-      await productImageManagerService.resetProductImage(item.id);
+      const { deletedFile: deletedFileOk } = await deleteSiteImageFile({
+        url: item.currentUrl,
+        targetId: item.id,
+        targetType: item.type,
+        fieldPath: item.fieldPath
+      });
       if (deletedFileOk) {
         setTotalDeletedFilesSession(prev => prev + 1);
       }
@@ -915,27 +877,19 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     setBusyRowIds(prev => ({ ...prev, [item.id]: 'Auto-fixing...' }));
     setBannerNotice(null);
     try {
-      const res = await fetch('/api/v1/admin/site-images/auto-fix', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          items: [
-            {
-              id: item.id,
-              type: item.type,
-              title: item.title,
-              category: item.category,
-              currentUrl: item.currentUrl,
-              fieldPath: item.fieldPath
-            }
-          ]
-        })
-      });
-      const json = await res.json().catch(() => null);
+      const json = await autoFixSiteImages([
+        {
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          category: item.category,
+          currentUrl: item.currentUrl,
+          fieldPath: item.fieldPath
+        }
+      ]);
       const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
-      if (!res.ok || !rowRes?.success || !rowRes?.newUrl) {
-        throw new Error(rowRes?.error || json?.message || 'Auto-fix could not find a unique replacement photo.');
+      if (!rowRes?.success || !rowRes?.newUrl) {
+        throw new Error(rowRes?.error || 'Auto-fix could not find a unique replacement photo.');
       }
 
       const deletedOld: string[] = Array.isArray(rowRes.deletedOldUrls) ? rowRes.deletedOldUrls : [];
@@ -1009,23 +963,17 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       });
 
       try {
-        const res = await fetch('/api/v1/admin/site-images/auto-fix', {
-          method: 'POST',
-          cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            items: chunk.map(c => ({
-              id: c.id,
-              type: c.type,
-              title: c.title,
-              category: c.category,
-              currentUrl: c.currentUrl,
-              fieldPath: c.fieldPath
-            }))
-          })
-        });
-        const json = await res.json().catch(() => null);
-        const resList: any[] = Array.isArray(json?.results) ? json.results : [];
+        const json = await autoFixSiteImages(
+          chunk.map(c => ({
+            id: c.id,
+            type: c.type,
+            title: c.title,
+            category: c.category,
+            currentUrl: c.currentUrl,
+            fieldPath: c.fieldPath
+          }))
+        );
+        const resList = Array.isArray(json?.results) ? json.results : [];
         const toSync: Array<{
           id: string;
           type: SiteImageTargetType;
