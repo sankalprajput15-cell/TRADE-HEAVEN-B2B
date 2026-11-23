@@ -27011,6 +27011,9 @@ app.post('/api/v1/admin/site-images/delete-file', (req, res) => {
   try {
     const rawUrl = String(req.body?.url || '').trim();
     const forceDelete = Boolean(req.body?.force);
+    const cleanTargetId = String(req.body?.targetId || '').trim();
+    const cleanTargetType = String(req.body?.targetType || '').trim().toUpperCase();
+    const cleanFieldPath = String(req.body?.fieldPath || '').trim();
     const cleanBase = stripUrlQueryBase(rawUrl);
     if (!cleanBase.startsWith('/assets/uploads/')) {
       return res.status(400).json({ success: false, message: 'Only /assets/uploads/ files can be permanently deleted.' });
@@ -27025,6 +27028,35 @@ app.post('/api/v1/admin/site-images/delete-file', (req, res) => {
         success: false,
         message: 'This image is currently assigned to an active item. Replace that item image first or pass force=true.'
       });
+    }
+
+    // Clear references on siteContent / overrides for this target if provided
+    let siteContentDirty = false;
+    if (cleanTargetType === 'HERO_SLIDE' && cleanTargetId && Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
+      for (const slide of serverSiteContent.homepage.heroSlides) {
+        if (String(slide?.id || '') === cleanTargetId && stripUrlQueryBase(slide?.image) === cleanBase) {
+          slide.image = '';
+          siteContentDirty = true;
+        }
+      }
+    } else if (cleanTargetType === 'CATEGORY' && cleanTargetId && Array.isArray(serverSiteContent?.homepage?.categoriesList)) {
+      for (const cat of serverSiteContent.homepage.categoriesList) {
+        if (String(cat?.id || '') === cleanTargetId && stripUrlQueryBase(cat?.image) === cleanBase) {
+          cat.image = '';
+          siteContentDirty = true;
+        }
+      }
+    } else if (cleanFieldPath) {
+      const prevVal = setNestedSiteContentValue(serverSiteContent, cleanFieldPath, '');
+      if (prevVal) siteContentDirty = true;
+    }
+    if (siteContentDirty) {
+      (serverSiteContent as any).siteContentUpdatedAt = Date.now();
+      invalidateSiteContentResponseCache();
+      saveServerSiteContentToDisk();
+    }
+    if (cleanTargetId && serverProductImageState.overrides?.[cleanTargetId]) {
+      delete serverProductImageState.overrides[cleanTargetId];
     }
 
     const targets = [
@@ -27056,7 +27088,8 @@ app.post('/api/v1/admin/site-images/delete-file', (req, res) => {
     return res.json({
       success: true,
       deletedUrl: cleanBase,
-      deletedFromDisk: deletedAny
+      deletedFromDisk: deletedAny,
+      siteContentCleared: siteContentDirty
     });
   } catch (err: any) {
     return res.status(500).json({

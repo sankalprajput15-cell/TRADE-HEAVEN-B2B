@@ -17,9 +17,13 @@ import {
   CheckCircle2,
   ExternalLink,
   MapPin,
-  Clock
+  Clock,
+  Eye,
+  Crop
 } from 'lucide-react';
 import { ActiveView, Product, RfqRequirement } from '../../types';
+import { AdminQuickImageInspectorModal } from './AdminQuickImageInspectorModal';
+import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { CATEGORIES_TREE, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
@@ -155,6 +159,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
   const [busyRowIds, setBusyRowIds] = useState<Record<string, string>>({});
   const [urlEditor, setUrlEditor] = useState<{ itemId: string; value: string } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<UnifiedSiteImageItem | null>(null);
+  const [croppingItem, setCroppingItem] = useState<UnifiedSiteImageItem | null>(null);
   const [bannerNotice, setBannerNotice] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
@@ -184,9 +191,12 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [bulkTargetFilter, setBulkTargetFilter] = useState<string>('');
   const [isBulkUploading, setIsBulkUploading] = useState<boolean>(false);
 
-  // Single-row hidden file picker
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+
+  // Single-row & Selected-rows hidden file pickers
   const rowFileInputRef = useRef<HTMLInputElement | null>(null);
   const rowUploadTargetRef = useRef<UnifiedSiteImageItem | null>(null);
+  const selectedRowsUploadInputRef = useRef<HTMLInputElement | null>(null);
   const bulkFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAllInventory = useCallback(async (forceSync = false) => {
@@ -818,6 +828,88 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
+  // Permanent delete of uploaded server file + override removal from the row
+  const handlePermanentDeleteItemImage = async (item: UnifiedSiteImageItem) => {
+    setDeleteConfirmId(null);
+    setBusyRowIds(prev => ({ ...prev, [item.id]: 'Deleting...' }));
+    setBannerNotice(null);
+    try {
+      let deletedFileOk = false;
+      if (item.currentUrl && item.currentUrl.startsWith('/assets/uploads/')) {
+        const delRes = await fetch('/api/v1/admin/site-images/delete-file', {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            url: item.currentUrl,
+            force: true,
+            targetId: item.id,
+            targetType: item.type,
+            fieldPath: item.fieldPath
+          })
+        });
+        const delJson = await delRes.json().catch(() => null);
+        if (delRes.ok && delJson?.success) {
+          deletedFileOk = true;
+        }
+      }
+      await productImageManagerService.resetProductImage(item.id);
+      if (deletedFileOk) {
+        setTotalDeletedFilesSession(prev => prev + 1);
+      }
+      await refreshFromServer().catch(() => {});
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+      }
+      setStateVersion(v => v + 1);
+      setBannerNotice({
+        type: 'success',
+        text: deletedFileOk
+          ? `Permanently deleted "${item.title}" image file from server (${item.currentUrl}) and cleared override.`
+          : `Cleared image override for "${item.title}".`,
+        changedItem: item
+      });
+    } catch (err: any) {
+      setBannerNotice({
+        type: 'error',
+        text: `Could not delete image for "${item.title}": ${err?.message || 'Delete failed.'}`
+      });
+    } finally {
+      setBusyRowIds(prev => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+    }
+  };
+
+  // Save edited/cropped canvas data directly via replace endpoint (auto-deletes old file)
+  const handleSaveCroppedRowImage = async (item: UnifiedSiteImageItem, editedDataUrl: string) => {
+    setCroppingItem(null);
+    setBannerNotice(null);
+    const croppedFile = productImageManagerService.dataUrlToFile(
+      editedDataUrl,
+      `${item.id}-edited-${Date.now()}.png`
+    );
+    const out = await executeReplaceImage(item, { file: croppedFile });
+    if (out.success) {
+      setBannerNotice({
+        type: 'success',
+        text: `Edited & saved image for "${item.title}" — Located at ${item.siteLocationLabel}${
+          out.deletedCount > 0 ? ` (${out.deletedCount} old file permanently deleted from server).` : '.'
+        }`,
+        changedItem: item,
+        showChangedTabShortcut: true
+      });
+    } else {
+      setBannerNotice({
+        type: 'error',
+        text: `Could not save edited image for "${item.title}": ${out.message}`
+      });
+    }
+  };
+
   // Single-row Auto-Fix
   const handleAutoFixSingle = async (item: UnifiedSiteImageItem) => {
     setBusyRowIds(prev => ({ ...prev, [item.id]: 'Auto-fixing...' }));
@@ -1066,6 +1158,59 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     });
   };
 
+  // Apply one chosen file across all checked rows (deletes every replaced old server file)
+  const handleApplyFileToSelectedRows = async (file: File) => {
+    const idSet = new Set(selectedIdList);
+    const targets = allItems.filter(it => idSet.has(it.id));
+    if (targets.length === 0 || batchProgress?.active) return;
+
+    abortBatchRef.current = false;
+    setBannerNotice(null);
+    let completed = 0;
+    let fixed = 0;
+    let failed = 0;
+    let deletedOld = 0;
+
+    setBatchProgress({
+      active: true,
+      total: targets.length,
+      completed: 0,
+      fixed: 0,
+      failed: 0,
+      deletedOld: 0,
+      currentLabel: targets[0].title
+    });
+
+    for (const target of targets) {
+      if (abortBatchRef.current) break;
+      setBatchProgress({
+        active: true,
+        total: targets.length,
+        completed,
+        fixed,
+        failed,
+        deletedOld,
+        currentLabel: target.title
+      });
+      const out = await executeReplaceImage(target, { file });
+      completed++;
+      if (out.success) {
+        fixed++;
+        deletedOld += out.deletedCount;
+      } else {
+        failed++;
+      }
+    }
+
+    setBatchProgress(null);
+    setSelectedIds({});
+    setBannerNotice({
+      type: fixed > 0 ? 'success' : 'error',
+      text: `Applied "${file.name}" to ${fixed} of ${targets.length} selected items (${deletedOld} old server files permanently deleted).`,
+      showChangedTabShortcut: fixed > 0
+    });
+  };
+
   const toggleSelectRow = (id: string) => {
     setSelectedIds(prev => {
       const next = { ...prev };
@@ -1109,6 +1254,17 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         onChange={e => {
           handleBulkFilesAdded(e.target.files);
           e.target.value = '';
+        }}
+        className="hidden"
+      />
+      <input
+        ref={selectedRowsUploadInputRef}
+        type="file"
+        accept="image/*"
+        onChange={e => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void handleApplyFileToSelectedRows(f);
         }}
         className="hidden"
       />
@@ -1472,6 +1628,16 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               <button
                 type="button"
                 disabled={Boolean(batchProgress?.active)}
+                onClick={() => selectedRowsUploadInputRef.current?.click()}
+                className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Upload one image and apply it to every checked row"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload to Selected ({selectedIdList.length})</span>
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(batchProgress?.active)}
                 onClick={() => {
                   const idSet = new Set(selectedIdList);
                   const targets = allItems.filter(it => idSet.has(it.id));
@@ -1517,7 +1683,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               <th className="py-2.5 px-3">Item &amp; File Path</th>
               <th className="py-2.5 px-3 w-64">Live Site Location</th>
               <th className="py-2.5 px-3 w-36">Status</th>
-              <th className="py-2.5 pl-3 pr-6 text-right w-80">Actions</th>
+              <th className="py-2.5 pl-3 pr-6 text-right min-w-[275px]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs">
@@ -1550,6 +1716,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 const isSelected = Boolean(selectedIds[item.id]);
                 const rowBusyLabel = busyRowIds[item.id];
                 const isEditingUrl = urlEditor?.itemId === item.id;
+                const isConfirmingDelete = deleteConfirmId === item.id;
                 const thumbSrc = item.currentUrl
                   ? item.currentUrl.startsWith('/assets/uploads/')
                     ? `${optimizeImageUrl(item.currentUrl, { width: 160, isThumbnail: true })}&_v=${stateVersion}`
@@ -1558,7 +1725,48 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
                 return (
                   <React.Fragment key={item.id}>
-                    <tr className={`hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-blue-50/40' : ''}`}>
+                    <tr
+                      onDragOver={e => {
+                        e.preventDefault();
+                        if (dragOverRowId !== item.id) setDragOverRowId(item.id);
+                      }}
+                      onDragLeave={e => {
+                        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                        if (dragOverRowId === item.id) setDragOverRowId(null);
+                      }}
+                      onDrop={e => {
+                        e.preventDefault();
+                        setDragOverRowId(null);
+                        const droppedFile = e.dataTransfer.files?.[0];
+                        if (!droppedFile || !droppedFile.type.startsWith('image/')) return;
+                        void (async () => {
+                          setBannerNotice(null);
+                          const out = await executeReplaceImage(item, { file: droppedFile });
+                          if (out.success) {
+                            setBannerNotice({
+                              type: 'success',
+                              text: `Dropped & replaced image for "${item.title}" — Located at ${item.siteLocationLabel}${
+                                out.deletedCount > 0 ? ` (${out.deletedCount} old file permanently deleted from server).` : '.'
+                              }`,
+                              changedItem: item,
+                              showChangedTabShortcut: true
+                            });
+                          } else {
+                            setBannerNotice({
+                              type: 'error',
+                              text: `Drop upload failed for "${item.title}": ${out.message}`
+                            });
+                          }
+                        })();
+                      }}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        dragOverRowId === item.id
+                          ? 'bg-emerald-50 ring-2 ring-inset ring-emerald-500'
+                          : isSelected
+                            ? 'bg-blue-50/40'
+                            : ''
+                      }`}
+                    >
                       <td className="py-3 pl-6 pr-2 align-middle">
                         <button
                           type="button"
@@ -1657,7 +1865,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       </td>
 
                       <td className="py-3 pl-3 pr-6 align-middle text-right">
-                        <div className="inline-flex items-center justify-end gap-1.5 flex-wrap">
+                        <div className="inline-flex items-center justify-end gap-1.5 flex-wrap max-w-[310px] ml-auto">
                           <button
                             type="button"
                             disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
@@ -1665,44 +1873,83 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                               rowUploadTargetRef.current = item;
                               rowFileInputRef.current?.click();
                             }}
-                            className="px-2.5 py-1.5 rounded-md bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                            className="px-2.5 py-1 rounded-md bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                            title="Manually upload image from computer"
                           >
-                            <Upload className="w-3.5 h-3.5" />
+                            <Upload className="w-3 h-3" />
                             <span>{rowBusyLabel === 'Uploading...' ? 'Uploading...' : 'Upload'}</span>
                           </button>
 
                           <button
                             type="button"
                             disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
-                            onClick={() => void handleAutoFixSingle(item)}
-                            className="px-2.5 py-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                            onClick={() => setInspectingItem(item)}
+                            className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                            title="Inspect before/after, search verified photo candidates, crop, or auto-fix"
                           >
-                            <Wand2 className={`w-3.5 h-3.5 ${rowBusyLabel === 'Auto-fixing...' ? 'animate-spin' : ''}`} />
+                            <Eye className="w-3 h-3 text-[#0F294D]" />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={!item.currentUrl || Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
+                            onClick={() => setCroppingItem(item)}
+                            className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-medium inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-40"
+                            title="Crop, rotate, zoom, or adjust image filters"
+                          >
+                            <Crop className="w-3 h-3" />
+                            <span>Crop</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
+                            onClick={() => void handleAutoFixSingle(item)}
+                            className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                            title="Automatically assign unique photo & delete old server file"
+                          >
+                            <Wand2 className={`w-3 h-3 ${rowBusyLabel === 'Auto-fixing...' ? 'animate-spin' : ''}`} />
                             <span>{rowBusyLabel === 'Auto-fixing...' ? 'Fixing...' : 'Auto-Fix'}</span>
                           </button>
 
                           <button
                             type="button"
                             disabled={Boolean(rowBusyLabel)}
-                            onClick={() =>
+                            onClick={() => {
+                              setDeleteConfirmId(null);
                               setUrlEditor(
                                 isEditingUrl ? null : { itemId: item.id, value: item.currentUrl || '' }
-                              )
-                            }
-                            className="px-2 py-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 text-xs font-medium inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                            title="Replace with image URL"
+                              );
+                            }}
+                            className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 text-xs font-medium inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            title="Paste image URL"
                           >
-                            <Link2 className="w-3.5 h-3.5" />
+                            <Link2 className="w-3 h-3" />
                             <span>URL</span>
                           </button>
 
                           <button
                             type="button"
+                            disabled={Boolean(rowBusyLabel) || !item.currentUrl}
+                            onClick={() => {
+                              setUrlEditor(null);
+                              setDeleteConfirmId(isConfirmingDelete ? null : item.id);
+                            }}
+                            className="px-2 py-1 rounded-md bg-white hover:bg-red-50 text-red-700 border border-slate-300 hover:border-red-300 text-xs font-medium inline-flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-40"
+                            title="Permanently delete server image & clear override"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => handleCheckLiveOnSite(item)}
-                            className="px-2 py-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-[#0F294D] border border-slate-300 text-xs font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                            className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-[#0F294D] border border-slate-300 text-xs font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                             title={`Check live at: ${item.siteLocationLabel}`}
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <ExternalLink className="w-3 h-3" />
                             <span>View Live</span>
                           </button>
                         </div>
@@ -1735,6 +1982,36 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                             >
                               Cancel
                             </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {isConfirmingDelete && (
+                      <tr className="bg-red-50/70">
+                        <td colSpan={6} className="px-6 py-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div className="text-red-900 font-medium">
+                              Permanently delete{' '}
+                              <span className="font-mono font-semibold">{item.currentUrl}</span> from server storage and clear this item&apos;s override?
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => void handlePermanentDeleteItemImage(item)}
+                                className="px-3.5 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete Permanently</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:text-slate-900 font-medium cursor-pointer whitespace-nowrap"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -1777,6 +2054,87 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           </button>
         </div>
       </div>
+
+      {/* All-In-One Inspector Modal (Candidates + Manual Upload + Crop + Auto-Fix + URL + Live Check) */}
+      {inspectingItem && (
+        <AdminQuickImageInspectorModal
+          product={
+            {
+              id: inspectingItem.id,
+              title: inspectingItem.title,
+              category: inspectingItem.category,
+              images: inspectingItem.currentUrl ? [inspectingItem.currentUrl] : [],
+              description: inspectingItem.siteLocationLabel,
+              moq: 1,
+              price: '0',
+              supplierId: 'admin',
+              supplierName: 'Trade Heaven',
+              supplierCountry: 'Global'
+            } as unknown as Product
+          }
+          currentImageUrl={inspectingItem.currentUrl}
+          targetType={inspectingItem.type}
+          fieldPath={inspectingItem.fieldPath}
+          siteLocationLabel={inspectingItem.siteLocationLabel}
+          liveHref={inspectingItem.liveHref}
+          onCheckLiveOnSite={() => handleCheckLiveOnSite(inspectingItem)}
+          onImageDeleted={(_id, deletedFile) => {
+            if (deletedFile) {
+              setTotalDeletedFilesSession(prev => prev + 1);
+            }
+            void refreshFromServer().catch(() => {});
+            setStateVersion(v => v + 1);
+            setBannerNotice({
+              type: 'success',
+              text: deletedFile
+                ? `Permanently deleted "${inspectingItem.title}" image file from server storage.`
+                : `Cleared image override for "${inspectingItem.title}".`,
+              changedItem: inspectingItem
+            });
+          }}
+          onClose={() => setInspectingItem(null)}
+          onImageUpdated={(id, newUrl, activityMs, meta) => {
+            const deletedCount = Array.isArray(meta?.deletedOldUrls) ? meta.deletedOldUrls.length : 0;
+            if (deletedCount > 0) {
+              setTotalDeletedFilesSession(prev => prev + deletedCount);
+            }
+            setSessionChanges(prev => ({
+              ...prev,
+              [id]: {
+                changedAt: activityMs || Date.now(),
+                action: meta?.action || 'UPLOAD',
+                deletedOldCount: deletedCount
+              }
+            }));
+            setStateVersion(v => v + 1);
+            if (
+              inspectingItem.type === 'CATEGORY' ||
+              inspectingItem.type === 'HERO_SLIDE' ||
+              inspectingItem.type === 'SITE_ASSET'
+            ) {
+              void refreshFromServer().catch(() => {});
+            }
+            setBannerNotice({
+              type: 'success',
+              text: `Updated "${inspectingItem.title}" (${newUrl}) — Located at ${inspectingItem.siteLocationLabel}${
+                deletedCount > 0 ? ` (${deletedCount} old file permanently deleted from server).` : '.'
+              }`,
+              changedItem: { ...inspectingItem, currentUrl: newUrl },
+              showChangedTabShortcut: true
+            });
+          }}
+        />
+      )}
+
+      {/* Direct Crop / Rotate / Filter Editor Modal */}
+      {croppingItem && croppingItem.currentUrl && (
+        <ImageEditingOverlay
+          imageSrc={croppingItem.currentUrl}
+          imageName={croppingItem.title}
+          onSave={editedDataUrl => void handleSaveCroppedRowImage(croppingItem, editedDataUrl)}
+          onClose={() => setCroppingItem(null)}
+        />
+      )}
     </div>
   );
 };
