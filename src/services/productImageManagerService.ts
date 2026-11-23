@@ -1044,10 +1044,15 @@ class ProductImageManagerService {
       const publicUrl = publicQueryParts
         ? `/api/v1/public/product-images?${publicQueryParts}`
         : '/api/v1/public/product-images';
-      const endpoints: Array<{ url: string; cacheMode: RequestCache }> = [
-        { url: publicUrl, cacheMode: force || includeFullMedia ? 'no-store' : 'default' },
-        { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
-      ];
+      const endpoints: Array<{ url: string; cacheMode: RequestCache }> = includeFullMedia
+        ? [
+            { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' },
+            { url: publicUrl, cacheMode: 'no-store' }
+          ]
+        : [
+            { url: publicUrl, cacheMode: force ? 'no-store' : 'default' },
+            { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
+          ];
       for (const ep of endpoints) {
         try {
           const res = await fetch(ep.url, { cache: ep.cacheMode });
@@ -1157,12 +1162,12 @@ class ProductImageManagerService {
           const mutatedInTab = this.localMutationTimes.has(pid);
 
           if (!srvEntry) {
-            if (mutatedInTab || localIsProtected) {
+            if (mutatedInTab) {
               mergedOverrides[pid] = localEntry;
             }
-          } else if (localTime > srvTime) {
+          } else if (mutatedInTab && localTime > srvTime) {
             mergedOverrides[pid] = localEntry;
-          } else if (localTime === srvTime && localIsProtected && !srvIsProtected) {
+          } else if (mutatedInTab && localTime === srvTime && localIsProtected && !srvIsProtected) {
             mergedOverrides[pid] = localEntry;
           }
         }

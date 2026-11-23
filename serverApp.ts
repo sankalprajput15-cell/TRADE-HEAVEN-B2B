@@ -16100,6 +16100,10 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       ext
     });
     fs.writeFileSync(filePath, seoBuffer);
+    const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
+    if (fs.existsSync(distUpDir)) {
+      try { fs.writeFileSync(path.join(distUpDir, finalFileName), seoBuffer); } catch {}
+    }
 
     // Pre-warm compressed WebP variants immediately into RAM & disk cache without writing clutter duplicates
     void prewarmSingleImageFile(filePath);
@@ -16322,7 +16326,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       serverRfqsStore = serverRfqsStore.map(r => {
         const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
         return pidSet.has(String(r.id)) || pidSet.has(rid)
-          ? { ...r, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl] }
+          ? { ...r, image: uploadedUrl, image_url: uploadedUrl, images: [uploadedUrl], persisted: true, updatedAt: nowMs, imageUpdatedAt: nowMs }
           : r;
       });
     }
@@ -16334,20 +16338,23 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
     saveRfqMarketStoreToDisk();
     saveServerProductImageState();
 
-    // Real-time cross-server replication: upload SEO-stamped binary + bind override on https://tradeheaven.net simultaneously
+    // Bounded non-blocking cross-server replication (guarantees fast upload response)
     const replicatedMime = getMimeTypeForUploadFilename(finalFileName) || detectedMime;
-    const liveSyncResult = await ensureLocalImagePresentOnLiveServer({
-      localUrl: uploadedUrl,
-      base64Data: `data:${replicatedMime};base64,${seoBuffer.toString('base64')}`,
-      fileName: finalFileName,
-      targetFormat: ext,
-      productId: productId ? String(productId).trim() : undefined,
-      productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
-      category: category ? String(category).trim() : undefined,
-      applyToAll: Boolean(applyToAll),
-      oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
-      forceUpload: true
-    });
+    const liveSyncResult = await awaitLiveSyncBounded(
+      ensureLocalImagePresentOnLiveServer({
+        localUrl: uploadedUrl,
+        base64Data: `data:${replicatedMime};base64,${seoBuffer.toString('base64')}`,
+        fileName: finalFileName,
+        targetFormat: ext,
+        productId: productId ? String(productId).trim() : undefined,
+        productIds: Array.isArray(productIds) ? productIds.filter(Boolean).map((p: any) => String(p).trim()) : undefined,
+        category: category ? String(category).trim() : undefined,
+        applyToAll: Boolean(applyToAll),
+        oldUrlToReplace: oldUrlToReplace ? String(oldUrlToReplace).trim() : undefined,
+        forceUpload: true
+      }),
+      900
+    );
 
     const cacheBustedUrl = `${uploadedUrl}?v=${nowMs}`;
     return res.json({
@@ -16355,6 +16362,7 @@ async function handleUploadProductImageRequest(req: express.Request, res: expres
       url: cacheBustedUrl,
       rawUrl: uploadedUrl,
       liveSynced: liveSyncResult.synced,
+      liveSyncQueued: liveSyncResult.liveSyncQueued,
       liveUrl: liveSyncResult.remoteUrl || uploadedUrl,
       imageUpdatedAt: nowMs,
       mediaEntry: { ...mediaEntry, url: cacheBustedUrl },
@@ -21555,12 +21563,13 @@ app.post('/api/v1/rfqs/auto-batch-persist', async (req, res) => {
         cachedLocalUrl ||
         String(raw.image || raw.image_url || (Array.isArray(raw.images) && raw.images[0]) || '').trim();
 
-      if (!resolvedImg || batchPersistUsedUrls.has(resolvedImg.split('?')[0])) {
+      if (!resolvedImg || batchPersistUsedUrls.has(resolvedImg.split('?')[0]) || (resolvedImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(resolvedImg))) {
         const diskMatch = findMatchingLocalMasterImageOnDisk(productName, category, batchPersistUsedUrls);
-        if (diskMatch?.exactUnusedUrl) resolvedImg = diskMatch.exactUnusedUrl;
+        resolvedImg = diskMatch?.exactUnusedUrl || '';
       }
       if (resolvedImg) {
-        batchPersistUsedUrls.add(resolvedImg.split('?')[0]);
+        resolvedImg = resolvedImg.split('?')[0];
+        batchPersistUsedUrls.add(resolvedImg);
       }
 
       const record: any = {

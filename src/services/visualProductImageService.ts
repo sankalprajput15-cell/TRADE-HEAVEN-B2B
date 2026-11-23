@@ -1780,40 +1780,62 @@ export async function runCatalogImageAuditAndCleanup(options?: {
     return true;
   };
 
+  let lastServerError = '';
   try {
     const fallbackQuery = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
     const primaryRes = await fetch(`/api/v1/admin/audit-and-fix-catalog-images${fallbackQuery}`, {
       method: 'POST',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(bodyPayload)
+      body: JSON.stringify(bodyPayload),
+      signal: typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal ? AbortSignal.timeout(45000) : undefined
     });
-    if (primaryRes.ok) {
+    const ctype = (primaryRes.headers.get('content-type') || '').toLowerCase();
+    if (primaryRes.ok && !ctype.includes('text/html')) {
       const json = await primaryRes.json().catch(() => null);
       if (isUsableAuditSummary(json)) {
         return json;
       }
+    } else {
+      const errJson = !ctype.includes('text/html') ? await primaryRes.json().catch(() => null) : null;
+      lastServerError = errJson?.message || `Server audit endpoint returned HTTP ${primaryRes.status}`;
     }
-  } catch {}
+  } catch (err: any) {
+    lastServerError = err?.message || 'Unable to reach server audit endpoint';
+  }
 
   try {
     const res = await fetch(`/api.php?action=audit_and_fix_catalog_images${querySuffix}`, {
       method: 'POST',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(bodyPayload)
+      body: JSON.stringify(bodyPayload),
+      signal: typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal ? AbortSignal.timeout(45000) : undefined
     });
-    if (res.ok) {
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    if (res.ok && !ctype.includes('text/html')) {
       const json = await res.json().catch(() => null);
       if (isUsableAuditSummary(json)) {
         return json;
       }
+    } else if (!lastServerError) {
+      lastServerError = `PHP audit endpoint returned HTTP ${res.status}`;
     }
-  } catch {}
+  } catch (err: any) {
+    if (!lastServerError) lastServerError = err?.message || 'Unable to reach audit endpoint';
+  }
 
-  // Universal fallback: works on any PHP/cPanel deployment even if api.php lacks catalog_records or returns 0
+  // STRICT PERSISTENCE GUARANTEE: NEVER fake a successful write audit when the server failed to save!
+  if (!dryRun) {
+    throw new Error(
+      lastServerError ||
+        'Server could not save catalog image audit changes. Please retry when the server is reachable.'
+    );
+  }
+
+  // Dry-run preview fallback only (read-only)
   return runClientFallbackCatalogImageAudit({
-    dryRun,
+    dryRun: true,
     includeCatalog,
     catalogItems: options?.catalogItems || []
   });
@@ -2045,36 +2067,46 @@ export async function verifyAndLockSavedCatalogImages(
   ];
   let lastError = 'Unable to reach server verification vault endpoint.';
 
-  for (const ep of endpoints) {
-    try {
-      const res = await fetch(ep, {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const ctype = (res.headers.get('content-type') || '').toLowerCase();
-      if (ctype.includes('text/html')) continue;
-      const json = await res.json().catch(() => null);
-      if (res.ok && json && typeof json.verifiedCount === 'number') {
-        return {
-          success: Boolean(json.success),
-          serverSavedVerified: Boolean(json.serverSavedVerified),
-          verifiedCount: Number(json.verifiedCount || 0),
-          lockedCount: Number(json.lockedCount || 0),
-          missingOnDiskCount: Number(json.missingOnDiskCount || 0),
-          blockedOldUrlsCount: Number(json.blockedOldUrlsCount || 0),
-          totalOverridesOnDisk: Number(json.totalOverridesOnDisk || 0),
-          liveSynced: Boolean(json.liveSynced),
-          liveSyncError: json.liveSyncError,
-          verifiedAt: String(json.verifiedAt || new Date().toISOString()),
-          diskFiles: Array.isArray(json.diskFiles) ? json.diskFiles : undefined,
-          message: json.message
-        };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+          signal: typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal ? AbortSignal.timeout(30000) : undefined
+        });
+        const ctype = (res.headers.get('content-type') || '').toLowerCase();
+        if (ctype.includes('text/html')) {
+          lastError = `Verification vault endpoint returned HTTP ${res.status}`;
+          continue;
+        }
+        const json = await res.json().catch(() => null);
+        if (res.ok && json && typeof json.verifiedCount === 'number') {
+          return {
+            success: Boolean(json.success),
+            serverSavedVerified: Boolean(json.serverSavedVerified),
+            verifiedCount: Number(json.verifiedCount || 0),
+            lockedCount: Number(json.lockedCount || 0),
+            missingOnDiskCount: Number(json.missingOnDiskCount || 0),
+            blockedOldUrlsCount: Number(json.blockedOldUrlsCount || 0),
+            totalOverridesOnDisk: Number(json.totalOverridesOnDisk || 0),
+            liveSynced: Boolean(json.liveSynced),
+            liveSyncError: json.liveSyncError,
+            verifiedAt: String(json.verifiedAt || new Date().toISOString()),
+            diskFiles: Array.isArray(json.diskFiles) ? json.diskFiles : undefined,
+            message: json.message
+          };
+        }
+        if (json?.message) lastError = String(json.message);
+        else if (res.status >= 400) lastError = `Server verification vault returned HTTP ${res.status}`;
+      } catch (err: any) {
+        if (err?.message) lastError = err.message;
       }
-      if (json?.message) lastError = String(json.message);
-    } catch (err: any) {
-      if (err?.message) lastError = err.message;
+    }
+    if (attempt === 0) {
+      await new Promise(resolve => setTimeout(resolve, 400));
     }
   }
 

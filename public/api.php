@@ -7597,7 +7597,7 @@ switch ($action) {
                 if (!file_exists($fp) || filesize($fp) <= 100) return false;
             }
             if (in_array($updater, ['admin-manual', 'admin-upload', 'manual'], true)) {
-                return true;
+                return !isset($seen_urls_aud[$clean_u]);
             }
             if (!empty($ov_rec['locked']) || !empty($ov_rec['serverVerified']) || in_array($updater, ['catalog-image-auditor', 'system-repair'], true)) {
                 return !isset($seen_urls_aud[$clean_u]);

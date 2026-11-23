@@ -383,7 +383,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       lastScannedProductCountRef.current = products.length;
       void (async () => {
         try {
-          await productImageManagerService.syncFromServer(true);
+          await productImageManagerService.syncFromServer(true, true, { bypassCooldown: true });
         } catch {
           // ignore sync errors
         }
@@ -1492,7 +1492,10 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
             url: r.new_image_url,
             previousUrl: r.old_image_url !== '(empty)' ? r.old_image_url : undefined,
             updatedAt: result.timestamp || new Date().toISOString(),
-            updatedBy: 'catalog-image-auditor'
+            updatedBy: 'catalog-image-auditor',
+            locked: true,
+            serverVerified: true,
+            verifiedAt: result.timestamp || new Date().toISOString()
           }));
         if (fixedSnapshotEntries.length > 0) {
           productImageManagerService.applyServerOverrideSnapshot(fixedSnapshotEntries);
@@ -1515,7 +1518,19 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         }
       }
 
-      await syncMarketplaceImageListeners();
+      try {
+        const lockRes = await verifyAndLockSavedCatalogImages();
+        setVaultStatus(lockRes);
+      } catch {
+        // Non-blocking vault confirmation; primary audit already persisted on server disk
+      }
+
+      await syncMarketplaceImageListeners(true);
+      await fetchPreviewStats({
+        includeCatalog: true,
+        clearSessionTouched: true,
+        bypassCooldown: true
+      });
 
       const dupFixed = Number(
         result.duplicates_fixed ?? rawNextRows.filter(r => r.status === 'FIXED' && r.issue_type === 'DUPLICATE').length
