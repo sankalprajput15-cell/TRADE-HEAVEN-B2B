@@ -15,9 +15,11 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  MapPin,
+  Clock
 } from 'lucide-react';
-import { Product, RfqRequirement } from '../../types';
+import { ActiveView, Product, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { CATEGORIES_TREE, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
@@ -41,6 +43,13 @@ interface UnifiedSiteImageItem {
   status: 'VERIFIED' | 'DUPLICATE' | 'NEEDS_FIX';
   statusDetail: string;
   updatedAt?: string;
+  changedAtMs: number;
+  isChangedLive: boolean;
+  sessionAction?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
+  siteLocationLabel: string;
+  liveRouteView: ActiveView;
+  liveHref: string;
+  isOnHomepage?: boolean;
 }
 
 interface BulkUploadQueueItem {
@@ -53,13 +62,26 @@ interface BulkUploadQueueItem {
   message?: string;
 }
 
-type ScopeFilter = 'ALL' | 'NEEDS_FIX' | 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'BANNERS';
+type ScopeFilter = 'ALL' | 'CHANGED' | 'NEEDS_FIX' | 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'BANNERS';
 
 interface WholeSiteImageStudioProps {
   onViewLiveItem?: (item: { recordId: string; recordType: string }) => void;
 }
 
 const ITEMS_PER_PAGE = 25;
+
+function formatRelativeChangeTime(ms: number): string {
+  if (!ms || !Number.isFinite(ms)) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (diffSec < 45) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  try {
+    return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+}
 
 function cleanBaseUrl(url?: string | null): string {
   if (!url || typeof url !== 'string') return '';
@@ -136,8 +158,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [bannerNotice, setBannerNotice] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
+    changedItem?: UnifiedSiteImageItem;
+    showChangedTabShortcut?: boolean;
   } | null>(null);
   const [totalDeletedFilesSession, setTotalDeletedFilesSession] = useState<number>(0);
+  const [sessionChanges, setSessionChanges] = useState<
+    Record<string, { changedAt: number; action: 'UPLOAD' | 'AUTO_FIX' | 'URL'; deletedOldCount: number }>
+  >({});
 
   // Batch Auto-Fix state
   const [batchProgress, setBatchProgress] = useState<{
@@ -224,11 +251,40 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     };
   }, [loadAllInventory]);
 
-  // Build unified inventory across the ENTIRE website
+  // Build unified inventory across the ENTIRE website with exact live site locations
   const allItems = useMemo<UnifiedSiteImageItem[]>(() => {
     const overrides = productImageManagerService.getState().overrides || {};
     const rawList: Array<Omit<UnifiedSiteImageItem, 'status' | 'statusDetail'>> = [];
     const seenIds = new Set<string>();
+
+    const parseUpdatedMs = (ov: any, id: string): number => {
+      const ses = sessionChanges[id]?.changedAt || 0;
+      const imgTs = Number(ov?.imageUpdatedAt || 0);
+      const isoTs = ov?.updatedAt ? Date.parse(String(ov.updatedAt)) || 0 : 0;
+      return Math.max(ses, imgTs, isoTs);
+    };
+
+    const pinnedProductSet = new Set<string>(
+      Array.isArray(siteContent?.homepageDisplayConfig?.pinnedProductIds)
+        ? siteContent.homepageDisplayConfig.pinnedProductIds
+        : []
+    );
+    const hiddenProductSet = new Set<string>(
+      Array.isArray(siteContent?.homepageDisplayConfig?.hiddenProductIds)
+        ? siteContent.homepageDisplayConfig.hiddenProductIds
+        : []
+    );
+    const homepageProductCount = Math.max(
+      12,
+      Number(siteContent?.homepageDisplayConfig?.sectionLayouts?.featuredProducts?.itemCount || 12)
+    );
+    const topHomepageProductIds = new Set<string>(pinnedProductSet);
+    for (const p of products) {
+      if (topHomepageProductIds.size >= homepageProductCount) break;
+      if (p?.id && !hiddenProductSet.has(p.id)) {
+        topHomepageProductIds.add(p.id);
+      }
+    }
 
     const pushRaw = (entry: Omit<UnifiedSiteImageItem, 'status' | 'statusDetail'>) => {
       if (!entry.id || seenIds.has(entry.id)) return;
@@ -245,6 +301,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const ov = overrides[id];
       const base = cleanBaseUrl(slide?.image);
       const current = cleanBaseUrl(ov?.primary || slide?.image);
+      const changedAtMs = parseUpdatedMs(ov, id);
       pushRaw({
         id,
         type: 'HERO_SLIDE',
@@ -252,27 +309,43 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         category: 'Homepage Hero Carousel',
         baseUrl: base,
         currentUrl: current,
-        updatedAt: ov?.updatedAt
+        updatedAt: ov?.updatedAt,
+        changedAtMs,
+        isChangedLive: Boolean(sessionChanges[id] || (ov?.primary && changedAtMs > 0)),
+        sessionAction: sessionChanges[id]?.action,
+        siteLocationLabel: `Homepage → Hero Banner Carousel (Slide #${idx + 1})`,
+        liveRouteView: 'HOMEPAGE',
+        liveHref: '/?view=HOMEPAGE',
+        isOnHomepage: true
       });
     });
 
-    const coreSiteAssetSlots: Array<{ id: string; title: string; category: string; fieldPath: string }> = [
-      { id: 'site-hero-bg', title: 'Homepage Main Hero Background', category: 'Homepage Banner', fieldPath: 'homepage.heroBgImage' },
-      { id: 'site-onboarding-banner', title: 'Homepage Partner Onboarding Banner', category: 'Homepage Banner', fieldPath: 'homepage.onboardingBannerImage' },
-      { id: 'site-brand-logo', title: 'Header & Footer Brand Logo', category: 'Global Brand', fieldPath: 'brand.logoUrl' },
-      { id: 'site-products-banner', title: 'Products Directory Header Banner', category: 'Directory Banner', fieldPath: 'productsDirectory.bannerImage' },
-      { id: 'site-buyleads-banner', title: 'Buy Leads & RFQs Header Banner', category: 'Directory Banner', fieldPath: 'buyLeads.bannerImage' },
-      { id: 'site-suppliers-banner', title: 'Verified Suppliers Header Banner', category: 'Directory Banner', fieldPath: 'suppliersDirectory.bannerImage' },
-      { id: 'site-post-rfq-banner', title: 'Post Buying Request Banner', category: 'Page Banner', fieldPath: 'postBuyingRequest.bannerImage' },
-      { id: 'site-post-offer-banner', title: 'Post Sell Offer Banner', category: 'Page Banner', fieldPath: 'postSellOffer.bannerImage' },
-      { id: 'site-membership-banner', title: 'Premium Membership Banner', category: 'Page Banner', fieldPath: 'membership.bannerImage' },
-      { id: 'site-escrow-banner', title: 'Escrow & Trade Assurance Banner', category: 'Page Banner', fieldPath: 'escrow.bannerImage' }
+    const coreSiteAssetSlots: Array<{
+      id: string;
+      title: string;
+      category: string;
+      fieldPath: string;
+      locationLabel: string;
+      routeView: ActiveView;
+      liveHref: string;
+    }> = [
+      { id: 'site-hero-bg', title: 'Homepage Main Hero Background', category: 'Homepage Banner', fieldPath: 'homepage.heroBgImage', locationLabel: 'Homepage → Top Hero Banner Background', routeView: 'HOMEPAGE', liveHref: '/?view=HOMEPAGE' },
+      { id: 'site-onboarding-banner', title: 'Homepage Partner Onboarding Banner', category: 'Homepage Banner', fieldPath: 'homepage.onboardingBannerImage', locationLabel: 'Homepage → Partner Onboarding Section', routeView: 'HOMEPAGE', liveHref: '/?view=HOMEPAGE' },
+      { id: 'site-brand-logo', title: 'Header & Footer Brand Logo', category: 'Global Brand', fieldPath: 'brand.logoUrl', locationLabel: 'Global Header & Footer (All Pages)', routeView: 'HOMEPAGE', liveHref: '/?view=HOMEPAGE' },
+      { id: 'site-products-banner', title: 'Products Directory Header Banner', category: 'Directory Banner', fieldPath: 'productsDirectory.bannerImage', locationLabel: 'Products Catalog Page → Top Banner', routeView: 'PRODUCT_DIRECTORY', liveHref: '/?view=PRODUCT_DIRECTORY' },
+      { id: 'site-buyleads-banner', title: 'Buy Leads & RFQs Header Banner', category: 'Directory Banner', fieldPath: 'buyLeads.bannerImage', locationLabel: 'Buy Leads & RFQs Page → Top Banner', routeView: 'BUY_LEADS', liveHref: '/?view=BUY_LEADS' },
+      { id: 'site-suppliers-banner', title: 'Verified Suppliers Header Banner', category: 'Directory Banner', fieldPath: 'suppliersDirectory.bannerImage', locationLabel: 'Verified Suppliers Page → Top Banner', routeView: 'SUPPLIERS_DIRECTORY', liveHref: '/?view=SUPPLIERS_DIRECTORY' },
+      { id: 'site-post-rfq-banner', title: 'Post Buying Request Banner', category: 'Page Banner', fieldPath: 'postBuyingRequest.bannerImage', locationLabel: 'Post Buy Requirement Page → Header Banner', routeView: 'POST_BUY_REQUIREMENT', liveHref: '/?view=POST_BUY_REQUIREMENT' },
+      { id: 'site-post-offer-banner', title: 'Post Sell Offer Banner', category: 'Page Banner', fieldPath: 'postSellOffer.bannerImage', locationLabel: 'Post Sell Offer Page → Header Banner', routeView: 'POST_SELL_OFFER', liveHref: '/?view=POST_SELL_OFFER' },
+      { id: 'site-membership-banner', title: 'Premium Membership Banner', category: 'Page Banner', fieldPath: 'membership.bannerImage', locationLabel: 'Premium Membership Page → Header Banner', routeView: 'PREMIUM_MEMBERSHIP', liveHref: '/?view=PREMIUM_MEMBERSHIP' },
+      { id: 'site-escrow-banner', title: 'Escrow & Trade Assurance Banner', category: 'Page Banner', fieldPath: 'escrow.bannerImage', locationLabel: 'Escrow & Mediator Page → Header Banner', routeView: 'MEDIATOR_ENGINE', liveHref: '/?view=MEDIATOR_ENGINE' }
     ];
 
     for (const slot of coreSiteAssetSlots) {
       const fieldUrl = getNestedString(siteContent, slot.fieldPath);
       const ov = overrides[slot.id];
       const current = cleanBaseUrl(fieldUrl || ov?.primary);
+      const changedAtMs = parseUpdatedMs(ov, slot.id);
       pushRaw({
         id: slot.id,
         type: 'SITE_ASSET',
@@ -281,7 +354,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         fieldPath: slot.fieldPath,
         baseUrl: cleanBaseUrl(fieldUrl),
         currentUrl: current,
-        updatedAt: ov?.updatedAt
+        updatedAt: ov?.updatedAt,
+        changedAtMs,
+        isChangedLive: Boolean(sessionChanges[slot.id] || (ov?.primary && changedAtMs > 0)),
+        sessionAction: sessionChanges[slot.id]?.action,
+        siteLocationLabel: slot.locationLabel,
+        liveRouteView: slot.routeView,
+        liveHref: slot.liveHref,
+        isOnHomepage: slot.routeView === 'HOMEPAGE'
       });
     }
 
@@ -298,6 +378,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (!id) continue;
       const ov = overrides[id];
       const current = cleanBaseUrl(ov?.primary || cat?.image);
+      const changedAtMs = parseUpdatedMs(ov, id);
       pushRaw({
         id,
         type: 'CATEGORY',
@@ -305,7 +386,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         category: 'Procurement Sector',
         baseUrl: cleanBaseUrl(cat.image),
         currentUrl: current,
-        updatedAt: ov?.updatedAt
+        updatedAt: ov?.updatedAt,
+        changedAtMs,
+        isChangedLive: Boolean(sessionChanges[id] || (ov?.primary && changedAtMs > 0)),
+        sessionAction: sessionChanges[id]?.action,
+        siteLocationLabel: 'Homepage → Procurement Sectors & Category Menu',
+        liveRouteView: 'HOMEPAGE',
+        liveHref: '/?view=HOMEPAGE',
+        isOnHomepage: true
       });
     }
 
@@ -316,6 +404,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const ov = overrides[id];
       const base = cleanBaseUrl(prod.images?.[0] || (prod as any).image);
       const current = cleanBaseUrl(ov?.primary || base);
+      const changedAtMs = parseUpdatedMs(ov, id);
+      const onHomepage = topHomepageProductIds.has(id);
       pushRaw({
         id,
         type: 'PRODUCT',
@@ -323,7 +413,16 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         category: prod.category || 'General Trade',
         baseUrl: base,
         currentUrl: current,
-        updatedAt: ov?.updatedAt
+        updatedAt: ov?.updatedAt,
+        changedAtMs,
+        isChangedLive: Boolean(sessionChanges[id] || (ov?.primary && changedAtMs > 0)),
+        sessionAction: sessionChanges[id]?.action,
+        siteLocationLabel: onHomepage
+          ? 'Homepage → Featured Products · Products Catalog'
+          : `Products Catalog → ${prod.category || 'All Products'} · Product Detail`,
+        liveRouteView: onHomepage ? 'HOMEPAGE' : 'PRODUCT_DIRECTORY',
+        liveHref: `/?view=PRODUCT_DIRECTORY&product=${encodeURIComponent(id)}`,
+        isOnHomepage: onHomepage
       });
     }
 
@@ -334,6 +433,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const ov = overrides[id];
       const base = cleanBaseUrl((rfq as any).image || (rfq as any).images?.[0]);
       const current = cleanBaseUrl(ov?.primary || base);
+      const changedAtMs = parseUpdatedMs(ov, id);
       pushRaw({
         id,
         type: 'RFQ',
@@ -341,7 +441,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         category: rfq.category || 'Buy Lead',
         baseUrl: base,
         currentUrl: current,
-        updatedAt: ov?.updatedAt
+        updatedAt: ov?.updatedAt,
+        changedAtMs,
+        isChangedLive: Boolean(sessionChanges[id] || (ov?.primary && changedAtMs > 0)),
+        sessionAction: sessionChanges[id]?.action,
+        siteLocationLabel: 'Buy Leads Directory & Homepage Recent RFQs',
+        liveRouteView: 'BUY_LEADS',
+        liveHref: `/?view=BUY_LEADS&rfq=${encodeURIComponent(id)}`,
+        isOnHomepage: false
       });
     }
 
@@ -390,16 +497,21 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       return {
         ...item,
         status: 'VERIFIED' as const,
-        statusDetail: isManualOrLocked ? 'Saved & locked on server' : 'Verified local image'
+        statusDetail: item.sessionAction
+          ? `Changed live (${item.sessionAction === 'AUTO_FIX' ? 'Auto-Fix' : item.sessionAction === 'URL' ? 'URL' : 'Upload'})`
+          : isManualOrLocked
+            ? 'Saved & locked on server'
+            : 'Verified local image'
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, rfqs, siteContent, stateVersion]);
+  }, [products, rfqs, siteContent, stateVersion, sessionChanges]);
 
   const stats = useMemo(() => {
     let verified = 0;
     let duplicates = 0;
     let needsFix = 0;
+    let changedCount = 0;
     let productsCount = 0;
     let categoriesCount = 0;
     let rfqsCount = 0;
@@ -409,6 +521,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (it.status === 'VERIFIED') verified++;
       else if (it.status === 'DUPLICATE') duplicates++;
       else needsFix++;
+
+      if (it.isChangedLive) changedCount++;
 
       if (it.type === 'PRODUCT') productsCount++;
       else if (it.type === 'CATEGORY') categoriesCount++;
@@ -420,6 +534,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       verified,
       duplicates,
       needsFix,
+      changedCount,
       flaggedTotal: duplicates + needsFix,
       productsCount,
       categoriesCount,
@@ -430,7 +545,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return allItems.filter(it => {
+    const matched = allItems.filter(it => {
+      if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
       if (scopeFilter === 'PRODUCT' && it.type !== 'PRODUCT') return false;
       if (scopeFilter === 'CATEGORY' && it.type !== 'CATEGORY') return false;
@@ -442,10 +558,39 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         it.id.toLowerCase().includes(q) ||
         it.title.toLowerCase().includes(q) ||
         it.category.toLowerCase().includes(q) ||
+        it.siteLocationLabel.toLowerCase().includes(q) ||
         it.currentUrl.toLowerCase().includes(q)
       );
     });
+    if (scopeFilter === 'CHANGED') {
+      return [...matched].sort((a, b) => (b.changedAtMs || 0) - (a.changedAtMs || 0));
+    }
+    return matched;
   }, [allItems, scopeFilter, searchQuery]);
+
+  // Direct live-site jump handler for every item type (Products, Categories, RFQs, Hero Slides, Site Banners)
+  const handleCheckLiveOnSite = useCallback(
+    (item: UnifiedSiteImageItem) => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('tradeheaven_open_live_image_location', {
+            detail: {
+              recordId: item.id,
+              recordType: item.type,
+              routeView: item.liveRouteView,
+              fieldPath: item.fieldPath,
+              preferHomepageCard: Boolean(item.isOnHomepage)
+            }
+          })
+        );
+        return;
+      }
+      if (onViewLiveItem) {
+        onViewLiveItem({ recordId: item.id, recordType: item.type });
+      }
+    },
+    [onViewLiveItem]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -487,11 +632,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         deletedOldUrls?: string[];
         replacedOldUrls?: string[];
         updatedAt?: string;
+        action?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
       }>
     ) => {
       if (entries.length === 0) return;
       let deletedCount = 0;
       let needsSiteContentRefresh = false;
+      const nowMs = Date.now();
       const snapshotPayload = entries.map(e => {
         if (Array.isArray(e.deletedOldUrls)) deletedCount += e.deletedOldUrls.length;
         if (e.type === 'CATEGORY' || e.type === 'HERO_SLIDE' || e.type === 'SITE_ASSET') {
@@ -500,13 +647,25 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         return {
           id: e.id,
           url: e.newUrl,
-          updatedAt: e.updatedAt || new Date().toISOString(),
+          updatedAt: e.updatedAt || new Date(nowMs).toISOString(),
           updatedBy: 'admin-manual',
           locked: true,
           serverVerified: true,
           replacedOldUrls: e.replacedOldUrls,
           deletedOldUrls: e.deletedOldUrls
         };
+      });
+
+      setSessionChanges(prev => {
+        const next = { ...prev };
+        for (const e of entries) {
+          next[e.id] = {
+            changedAt: nowMs,
+            action: e.action || 'UPLOAD',
+            deletedOldCount: Array.isArray(e.deletedOldUrls) ? e.deletedOldUrls.length : 0
+          };
+        }
+        return next;
       });
 
       productImageManagerService.applyServerOverrideSnapshot(snapshotPayload);
@@ -581,7 +740,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             newUrl: json.newUrl,
             deletedOldUrls,
             replacedOldUrls: Array.isArray(json.replacedOldUrls) ? json.replacedOldUrls : undefined,
-            updatedAt: json.updatedAt
+            updatedAt: json.updatedAt,
+            action: source.file ? 'UPLOAD' : 'URL'
           }
         ]);
 
@@ -618,11 +778,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     if (out.success) {
       setBannerNotice({
         type: 'success',
-        text: `Replaced image for "${target.title}" (${out.newUrl})${
+        text: `Replaced image for "${target.title}" — Located at ${target.siteLocationLabel}${
           out.deletedCount > 0
-            ? ` — ${out.deletedCount} old image file permanently deleted from server.`
-            : ' — saved to server & live for all visitors.'
-        }`
+            ? ` (${out.deletedCount} old file permanently deleted from server).`
+            : ' (saved live for all visitors).'
+        }`,
+        changedItem: target,
+        showChangedTabShortcut: true
       });
     } else {
       setBannerNotice({
@@ -642,9 +804,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     if (out.success) {
       setBannerNotice({
         type: 'success',
-        text: `Updated "${item.title}" to ${out.newUrl}${
-          out.deletedCount > 0 ? ` and permanently deleted ${out.deletedCount} old file(s) from server.` : '.'
-        }`
+        text: `Updated "${item.title}" — Located at ${item.siteLocationLabel}${
+          out.deletedCount > 0 ? ` (${out.deletedCount} old file(s) permanently deleted from server).` : '.'
+        }`,
+        changedItem: item,
+        showChangedTabShortcut: true
       });
     } else {
       setBannerNotice({
@@ -690,15 +854,18 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           newUrl: rowRes.newUrl,
           deletedOldUrls: deletedOld,
           replacedOldUrls: item.currentUrl ? [item.currentUrl] : undefined,
-          updatedAt: rowRes.updatedAt
+          updatedAt: rowRes.updatedAt,
+          action: 'AUTO_FIX'
         }
       ]);
 
       setBannerNotice({
         type: 'success',
-        text: `Auto-fixed "${item.title}" with unique local image (${rowRes.newUrl})${
-          deletedOld.length > 0 ? ` and permanently deleted ${deletedOld.length} old file(s) from server.` : '.'
-        }`
+        text: `Auto-fixed "${item.title}" — Located at ${item.siteLocationLabel}${
+          deletedOld.length > 0 ? ` (${deletedOld.length} old file(s) permanently deleted from server).` : '.'
+        }`,
+        changedItem: item,
+        showChangedTabShortcut: true
       });
     } catch (err: any) {
       setBannerNotice({
@@ -774,6 +941,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           deletedOldUrls?: string[];
           replacedOldUrls?: string[];
           updatedAt?: string;
+          action?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
         }> = [];
 
         for (const c of chunk) {
@@ -789,7 +957,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               newUrl: match.newUrl,
               deletedOldUrls: delList,
               replacedOldUrls: c.currentUrl ? [c.currentUrl] : undefined,
-              updatedAt: match.updatedAt
+              updatedAt: match.updatedAt,
+              action: 'AUTO_FIX'
             });
           } else {
             failed++;
@@ -821,7 +990,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       type: fixed > 0 ? 'success' : 'error',
       text: abortBatchRef.current
         ? `Batch Auto-Fix stopped: fixed ${fixed} of ${targets.length} items (${deletedOld} old server files permanently deleted).`
-        : `Batch Auto-Fix finished: ${fixed} fixed, ${failed} skipped/failed, ${deletedOld} old server files permanently deleted.`
+        : `Batch Auto-Fix finished: ${fixed} fixed, ${failed} skipped/failed, ${deletedOld} old server files permanently deleted.`,
+      showChangedTabShortcut: fixed > 0
     });
   };
 
@@ -891,7 +1061,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     setIsBulkUploading(false);
     setBannerNotice({
       type: succeeded > 0 ? 'success' : 'error',
-      text: `Bulk upload completed: ${succeeded} of ${readyItems.length} images replaced (${deletedTotal} old files permanently deleted from server).`
+      text: `Bulk upload completed: ${succeeded} of ${readyItems.length} images replaced (${deletedTotal} old files permanently deleted from server).`,
+      showChangedTabShortcut: succeeded > 0
     });
   };
 
@@ -1023,10 +1194,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         </div>
       </div>
 
-      {/* Status Notice Banner */}
+      {/* Status Notice Banner with Direct Live Check & Changed-Items Jump */}
       {bannerNotice && (
         <div
-          className={`px-6 py-3 border-b text-xs font-medium flex items-center justify-between gap-3 ${
+          className={`px-6 py-3 border-b text-xs font-medium flex flex-wrap items-center justify-between gap-3 ${
             bannerNotice.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : bannerNotice.type === 'error'
@@ -1034,7 +1205,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 : 'bg-blue-50 border-blue-200 text-blue-900'
           }`}
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {bannerNotice.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-700" />
             ) : (
@@ -1042,14 +1213,47 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             )}
             <span className="break-words">{bannerNotice.text}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setBannerNotice(null)}
-            className="p-1 rounded hover:bg-black/5 cursor-pointer shrink-0"
-            aria-label="Dismiss notice"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {bannerNotice.changedItem && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleCheckLiveOnSite(bannerNotice.changedItem!)}
+                  className="px-2.5 py-1 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                >
+                  <MapPin className="w-3 h-3" />
+                  <span>Check Live on Site</span>
+                </button>
+                <a
+                  href={bannerNotice.changedItem.liveHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-md bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold inline-flex items-center gap-1 whitespace-nowrap"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Open New Tab</span>
+                </a>
+              </>
+            )}
+            {bannerNotice.showChangedTabShortcut && scopeFilter !== 'CHANGED' && (
+              <button
+                type="button"
+                onClick={() => setScopeFilter('CHANGED')}
+                className="px-2.5 py-1 rounded-md bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              >
+                <Clock className="w-3 h-3" />
+                <span>View Changed Live ({stats.changedCount})</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setBannerNotice(null)}
+              className="p-1 rounded hover:bg-black/5 cursor-pointer shrink-0"
+              aria-label="Dismiss notice"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -1224,6 +1428,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           {(
             [
               { id: 'ALL', label: `All (${stats.total})` },
+              { id: 'CHANGED', label: `Changed Live (${stats.changedCount})` },
               { id: 'NEEDS_FIX', label: `Needs Fix (${stats.flaggedTotal})` },
               { id: 'PRODUCT', label: `Products (${stats.productsCount})` },
               { id: 'CATEGORY', label: `Categories (${stats.categoriesCount})` },
@@ -1237,8 +1442,12 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               onClick={() => setScopeFilter(tab.id)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
                 scopeFilter === tab.id
-                  ? 'bg-white text-slate-900 font-semibold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? tab.id === 'CHANGED'
+                    ? 'bg-emerald-700 text-white font-semibold shadow-xs'
+                    : 'bg-white text-slate-900 font-semibold shadow-xs'
+                  : tab.id === 'CHANGED' && Object.keys(sessionChanges).length > 0
+                    ? 'text-emerald-800 hover:text-emerald-950 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {tab.label}
@@ -1306,8 +1515,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               </th>
               <th className="py-2.5 px-3 w-20">Preview</th>
               <th className="py-2.5 px-3">Item &amp; File Path</th>
-              <th className="py-2.5 px-3 w-44">Status</th>
-              <th className="py-2.5 pl-3 pr-6 text-right w-72">Actions</th>
+              <th className="py-2.5 px-3 w-64">Live Site Location</th>
+              <th className="py-2.5 px-3 w-36">Status</th>
+              <th className="py-2.5 pl-3 pr-6 text-right w-80">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs">
@@ -1320,16 +1530,19 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                     <div className="h-3.5 w-56 bg-slate-200 rounded mb-1.5" />
                     <div className="h-3 w-80 bg-slate-100 rounded" />
                   </td>
+                  <td className="py-3 px-3"><div className="h-3.5 w-44 bg-slate-200 rounded" /></td>
                   <td className="py-3 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
                   <td className="py-3 pl-3 pr-6"><div className="h-7 w-44 bg-slate-200 rounded ml-auto" /></td>
                 </tr>
               ))
             ) : pageItems.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 px-6 text-center text-sm text-slate-500">
-                  {scopeFilter === 'NEEDS_FIX'
-                    ? 'Every scanned image across the entire site is verified on server storage.'
-                    : 'No matching site items found for your search filter.'}
+                <td colSpan={6} className="py-12 px-6 text-center text-sm text-slate-500">
+                  {scopeFilter === 'CHANGED'
+                    ? 'No live changed images recorded yet. Upload, paste a URL, or Auto-Fix any item and it will appear here in real time.'
+                    : scopeFilter === 'NEEDS_FIX'
+                      ? 'Every scanned image across the entire site is verified on server storage.'
+                      : 'No matching site items found for your search filter.'}
                 </td>
               </tr>
             ) : (
@@ -1377,7 +1590,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 align-middle min-w-0 max-w-md">
+                      <td className="py-3 px-3 align-middle min-w-0 max-w-sm">
                         <div className="font-semibold text-slate-900 truncate" title={item.title}>
                           {item.title}
                         </div>
@@ -1386,10 +1599,36 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                           <span aria-hidden="true">·</span>
                           <span className="font-mono text-slate-600">{item.id}</span>
                           <span aria-hidden="true">·</span>
-                          <span className="truncate max-w-[180px]">{item.category}</span>
+                          <span className="truncate max-w-[160px]">{item.category}</span>
                         </div>
                         <div className="font-mono text-[11px] text-slate-400 truncate mt-0.5" title={item.currentUrl}>
                           {item.currentUrl || '(no server file assigned)'}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex items-start gap-1.5 text-slate-800 font-medium leading-snug">
+                          <MapPin className="w-3.5 h-3.5 text-[#0F294D] shrink-0 mt-0.5" />
+                          <span className="min-w-0">{item.siteLocationLabel}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1 pl-5">
+                          <button
+                            type="button"
+                            onClick={() => handleCheckLiveOnSite(item)}
+                            className="text-[11px] font-semibold text-[#0F294D] hover:text-[#EA580C] hover:underline cursor-pointer whitespace-nowrap"
+                          >
+                            Check on Site →
+                          </button>
+                          <span aria-hidden="true" className="text-slate-300">|</span>
+                          <a
+                            href={item.liveHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-medium text-slate-500 hover:text-slate-900 hover:underline inline-flex items-center gap-0.5 whitespace-nowrap"
+                          >
+                            <span>New Tab</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
                         </div>
                       </td>
 
@@ -1410,6 +1649,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                               : 'Needs Image'}
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">{item.statusDetail}</div>
+                        {item.changedAtMs > 0 && (
+                          <div className="text-[11px] text-emerald-700 font-medium mt-0.5 tabular-nums">
+                            Updated {formatRelativeChangeTime(item.changedAtMs)}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3 pl-3 pr-6 align-middle text-right">
@@ -1452,23 +1696,22 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                             <span>URL</span>
                           </button>
 
-                          {onViewLiveItem && (item.type === 'PRODUCT' || item.type === 'CATEGORY' || item.type === 'RFQ') && (
-                            <button
-                              type="button"
-                              onClick={() => onViewLiveItem({ recordId: item.id, recordType: item.type })}
-                              className="p-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 border border-slate-300 cursor-pointer shrink-0"
-                              title="View on live storefront"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleCheckLiveOnSite(item)}
+                            className="px-2 py-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-[#0F294D] border border-slate-300 text-xs font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                            title={`Check live at: ${item.siteLocationLabel}`}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>View Live</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
 
                     {isEditingUrl && (
                       <tr className="bg-slate-50">
-                        <td colSpan={5} className="px-6 py-3">
+                        <td colSpan={6} className="px-6 py-3">
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <input
                               type="text"

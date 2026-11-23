@@ -1496,6 +1496,94 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
+  // Direct live-location jump from Admin Whole-Site Image Studio
+  useEffect(() => {
+    const handleOpenLiveLocation = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        recordId: string;
+        recordType: string;
+        routeView?: ActiveView;
+        fieldPath?: string;
+        preferHomepageCard?: boolean;
+      }>)?.detail;
+      if (!detail) return;
+      const { recordId, recordType, routeView, fieldPath, preferHomepageCard } = detail;
+
+      if (recordType === 'PRODUCT') {
+        const found = resolveProduct(recordId, products);
+        if (preferHomepageCard) {
+          setSelectedProduct(null);
+          setSelectedRfqForModal(null);
+          setActiveView('HOMEPAGE');
+          window.setTimeout(() => {
+            const el = document.getElementById(`featured-product-card-${recordId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.add('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+              window.setTimeout(() => el.classList.remove('ring-2', 'ring-[#EA580C]', 'ring-offset-2'), 3200);
+            } else if (found) {
+              setActiveView('PRODUCT_DIRECTORY');
+              setSelectedProduct(found);
+            }
+          }, 300);
+        } else {
+          setSelectedRfqForModal(null);
+          setActiveView('PRODUCT_DIRECTORY');
+          if (found) setSelectedProduct(found);
+        }
+        return;
+      }
+
+      if (recordType === 'RFQ') {
+        const foundRfq = resolveRfq(recordId, rfqs);
+        setSelectedProduct(null);
+        setActiveView('BUY_LEADS');
+        if (foundRfq) {
+          setSelectedRfqForModal(foundRfq);
+        }
+        return;
+      }
+
+      if (recordType === 'CATEGORY') {
+        setSelectedProduct(null);
+        setSelectedRfqForModal(null);
+        setActiveView('HOMEPAGE');
+        window.setTimeout(() => {
+          const el =
+            document.getElementById(`category-card-${recordId}`) ||
+            document.getElementById('category-mega-menu');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-[#EA580C]', 'ring-offset-2');
+            window.setTimeout(() => el.classList.remove('ring-2', 'ring-[#EA580C]', 'ring-offset-2'), 3200);
+          }
+        }, 300);
+        return;
+      }
+
+      setSelectedProduct(null);
+      setSelectedRfqForModal(null);
+      const targetView: ActiveView = routeView || 'HOMEPAGE';
+      setActiveView(targetView);
+      window.setTimeout(() => {
+        if (fieldPath === 'homepage.onboardingBannerImage') {
+          const el =
+            document.querySelector('[data-cms-key="homepage.onboardingBannerImage"]') ||
+            document.getElementById('onboarding-banner-section');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 280);
+    };
+    window.addEventListener('tradeheaven_open_live_image_location', handleOpenLiveLocation);
+    return () => {
+      window.removeEventListener('tradeheaven_open_live_image_location', handleOpenLiveLocation);
+    };
+  }, [products, rfqs]);
+
   // Guard against unauthenticated or non-admin visitors accessing admin views directly
   useEffect(() => {
     const adminViews: ActiveView[] = [
