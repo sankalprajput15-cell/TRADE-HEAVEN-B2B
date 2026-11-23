@@ -17896,8 +17896,19 @@ app.put('/api/site-content', async (req, res) => {
   const removedSiteUploadUrls = Array.from(prevSiteUploadUrls).filter(u => !nextSiteUploadUrls.has(u));
   let deletedOldUrls: string[] = [];
   if (removedSiteUploadUrls.length > 0) {
+    const removedSet = new Set(removedSiteUploadUrls);
+    let clearedSiteOv = false;
+    for (const [ovKey, ovVal] of Object.entries(serverProductImageState.overrides || {})) {
+      if (ovKey.startsWith('site-') || ovKey.startsWith('hero-slide-')) {
+        const ovPrim = stripUrlQueryBase(ovVal?.primary);
+        if (ovPrim && removedSet.has(ovPrim)) {
+          delete serverProductImageState.overrides[ovKey];
+          clearedSiteOv = true;
+        }
+      }
+    }
     deletedOldUrls = permanentlyDeleteReplacedUploadFiles(removedSiteUploadUrls, []);
-    if (deletedOldUrls.length > 0) {
+    if (deletedOldUrls.length > 0 || clearedSiteOv) {
       saveServerProductImageState();
     }
   }
@@ -25084,6 +25095,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let fixedMismatchedCount = 0;
   let newlyFixedCount = 0;
   let recordsFixed = 0;
+  const auditOldUploadCandidates: string[] = [];
   let liveNetworkBudget = dryRun ? 0 : 3;
   const preindexedFiles = dryRun ? undefined : buildPreindexedLocalUploadFiles();
   let sharedAuditRegistry: GlobalAttachedImageRegistry | undefined;
@@ -25116,10 +25128,15 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
     ).filter(u => u !== stripUrlQueryBase(args.newUrl));
     ensureUploadedUrlInMediaLibrary(args.newUrl);
     clearConflictingTitleOverridesForProductId(args.id, args.newUrl);
+    if (args.oldUrl && args.oldUrl !== '(empty)' && args.oldUrl !== args.newUrl) {
+      auditOldUploadCandidates.push(args.oldUrl);
+    }
+    if (prevEntry?.primary && prevEntry.primary !== args.newUrl) {
+      auditOldUploadCandidates.push(prevEntry.primary);
+    }
     const updatedOverride: ProductImageOverrideEntry = {
       ...(prevEntry || {}),
       primary: args.newUrl,
-      previousPrimary: args.oldUrl && args.oldUrl !== '(empty)' && args.oldUrl !== args.newUrl ? args.oldUrl : prevEntry?.previousPrimary,
       gallery: [args.newUrl],
       format: (path.extname(args.newUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
       updatedAt: nowIso,
@@ -25130,6 +25147,7 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
       verifiedAt: nowIso,
       replacedOldUrls
     };
+    delete (updatedOverride as any).previousPrimary;
     serverProductImageState.overrides[args.id] = updatedOverride;
     newlyFixedOverridesMap[args.id] = updatedOverride;
     recordServerProductActivityTimestamp(args.id, nowMs);
@@ -25784,6 +25802,9 @@ async function runFullCatalogImageAuditAndCleanup(options?: {
   let serverSavedVerified = false;
   let liveSynced = false;
   if (!dryRun) {
+    if (auditOldUploadCandidates.length > 0) {
+      permanentlyDeleteReplacedUploadFiles(auditOldUploadCandidates, Array.from(usedUrlsSet));
+    }
     if (snapshotUpdates.length > 0) {
       updateFullCatalogSnapshotRecords(snapshotUpdates);
     }
@@ -26456,7 +26477,6 @@ async function handleVerifyAndLockCatalogImages(bodyInput: any) {
       const updatedEntry: ProductImageOverrideEntry = {
         ...entry,
         primary: cleanBase,
-        ...(prevToBlock ? { previousPrimary: prevToBlock } : {}),
         gallery: [cleanBase],
         updatedAt: entry.updatedAt || nowIso,
         imageUpdatedAt: Math.max(parseServerTimestampMs(entry.imageUpdatedAt), parseServerTimestampMs(entry.updatedAt), nowMs),
@@ -26466,6 +26486,10 @@ async function handleVerifyAndLockCatalogImages(bodyInput: any) {
         verifiedAt: nowIso,
         replacedOldUrls
       };
+      delete (updatedEntry as any).previousPrimary;
+      if (prevToBlock) {
+        permanentlyDeleteReplacedUploadFiles([prevToBlock], [cleanBase], new Set([id]));
+      }
       allOverrides[id] = updatedEntry;
       recordCurrentServerImageEdit(id, nowMs);
       if (matchedProduct?.title) {

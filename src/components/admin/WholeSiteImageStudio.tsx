@@ -154,6 +154,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   // Bulk Upload drawer state
   const [showBulkUploader, setShowBulkUploader] = useState<boolean>(false);
   const [bulkQueue, setBulkQueue] = useState<BulkUploadQueueItem[]>([]);
+  const [bulkTargetFilter, setBulkTargetFilter] = useState<string>('');
   const [isBulkUploading, setIsBulkUploading] = useState<boolean>(false);
 
   // Single-row hidden file picker
@@ -461,6 +462,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     () => Object.keys(selectedIds).filter(id => selectedIds[id]),
     [selectedIds]
   );
+
+  const bulkTargetOptions = useMemo(() => {
+    const q = bulkTargetFilter.trim().toLowerCase();
+    const list = q
+      ? allItems.filter(
+          it =>
+            it.id.toLowerCase().includes(q) ||
+            it.title.toLowerCase().includes(q) ||
+            it.type.toLowerCase().includes(q) ||
+            it.category.toLowerCase().includes(q)
+        )
+      : allItems;
+    return list.slice(0, 400);
+  }, [allItems, bulkTargetFilter]);
 
   // Shared helper to broadcast update cleanly across all mounted components & SiteContentContext
   const applyLocalSync = useCallback(
@@ -1099,7 +1114,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 <div className="text-xs font-semibold text-slate-700 tabular-nums">
                   {bulkQueue.length} file(s) staged · {bulkQueue.filter(q => Boolean(q.targetId)).length} assigned
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={bulkTargetFilter}
+                    onChange={e => setBulkTargetFilter(e.target.value)}
+                    placeholder="Filter dropdown targets by ID or name..."
+                    className="px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md w-56 focus:outline-none focus:border-[#0F294D]"
+                  />
                   <button
                     type="button"
                     disabled={isBulkUploading}
@@ -1128,7 +1150,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               </div>
 
               <div className="bg-white border border-slate-200 rounded-lg divide-y divide-slate-200 max-h-72 overflow-y-auto">
-                {bulkQueue.map(qItem => (
+                {bulkQueue.map(qItem => {
+                  const matchedOpt = qItem.targetId ? allItems.find(it => it.id === qItem.targetId) : undefined;
+                  const optionsToRender =
+                    matchedOpt && !bulkTargetOptions.some(o => o.id === matchedOpt.id)
+                      ? [matchedOpt, ...bulkTargetOptions]
+                      : bulkTargetOptions;
+                  return (
                   <div key={qItem.queueId} className="px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center gap-3">
                     <img
                       src={qItem.previewUrl}
@@ -1155,7 +1183,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       className="w-full sm:w-72 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:border-[#0F294D]"
                     >
                       <option value="">-- Choose Product / Category / Banner --</option>
-                      {allItems.slice(0, 600).map(opt => (
+                      {optionsToRender.map(opt => (
                         <option key={opt.id} value={opt.id}>
                           [{opt.type}] {opt.title.slice(0, 48)} ({opt.id})
                         </option>
@@ -1182,7 +1210,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

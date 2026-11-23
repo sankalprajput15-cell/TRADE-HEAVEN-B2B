@@ -3166,7 +3166,6 @@ class ProductImageManagerService {
           this.localMutationTimes.set(k, nowMs);
           this.state.overrides[k] = {
             ...entry,
-            previousPrimary: entry.primary,
             primary: cleanNew,
             gallery: [cleanNew, ...(entry.gallery || []).filter(u => u && this.stripLocalAssetQuery(u) !== cleanOld && u !== cleanNew)],
             format,

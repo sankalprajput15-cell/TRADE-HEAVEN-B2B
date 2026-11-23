@@ -351,5 +351,8 @@
       "regionBar": true
     }
   },
-  "siteContentUpdatedAt": 1795427042484
+  "siteContentUpdatedAt": 1795429321643,
+  "escrow": {
+    "bannerImage": ""
+  }
 }
