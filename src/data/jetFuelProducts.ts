@@ -30,7 +30,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$86 - $165',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $54',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$9 - $18',
     unit: 'Gallons',
     minOrderQuantity: '14',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$3 - $23',
     unit: 'Gallons',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$6 - $36',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $151',
     unit: 'Barrels',
     minOrderQuantity: '6',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $18',
     unit: 'Gallons',
     minOrderQuantity: '16',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$91 - $135',
     unit: 'Barrels',
     minOrderQuantity: '9',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-aviation-turbine-fuel-jet-02b9381a26d9.webp'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {

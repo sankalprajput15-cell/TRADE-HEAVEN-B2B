@@ -51,6 +51,7 @@ interface UnifiedSiteImageItem {
   type: SiteImageTargetType;
   title: string;
   category: string;
+  specifications?: string;
   fieldPath?: string;
   baseUrl: string;
   currentUrl: string;
@@ -296,6 +297,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           id: sid,
           productName: String(s.title || s.productName || sid),
           category: String(s.category || 'Buy Lead'),
+          specifications: String(s.specifications || s.description || s.details || '').trim(),
+          description: String(s.description || s.specifications || '').trim(),
           image: imgUrl,
           images: imgUrl ? [imgUrl] : []
         } as unknown as RfqRequirement);
@@ -480,6 +483,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         type: 'PRODUCT',
         title: prod.title || id,
         category: prod.category || 'General Trade',
+        specifications: String(prod.description || (prod as any).specifications || '').trim() || undefined,
         baseUrl: base,
         currentUrl: current,
         updatedAt: ov?.updatedAt,
@@ -503,11 +507,27 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const base = cleanBaseUrl((rfq as any).image || (rfq as any).images?.[0]);
       const current = cleanBaseUrl(ov?.primary || base);
       const changedAtMs = parseUpdatedMs(ov, id);
+      const rfqSpecs = [
+        (rfq as any).specifications,
+        rfq.detailedRequirements,
+        rfq.detailedDescription,
+        (rfq as any).description,
+        (rfq as any).details,
+        (rfq as any).packagingRequirements,
+        rfq.targetQuantity ? `Quantity: ${rfq.targetQuantity} ${rfq.quantityUnit || ''}`.trim() : '',
+        rfq.destinationCountry || rfq.destinationPort || rfq.buyerCountry
+          ? `Destination: ${rfq.destinationCountry || rfq.destinationPort || rfq.buyerCountry}`
+          : ''
+      ]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join(' | ');
       pushRaw({
         id,
         type: 'RFQ',
         title: rfq.productName || (rfq as any).title || id,
         category: rfq.category || 'Buy Lead',
+        specifications: rfqSpecs || undefined,
         baseUrl: base,
         currentUrl: current,
         updatedAt: ov?.updatedAt,
@@ -993,6 +1013,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           type: item.type,
           title: item.title,
           category: item.category,
+          specifications: item.specifications,
           currentUrl: item.currentUrl,
           fieldPath: item.fieldPath
         }
@@ -1031,7 +1052,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       }));
       setBannerNotice({
         type: 'error',
-        text: `Auto-Fix skipped "${item.title}": ${errReason} Click the item to pick from ~20 Google/Web photos or upload manually.`,
+        text: `Auto-Fix skipped "${item.title}": ${errReason} Click the item to pick from up to 50 Alibaba, Google & Web photos or upload manually.`,
         changedItem: item
       });
     } finally {
@@ -1119,6 +1140,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             type: c.type,
             title: c.title,
             category: c.category,
+            specifications: c.specifications,
             currentUrl: c.currentUrl,
             fieldPath: c.fieldPath
           }))
@@ -2257,7 +2279,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               title: inspectingItem.title,
               category: inspectingItem.category,
               images: inspectingItem.currentUrl ? [inspectingItem.currentUrl] : [],
-              description: inspectingItem.siteLocationLabel,
+              description: inspectingItem.specifications || inspectingItem.siteLocationLabel,
               moq: 1,
               price: '0',
               supplierId: 'admin',

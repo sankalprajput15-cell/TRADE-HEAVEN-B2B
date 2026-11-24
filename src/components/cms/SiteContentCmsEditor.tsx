@@ -403,7 +403,7 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       company: 'Pacific Trade Dynamics Corp.',
       country: 'United States',
       countryFlag: '🇺🇸',
-      avatar: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      avatar: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
       quote: 'Seamless FOB cargo dispatch with reliable trade protection release. Trade Heaven solved our tier-1 supplier discovery bottleneck.',
       rating: 5,
       verifiedDealSize: '$550,000 CIF Long Beach',

@@ -1090,7 +1090,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                     >
                       <div className="relative h-44 overflow-hidden bg-slate-200">
                         <SafeImage
-                          src={tour.imageUrl || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
+                          src={tour.imageUrl || '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'}
                           alt={tour.title}
                           targetWidth={480}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

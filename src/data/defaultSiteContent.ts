@@ -513,7 +513,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Machinery & Industrial Equipment",
         description: "CNC milling machines, packaging lines, hydraulic presses, automation.",
         iconName: "Cpu",
-        image: "/assets/uploads/auto-5-axis-cnc-milling-centers-0f837bff532d.webp",
+        image: "/assets/uploads/auto-high-precision-5-axis-cnc-milling-ce-1846c0ee382a.webp",
         badge: "Top Sourced",
         productCount: "48,200+ Products"
       },

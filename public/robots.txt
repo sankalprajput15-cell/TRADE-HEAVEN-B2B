@@ -1,6 +1,6 @@
 # ==============================================================================
 # Trade Heaven B2B Global Sourcing & Exporter Portal - Robots.txt
-# Auto-generated: 2026-11-16T12:06:17.993Z
+# Auto-generated: 2026-11-24T23:09:08.222Z
 # Documentation: https://developers.google.com/search/docs/crawling-indexing/robots/intro
 # ==============================================================================
 
@@ -109,7 +109,6 @@ Allow: /*.webp
 Allow: /*.ico
 Allow: /*.webmanifest
 Allow: /sitemap.xml
-Allow: /image-sitemap.xml
 Allow: /robots.txt
 
 # ==============================================================================
@@ -123,8 +122,6 @@ Allow: /*.jpg$
 Allow: /*.jpeg$
 Allow: /*.webp$
 Allow: /*.svg$
-Allow: /assets/uploads/
-Allow: /image-sitemap.xml
 Disallow: /admin/
 Disallow: /api/
 Disallow: /negotiation/
@@ -132,19 +129,6 @@ Disallow: /negotiation-room/
 Disallow: /dashboard/
 Disallow: /account/
 Disallow: /auth/
-
-# ==============================================================================
-# Googlebot-Image Specific Rules (Prioritize Trade Heaven Product Catalog Images)
-# ==============================================================================
-User-agent: Googlebot-Image
-Allow: /assets/
-Allow: /assets/uploads/
-Allow: /images/
-Allow: /image-sitemap.xml
-Allow: /*.webp$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.png$
 
 # ==============================================================================
 # Bingbot Specific Rules
@@ -164,4 +148,3 @@ Disallow: /account/
 # Sitemaps Reference
 # ==============================================================================
 Sitemap: https://tradeheaven.net/sitemap.xml
-Sitemap: https://tradeheaven.net/image-sitemap.xml

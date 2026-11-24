@@ -30,7 +30,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$77 - $120',
     unit: 'Barrels',
     minOrderQuantity: '13',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $144',
     unit: 'Barrels',
     minOrderQuantity: '16',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$79 - $125',
     unit: 'Barrels',
     minOrderQuantity: '12',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $106',
     unit: 'Barrels',
     minOrderQuantity: '10',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$85 - $130',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $135',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$76 - $113',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$78 - $100',
     unit: 'Barrels',
     minOrderQuantity: '8',
-    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/auto-espo-blend-oil-oil-028806d71b25.webp'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {

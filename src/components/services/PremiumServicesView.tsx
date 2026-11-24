@@ -50,7 +50,7 @@ const BUYER_TESTIMONIALS = [
     role: "Procurement Director",
     company: "Global Retail Partners",
     rating: 5,
-    image: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    image: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   },
   {
     id: 3,

@@ -11,7 +11,7 @@
     "officeAddress": "Trade Heaven Global HQ, 140 Fenchurch St, London EC3M 6BL, UK & Operations Hub in Mumbai, India",
     "escrowBadgeNotice": "100% trade protection & Trade Assurance Protected",
     "countriesNotice": "180+ Countries Sourcing",
-    "logoUrl": "/assets/uploads/trade-heaven-header-footer-brand-logo-2091a35e9dcd.webp"
+    "logoUrl": "/assets/aistudio/tradeheaven_317b5f4c.webp"
   },
   "homepage": {
     "announcementTicker": "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
@@ -19,7 +19,7 @@
     "heroHeadlineGradient": "Verified Global Buyers & Bulk RFQs",
     "heroSubheadline": "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     "heroTrustEyebrow": "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    "heroBgImage": "/assets/uploads/trade-heaven-main-6aa3b6de93e5.webp",
+    "heroBgImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     "searchPlaceholder": "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     "tradeSpecialist": {
       "name": "Elena Rostova",
@@ -84,7 +84,7 @@
         "name": "Machinery & Industrial Equipment",
         "description": "CNC milling machines, packaging lines, hydraulic presses, automation.",
         "iconName": "Cpu",
-        "image": "/assets/uploads/auto-machinery-industrial-equipment-f179ddb867f3.webp",
+        "image": "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp",
         "badge": "Top Sourced",
         "productCount": "48,200+ Products"
       },
@@ -111,7 +111,7 @@
         "name": "Chemicals & Raw Polymers",
         "description": "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         "iconName": "FlaskConical",
-        "image": "/assets/uploads/auto-chemicals-raw-polymers-a7f050a9b406.webp",
+        "image": "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp",
         "badge": "REACH Compliant",
         "productCount": "28,500+ Products"
       },
@@ -120,7 +120,7 @@
         "name": "Textiles, Garments & Fabrics",
         "description": "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
         "iconName": "Scissors",
-        "image": "/assets/uploads/auto-textiles-garments-fabrics-b91ce4a69f47.webp",
+        "image": "/assets/uploads/auto-apparel-textiles-product-75662a9b4b90.webp",
         "badge": "OEKO-TEX",
         "productCount": "52,400+ Products"
       },
@@ -147,7 +147,7 @@
         "name": "Medical & Diagnostic Supplies",
         "description": "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         "iconName": "Stethoscope",
-        "image": "/assets/uploads/auto-medical-diagnostic-supplies-642c58c9a2ff.webp",
+        "image": "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp",
         "badge": "FDA 510(k) / CE",
         "productCount": "15,700+ Products"
       },
@@ -206,7 +206,7 @@
         "category": "Agro Commodities"
       }
     ],
-    "onboardingBannerImage": "/assets/uploads/trade-heaven-banner-e2d7db76176f.webp"
+    "onboardingBannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   },
   "productsPage": {
     "title": "Global Wholesale Product Catalog",
@@ -360,18 +360,18 @@
     "bannerImage": ""
   },
   "productsDirectory": {
-    "bannerImage": "/assets/uploads/trade-heaven-header-footer-brand-logo-53d7e150b422.webp"
+    "bannerImage": "/assets/aistudio/tradeheaven_317b5f4c.webp"
   },
   "buyLeads": {
-    "bannerImage": "/assets/uploads/trade-heaven-header-banner-7fb11855ab8f.webp"
+    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   },
   "suppliersDirectory": {
-    "bannerImage": "/assets/uploads/trade-heaven-suppliers-header-19f63d303a39.webp"
+    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   },
   "postBuyingRequest": {
-    "bannerImage": "/assets/uploads/trade-heaven-post-buying-69c6347042ab.webp"
+    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   },
   "postSellOffer": {
-    "bannerImage": "/assets/uploads/trade-heaven-page-banner-795616d1ec64.webp"
+    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
   }
 }

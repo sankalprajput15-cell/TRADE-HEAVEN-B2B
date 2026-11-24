@@ -4467,7 +4467,7 @@ export const VERIFIED_PLACEHOLDERS = [
     id: 'port-shipping',
     title: 'Cargo Ships & Maritime Port Logistics',
     category: 'Industrial Shipping & Port',
-    url: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+    url: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
   },
   {
     id: 'agri-grains',

@@ -668,7 +668,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
                       <div>
                         <div className="relative h-32 rounded-xl overflow-hidden bg-slate-100 mb-3 border border-slate-100">
                           <img
-                            src={cert.thumbnailUrl || cert.documentUrl || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg?w=320'}
+                            src={cert.thumbnailUrl || cert.documentUrl || '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg?w=320'}
                             alt={cert.name}
                             loading="lazy"
                             decoding="async"

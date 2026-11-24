@@ -166,7 +166,7 @@ const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
     themeColor: '#111827'
   },
   BUYERS_DIRECTORY: {
-    baseImage: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    baseImage: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     alt: 'Verified International Importers and Procurement Directors',
     themeColor: '#0f172a'
   },
@@ -216,7 +216,7 @@ const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
     themeColor: '#0f172a'
   },
   VENDOR_PROFILE: {
-    baseImage: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    baseImage: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     alt: 'Verified Manufacturer Corporate Headquarters and Storefront',
     themeColor: '#0f172a'
   },

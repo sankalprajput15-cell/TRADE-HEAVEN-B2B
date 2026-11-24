@@ -4315,6 +4315,7 @@ export class ServerDeliveryQueueManager {
                 'Accept': 'application/json',
                 'User-Agent': 'TradeHeaven-Internal-Node/1.0'
               },
+              signal: AbortSignal.timeout(4500),
               body: JSON.stringify({
                 recipientEmail: task.recipient,
                 recipientName: taskMeta.recipientName || 'Trade Partner',
@@ -4362,7 +4363,7 @@ export class ServerDeliveryQueueManager {
               continue;
             }
           } catch (mtaErr: any) {
-            console.error('[Queue Remote MTA Fallback Error]', mtaErr?.message || mtaErr);
+            console.warn('[ServerDeliveryQueueManager] Remote MTA relay unavailable, engaging local fallback:', mtaErr?.message || mtaErr);
             if (taskMeta.dispatchType === 'MANUAL') {
               const failReceipt: SerializedDeliveryReceipt = {
                 recipient: task.recipient,

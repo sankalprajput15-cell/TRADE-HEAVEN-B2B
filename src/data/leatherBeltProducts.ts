@@ -153,7 +153,7 @@ export const GLOBAL_LEATHER_BELT_PRODUCTS: Product[] = [
     title: 'Men’s Two-Tone Contrast-Stitched Genuine Full-Grain Leather Belt with Antique Brass Buckle',
     category: 'Leather Belts & Genuine Leather Goods',
     subCategory: 'Full Grain Leather Belt',
-    images: ['/assets/uploads/verified-belt-04.webp'],
+    images: ['/assets/uploads/auto-hide-leather-belts-lifetime-061ecea9061f.webp'],
     description: 'Supplied by ShivShakti Enterprises, Haryana, India (Contact: Rahul Luthra | +91-72063-44810). Bold men’s full-grain leather belt featuring charcoal suede-textured center inlay, dark brown burnished edges, heavy double contrast stitching, brass-plated keeper badge, and solid antique brass pin buckle.',
     priceTiers: [
       { minUnits: 150, maxUnits: 499, priceUsd: 6.90 },

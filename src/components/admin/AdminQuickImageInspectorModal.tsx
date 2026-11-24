@@ -105,6 +105,14 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     text: string;
   } | null>(null);
   const autoUploadedWhenOutRef = useRef<boolean>(false);
+  const shownCandidateUrlsRef = useRef<Set<string>>(new Set());
+  const searchAttemptRef = useRef<number>(0);
+
+  useEffect(() => {
+    shownCandidateUrlsRef.current.clear();
+    searchAttemptRef.current = 0;
+    autoUploadedWhenOutRef.current = false;
+  }, [product.id]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaLibraryItems = (productImageManagerService.getState().mediaLibrary || []).filter(
@@ -195,6 +203,18 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
           pushUnique(chip);
         }
 
+        const pageForAttempt = forceRefresh ? ++searchAttemptRef.current : searchAttemptRef.current;
+        const excludeList = forceRefresh
+          ? Array.from(shownCandidateUrlsRef.current).slice(-240)
+          : [];
+        const cleanCurrentLive = String(liveUrl || '').split('?')[0].trim();
+        if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
+
+        const specsText =
+          product.description && product.description !== siteLocationLabel
+            ? product.description
+            : undefined;
+
         let foundList: VisualProductImageCandidate[] = [];
         let matchedQuery = q;
 
@@ -204,16 +224,31 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             productName: attemptQuery,
             productId: product.id,
             category: product.category,
-            count: 20,
-            forceRefresh
+            specifications: specsText,
+            count: 50,
+            forceRefresh,
+            excludeUrls: excludeList,
+            searchPage: pageForAttempt
           });
           const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
-          const loadableList = await filterLoadableRealCandidates(rawList, 16);
+          const unseenRaw = forceRefresh
+            ? rawList.filter(c => {
+                const uBase = String(c?.url || '').split('?')[0].split('#')[0];
+                return uBase && !shownCandidateUrlsRef.current.has(uBase);
+              })
+            : rawList;
+          const poolToVerify = unseenRaw.length > 0 ? unseenRaw : rawList;
+          const loadableList = await filterLoadableRealCandidates(poolToVerify, 50);
           if (loadableList.length > 0) {
             foundList = loadableList;
             matchedQuery = String(res?.queryUsed || attemptQuery).trim() || attemptQuery;
             break;
           }
+        }
+
+        for (const cand of foundList) {
+          const uBase = String(cand?.url || '').split('?')[0].split('#')[0];
+          if (uBase) shownCandidateUrlsRef.current.add(uBase);
         }
 
         setCandidates(foundList);
@@ -285,6 +320,8 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       product.id,
       product.title,
       product.category,
+      product.description,
+      siteLocationLabel,
       headingSearchQueries,
       liveUrl,
       liveImgBroken,
@@ -318,6 +355,10 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     setStatusMessage(null);
     try {
       const cleanLive = String(liveUrl || '').split('?')[0];
+      const specsText =
+        product.description && product.description !== siteLocationLabel
+          ? product.description
+          : undefined;
       // 1. Try server autoFixSiteImages first, but strictly reject synthetic cards and validate loadability
       try {
         const json = await autoFixSiteImages([
@@ -326,6 +367,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             type: targetType,
             title: product.title,
             category: product.category,
+            specifications: specsText,
             currentUrl: liveUrl,
             fieldPath
           }
@@ -372,8 +414,11 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
           productName: queryChip,
           productId: product.id,
           category: product.category,
-          count: 20,
-          forceRefresh: true
+          specifications: specsText,
+          count: 48,
+          forceRefresh: true,
+          excludeUrls: Array.from(shownCandidateUrlsRef.current).slice(-200),
+          searchPage: ++searchAttemptRef.current
         });
         const rawPool =
           Array.isArray(searchRes?.pool) && searchRes.pool.length > 0
@@ -1032,7 +1077,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {candidates.slice(0, 20).map((cand, idx) => {
+                  {candidates.slice(0, 60).map((cand, idx) => {
                     const isCurrent =
                       cand.url.split('?')[0] === liveUrl.split('?')[0];
                     const initialThumb = cand.thumbnailUrl || cand.url;

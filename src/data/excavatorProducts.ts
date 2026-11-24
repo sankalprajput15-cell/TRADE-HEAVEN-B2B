@@ -139,7 +139,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$23500 - $33500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['/assets/uploads/verified-prod-exc-7.webp'],
+    images: ['/assets/uploads/auto-wheeled-excavator-wheeled-excavator-e5c3269a7084.webp'],
     specifications: [
       { name: 'Operating Weight', value: '17 Tons' }
     ]
@@ -283,7 +283,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$27500 - $37500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/verified-prod-exc-15.webp'],
+    images: ['/assets/uploads/auto-crawler-hydraulic-excavator-95m-7026e6f8cff3.webp'],
     specifications: [
       { name: 'Operating Weight', value: '25 Tons' }
     ]
@@ -373,7 +373,7 @@ export const GLOBAL_EXCAVATOR_PRODUCTS: Product[] = [
     priceRangeUsd: '$30000 - $40000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/uploads/verified-prod-exc-20.webp'],
+    images: ['/assets/uploads/auto-hydraulic-crawler-excavator-cummins-0db7f8a414ef.webp'],
     specifications: [
       { name: 'Operating Weight', value: '10 Tons' }
     ]

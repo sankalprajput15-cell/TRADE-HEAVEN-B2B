@@ -13,7 +13,7 @@ const reviewsDataset = [
   {
     name: "Aravind AK",
     text: "We recently upgraded our company profile to the Gold Plan on Trade Heaven, and the experience has been phenomenal. The RFQ matching system delivers genuine wholesale buyer leads consistently.",
-    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     region: "IN"
   },
   {
@@ -55,7 +55,7 @@ const reviewsDataset = [
   {
     name: "Elena Rostova",
     text: "Upgraded our supplier subscription last month. The dedicated account assistance and high search visibility have significantly increased our export order volume.",
-    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     region: "OTHER"
   },
   {
@@ -97,7 +97,7 @@ const reviewsDataset = [
   {
     name: "Kenji Tanaka",
     text: "Outstanding selection of verified suppliers. We found a great partner for our automotive parts division in Europe thanks to Trade Heaven's extensive database.",
-    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     region: "OTHER"
   },
   {
@@ -139,7 +139,7 @@ const reviewsDataset = [
   {
     name: "Fatima Ali",
     text: "We use Trade Heaven for all our wholesale medical supplies. The supplier verification process gives us the confidence we need for critical imports.",
-    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     region: "OTHER"
   },
   {
@@ -181,7 +181,7 @@ const reviewsDataset = [
   {
     name: "Sofia Costa",
     text: "Secure and reliable. The escrow service ensures that both buyers and sellers are protected, which is essential in international trade.",
-    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     region: "OTHER"
   },
   {
