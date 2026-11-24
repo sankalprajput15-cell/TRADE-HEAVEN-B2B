@@ -23,6 +23,7 @@ import {
   extractProductHeadingSearchQueries,
   isSyntheticSpecCardOrPlaceholder,
   validateRealImageUrlLoads,
+  filterLoadableRealCandidates,
   markBrokenExternalImageUrl,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
@@ -80,6 +81,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
 }) => {
   const [originalUrl] = useState<string>(currentImageUrl);
   const [liveUrl, setLiveUrl] = useState<string>(currentImageUrl);
+  const [liveImgBroken, setLiveImgBroken] = useState<boolean>(false);
   const [liveVersion, setLiveVersion] = useState<number>(() => Date.now());
   const [previousUrl, setPreviousUrl] = useState<string>(currentImageUrl);
   const [oldFileDeletedPermanently, setOldFileDeletedPermanently] = useState<boolean>(false);
@@ -102,6 +104,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const autoUploadedWhenOutRef = useRef<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaLibraryItems = (productImageManagerService.getState().mediaLibrary || []).filter(
@@ -129,6 +132,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       }
       setPreviousUrl(prevUrl);
       setLiveUrl(newUrl);
+      setLiveImgBroken(false);
       setLiveVersion(Date.now());
       productImageManagerService.recordProductActivityTimestamp(product.id, activityMs, false);
       productImageManagerService.applyServerOverrideSnapshot([
@@ -169,7 +173,18 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       setIsLoadingCandidates(true);
       try {
         // Build ordered heading advancement queue starting from the requested query
-        const queue: string[] = [q];
+        const queue: string[] = [];
+        const pushUnique = (val: string) => {
+          const clean = String(val || '').trim();
+          if (clean.length < 2) return;
+          if (!queue.some(item => item.toLowerCase() === clean.toLowerCase())) {
+            queue.push(clean);
+          }
+        };
+        pushUnique(q);
+        for (const subQ of extractProductHeadingSearchQueries(q, product.category)) {
+          pushUnique(subQ);
+        }
         const lowerStart = q.toLowerCase();
         const startIdx = headingSearchQueries.findIndex(hq => hq.toLowerCase() === lowerStart);
         const remainingChips =
@@ -177,15 +192,14 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             ? headingSearchQueries.slice(startIdx + 1)
             : headingSearchQueries.filter(hq => hq.toLowerCase() !== lowerStart);
         for (const chip of remainingChips) {
-          if (!queue.some(item => item.toLowerCase() === chip.toLowerCase())) {
-            queue.push(chip);
-          }
+          pushUnique(chip);
         }
 
         let foundList: VisualProductImageCandidate[] = [];
         let matchedQuery = q;
 
         for (const attemptQuery of queue) {
+          setSearchQuery(attemptQuery);
           const res = await fetchVisualProductImages({
             productName: attemptQuery,
             productId: product.id,
@@ -194,17 +208,72 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             forceRefresh
           });
           const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
-          const cleanList = rawList.filter(c => c?.url && !isSyntheticSpecCardOrPlaceholder(c));
-          if (cleanList.length > 0) {
-            foundList = cleanList;
+          const loadableList = await filterLoadableRealCandidates(rawList, 16);
+          if (loadableList.length > 0) {
+            foundList = loadableList;
             matchedQuery = String(res?.queryUsed || attemptQuery).trim() || attemptQuery;
             break;
           }
         }
 
         setCandidates(foundList);
-        if (matchedQuery && matchedQuery.toLowerCase() !== q.toLowerCase()) {
+        if (matchedQuery) {
           setSearchQuery(matchedQuery);
+        }
+
+        // If the product's current image is out/broken/a synthetic card, automatically upload the first real matching image found!
+        const currentClean = String(liveUrl || '').split('?')[0].trim();
+        const currentLoadsOk =
+          currentClean && !isSyntheticSpecCardOrPlaceholder(currentClean)
+            ? await validateRealImageUrlLoads(currentClean)
+            : false;
+        const isCurrentImageOut =
+          !currentClean ||
+          !currentLoadsOk ||
+          liveImgBroken ||
+          status === 'NEEDS_FIX' ||
+          isSyntheticSpecCardOrPlaceholder(currentClean);
+
+        if (isCurrentImageOut && foundList.length > 0 && !autoUploadedWhenOutRef.current) {
+          autoUploadedWhenOutRef.current = true;
+          const pickCand =
+            foundList.find(c => c.url.split('?')[0] !== currentClean) || foundList[0];
+          if (pickCand?.url) {
+            setIsApplying(true);
+            try {
+              const json = await replaceSiteImage({
+                targetId: product.id,
+                targetType,
+                fieldPath,
+                title: product.title,
+                category: product.category,
+                oldImageUrl: liveUrl,
+                imageUrl: pickCand.url
+              });
+              if (json?.newUrl && !isSyntheticSpecCardOrPlaceholder(json.newUrl)) {
+                const deletedOldUrls: string[] = Array.isArray(json.deletedOldUrls)
+                  ? json.deletedOldUrls
+                  : [];
+                await syncAfterUpdate(
+                  json.newUrl,
+                  liveUrl,
+                  json.updatedAt,
+                  json.imageUpdatedAt,
+                  json.replacedOldUrls,
+                  deletedOldUrls,
+                  'AUTO_FIX'
+                );
+                setStatusMessage({
+                  type: 'success',
+                  text: `Automatically stepped to heading "${matchedQuery}" and uploaded real matching photo (${json.newUrl}).`
+                });
+              }
+            } catch {
+              autoUploadedWhenOutRef.current = false;
+            } finally {
+              setIsApplying(false);
+            }
+          }
         }
       } catch {
         setCandidates([]);
@@ -212,12 +281,24 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         setIsLoadingCandidates(false);
       }
     },
-    [product.id, product.title, product.category, headingSearchQueries]
+    [
+      product.id,
+      product.title,
+      product.category,
+      headingSearchQueries,
+      liveUrl,
+      liveImgBroken,
+      status,
+      targetType,
+      fieldPath,
+      syncAfterUpdate
+    ]
   );
 
   useEffect(() => {
     void loadCandidates(product.title, false);
-  }, [loadCandidates, product.title]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, product.title]);
 
   const replaceViaWholeSiteEndpoint = async (source: { file?: File; imageUrl?: string }) => {
     return replaceSiteImage({
@@ -668,7 +749,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                 )}
               </div>
               <div className="aspect-4/3 rounded-lg bg-white border border-blue-200 overflow-hidden flex items-center justify-center">
-                {liveUrl ? (
+                {liveUrl && !liveImgBroken ? (
                   <img
                     src={
                       liveUrl.startsWith('/assets/uploads/')
@@ -676,11 +757,17 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                         : liveUrl
                     }
                     alt={product.title}
+                    onLoad={() => setLiveImgBroken(false)}
+                    onError={() => {
+                      setLiveImgBroken(true);
+                    }}
                     className="w-full h-full object-contain bg-slate-100"
                   />
                 ) : (
                   <div className="p-4 text-center text-xs text-slate-500">
-                    No active image assigned. Upload, pick from library, or click Auto-Fix.
+                    {isApplying || isLoadingCandidates
+                      ? 'Searching headings & auto-uploading real matching photo...'
+                      : 'No active image assigned. Upload, pick from library, or click Auto-Fix.'}
                   </div>
                 )}
               </div>

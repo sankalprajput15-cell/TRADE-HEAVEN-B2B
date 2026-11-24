@@ -255,11 +255,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     [productId, productTitle, isLogoOrAvatar, overrideVersion]
   );
 
-  // Automatic background visual product & category header fetch/upload disabled to prevent continuous file writes
-  useEffect(() => {
-    // Only resolve local overrides without triggering background network scrapes or disk writes
-  }, []);
-
   const candidates = useMemo(() => {
     const list: string[] = [];
     const lowerSupplier = (supplierName || '').toLowerCase();
@@ -292,11 +287,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       hasManualOverride && effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()
         ? resolveLocalMirroredImageUrl(effectiveSrc.trim())
         : '';
-    const optManualEff = manualMirrored
-      ? manualMirrored.startsWith('data:image/')
-        ? manualMirrored
-        : optimizeImageUrl(manualMirrored, { width: optimalWidth, isThumbnail })
-      : '';
+    const optManualEff =
+      manualMirrored && !isGenericOrPlaceholderImageUrl(manualMirrored)
+        ? manualMirrored.startsWith('data:image/')
+          ? manualMirrored
+          : optimizeImageUrl(manualMirrored, { width: optimalWidth, isThumbnail })
+        : '';
 
     if (optManualEff) {
       pushCandidateWithRawFallback(manualMirrored, optManualEff);
@@ -321,7 +317,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     const hasLocalUploadEffective =
       Boolean(effectiveSrc) &&
       typeof effectiveSrc === 'string' &&
-      effectiveSrc.trim().startsWith('/assets/uploads/');
+      effectiveSrc.trim().startsWith('/assets/uploads/') &&
+      !isGenericOrPlaceholderImageUrl(effectiveSrc.trim());
 
     if (
       !optManualEff &&
@@ -379,7 +376,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
       for (let i = 0; i < visualPool.length; i++) {
         const rawVUrl = visualPool[(i + offset) % visualPool.length];
-        if (!rawVUrl || isCrossCompanyAsset(rawVUrl)) continue;
+        if (!rawVUrl || isGenericOrPlaceholderImageUrl(rawVUrl) || isCrossCompanyAsset(rawVUrl)) continue;
         const mirroredVUrl = resolveLocalMirroredImageUrl(rawVUrl);
         const optVUrl = mirroredVUrl.startsWith('/assets/uploads/')
           ? optimizeImageUrl(mirroredVUrl, { width: optimalWidth, isThumbnail })
@@ -420,49 +417,63 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    const validList = list.filter(u => u && !FAILED_IMAGE_URLS.has(u));
-    if (validList.length === 0) {
-      const PALETTES: Array<[string, string, string]> = [
-        ['#064E3B', '#047857', '#6EE7B7'],
-        ['#7F1D1D', '#B91C1C', '#FCA5A5'],
-        ['#1E3A8A', '#1D4ED8', '#93C5FD'],
-        ['#4C1D95', '#6D28D9', '#C4B5FD'],
-        ['#78350F', '#B45309', '#FCD34D'],
-        ['#134E4A', '#0F766E', '#5EEAD4'],
-        ['#831843', '#BE185D', '#F9A8D4'],
-        ['#365314', '#4D7C0F', '#BEF264'],
-        ['#312E81', '#4338CA', '#A5B4FC'],
-        ['#7C2D12', '#C2410C', '#FDBA74'],
-        ['#0C4A6E', '#0369A1', '#7DD3FC'],
-        ['#581C87', '#7E22CE', '#D8B4FE']
-      ];
-      const seed = `${productId || ''}-${productTitle || ''}-${supplierName || ''}-${alt || ''}-${imageIndex || 0}`;
-      let h = 0;
-      for (let i = 0; i < seed.length; i++) {
-        h = (h * 33 + seed.charCodeAt(i)) >>> 0;
-      }
-      const [c1, c2, acc] = PALETTES[h % PALETTES.length];
-      const cleanSvgStr = (raw: string, maxLen: number) =>
-        Array.from(String(raw || '').replace(/[\uD800-\uDFFF\x00-\x1F\x7F]/g, '').replace(/[&<>"']/g, ' ').trim())
-          .slice(0, maxLen)
-          .join('');
-      const safeTitle = cleanSvgStr(productTitle || alt || 'Verified B2B Specification', 44) || 'Verified B2B Specification';
-      const safeSupplier = cleanSvgStr(supplierName || category || 'Direct OEM', 38) || 'Direct OEM';
-      const asciiWords = safeTitle.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
-      const mono = (asciiWords.length >= 2 ? `${asciiWords[0][0]}${asciiWords[1][0]}` : (asciiWords[0] || 'TH').slice(0, 2)).toUpperCase();
-      const svgCard = isThumbnail || isLogoOrAvatar
-        ? `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><rect width="240" height="240" rx="36" fill="url(#g)"/><circle cx="120" cy="120" r="88" fill="none" stroke="${acc}" stroke-width="5" opacity="0.5"/><text x="120" y="144" text-anchor="middle" font-family="Arial, sans-serif" font-size="82" font-weight="900" fill="#FFFFFF">${mono}</text></svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><rect width="960" height="720" fill="url(#g)"/><circle cx="480" cy="290" r="130" fill="#FFFFFF" fill-opacity="0.12" stroke="${acc}" stroke-width="4"/><text x="480" y="322" text-anchor="middle" font-family="Arial, sans-serif" font-size="92" font-weight="900" fill="#FFFFFF">${mono}</text><rect x="68" y="490" width="824" height="156" rx="18" fill="#090D16" fill-opacity="0.65" stroke="${acc}" stroke-width="2"/><text x="96" y="538" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="${acc}" letter-spacing="1.4">${safeSupplier.toUpperCase()}</text><text x="96" y="586" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#FFFFFF">${safeTitle}</text></svg>`;
-      try {
-        validList.push(`data:image/svg+xml;utf8,${encodeURIComponent(svgCard)}`);
-      } catch {
-        const asciiSafeSvg = svgCard.replace(/[^\x20-\x7E]/g, ' ');
-        validList.push(`data:image/svg+xml;utf8,${encodeURIComponent(asciiSafeSvg)}`);
-      }
-    }
-
-    return validList;
+    // Never return synthetic SVG flash cards — only real loadable image URLs
+    return list.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isGenericOrPlaceholderImageUrl(u));
   }, [src, effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName, type]);
+
+  // When a product/RFQ/category has no valid real image candidate (or all candidates failed),
+  // automatically search sequential product headings and upload a real matching photo
+  useEffect(() => {
+    if (isLogoOrAvatar) return;
+    if (candidates.length > 0 && !hasError) return;
+    const headingText = String(productTitle || alt || '').trim();
+    if (headingText.length < 3) return;
+    const fetchKey = `${productId || ''}::${normalizeVisualQueryKey(headingText, category)}`;
+    if (visualFetchedKeyRef.current === fetchKey) return;
+    visualFetchedKeyRef.current = fetchKey;
+
+    let cancelled = false;
+    void fetchVisualProductImages({
+      productName: headingText,
+      productId,
+      category,
+      count: 15
+    })
+      .then(async res => {
+        if (cancelled) return;
+        const pool = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
+        const realUrls = pool
+          .map(item => String(item?.url || '').trim())
+          .filter(u => u && !isGenericOrPlaceholderImageUrl(u) && !isBrokenExternalImageUrl(u));
+        if (realUrls.length === 0) return;
+        setVisualPool(realUrls);
+        setAttemptIndex(0);
+        setHasError(false);
+
+        const topUrl = realUrls[0];
+        if (topUrl && /^https?:\/\//i.test(topUrl) && (productId || headingText.length >= 3)) {
+          const localUrl = await autoUploadDisplayedProductImage({
+            imageUrl: topUrl,
+            productId,
+            productName: headingText,
+            category
+          });
+          if (!cancelled && localUrl && !isGenericOrPlaceholderImageUrl(localUrl)) {
+            productImageManagerService.registerAutoSavedImage({
+              productId,
+              productTitle: headingText,
+              url: localUrl,
+              originalUrl: topUrl
+            });
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLogoOrAvatar, candidates.length, hasError, productId, productTitle, alt, category]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);

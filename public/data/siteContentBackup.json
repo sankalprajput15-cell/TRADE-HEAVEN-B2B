@@ -10,7 +10,8 @@
     "whatsappUrl": "https://wa.me/918532934479?text=Hello%20Trade%20Heaven,%20I%20am%20inquiring%20about%20verified%20suppliers,%20RFQs,%20and%20B2B%20trade.",
     "officeAddress": "Trade Heaven Global HQ, 140 Fenchurch St, London EC3M 6BL, UK & Operations Hub in Mumbai, India",
     "escrowBadgeNotice": "100% trade protection & Trade Assurance Protected",
-    "countriesNotice": "180+ Countries Sourcing"
+    "countriesNotice": "180+ Countries Sourcing",
+    "logoUrl": "/assets/uploads/trade-heaven-header-footer-brand-logo-2091a35e9dcd.webp"
   },
   "homepage": {
     "announcementTicker": "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
@@ -18,7 +19,7 @@
     "heroHeadlineGradient": "Verified Global Buyers & Bulk RFQs",
     "heroSubheadline": "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     "heroTrustEyebrow": "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    "heroBgImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    "heroBgImage": "/assets/uploads/trade-heaven-main-6aa3b6de93e5.webp",
     "searchPlaceholder": "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     "tradeSpecialist": {
       "name": "Elena Rostova",
@@ -204,7 +205,8 @@
         "verifiedDealSize": "$310,000 FOB Santos",
         "category": "Agro Commodities"
       }
-    ]
+    ],
+    "onboardingBannerImage": "/assets/uploads/trade-heaven-banner-e2d7db76176f.webp"
   },
   "productsPage": {
     "title": "Global Wholesale Product Catalog",
@@ -353,8 +355,23 @@
     "pinnedCategoryIds": [],
     "sectionLayouts": {}
   },
-  "siteContentUpdatedAt": 1795502763905,
+  "siteContentUpdatedAt": 1795552097385,
   "escrow": {
     "bannerImage": ""
+  },
+  "productsDirectory": {
+    "bannerImage": "/assets/uploads/trade-heaven-header-footer-brand-logo-53d7e150b422.webp"
+  },
+  "buyLeads": {
+    "bannerImage": "/assets/uploads/trade-heaven-header-banner-7fb11855ab8f.webp"
+  },
+  "suppliersDirectory": {
+    "bannerImage": "/assets/uploads/trade-heaven-suppliers-header-19f63d303a39.webp"
+  },
+  "postBuyingRequest": {
+    "bannerImage": "/assets/uploads/trade-heaven-post-buying-69c6347042ab.webp"
+  },
+  "postSellOffer": {
+    "bannerImage": "/assets/uploads/trade-heaven-page-banner-795616d1ec64.webp"
   }
 }

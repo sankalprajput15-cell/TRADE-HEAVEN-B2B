@@ -34,6 +34,8 @@ import {
 } from '../../services/productImageManagerService';
 import {
   isGenericOrPlaceholderImageUrl,
+  isSyntheticSpecCardOrPlaceholder,
+  extractProductHeadingSearchQueries,
   matchesProductHeadingSearch
 } from '../../services/visualProductImageService';
 import {
@@ -181,6 +183,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     Record<string, { changedAt: number; action: 'UPLOAD' | 'AUTO_FIX' | 'URL'; deletedOldCount: number }>
   >({});
   const [skippedItems, setSkippedItems] = useState<Record<string, { reason: string; at: number }>>({});
+  const [brokenThumbIds, setBrokenThumbIds] = useState<Record<string, boolean>>({});
+  const autoFixedOutRowIdsRef = useRef<Set<string>>(new Set());
+  const isAutoFixingVisibleOutRef = useRef<boolean>(false);
 
   // Batch Auto-Fix state
   const [batchProgress, setBatchProgress] = useState<{
@@ -534,15 +539,23 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         (ov.locked === true || ov.serverVerified === true || ov.updatedBy === 'admin-manual')
       );
 
-      if (!u || isGenericOrPlaceholderImageUrl(u) || /^https?:\/\//i.test(u)) {
+      if (
+        !u ||
+        brokenThumbIds[item.id] ||
+        isGenericOrPlaceholderImageUrl(u) ||
+        isSyntheticSpecCardOrPlaceholder(u) ||
+        /^https?:\/\//i.test(u)
+      ) {
         return {
           ...item,
           status: 'NEEDS_FIX' as const,
           statusDetail: !u
             ? 'Missing image'
-            : isGenericOrPlaceholderImageUrl(u)
-              ? 'Placeholder / stock image'
-              : 'External URL (not stored on server)'
+            : brokenThumbIds[item.id]
+              ? 'Broken / missing file on server'
+              : isGenericOrPlaceholderImageUrl(u) || isSyntheticSpecCardOrPlaceholder(u)
+                ? 'Placeholder / synthetic card image'
+                : 'External URL (not stored on server)'
         };
       }
 
@@ -569,7 +582,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, rfqs, siteContent, stateVersion, sessionChanges]);
+  }, [products, rfqs, siteContent, stateVersion, sessionChanges, brokenThumbIds]);
 
   const duplicatePeersByUrl = useMemo(() => {
     const map = new Map<string, Array<{ id: string; title: string; type: SiteImageTargetType }>>();
@@ -623,7 +636,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim();
-    const matched = allItems.filter(it => {
+    const scopeMatched = allItems.filter(it => {
       if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
       if (scopeFilter === 'DUPLICATE' && it.status !== 'DUPLICATE') return false;
@@ -632,16 +645,38 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (scopeFilter === 'CATEGORY' && it.type !== 'CATEGORY') return false;
       if (scopeFilter === 'RFQ' && it.type !== 'RFQ') return false;
       if (scopeFilter === 'BANNERS' && it.type !== 'HERO_SLIDE' && it.type !== 'SITE_ASSET') return false;
-
-      if (!q) return true;
-      return matchesProductHeadingSearch(q, [
-        it.title,
-        it.id,
-        it.category,
-        it.siteLocationLabel,
-        it.currentUrl
-      ]);
+      return true;
     });
+
+    let matched = scopeMatched;
+    if (q) {
+      // Step sequentially through heading queries (Full Heading -> Sub-headings -> Core 1-2 word nouns) if the full heading returns 0 rows
+      const headingCandidates = [q, ...extractProductHeadingSearchQueries(q)];
+      const seenQ = new Set<string>();
+      for (const candidateQ of headingCandidates) {
+        const cleanQ = String(candidateQ || '').trim();
+        if (!cleanQ) continue;
+        const lowerQ = cleanQ.toLowerCase();
+        if (seenQ.has(lowerQ)) continue;
+        seenQ.add(lowerQ);
+
+        const hits = scopeMatched.filter(it =>
+          matchesProductHeadingSearch(cleanQ, [
+            it.title,
+            it.id,
+            it.category,
+            it.siteLocationLabel,
+            it.currentUrl
+          ])
+        );
+        if (hits.length > 0) {
+          matched = hits;
+          break;
+        }
+        matched = [];
+      }
+    }
+
     if (scopeFilter === 'CHANGED') {
       return [...matched].sort((a, b) => (b.changedAtMs || 0) - (a.changedAtMs || 0));
     }
@@ -744,6 +779,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         return next;
       });
       setSkippedItems(prev => {
+        const next = { ...prev };
+        for (const e of entries) {
+          delete next[e.id];
+        }
+        return next;
+      });
+      setBrokenThumbIds(prev => {
         const next = { ...prev };
         for (const e of entries) {
           delete next[e.id];
@@ -1001,6 +1043,40 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
+  // Automatically step through headings and upload real matching photos for visible rows whose images are out/missing/broken
+  useEffect(() => {
+    if (isLoadingInventory || batchProgress?.active || isAutoFixingVisibleOutRef.current) return;
+    const outCandidate = pageItems.find(it => {
+      if (autoFixedOutRowIdsRef.current.has(it.id) || busyRowIds[it.id]) return false;
+      const u = it.currentUrl;
+      return (
+        !u ||
+        Boolean(brokenThumbIds[it.id]) ||
+        isGenericOrPlaceholderImageUrl(u) ||
+        isSyntheticSpecCardOrPlaceholder(u)
+      );
+    });
+    if (!outCandidate) return;
+
+    autoFixedOutRowIdsRef.current.add(outCandidate.id);
+    isAutoFixingVisibleOutRef.current = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          await handleAutoFixSingle(outCandidate);
+        } finally {
+          isAutoFixingVisibleOutRef.current = false;
+        }
+      })();
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+      isAutoFixingVisibleOutRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageItems, brokenThumbIds, isLoadingInventory, batchProgress?.active, busyRowIds]);
+
   // Batch Auto-Fix (Selected OR All Flagged)
   const runBatchAutoFix = async (targets: UnifiedSiteImageItem[]) => {
     if (targets.length === 0 || batchProgress?.active) return;
@@ -1022,7 +1098,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       currentLabel: targets[0].title
     });
 
-    const CHUNK_SIZE = 5;
+    const CHUNK_SIZE = 1;
     for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
       if (abortBatchRef.current) break;
       const chunk = targets.slice(i, i + CHUNK_SIZE);
@@ -1878,16 +1954,21 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                           title="Click to inspect & choose from ~20 Google/Web photos"
                           className="w-16 h-12 rounded-md border border-slate-200 hover:border-[#0F294D] bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer group relative"
                         >
-                          {thumbSrc ? (
+                          {thumbSrc && !brokenThumbIds[item.id] && !isSyntheticSpecCardOrPlaceholder(item.currentUrl) ? (
                             <img
                               src={thumbSrc}
                               alt={item.title}
                               referrerPolicy="no-referrer"
                               loading="lazy"
+                              onError={() => {
+                                setBrokenThumbIds(prev => (prev[item.id] ? prev : { ...prev, [item.id]: true }));
+                              }}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <span className="text-[10px] text-slate-400 font-medium">No Image</span>
+                            <span className="text-[10px] text-slate-400 font-medium text-center px-1 leading-tight">
+                              {busyRowIds[item.id] ? 'Auto-Uploading...' : 'No Image'}
+                            </span>
                           )}
                         </button>
                       </td>

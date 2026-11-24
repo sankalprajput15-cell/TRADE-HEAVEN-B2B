@@ -16,7 +16,6 @@ if (typeof window !== 'undefined' && typeof Response !== 'undefined' && Response
       }
       const trimmed = text.trim();
       if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
-        console.warn('[TradeHeaven API] Intercepted HTML document where JSON was expected. Safely returning fallback object.');
         return {
           status: 'fallback',
           success: false,

@@ -23318,18 +23318,26 @@ async function handleVisualProductImageSearch(params: {
   const cached = serverProductImageCacheMap.get(normalizedKey);
   if (cached && !params.forceRefresh) {
     const ageMs = Date.now() - Date.parse(cached.updatedAt || '');
-    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= Math.min(16, requestedCount)) {
-      // Map any already-replaced URLs immediately
-      for (const img of cached.images) {
-        const mappedUrl = serverProductImageState.urlReplacements?.[img.url];
-        if (mappedUrl && mappedUrl.startsWith('/assets/uploads/')) {
+    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && Array.isArray(cached.images)) {
+      // Map any already-replaced URLs immediately and prune any deleted local /assets/uploads/ files
+      cached.images = cached.images.filter(img => {
+        if (!img || !img.url) return false;
+        const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
+        if (mappedUrl.startsWith('/assets/uploads/')) {
+          if (!isLocalUploadPresentOnDisk(mappedUrl) || isGenericOrPlaceholderServerUrl(mappedUrl)) {
+            return false;
+          }
           img.url = mappedUrl;
           img.thumbnailUrl = mappedUrl;
         }
-      }
-
+        return !isGenericOrPlaceholderServerUrl(img.url);
+      });
+    }
+    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 4) {
       // Eagerly mirror up to 4 items on cache hit if fewer than 4 are local /assets/uploads/ files
-      const currentLocalCount = cached.images.filter(img => String(img.url || '').startsWith('/assets/uploads/')).length;
+      const currentLocalCount = cached.images.filter(
+        img => String(img.url || '').startsWith('/assets/uploads/') && isLocalUploadPresentOnDisk(img.url)
+      ).length;
       if (currentLocalCount < 4) {
         const externalToMirror = cached.images
           .filter(img => /^https?:\/\//i.test(String(img.url || '')))
@@ -23359,15 +23367,17 @@ async function handleVisualProductImageSearch(params: {
         void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, cached.images);
       }
 
-      const mappedCached = cached.images.map(img => {
-        const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
-        const isLocal = mappedUrl.startsWith('/assets/uploads/');
-        return {
-          ...img,
-          url: mappedUrl,
-          thumbnailUrl: isLocal ? mappedUrl : (img.thumbnailUrl || mappedUrl)
-        };
-      });
+      const mappedCached = cached.images
+        .map(img => {
+          const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
+          const isLocal = mappedUrl.startsWith('/assets/uploads/');
+          return {
+            ...img,
+            url: mappedUrl,
+            thumbnailUrl: isLocal ? mappedUrl : (img.thumbnailUrl || mappedUrl)
+          };
+        })
+        .filter(img => !img.url.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(img.url));
       const localItems = fisherYatesShuffle(
         mappedCached.filter(img => img.url.startsWith('/assets/uploads/'))
       );
@@ -23375,17 +23385,19 @@ async function handleVisualProductImageSearch(params: {
         mappedCached.filter(img => !img.url.startsWith('/assets/uploads/'))
       );
       const shuffledPool = [...localItems, ...externalItems];
-      const selected = shuffledPool.slice(0, requestedCount);
-      return {
-        success: true,
-        status: 'cached',
-        fromCache: true,
-        provider: cached.provider || 'gemini_google_search_grounding',
-        queryUsed: cached.queryUsed,
-        totalVerified: shuffledPool.length,
-        images: selected,
-        pool: shuffledPool
-      };
+      if (shuffledPool.length >= 4) {
+        const selected = shuffledPool.slice(0, requestedCount);
+        return {
+          success: true,
+          status: 'cached',
+          fromCache: true,
+          provider: cached.provider || 'gemini_google_search_grounding',
+          queryUsed: cached.queryUsed,
+          totalVerified: shuffledPool.length,
+          images: selected,
+          pool: shuffledPool
+        };
+      }
     }
   }
 
@@ -23538,10 +23550,128 @@ Return ONLY valid JSON in this format:
   if (verifiedMap.size < 6) {
     await Promise.race([
       geminiDiscoveryPromise,
-      new Promise<void>(resolve => setTimeout(resolve, 6500))
+      new Promise<void>(resolve => setTimeout(resolve, 4500))
     ]);
   } else {
     void geminiDiscoveryPromise.catch(() => {});
+  }
+
+  let matchedHeadingQuery = queryUsed;
+
+  // Automatic Sequential Heading Advancement inside handleVisualProductImageSearch:
+  // If the full heading returned 0 (or < 4) results, step through Sub-headings -> Focused 2-3 word queries -> Core 1-2 word nouns
+  if (verifiedMap.size < 4) {
+    const fallbackHeadings: string[] = [];
+    const seenFb = new Set<string>([cleanName.toLowerCase()]);
+    const pushFb = (q: string) => {
+      const c = String(q || '').replace(/\s+/g, ' ').trim();
+      if (c.length < 3) return;
+      const k = c.toLowerCase();
+      if (seenFb.has(k)) return;
+      seenFb.add(k);
+      fallbackHeadings.push(c);
+    };
+
+    const subClauses = cleanName
+      .replace(/[()[\]]/g, ',')
+      .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+|\s+and\s+)\s*/i)
+      .map(p => cleanProductSearchSubject(p))
+      .filter(p => p.length >= 3);
+    for (const sc of subClauses) pushFb(sc);
+    for (const fq of buildFocusedVisualSearchQueries(cleanName, cleanCategory)) pushFb(fq);
+
+    const stopSet = new Set([
+      'verified', 'prod', 'bulk', 'wholesale', 'export', 'grade', 'quality', 'premium', 'pure',
+      'natural', 'fresh', 'raw', 'custom', 'private', 'label', 'series', 'collection', 'direct',
+      'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'certified',
+      'hand', 'stitched', 'full', 'grain', 'casual', 'dress'
+    ]);
+    const coreToks = extractMeaningfulAuditTokens(cleanName).filter(t => t.length >= 3 && !stopSet.has(t));
+    if (coreToks.length >= 2) {
+      pushFb(coreToks.slice(-2).join(' '));
+      pushFb(coreToks.slice(0, 2).join(' '));
+    }
+    for (const ct of coreToks) pushFb(ct);
+
+    for (const nextHeading of fallbackHeadings.slice(0, 5)) {
+      // Check cached pool for this fallback heading first
+      for (const ck of [
+        normalizeVisualSearchKeyword(nextHeading, cleanCategory),
+        normalizeVisualSearchKeyword(nextHeading, '')
+      ]) {
+        const subCached = serverProductImageCacheMap.get(ck);
+        if (subCached && Array.isArray(subCached.images)) {
+          for (const img of subCached.images) {
+            const u = serverProductImageState.urlReplacements?.[img.url] || img.url;
+            if (!u || isGenericOrPlaceholderServerUrl(u)) continue;
+            if (u.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(u)) continue;
+            if (!verifiedMap.has(u)) {
+              verifiedMap.set(u, {
+                ...img,
+                url: u,
+                thumbnailUrl: u.startsWith('/assets/uploads/') ? u : (img.thumbnailUrl || u)
+              });
+            }
+          }
+        }
+      }
+      if (verifiedMap.size >= 8) {
+        matchedHeadingQuery = nextHeading;
+        break;
+      }
+
+      // Live commercial + Google Images + Wikimedia search for nextHeading
+      try {
+        const [subWeb, subGoogle, subWiki] = await Promise.all([
+          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, ''),
+          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory),
+          fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
+        ]);
+        collectAndFilter(subWeb, true);
+        collectAndFilter(subGoogle, true);
+        collectAndFilter(subWiki, false);
+        await verifyPendingBatch(28);
+        if (verifiedMap.size >= 4) {
+          matchedHeadingQuery = nextHeading;
+          break;
+        }
+      } catch {}
+    }
+
+    // Also include real verified local photos from disk matching any heading in the sequence
+    if (verifiedMap.size < requestedCount) {
+      const preindexed = buildPreindexedLocalUploadFiles();
+      const allHeadingTokens = [cleanName, ...fallbackHeadings];
+      for (const hChip of allHeadingTokens) {
+        const hToks = extractMeaningfulAuditTokens(hChip);
+        if (hToks.length === 0) continue;
+        const minHits = hToks.length === 1 ? 1 : Math.min(2, hToks.length);
+        for (const entry of preindexed) {
+          if (verifiedMap.has(entry.webUrl) || isGenericOrPlaceholderServerUrl(entry.webUrl)) continue;
+          let hits = 0;
+          for (const ht of hToks) {
+            if (entry.tokens.includes(ht) || (ht.length >= 5 && entry.tokens.some(et => et.length >= 5 && (et.includes(ht) || ht.includes(et))))) {
+              hits++;
+            }
+          }
+          if (hits >= minHits) {
+            verifiedMap.set(entry.webUrl, {
+              url: entry.webUrl,
+              thumbnailUrl: entry.webUrl,
+              title: hChip,
+              sourceDomain: 'tradeheaven.net',
+              width: 800,
+              height: 600,
+              relevanceScore: 20 + hits * 5
+            });
+          }
+        }
+        if (verifiedMap.size >= 6) {
+          if (matchedHeadingQuery === queryUsed) matchedHeadingQuery = hChip;
+          break;
+        }
+      }
+    }
   }
 
   const allVerified = Array.from(verifiedMap.values()).sort(
@@ -23554,7 +23684,7 @@ Return ONLY valid JSON in this format:
       status: quotaErrorMessage ? 'quota_exceeded' : 'no_relevant_matches',
       configRequired: false,
       message: `No verified commercial product photos (.jpg/.png/.webp) matched "${cleanName}". Try refining the product title or upload an image manually.`,
-      queryUsed,
+      queryUsed: matchedHeadingQuery,
       images: [],
       pool: []
     };
@@ -23583,7 +23713,7 @@ Return ONLY valid JSON in this format:
   // Persist verified pool in 7-day cache
   serverProductImageCacheMap.set(normalizedKey, {
     keyword: normalizedKey,
-    queryUsed,
+    queryUsed: matchedHeadingQuery,
     images: geminiVerified,
     updatedAt: new Date().toISOString(),
     provider: 'gemini_google_search_grounding'
@@ -23604,7 +23734,7 @@ Return ONLY valid JSON in this format:
     status: 'ok',
     fromCache: false,
     provider: 'gemini_google_search_grounding',
-    queryUsed,
+    queryUsed: matchedHeadingQuery,
     totalVerified: orderedPool.length,
     images: selected,
     pool: orderedPool
@@ -24969,6 +25099,7 @@ function findMatchingLocalMasterImageOnDisk(
   let bestTemplatePath: string | null = null;
   let bestTemplateScore = -1;
 
+  const minRequiredScore = titleOnlyTokens.length <= 1 ? 7 : 10;
   const entries = preindexedFiles || buildPreindexedLocalUploadFiles();
   for (const item of entries) {
     // Fast O(1) exclusion before token scoring to avoid hashing unrelated files
@@ -24991,7 +25122,7 @@ function findMatchingLocalMasterImageOnDisk(
       }
     }
 
-    if (titleHits === 0 || (score < 10 && score <= bestUnusedScore && score <= bestTemplateScore)) continue;
+    if (titleHits === 0 || (score < minRequiredScore && score <= bestUnusedScore && score <= bestTemplateScore)) continue;
     // STRICT GLOBAL 1-TO-1 UNIQUENESS (URL hash + SHA-256 content hash) checked only on strong candidates
     if (registry && registry.isCandidateUsed(item.webUrl)) continue;
     const mismatchChk = detectCatalogImageIssue(
@@ -25000,19 +25131,19 @@ function findMatchingLocalMasterImageOnDisk(
     );
     if (mismatchChk.flagged) continue;
 
-    if (score >= 10 && score > bestUnusedScore) {
+    if (score >= minRequiredScore && score > bestUnusedScore) {
       bestUnusedScore = score;
       bestUnusedUrl = item.webUrl;
     }
-    if (score >= 12 && score > bestTemplateScore) {
+    if (score >= minRequiredScore + 2 && score > bestTemplateScore) {
       bestTemplateScore = score;
       bestTemplatePath = item.fullPath;
     }
   }
 
   return {
-    exactUnusedUrl: bestUnusedScore >= 10 ? bestUnusedUrl : null,
-    bestTemplatePath: bestTemplateScore >= 12 ? bestTemplatePath : null
+    exactUnusedUrl: bestUnusedScore >= minRequiredScore ? bestUnusedUrl : null,
+    bestTemplatePath: bestTemplateScore >= minRequiredScore + 2 ? bestTemplatePath : null
   };
 }
 
@@ -25052,14 +25183,20 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const cleanCategory = String(params.category || 'General Wholesale').trim();
   const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, params.specifications);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
-  const timeoutMs = typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0 ? params.geminiTimeoutMs : 9500;
-  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : params.wallDeadlineMs ? 2 : 6;
-  const withinNetworkDeadline = () => !params.wallDeadlineMs || Date.now() < params.wallDeadlineMs;
+  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 8500);
+  const timeoutMs =
+    typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0
+      ? Math.min(params.geminiTimeoutMs, 3200)
+      : 3000;
+  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 3;
+  const withinNetworkDeadline = () => Date.now() < effectiveWallDeadline;
 
   // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
   const globalRegistry = params.sharedRegistry || buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
 
   const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
+    const remainingMs = Math.max(800, Math.min(timeoutMs, effectiveWallDeadline - Date.now()));
+    if (remainingMs <= 800 && Date.now() >= effectiveWallDeadline) return [];
     try {
       const searchPromise = handleVisualProductImageSearch({
         productName: searchName,
@@ -25071,7 +25208,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
       const timeoutSentinel = Symbol('gemini_timeout');
       const searchResult = await Promise.race([
         searchPromise,
-        new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), timeoutMs))
+        new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), remainingMs))
       ]);
       if (searchResult !== timeoutSentinel && searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
         return fisherYatesShuffle([...searchResult.pool]);
@@ -25082,19 +25219,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     return [];
   };
 
-  // 1. Check cached >10 Gemini Google Search Grounding pool first, filtering strictly against global attached registry
   if (!serverProductImageCacheMap.has(normalizedKey)) {
     loadProductImageCacheFromDisk();
-  }
-  let poolCandidates: VisualImageCandidate[] = [];
-  const cached = serverProductImageCacheMap.get(normalizedKey);
-  if (cached && Array.isArray(cached.images) && cached.images.length > 0) {
-    poolCandidates = fisherYatesShuffle(
-      cached.images.filter(c => {
-        const u = String(c?.url || '').trim();
-        return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-      })
-    );
   }
 
   // Build ordered heading advancement sequence: Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun -> Category noun
@@ -25113,7 +25239,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   pushHeading(cleanName);
   const subParts = String(params.title || cleanName)
     .replace(/[()[\]]/g, ',')
-    .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+)\s*/)
+    .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+|\s+and\s+)\s*/i)
     .map(p => cleanProductSearchSubject(p))
     .filter(p => p.length >= 3);
   for (const part of subParts) pushHeading(part);
@@ -25124,27 +25250,30 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const nounStop = new Set([
     'verified', 'prod', 'bulk', 'wholesale', 'export', 'grade', 'quality', 'premium', 'pure',
     'natural', 'fresh', 'raw', 'custom', 'private', 'label', 'series', 'collection', 'direct',
-    'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'grade',
+    'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'certified',
     'hand', 'stitched', 'full', 'grain', 'casual', 'dress', 'green', 'white', 'black', 'red',
-    'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new'
+    'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new', 'bayan'
   ]);
   const coreNouns = extractMeaningfulAuditTokens(cleanName).filter(t => t.length >= 3 && !nounStop.has(t));
   if (coreNouns.length >= 2) {
     pushHeading(coreNouns.slice(0, 2).join(' '));
     pushHeading(coreNouns.slice(-2).join(' '));
   }
-  for (let i = coreNouns.length - 1; i >= 0; i--) {
+  for (let i = 0; i < coreNouns.length; i++) {
     pushHeading(coreNouns[i]);
   }
   const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
   if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
   else if (catNouns.length === 1) pushHeading(catNouns[0]);
 
+  const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
+  let totalMirrorAttempts = 0;
+
   const tryPickAndMirrorFromPool = async (
     candidatesList: VisualImageCandidate[],
-    matchedQueryLabel: string
+    matchedQueryLabel: string,
+    allowExternalMirror: boolean = true
   ) => {
-    let mirrorAttempts = 0;
     for (const cand of candidatesList) {
       const rawCandUrl = String(cand?.url || '').trim();
       if (!rawCandUrl) continue;
@@ -25155,11 +25284,14 @@ async function resolveUniqueVerifiedCatalogImage(params: {
       );
       if (globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)) continue;
 
-      if (/^https?:\/\//i.test(resolvedLocal) && params.allowLiveGeminiNetwork !== false) {
-        if (mirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
+      if (/^https?:\/\//i.test(resolvedLocal)) {
+        if (!allowExternalMirror || params.allowLiveGeminiNetwork === false) {
           continue;
         }
-        mirrorAttempts++;
+        if (totalMirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
+          continue;
+        }
+        totalMirrorAttempts++;
         const mirrored = await Promise.race([
           mirrorExternalProductImageToLocalUploads({
             externalUrl: resolvedLocal,
@@ -25170,7 +25302,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
             skipBind: true,
             rejectIfUsedByOther: globalRegistry
           }),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), params.wallDeadlineMs ? 2200 : 5000))
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 2200))
         ]);
         if (!mirrored) continue;
         resolvedLocal = normalizeAuditImageUrl(mirrored);
@@ -25211,19 +25343,90 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     return null;
   };
 
-  // First try any cached unused pool candidates
-  if (poolCandidates.length > 0) {
-    const cachedPicked = await tryPickAndMirrorFromPool(poolCandidates, cleanName);
-    if (cachedPicked) return cachedPicked;
+  // PASS 1A: Instant zero-network sequential check across headingQueue against local master photos on disk & already-mirrored cache entries
+  for (const headingChip of headingQueue) {
+    const localMatch = findMatchingLocalMasterImageOnDisk(
+      headingChip,
+      cleanCategory,
+      params.usedUrls,
+      sharedPreindexedFiles,
+      globalRegistry
+    );
+    if (
+      localMatch.exactUnusedUrl &&
+      isLocalUploadPresentOnDisk(localMatch.exactUnusedUrl) &&
+      !params.usedUrls.has(localMatch.exactUnusedUrl) &&
+      !globalRegistry.isCandidateUsed(localMatch.exactUnusedUrl)
+    ) {
+      const contentHash = getLocalUploadFileSha256(localMatch.exactUnusedUrl) || undefined;
+      params.usedUrls.add(localMatch.exactUnusedUrl);
+      globalRegistry.claim({ localUrl: localMatch.exactUnusedUrl, contentHash });
+      bindAutoSavedImageOverride({
+        localUrl: localMatch.exactUnusedUrl,
+        productId: params.recordId,
+        productName: cleanName,
+        gallery: [localMatch.exactUnusedUrl],
+        flushNow: false,
+        forceOverwrite: true,
+        bindByTitle: false
+      });
+      return {
+        newImageUrl: localMatch.exactUnusedUrl,
+        queryUsed: headingChip,
+        source: 'verified_local_catalog_pool',
+        imageContentHash: contentHash
+      };
+    }
+
+    const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
+    const chipKeyPlain = normalizeVisualSearchKeyword(headingChip, '');
+    for (const keyCandidate of [chipKeyWithCat, chipKeyPlain]) {
+      const chipCached = serverProductImageCacheMap.get(keyCandidate);
+      if (chipCached && Array.isArray(chipCached.images) && chipCached.images.length > 0) {
+        const unusedCached = fisherYatesShuffle(
+          chipCached.images.filter(c => {
+            const u = String(c?.url || '').trim();
+            return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+          })
+        );
+        if (unusedCached.length > 0) {
+          const localCachedPicked = await tryPickAndMirrorFromPool(unusedCached, headingChip, false);
+          if (localCachedPicked) return localCachedPicked;
+        }
+      }
+    }
   }
 
-  // Automatic Sequential Heading Advancement across Full Heading -> Sub-headings -> Core 1-2 word nouns
+  // PASS 1B: Check cached external candidates across headingQueue (bounded by totalMirrorAttempts & wallDeadline)
+  for (const headingChip of headingQueue) {
+    if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
+    const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
+    const chipKeyPlain = normalizeVisualSearchKeyword(headingChip, '');
+    for (const keyCandidate of [chipKeyWithCat, chipKeyPlain]) {
+      const chipCached = serverProductImageCacheMap.get(keyCandidate);
+      if (chipCached && Array.isArray(chipCached.images) && chipCached.images.length > 0) {
+        const unusedCached = fisherYatesShuffle(
+          chipCached.images.filter(c => {
+            const u = String(c?.url || '').trim();
+            return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+          })
+        );
+        if (unusedCached.length > 0) {
+          const cachedPicked = await tryPickAndMirrorFromPool(unusedCached, headingChip, true);
+          if (cachedPicked) return cachedPicked;
+        }
+      }
+    }
+  }
+
+  // PASS 2: Automatic Sequential Heading Live Network Advancement (Full Heading -> Sub-headings -> Core 1-2 word nouns)
   if (params.allowLiveGeminiNetwork !== false && withinNetworkDeadline()) {
+    const cached = serverProductImageCacheMap.get(normalizedKey);
     const hadExhaustedCache = Boolean(cached && Array.isArray(cached.images) && cached.images.length > 0);
     const angleVariants = ['bulk packaging', 'wholesale lot', 'industrial warehouse', 'export quality closeup', 'factory direct'];
     const variantIdx = parseInt(crypto.createHash('sha1').update(params.recordId).digest('hex').slice(0, 2), 16) % angleVariants.length;
 
-    for (let hIdx = 0; hIdx < Math.min(headingQueue.length, 8); hIdx++) {
+    for (let hIdx = 0; hIdx < Math.min(headingQueue.length, 5); hIdx++) {
       if (!withinNetworkDeadline()) break;
       const headingChip = headingQueue[hIdx];
       const diversifiedSpecs =
@@ -25238,47 +25441,13 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
       });
       if (unusedFresh.length > 0) {
-        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip);
+        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip, true);
         if (picked) return picked;
       }
     }
   }
 
-  // 2. Check existing local /assets/uploads/ files matching product/category tokens (STRICTLY unused by URL, URL-hash, AND content-hash!)
-  const localMatch = findMatchingLocalMasterImageOnDisk(
-    cleanName,
-    cleanCategory,
-    params.usedUrls,
-    params.preindexedFiles,
-    globalRegistry
-  );
-  if (
-    localMatch.exactUnusedUrl &&
-    isLocalUploadPresentOnDisk(localMatch.exactUnusedUrl) &&
-    !params.usedUrls.has(localMatch.exactUnusedUrl) &&
-    !globalRegistry.isCandidateUsed(localMatch.exactUnusedUrl)
-  ) {
-    const contentHash = getLocalUploadFileSha256(localMatch.exactUnusedUrl) || undefined;
-    params.usedUrls.add(localMatch.exactUnusedUrl);
-    globalRegistry.claim({ localUrl: localMatch.exactUnusedUrl, contentHash });
-    bindAutoSavedImageOverride({
-      localUrl: localMatch.exactUnusedUrl,
-      productId: params.recordId,
-      productName: cleanName,
-      gallery: [localMatch.exactUnusedUrl],
-      flushNow: false,
-      forceOverwrite: true,
-      bindByTitle: false
-    });
-    return {
-      newImageUrl: localMatch.exactUnusedUrl,
-      queryUsed,
-      source: 'verified_local_catalog_pool',
-      imageContentHash: contentHash
-    };
-  }
-
-  // 3. NEVER generate synthetic text-card or spec-card fallback graphics!
+  // NEVER generate synthetic text-card or spec-card fallback graphics!
   return {
     newImageUrl: '',
     queryUsed,
@@ -26339,6 +26508,7 @@ async function fixSingleCatalogImageRecord(params: {
         category: resolvedCategory,
         specifications: String(matchedListing?.description || matchedProduct?.description || matchedRfq?.specifications || ''),
         usedUrls: usedUrlsSet,
+        sharedRegistry: globalRegistry,
         allowLiveGeminiNetwork: true
       });
       finalImageUrl = resolved.newImageUrl;
