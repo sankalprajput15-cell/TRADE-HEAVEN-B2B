@@ -24,12 +24,13 @@ export interface VisualProductSearchResponse {
 const SESSION_CACHE = new Map<string, { data: VisualProductSearchResponse; cachedAt: number }>();
 const INFLIGHT_REQUESTS = new Map<string, Promise<VisualProductSearchResponse>>();
 const BROKEN_EXTERNAL_URLS = new Set<string>();
+const VERIFIED_LOADABLE_URLS = new Set<string>();
 const LOCAL_MIRROR_MAP = new Map<string, string>();
 const INFLIGHT_AUTO_UPLOADS = new Map<string, Promise<string | null>>();
 const BOUND_LOCAL_KEYS = new Set<string>();
 
-const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v5';
-const LOCAL_MIRROR_STORAGE_KEY = 'th_local_uploaded_image_mirrors_v2';
+const LOCAL_STORAGE_CACHE_KEY = 'th_visual_product_image_cache_v6';
+const LOCAL_MIRROR_STORAGE_KEY = 'th_local_uploaded_image_mirrors_v3';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 let mirrorCacheHydrated = false;
 
@@ -62,8 +63,36 @@ const GENERIC_PLACEHOLDER_PATTERNS = [
   'global-market-insights',
   'changing-automotive',
   '3d-render',
-  '3d_render'
+  '3d_render',
+  'data:image/svg',
+  '.svg',
+  'spec-card',
+  'speccard',
+  'fallback-card',
+  'verified-b2b-export-spec',
+  'company-isolated-catalog-asset',
+  'unique-verified-asset',
+  'auto-tyre-scraps-4a0f5066c723',
+  'verified-prod-iqf-molai-broccoli-garlic'
 ];
+
+const HEADING_NON_NOUN_WORDS = new Set([
+  'origin', 'australia', 'australian', 'germany', 'german', 'poland', 'polish', 'uae', 'dubai',
+  'japan', 'japanese', 'china', 'chinese', 'india', 'indian', 'france', 'french', 'italy',
+  'italian', 'spain', 'spanish', 'chile', 'chilean', 'ecuador', 'mozambique', 'africa',
+  'african', 'indonesia', 'indonesian', 'brazil', 'brazilian', 'vietnam', 'vietnamese',
+  'thailand', 'thai', 'turkey', 'turkish', 'malaysia', 'malaysian', 'usa', 'american',
+  'canada', 'canadian', 'uk', 'british', 'russia', 'russian', 'egypt', 'egyptian',
+  'pakistan', 'pakistani', 'bangladesh', 'sri', 'lanka', 'peru', 'peruvian', 'mexico',
+  'mexican', 'argentina', 'colombia', 'iqf', 'molai', 'eec', 'rcn', 'hms', 'icumas', 'icuma',
+  'icumsa', 'brix', 'mesh', 'astm', 'iso', 'din', 'sae', 'api', 'jas', 'halal', 'kosher',
+  'haccp', 'gmp', 'fda', 'ce', 'rohs', 'reach', 'sgs', 'brc', 'collection', 'assorted',
+  'charcoal', 'chocolate', 'crimson', 'olive', 'emerald', 'amber', 'cobalt', 'ivory',
+  'matte', 'glossy', 'satin', 'brushed', 'anodized', 'galvanized', 'baled', 'shredded',
+  'compressed', 'packaged', 'packed', 'bagged', 'boxed', 'canned', 'bottled', 'drum',
+  'drums', 'pallet', 'pallets', 'container', 'containers', 'shipment', 'delivery',
+  'monthly', 'annual', 'spot', 'contract', 'lot', 'batch', 'stock', 'ready', 'available'
+]);
 
 const MISMATCH_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
@@ -412,7 +441,7 @@ export function extractProductHeadingSearchQueries(rawHeading: string, category?
   const cleaned = cleanProductSearchSubject(full);
   const parts = full
     .replace(/[()[\]]/g, ',')
-    .split(/\s*(?:[—–|;,]|(?:\s+-\s+)|\s+&\s+)\s*/)
+    .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+)\s*/)
     .map(p => normalizeFullProductHeadingClient(p))
     .filter(p => p.length >= 3);
 
@@ -427,6 +456,7 @@ export function extractProductHeadingSearchQueries(rawHeading: string, category?
     out.push(t);
   };
 
+  // 1. Full heading and normalized/cleaned full heading
   pushUnique(full);
   if (normalizedFull && normalizedFull.toLowerCase() !== full.toLowerCase()) {
     pushUnique(normalizedFull);
@@ -434,13 +464,69 @@ export function extractProductHeadingSearchQueries(rawHeading: string, category?
   if (cleaned && cleaned.toLowerCase() !== full.toLowerCase()) {
     pushUnique(cleaned);
   }
+
+  // 2. Sub-headings / clauses
   for (const part of parts) {
     pushUnique(part);
+    const cleanedPart = cleanProductSearchSubject(part);
+    if (cleanedPart && cleanedPart.toLowerCase() !== part.toLowerCase()) {
+      pushUnique(cleanedPart);
+    }
   }
+
+  // 3. Extract core 2-word and 1-word product nouns from each sub-heading and from the main heading
+  const extractCoreNounTokens = (text: string): string[] =>
+    normalizeCompoundProductTermsClient(String(text || ''))
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(
+        w =>
+          w.length >= 3 &&
+          !/^\d+$/.test(w) &&
+          !/^\d+(?:mm|cm|kg|mt|ml|kw|mw|gsm|oz|lb|lbs)$/i.test(w) &&
+          !MISMATCH_STOPWORDS.has(w) &&
+          !CLIENT_GENERIC_MODIFIERS.has(w) &&
+          !HEADING_NON_NOUN_WORDS.has(w)
+      );
+
+  const mainNouns = extractCoreNounTokens(cleaned || full);
+  if (mainNouns.length >= 3) {
+    pushUnique(mainNouns.slice(0, 3).join(' '));
+  }
+  if (mainNouns.length >= 2) {
+    pushUnique(mainNouns.slice(0, 2).join(' '));
+    pushUnique(mainNouns.slice(-2).join(' '));
+  }
+
+  for (const part of parts) {
+    const partNouns = extractCoreNounTokens(part);
+    if (partNouns.length >= 2) {
+      pushUnique(partNouns.slice(0, 2).join(' '));
+      pushUnique(partNouns.slice(-2).join(' '));
+    }
+  }
+
+  // 4. Individual 1-word core product nouns (tail nouns and specific commodity nouns)
+  for (let i = mainNouns.length - 1; i >= 0; i--) {
+    pushUnique(mainNouns[i]);
+  }
+
+  // 5. Category core noun fallback
   if (category && String(category).trim().length >= 3) {
-    pushUnique(`${cleaned || full} ${String(category).trim()}`);
+    const cleanCat = String(category).replace(/[&/]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (mainNouns.length > 0) {
+      pushUnique(`${mainNouns[mainNouns.length - 1]} ${cleanCat}`);
+    }
+    const catNouns = extractCoreNounTokens(cleanCat);
+    if (catNouns.length >= 2) {
+      pushUnique(catNouns.slice(0, 2).join(' '));
+    } else if (catNouns.length === 1) {
+      pushUnique(catNouns[0]);
+    }
   }
-  return out.slice(0, 8);
+
+  return out.slice(0, 12);
 }
 
 export function matchesProductHeadingSearch(
@@ -561,7 +647,202 @@ export function normalizeVisualQueryKey(productName: string, category?: string):
 export function isGenericOrPlaceholderImageUrl(url?: string): boolean {
   const clean = String(url || '').trim().toLowerCase();
   if (!clean) return true;
+  if (clean.startsWith('data:image/svg') || clean.endsWith('.svg')) return true;
   return GENERIC_PLACEHOLDER_PATTERNS.some(p => clean.includes(p));
+}
+
+export function isSyntheticSpecCardOrPlaceholder(item: any): boolean {
+  if (!item) return true;
+  if (typeof item === 'string') {
+    return isGenericOrPlaceholderImageUrl(item);
+  }
+  if (
+    item.is_fallback_card === true ||
+    item.isFallbackCard === true ||
+    item.source === 'gemini_grounded_unique_webp' ||
+    item.source === 'synthetic_spec_card' ||
+    item.provider === 'gemini_grounded_unique_webp'
+  ) {
+    return true;
+  }
+  const url = String(item.url || item.new_image_url || item.image_url || '').trim();
+  if (isGenericOrPlaceholderImageUrl(url)) return true;
+  const title = String(item.title || item.label || '').toLowerCase();
+  if (
+    title.includes('verified b2b export spec') ||
+    title.includes('company-isolated catalog asset') ||
+    title.includes('unique verified asset') ||
+    title.includes('trade heaven global catalog')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export async function validateRealImageUrlLoads(url: string, timeoutMs = 4500): Promise<boolean> {
+  const clean = String(url || '').trim();
+  if (!clean || isGenericOrPlaceholderImageUrl(clean) || BROKEN_EXTERNAL_URLS.has(clean)) {
+    return false;
+  }
+  const baseKey = clean.split('?')[0];
+  if (BROKEN_EXTERNAL_URLS.has(baseKey)) {
+    return false;
+  }
+  if (VERIFIED_LOADABLE_URLS.has(clean) || VERIFIED_LOADABLE_URLS.has(baseKey)) {
+    return true;
+  }
+  if (clean.startsWith('data:image/')) {
+    if (clean.startsWith('data:image/svg')) return false;
+  }
+
+  const isExternal = /^https?:\/\//i.test(clean);
+  const proxyUrl = isExternal
+    ? `/api/v1/products/proxy-image?url=${encodeURIComponent(clean)}`
+    : clean;
+
+  const checkHttp200Image = async (targetUrl: string): Promise<boolean> => {
+    try {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+      let res = await fetch(targetUrl, {
+        method: 'HEAD',
+        cache: 'no-store',
+        signal: controller ? controller.signal : undefined
+      });
+      if (res.status === 405 || res.status === 501) {
+        res = await fetch(targetUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          signal: controller ? controller.signal : undefined
+        });
+      }
+      if (timer) clearTimeout(timer);
+      if (!res.ok || res.status !== 200) {
+        return false;
+      }
+      const ctype = (res.headers.get('content-type') || '').toLowerCase();
+      if (
+        ctype.includes('text/html') ||
+        ctype.includes('application/json') ||
+        ctype.includes('image/svg') ||
+        (ctype && !ctype.startsWith('image/') && !ctype.includes('octet-stream'))
+      ) {
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const checkDomImage = (srcToLoad: string): Promise<boolean> =>
+    new Promise<boolean>(resolve => {
+      if (typeof window === 'undefined' || typeof Image === 'undefined') {
+        resolve(true);
+        return;
+      }
+      const img = new Image();
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(ok);
+      };
+      const timer = setTimeout(() => finish(false), timeoutMs);
+      img.onload = () => {
+        finish(img.naturalWidth > 0 && img.naturalHeight > 0);
+      };
+      img.onerror = () => finish(false);
+      img.src = srcToLoad;
+    });
+
+  // For local/same-origin URLs (e.g., /assets/uploads/...), strictly confirm HTTP 200 + non-HTML/SVG image + naturalWidth > 0
+  if (!isExternal && !clean.startsWith('data:') && !clean.startsWith('blob:')) {
+    const httpOk = await checkHttp200Image(clean);
+    if (!httpOk) {
+      markBrokenExternalImageUrl(clean);
+      return false;
+    }
+    const domOk = await checkDomImage(clean);
+    if (!domOk) {
+      markBrokenExternalImageUrl(clean);
+      return false;
+    }
+    VERIFIED_LOADABLE_URLS.add(clean);
+    VERIFIED_LOADABLE_URLS.add(baseKey);
+    return true;
+  }
+
+  // For data:/blob: URLs, confirm DOM image decodes with naturalWidth > 0
+  if (clean.startsWith('data:') || clean.startsWith('blob:')) {
+    const domOk = await checkDomImage(clean);
+    if (domOk) {
+      VERIFIED_LOADABLE_URLS.add(clean);
+      return true;
+    }
+    return false;
+  }
+
+  // For external URLs:
+  // In browser, verify direct DOM load first (works on both Node and static/PHP hosts without requiring proxy-image),
+  // and fall back to same-origin proxy-image HTTP 200 + DOM load if hotlink-protected.
+  if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
+    const directOk = await checkDomImage(clean);
+    if (directOk) {
+      VERIFIED_LOADABLE_URLS.add(clean);
+      VERIFIED_LOADABLE_URLS.add(baseKey);
+      return true;
+    }
+    const proxyHttpOk = await checkHttp200Image(proxyUrl);
+    if (proxyHttpOk) {
+      const proxyDomOk = await checkDomImage(proxyUrl);
+      if (proxyDomOk) {
+        VERIFIED_LOADABLE_URLS.add(clean);
+        VERIFIED_LOADABLE_URLS.add(baseKey);
+        return true;
+      }
+    }
+    markBrokenExternalImageUrl(clean);
+    return false;
+  }
+
+  // Non-browser fallback (Node/SSR): verify HTTP 200 + image content-type
+  const remoteOk = (await checkHttp200Image(clean)) || (await checkHttp200Image(proxyUrl));
+  if (remoteOk) {
+    VERIFIED_LOADABLE_URLS.add(clean);
+    VERIFIED_LOADABLE_URLS.add(baseKey);
+    return true;
+  }
+  markBrokenExternalImageUrl(clean);
+  return false;
+}
+
+export async function filterLoadableRealCandidates(
+  candidates: VisualProductImageCandidate[],
+  desiredCount = 20,
+  timeoutMs = 3500
+): Promise<VisualProductImageCandidate[]> {
+  const cleanList = (candidates || []).filter(
+    c => c?.url && !isSyntheticSpecCardOrPlaceholder(c) && !isGenericOrPlaceholderImageUrl(c.url) && !BROKEN_EXTERNAL_URLS.has(c.url)
+  );
+  if (cleanList.length === 0) return [];
+  const verified: VisualProductImageCandidate[] = [];
+  const batchSize = 8;
+  const maxToInspect = Math.min(cleanList.length, Math.max(desiredCount + 10, 24));
+  for (let i = 0; i < maxToInspect && verified.length < desiredCount; i += batchSize) {
+    const batch = cleanList.slice(i, i + batchSize);
+    const checks = await Promise.all(
+      batch.map(async cand => {
+        const ok = await validateRealImageUrlLoads(cand.url, timeoutMs);
+        return ok ? cand : null;
+      })
+    );
+    for (const item of checks) {
+      if (item) verified.push(item);
+    }
+  }
+  return verified;
 }
 
 export function isManuallyUploadedImageUrl(url?: string): boolean {
@@ -928,24 +1209,24 @@ export async function fetchVisualProductImages(params: {
   }
 
   const runPromise = withConcurrencyLimit(async (): Promise<VisualProductSearchResponse> => {
-    const payload = {
-      product_name: productName,
-      product_id: productId,
-      category,
-      specifications,
-      count,
-      force_refresh: Boolean(params.forceRefresh),
-      exclude_urls: Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
-    };
+    const headingQueries = extractProductHeadingSearchQueries(rawProductName, category);
+    if (headingQueries.length === 0 && productName.length >= 2) {
+      headingQueries.push(productName);
+    }
 
-    const parsePayload = (raw: any): VisualProductSearchResponse => {
+    const parsePayload = (raw: any, queryAttempted: string): VisualProductSearchResponse => {
       const rawPool: VisualProductImageCandidate[] = Array.isArray(raw?.pool)
         ? raw.pool
         : Array.isArray(raw?.images)
         ? raw.images
         : [];
       const healthyPool = rawPool
-        .filter(c => c?.url && !BROKEN_EXTERNAL_URLS.has(c.url))
+        .filter(
+          c =>
+            c?.url &&
+            !BROKEN_EXTERNAL_URLS.has(c.url) &&
+            !isSyntheticSpecCardOrPlaceholder(c)
+        )
         .map(c => {
           const resolvedUrl = resolveLocalMirroredImageUrl(c.url);
           const resolvedThumb = resolvedUrl.startsWith('/assets/uploads/')
@@ -957,7 +1238,7 @@ export async function fetchVisualProductImages(params: {
             thumbnailUrl: resolvedThumb
           };
         });
-      const rankedPool = (healthyPool.length > 0 ? healthyPool : rawPool).slice().sort(
+      const rankedPool = healthyPool.slice().sort(
         (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
       );
       const finalPool = params.shuffleOnly ? fisherYatesShuffle(rankedPool) : rankedPool;
@@ -969,15 +1250,27 @@ export async function fetchVisualProductImages(params: {
         configRequired: Boolean(raw?.configRequired),
         fromCache: Boolean(raw?.fromCache),
         provider: raw?.provider,
-        queryUsed: raw?.queryUsed,
+        queryUsed: queryAttempted || raw?.queryUsed,
         totalVerified: Number(raw?.totalVerified || finalPool.length) || finalPool.length,
         images: selected,
         pool: finalPool
       };
     };
 
-    const tryBackendFetch = async (endpoint: string): Promise<VisualProductSearchResponse | null> => {
+    const tryBackendFetchForQuery = async (
+      endpoint: string,
+      queryChip: string
+    ): Promise<VisualProductSearchResponse | null> => {
       try {
+        const payload = {
+          product_name: queryChip,
+          product_id: productId,
+          category,
+          specifications,
+          count,
+          force_refresh: Boolean(params.forceRefresh),
+          exclude_urls: Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
+        };
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -988,16 +1281,15 @@ export async function fetchVisualProductImages(params: {
         const json = await res.json().catch(() => null);
         if (!json || typeof json !== 'object') return null;
         if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
-        const normalized = parsePayload(json);
+        const normalized = parsePayload(json, queryChip);
         const serverVerifiedUnused = filterUnused(normalized.pool).filter(
-          c => !isGenericOrPlaceholderImageUrl(c.url)
+          c => !isSyntheticSpecCardOrPlaceholder(c)
         );
         const strictPool = serverVerifiedUnused.filter(
           c =>
-            !isMismatchedProductImageUrl(c.url, productName, category) &&
-            !isCandidateOffTopicClient(c, productName)
+            !isMismatchedProductImageUrl(c.url, queryChip, category) &&
+            !isCandidateOffTopicClient(c, queryChip)
         );
-        // Keep strict matches first, then top up with remaining server-verified candidates so the modal reliably displays ~20 photos
         const strictUrls = new Set(strictPool.map(c => c.url));
         const cleanPool =
           strictPool.length >= count
@@ -1007,15 +1299,19 @@ export async function fetchVisualProductImages(params: {
                 ...serverVerifiedUnused.filter(c => !strictUrls.has(c.url))
               ];
         if (normalized.success && cleanPool.length > 0) {
-          const finalNorm: VisualProductSearchResponse = {
-            ...normalized,
-            pool: cleanPool,
-            images: cleanPool.slice(0, count),
-            totalVerified: cleanPool.length
-          };
-          SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
-          persistSessionCacheToLocalStorage();
-          return finalNorm;
+          const verifiedPool = await filterLoadableRealCandidates(cleanPool, count, 3500);
+          if (verifiedPool.length > 0) {
+            const finalNorm: VisualProductSearchResponse = {
+              ...normalized,
+              queryUsed: queryChip,
+              pool: verifiedPool,
+              images: verifiedPool.slice(0, count),
+              totalVerified: verifiedPool.length
+            };
+            SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
+            persistSessionCacheToLocalStorage();
+            return finalNorm;
+          }
         }
       } catch {
         // ignore network/parse error
@@ -1023,52 +1319,67 @@ export async function fetchVisualProductImages(params: {
       return null;
     };
 
-    const primaryVisual = await tryBackendFetch('/api/v1/products/fetch-images');
-    if (primaryVisual) return primaryVisual;
-
-    const phpVisual = await tryBackendFetch('/api.php?action=fetch_product_images');
-    if (phpVisual) return phpVisual;
-
-    // Standalone Chrome fallback: query Wikimedia Commons directly via CORS (origin=*) with crisp focused queries
-    try {
-      const wikiCandidates = filterUnused(await fetchWikimediaCommonsCorsCandidates(productName, category, count));
-      if (wikiCandidates.length > 0) {
-        const wikiResp: VisualProductSearchResponse = {
-          success: true,
-          status: 'ok',
-          provider: 'wikimedia_commons_live',
-          queryUsed: `${productName} ${category}`.trim(),
-          totalVerified: wikiCandidates.length,
-          images: wikiCandidates.slice(0, count),
-          pool: wikiCandidates
-        };
-        SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
-        persistSessionCacheToLocalStorage();
-        return wikiResp;
+    // Automatic Sequential Heading Advancement:
+    // Step through Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun until real loadable photos are found
+    for (const queryChip of headingQueries) {
+      const primaryVisual = await tryBackendFetchForQuery('/api/v1/products/fetch-images', queryChip);
+      if (primaryVisual && primaryVisual.images.length > 0) {
+        return primaryVisual;
       }
-    } catch {
-      // ignore Wikimedia fallback errors
+
+      const phpVisual = await tryBackendFetchForQuery('/api.php?action=fetch_product_images', queryChip);
+      if (phpVisual && phpVisual.images.length > 0) {
+        return phpVisual;
+      }
+
+      try {
+        const wikiCandidates = filterUnused(
+          await fetchWikimediaCommonsCorsCandidates(queryChip, category, count)
+        ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
+        const verifiedWiki = await filterLoadableRealCandidates(wikiCandidates, count, 4000);
+        if (verifiedWiki.length > 0) {
+          const wikiResp: VisualProductSearchResponse = {
+            success: true,
+            status: 'ok',
+            provider: 'wikimedia_commons_live',
+            queryUsed: queryChip,
+            totalVerified: verifiedWiki.length,
+            images: verifiedWiki.slice(0, count),
+            pool: verifiedWiki
+          };
+          SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
+          persistSessionCacheToLocalStorage();
+          return wikiResp;
+        }
+      } catch {
+        // continue to next heading query chip
+      }
     }
 
-    // Only return verified UNUSED server media library assets that actually match this product's tokens
-    try {
-      const serverMediaCandidates = filterUnused(await buildServerMediaLibraryCandidates(productName, category, count));
-      if (serverMediaCandidates.length > 0) {
-        const fallbackResp: VisualProductSearchResponse = {
-          success: true,
-          status: 'ok',
-          provider: 'server_media_library_verified',
-          queryUsed: `${productName} ${category}`.trim(),
-          totalVerified: serverMediaCandidates.length,
-          images: serverMediaCandidates.slice(0, count),
-          pool: serverMediaCandidates
-        };
-        SESSION_CACHE.set(key, { data: fallbackResp, cachedAt: Date.now() });
-        persistSessionCacheToLocalStorage();
-        return fallbackResp;
+    // Check verified UNUSED & LOADABLE server media library assets across the heading query sequence (excluding synthetic spec cards & broken 404s)
+    for (const queryChip of headingQueries) {
+      try {
+        const serverMediaCandidates = filterUnused(
+          await buildServerMediaLibraryCandidates(queryChip, category, count)
+        ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
+        const verifiedLocal = await filterLoadableRealCandidates(serverMediaCandidates, count, 3000);
+        if (verifiedLocal.length > 0) {
+          const fallbackResp: VisualProductSearchResponse = {
+            success: true,
+            status: 'ok',
+            provider: 'server_media_library_verified',
+            queryUsed: queryChip,
+            totalVerified: verifiedLocal.length,
+            images: verifiedLocal.slice(0, count),
+            pool: verifiedLocal
+          };
+          SESSION_CACHE.set(key, { data: fallbackResp, cachedAt: Date.now() });
+          persistSessionCacheToLocalStorage();
+          return fallbackResp;
+        }
+      } catch {
+        // continue to next heading query chip
       }
-    } catch {
-      // ignore fallback errors
     }
 
     return {
@@ -1195,52 +1506,64 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
     return { primaryUrl: rawPrimary, gallery, autoAssigned: false };
   }
 
-  // Otherwise automatically fetch from our >10 randomized relevant results pool (strictly excluding already-attached photos)
+  // Otherwise automatically step through heading queries (Full Heading -> Sub-headings -> Core 1-2 word noun)
+  // until a real, loadable product photo is found and uploaded!
   try {
+    const headingQueries = extractProductHeadingSearchQueries(
+      params.productName || 'Wholesale Commodity',
+      params.category
+    );
     const pickFromSearch = async (forceRefresh: boolean) => {
-      const searchRes = await fetchVisualProductImages({
-        productName: params.productName || 'Wholesale Commodity',
-        productId: params.productId,
-        category: params.category,
-        specifications: params.specifications,
-        count: 15,
-        forceRefresh
-      });
+      for (const queryChip of headingQueries) {
+        const searchRes = await fetchVisualProductImages({
+          productName: queryChip,
+          productId: params.productId,
+          category: params.category,
+          specifications: params.specifications,
+          count: 15,
+          forceRefresh
+        });
 
-      const pool = fisherYatesShuffle(
-        Array.isArray(searchRes.pool) && searchRes.pool.length > 0
-          ? searchRes.pool
-          : Array.isArray(searchRes.images)
-          ? searchRes.images
-          : []
-      );
+        const pool =
+          Array.isArray(searchRes.pool) && searchRes.pool.length > 0
+            ? searchRes.pool
+            : Array.isArray(searchRes.images)
+            ? searchRes.images
+            : [];
 
-      for (const cand of pool) {
-        const candUrl = resolveLocalMirroredImageUrl(String(cand?.url || '').trim());
-        const cleanCand = candUrl.split('?')[0];
-        if (!cleanCand || isGenericOrPlaceholderImageUrl(cleanCand) || attached.isUsed(cleanCand)) continue;
+        for (const cand of pool) {
+          if (isSyntheticSpecCardOrPlaceholder(cand)) continue;
+          const candUrl = resolveLocalMirroredImageUrl(String(cand?.url || '').trim());
+          const cleanCand = candUrl.split('?')[0];
+          if (!cleanCand || isGenericOrPlaceholderImageUrl(cleanCand) || attached.isUsed(cleanCand)) continue;
 
-        let finalPrimary = candUrl;
-        if (/^https?:\/\//i.test(finalPrimary)) {
-          const mirrored = await autoUploadDisplayedProductImage({
-            imageUrl: finalPrimary,
-            productId: params.productId,
-            productName: params.productName,
-            category: params.category
-          });
-          if (!mirrored) continue;
-          const cleanMirrored = mirrored.split('?')[0];
-          if (attached.isUsed(cleanMirrored)) continue;
-          finalPrimary = mirrored;
+          const loadsOk = await validateRealImageUrlLoads(candUrl);
+          if (!loadsOk) continue;
+
+          let finalPrimary = candUrl;
+          if (/^https?:\/\//i.test(finalPrimary)) {
+            const mirrored = await autoUploadDisplayedProductImage({
+              imageUrl: finalPrimary,
+              productId: params.productId,
+              productName: params.productName || queryChip,
+              category: params.category
+            });
+            if (!mirrored || isGenericOrPlaceholderImageUrl(mirrored)) continue;
+            const cleanMirrored = mirrored.split('?')[0];
+            if (attached.isUsed(cleanMirrored)) continue;
+            const localLoadsOk = await validateRealImageUrlLoads(mirrored);
+            if (!localLoadsOk) continue;
+            finalPrimary = mirrored;
+          }
+
+          ASSIGNED_UPLOAD_IMAGE_URLS.add(finalPrimary.split('?')[0]);
+          attached.add(finalPrimary);
+          return {
+            primaryUrl: finalPrimary,
+            gallery: [finalPrimary],
+            autoAssigned: true
+          };
         }
-
-        ASSIGNED_UPLOAD_IMAGE_URLS.add(finalPrimary.split('?')[0]);
-        attached.add(finalPrimary);
-        return {
-          primaryUrl: finalPrimary,
-          gallery: [finalPrimary],
-          autoAssigned: true
-        };
       }
       return null;
     };
@@ -1430,51 +1753,57 @@ async function fetchWikimediaCommonsCorsCandidates(
   await Promise.allSettled(
     queries.map(async qStr => {
       try {
-        // Quote multi-word queries so Wikimedia searches the exact product phrase (e.g. "sunflower seeds") instead of matching "sun" alone
-        const phraseQuery = qStr.includes(' ') ? `"${qStr}"` : qStr;
-        const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${phraseQuery} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
-        const resp = await fetch(url);
-        if (!resp.ok) return;
-        const data: any = await resp.json().catch(() => null);
-        const pages = Object.values(data?.query?.pages || {}) as any[];
-        for (const p of pages) {
-          const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
-          if (!info) continue;
-          const rawTitle = String(p?.title || '');
-          if (OFF_TOPIC_CANDIDATE_RE.test(rawTitle)) continue;
-          const mime = String(info.mime || '').toLowerCase();
-          if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
-          const w = Number(info.width || 0);
-          const h = Number(info.height || 0);
-          if ((w > 0 && w < 380) || (h > 0 && h < 280)) continue;
-          const candUrl = String(info.thumburl || info.url || '').trim();
-          if (!candUrl || seen.has(candUrl)) continue;
+        const words = qStr.trim().split(/\s+/).filter(Boolean);
+        // Quote only clean 2-word phrases; leave 1-word or 3+ word queries unquoted so Wikimedia returns real product photos
+        const searchTerms = words.length === 2 ? [`"${qStr}"`, qStr] : [qStr];
+        for (const term of searchTerms) {
+          const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${term} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
+          const resp = await fetch(url);
+          if (!resp.ok) continue;
+          const data: any = await resp.json().catch(() => null);
+          const pages = Object.values(data?.query?.pages || {}) as any[];
+          let addedForTerm = 0;
+          for (const p of pages) {
+            const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
+            if (!info) continue;
+            const rawTitle = String(p?.title || '');
+            if (OFF_TOPIC_CANDIDATE_RE.test(rawTitle)) continue;
+            const mime = String(info.mime || '').toLowerCase();
+            if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
+            const w = Number(info.width || 0);
+            const h = Number(info.height || 0);
+            if ((w > 0 && w < 380) || (h > 0 && h < 280)) continue;
+            const candUrl = String(info.thumburl || info.url || '').trim();
+            if (!candUrl || seen.has(candUrl)) continue;
 
-          const readableTitle = rawTitle.replace(/^File:/i, '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
-          const checkHay = `${readableTitle} ${candUrl}`.toLowerCase();
-          if (OFF_TOPIC_CANDIDATE_RE.test(checkHay)) continue;
+            const readableTitle = rawTitle.replace(/^File:/i, '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+            const checkHay = `${readableTitle} ${candUrl}`.toLowerCase();
+            if (OFF_TOPIC_CANDIDATE_RE.test(checkHay)) continue;
 
-          const coreHits = requiredTokens.filter(tk => tokenMatchesHaystackWordBoundary(tk, checkHay));
-          const minNeeded = requiredTokens.length >= 2 ? 2 : 1;
-          const compactPhrase = requiredTokens.slice(0, 2).join('');
-          const exactPhraseHit =
-            requiredTokens.length >= 2 &&
-            (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(requiredTokens.slice(0, 2).join(' ')) ||
-              (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
+            const coreHits = requiredTokens.filter(tk => tokenMatchesHaystackWordBoundary(tk, checkHay));
+            const minNeeded = requiredTokens.length >= 2 && words.length <= 2 ? 2 : 1;
+            const compactPhrase = requiredTokens.slice(0, 2).join('');
+            const exactPhraseHit =
+              requiredTokens.length >= 2 &&
+              (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(requiredTokens.slice(0, 2).join(' ')) ||
+                (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
 
-          if (requiredTokens.length > 0 && coreHits.length < minNeeded && !exactPhraseHit) continue;
-          if (isMismatchedProductImageUrl(candUrl, productName, category)) continue;
+            if (requiredTokens.length > 0 && coreHits.length < minNeeded && !exactPhraseHit) continue;
+            if (isMismatchedProductImageUrl(candUrl, productName, category)) continue;
 
-          seen.add(candUrl);
-          collected.push({
-            url: candUrl,
-            thumbnailUrl: candUrl,
-            title: readableTitle || qStr,
-            sourceDomain: 'commons.wikimedia.org',
-            width: w || undefined,
-            height: h || undefined,
-            relevanceScore: (exactPhraseHit ? 10 : 0) + coreHits.length * 4 + (w >= h ? 2 : 0)
-          });
+            seen.add(candUrl);
+            addedForTerm++;
+            collected.push({
+              url: candUrl,
+              thumbnailUrl: candUrl,
+              title: readableTitle || qStr,
+              sourceDomain: 'commons.wikimedia.org',
+              width: w || undefined,
+              height: h || undefined,
+              relevanceScore: (exactPhraseHit ? 10 : 0) + coreHits.length * 4 + (w >= h ? 2 : 0)
+            });
+          }
+          if (addedForTerm > 0) break;
         }
       } catch {
         // ignore single query errors
@@ -1536,12 +1865,12 @@ async function buildServerMediaLibraryCandidates(
   };
 
   for (const [key, entry] of Object.entries(overrides)) {
-    if (entry && typeof entry === 'object' && entry.primary) {
+    if (entry && typeof entry === 'object' && entry.primary && !isSyntheticSpecCardOrPlaceholder(entry)) {
       considerUrl(String(entry.primary), key);
     }
   }
   for (const item of mediaLibrary) {
-    if (item?.url) {
+    if (item?.url && !isSyntheticSpecCardOrPlaceholder(item)) {
       considerUrl(String(item.url), String(item.name || ''));
     }
   }
@@ -1967,9 +2296,13 @@ export async function fixSingleCatalogImage(params: {
     Boolean(
       json &&
         json.success === true &&
+        json.is_fallback_card !== true &&
+        json.source !== 'gemini_grounded_unique_webp' &&
+        json.source !== 'synthetic_spec_card' &&
         typeof json.record_id === 'string' &&
         typeof json.new_image_url === 'string' &&
         json.new_image_url.trim().length > 0 &&
+        !isSyntheticSpecCardOrPlaceholder(json) &&
         !isGenericOrPlaceholderImageUrl(json.new_image_url) &&
         (params.revert ||
           Boolean(params.customImageUrl) ||
@@ -1998,7 +2331,10 @@ export async function fixSingleCatalogImage(params: {
       }
       const json = await res.json().catch(() => null);
       if (res.ok && isValidSingleFixResponse(json)) {
-        return json;
+        const loadsOk = await validateRealImageUrlLoads(json.new_image_url);
+        if (loadsOk) {
+          return json;
+        }
       }
       if (json && json.message && !json.service) {
         lastMeaningfulError = String(json.message);
@@ -2012,49 +2348,79 @@ export async function fixSingleCatalogImage(params: {
     }
   }
 
-  // Universal fallback: resolve via visual search (Backend -> PHP -> Live Wikimedia Commons CORS) & persist to server
+  // Sequential Heading Advancement Fallback:
+  // Step through Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun until a real, loadable photo is uploaded!
   let finalUrl = '';
   let source = 'direct_set_product_images';
+  let matchedHeadingQuery = resolvedTitle;
 
   if (params.revert && prevUrl && prevUrl !== '(empty)') {
     finalUrl = prevUrl;
     source = 'revert_restore';
   } else if (params.customImageUrl && params.customImageUrl.trim()) {
-    finalUrl = params.customImageUrl.trim();
+    const customCandidate = params.customImageUrl.trim();
+    if (isSyntheticSpecCardOrPlaceholder(customCandidate)) {
+      throw new Error('Synthetic spec-card or placeholder image URLs are not allowed. Please select a real product photo.');
+    }
+    const loadsOk = await validateRealImageUrlLoads(customCandidate);
+    if (!loadsOk) {
+      throw new Error('Selected image URL failed to load (must return HTTP 200 and naturalWidth > 0).');
+    }
+    finalUrl = customCandidate;
     source = 'manual_custom_url';
   } else {
     const cleanPrev = prevUrl.split('?')[0];
-    const visual = await fetchVisualProductImages({
-      productName: resolvedTitle,
-      productId: cleanId,
-      category: resolvedCategory,
-      count: 15,
-      forceRefresh: true
-    });
-    const pool = Array.isArray(visual.pool) && visual.pool.length > 0 ? visual.pool : visual.images || [];
-    const relevantCandidates = pool.filter(
-      c =>
-        c?.url &&
-        !isGenericOrPlaceholderImageUrl(c.url) &&
-        !isMismatchedProductImageUrl(c.url, resolvedTitle, resolvedCategory)
-    );
-    const picked =
-      relevantCandidates.find(c => c.url.split('?')[0] !== cleanPrev) || relevantCandidates[0];
-    if (picked?.url) {
-      let candidateUrl = picked.url;
-      if (/^https?:\/\//i.test(candidateUrl)) {
-        const mirrored = await autoUploadDisplayedProductImage({
-          imageUrl: candidateUrl,
-          productId: cleanId,
-          productName: resolvedTitle,
-          category: resolvedCategory
-        });
-        if (mirrored) {
-          candidateUrl = mirrored;
+    const headingQueries = extractProductHeadingSearchQueries(resolvedTitle, resolvedCategory);
+    if (headingQueries.length === 0) headingQueries.push(resolvedTitle);
+
+    for (const queryChip of headingQueries) {
+      const visual = await fetchVisualProductImages({
+        productName: queryChip,
+        productId: cleanId,
+        category: resolvedCategory,
+        count: 15,
+        forceRefresh: true
+      });
+      const pool = Array.isArray(visual.pool) && visual.pool.length > 0 ? visual.pool : visual.images || [];
+      const relevantCandidates = pool.filter(
+        c =>
+          c?.url &&
+          !isSyntheticSpecCardOrPlaceholder(c) &&
+          !isGenericOrPlaceholderImageUrl(c.url) &&
+          !isMismatchedProductImageUrl(c.url, queryChip, resolvedCategory) &&
+          c.url.split('?')[0] !== cleanPrev
+      );
+
+      for (const picked of relevantCandidates) {
+        let candidateUrl = picked.url;
+        const candidateLoads = await validateRealImageUrlLoads(candidateUrl);
+        if (!candidateLoads) continue;
+
+        if (/^https?:\/\//i.test(candidateUrl)) {
+          const mirrored = await autoUploadDisplayedProductImage({
+            imageUrl: candidateUrl,
+            productId: cleanId,
+            productName: resolvedTitle,
+            category: resolvedCategory
+          });
+          if (mirrored && !isGenericOrPlaceholderImageUrl(mirrored)) {
+            const localLoads = await validateRealImageUrlLoads(mirrored);
+            if (localLoads) {
+              candidateUrl = mirrored;
+            } else {
+              continue;
+            }
+          } else {
+            continue;
+          }
         }
+        finalUrl = candidateUrl;
+        source = visual.provider || 'wikimedia_commons_live';
+        matchedHeadingQuery = visual.queryUsed || queryChip;
+        break;
       }
-      finalUrl = candidateUrl;
-      source = visual.provider || 'wikimedia_commons_live';
+
+      if (finalUrl) break;
     }
   }
 
@@ -2143,7 +2509,7 @@ export async function fixSingleCatalogImage(params: {
     category: resolvedCategory,
     old_image_url: prevUrl || '(empty)',
     new_image_url: cleanFinal,
-    query_used: resolvedTitle,
+    query_used: matchedHeadingQuery || resolvedTitle,
     source,
     is_fallback_card: false,
     status: params.revert ? 'FLAGGED' : 'FIXED',

@@ -2,7 +2,11 @@ import {
   productImageManagerService,
   normalizeProductAssetUrl
 } from './productImageManagerService';
-import { fixSingleCatalogImage } from './visualProductImageService';
+import {
+  fixSingleCatalogImage,
+  isSyntheticSpecCardOrPlaceholder,
+  validateRealImageUrlLoads
+} from './visualProductImageService';
 
 export type UnifiedSiteImageTargetType =
   | 'PRODUCT'
@@ -188,6 +192,17 @@ export async function replaceSiteImage(
     mimeType = converted.mimeType;
   }
 
+  if (params.imageUrl && params.imageUrl.trim()) {
+    const candidateUrl = params.imageUrl.trim();
+    if (isSyntheticSpecCardOrPlaceholder(candidateUrl)) {
+      throw new Error('Synthetic spec-card or placeholder images are not allowed. Please choose a real product photo.');
+    }
+    const loadsOk = await validateRealImageUrlLoads(candidateUrl);
+    if (!loadsOk) {
+      throw new Error('Selected image URL failed to load (must return HTTP 200 and naturalWidth > 0).');
+    }
+  }
+
   const payload = {
     targetId: params.targetId,
     targetType: params.targetType,
@@ -328,6 +343,7 @@ export async function autoFixSiteImages(
 ): Promise<{ results: SiteImageAutoFixRowResult[] }> {
   if (items.length === 0) return { results: [] };
 
+  const serverResultsById = new Map<string, SiteImageAutoFixRowResult>();
   try {
     const res = await fetch('/api/v1/admin/site-images/auto-fix', {
       method: 'POST',
@@ -338,31 +354,44 @@ export async function autoFixSiteImages(
     const json = await res.json().catch(() => null);
     if (res.ok && Array.isArray(json?.results) && json.results.length > 0) {
       for (const r of json.results) {
-        if (r?.success && r?.id && r?.newUrl) {
-          void productImageManagerService.logAndVerifyUploadPropagation({
-            targetId: r.id,
-            targetType: r.type,
-            expectedUrl: r.newUrl,
-            deletedOldUrls: r.deletedOldUrls,
-            source: 'autoFixSiteImages'
-          });
+        if (
+          r?.success &&
+          r?.id &&
+          r?.newUrl &&
+          !isSyntheticSpecCardOrPlaceholder(r) &&
+          !isSyntheticSpecCardOrPlaceholder(r.newUrl)
+        ) {
+          const loadsOk = await validateRealImageUrlLoads(String(r.newUrl));
+          if (loadsOk) {
+            serverResultsById.set(String(r.id), r);
+            void productImageManagerService.logAndVerifyUploadPropagation({
+              targetId: r.id,
+              targetType: r.type,
+              expectedUrl: r.newUrl,
+              deletedOldUrls: r.deletedOldUrls,
+              source: 'autoFixSiteImages'
+            });
+          }
         }
       }
-      return { results: json.results };
+      if (serverResultsById.size === items.length) {
+        return {
+          results: items.map(it => serverResultsById.get(it.id)!).filter(Boolean)
+        };
+      }
     }
-    if (!isUnmatchedGatewayResponse(res, json) && json?.message) {
-      throw new Error(String(json.message));
-    }
-  } catch (err: any) {
-    // Only rethrow if it wasn't a missing/unmatched route
-    if (err?.message && !/fetch|network|json/i.test(err.message)) {
-      // Still allow fallback below so individual items can succeed
-    }
+  } catch {
+    // Fall through to per-item sequential heading search & upload fallback below
   }
 
-  // Fallback item-by-item via universally-supported fixSingleCatalogImage
+  // Fallback for any item that did not receive a real, loadable photo from batch auto-fix
   const results: SiteImageAutoFixRowResult[] = [];
   for (const item of items) {
+    const verifiedServerRow = serverResultsById.get(item.id);
+    if (verifiedServerRow) {
+      results.push(verifiedServerRow);
+      continue;
+    }
     try {
       const recordTypeArg: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
         item.type === 'CATEGORY'

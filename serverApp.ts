@@ -25016,138 +25016,16 @@ function findMatchingLocalMasterImageOnDisk(
   };
 }
 
-async function generateUniqueLocalVerifiedProductWebp(params: {
+async function generateUniqueLocalVerifiedProductWebp(_params: {
   recordId: string;
   title: string;
   category: string;
   templatePath?: string | null;
   usedUrls?: Set<string>;
 }): Promise<string> {
-  ensureUploadsDir();
-  const cleanSubject = cleanProductSearchSubject(params.title || 'Commercial Product');
-  const slug =
-    cleanSubject
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 34) || 'catalog-product';
-  const baseSeed = `${params.recordId}::${params.title}::${params.category}`;
-  let hash = '';
-  let fileName = '';
-  let filePath = '';
-  let localUrl = '';
-  for (let attempt = 0; attempt < 25; attempt++) {
-    const uniqueSeed = attempt === 0 ? baseSeed : `${baseSeed}::uniq-${attempt}::${Date.now()}`;
-    hash = crypto.createHash('sha1').update(uniqueSeed).digest('hex').slice(0, 12);
-    fileName = `auto-${slug}-${hash}.webp`;
-    filePath = path.join(UPLOADS_DIR, fileName);
-    localUrl = `/assets/uploads/${fileName}`;
-    if (!params.usedUrls || !params.usedUrls.has(localUrl)) {
-      break;
-    }
-  }
-
-  if (fs.existsSync(filePath) && (!params.usedUrls || !params.usedUrls.has(localUrl))) {
-    try {
-      if (fs.statSync(filePath).size > 2000) return localUrl;
-    } catch {}
-  }
-
-  const escapeXml = (str: string) =>
-    String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-
-  const safeTitle = escapeXml(cleanSubject.slice(0, 52));
-  const safeCategory = escapeXml((params.category || 'Verified Global B2B Export').slice(0, 44));
-  const safeCode = escapeXml(hash.slice(0, 8).toUpperCase());
-
-  // Palette derived deterministically from hash so each product card is visually distinct
-  const palettes = [
-    ['#0f172a', '#1e3a8a', '#38bdf8'],
-    ['#064e3b', '#047857', '#34d399'],
-    ['#1e1b4b', '#3730a3', '#818cf8'],
-    ['#3b0764', '#6b21a8', '#c084fc'],
-    ['#451a03', '#92400e', '#fbbf24'],
-    ['#111827', '#374151', '#60a5fa']
-  ];
-  const palIdx = parseInt(hash.slice(0, 2), 16) % palettes.length;
-  const [c1, c2, accent] = palettes[palIdx];
-
-  try {
-    if (params.templatePath && fs.existsSync(params.templatePath)) {
-      const badgeSvg = Buffer.from(
-        `<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#000000" stop-opacity="0.05"/>
-              <stop offset="68%" stop-color="#000000" stop-opacity="0.15"/>
-              <stop offset="100%" stop-color="#0f172a" stop-opacity="0.88"/>
-            </linearGradient>
-          </defs>
-          <rect width="800" height="600" fill="url(#grad)"/>
-          <rect x="28" y="24" width="230" height="34" rx="8" fill="#0f172a" fill-opacity="0.82" stroke="${accent}" stroke-width="1.5"/>
-          <text x="44" y="46" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="${accent}">VERIFIED CATALOG • ${safeCode}</text>
-          <text x="32" y="532" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#ffffff">${safeTitle}</text>
-          <text x="32" y="564" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="${accent}">${safeCategory}</text>
-        </svg>`
-      );
-
-      // Slight deterministic crop/modulation so binary & visual hash are 100% unique
-      const modBright = 0.97 + ((parseInt(hash.slice(2, 4), 16) % 7) * 0.01);
-      const outBuf = await sharp(params.templatePath, { failOn: 'none' })
-        .rotate()
-        .resize(800, 600, { fit: 'cover', position: 'centre' })
-        .modulate({ brightness: modBright })
-        .composite([{ input: badgeSvg, top: 0, left: 0 }])
-        .webp({ quality: 82, effort: 1 })
-        .toBuffer();
-
-      if (outBuf && outBuf.length > 2000) {
-        fs.writeFileSync(filePath, outBuf);
-        const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
-        if (fs.existsSync(distUpDir)) {
-          try { fs.writeFileSync(path.join(distUpDir, fileName), outBuf); } catch {}
-        }
-        return localUrl;
-      }
-    }
-  } catch {}
-
-  // High-resolution commercial specification visual card fallback via sharp
-  const fullSvg = Buffer.from(
-    `<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${c1}"/>
-          <stop offset="100%" stop-color="${c2}"/>
-        </linearGradient>
-      </defs>
-      <rect width="800" height="600" fill="url(#bg)"/>
-      <circle cx="680" cy="120" r="180" fill="${accent}" fill-opacity="0.12"/>
-      <circle cx="120" cy="480" r="220" fill="${accent}" fill-opacity="0.08"/>
-      <rect x="48" y="48" width="704" height="504" rx="24" fill="#0f172a" fill-opacity="0.55" stroke="${accent}" stroke-opacity="0.35" stroke-width="2"/>
-      <rect x="84" y="88" width="260" height="38" rx="8" fill="${accent}" fill-opacity="0.18" stroke="${accent}" stroke-width="1.5"/>
-      <text x="104" y="112" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="${accent}">VERIFIED B2B EXPORT SPEC</text>
-      <text x="84" y="250" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#ffffff">${safeTitle}</text>
-      <text x="84" y="305" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="${accent}">${safeCategory}</text>
-      <line x1="84" y1="355" x2="716" y2="355" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
-      <text x="84" y="410" font-family="Arial, sans-serif" font-size="16" fill="#cbd5e1">• Direct Factory &amp; Wholesale Export Specification</text>
-      <text x="84" y="445" font-family="Arial, sans-serif" font-size="16" fill="#cbd5e1">• SGS / ISO 9001 Quality Inspected • Asset ID: ${safeCode}</text>
-      <text x="84" y="505" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#94a3b8">TRADE HEAVEN GLOBAL CATALOG • UNIQUE VERIFIED ASSET</text>
-    </svg>`
-  );
-
-  const fallbackBuf = await sharp(fullSvg).webp({ quality: 82, effort: 1 }).toBuffer();
-  fs.writeFileSync(filePath, fallbackBuf);
-  const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
-  if (fs.existsSync(distUpDir)) {
-    try { fs.writeFileSync(path.join(distUpDir, fileName), fallbackBuf); } catch {}
-  }
-  return localUrl;
+  // Synthetic text-card / spec-card generation is permanently disabled.
+  // Only real, loadable product photographs may be assigned or uploaded.
+  return '';
 }
 
 async function resolveUniqueVerifiedCatalogImage(params: {
@@ -25219,84 +25097,150 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     );
   }
 
-  // If cache missed OR all cached pool photos were already claimed by other products, fetch a fresh diversified live pool!
-  if (poolCandidates.length === 0 && params.allowLiveGeminiNetwork !== false && withinNetworkDeadline()) {
+  // Build ordered heading advancement sequence: Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun -> Category noun
+  const headingQueue: string[] = [];
+  const seenHeadings = new Set<string>();
+  const pushHeading = (raw: string) => {
+    const cleaned = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (cleaned.length < 3) return;
+    const k = cleaned.toLowerCase();
+    if (seenHeadings.has(k)) return;
+    seenHeadings.add(k);
+    headingQueue.push(cleaned);
+  };
+
+  pushHeading(params.title || cleanName);
+  pushHeading(cleanName);
+  const subParts = String(params.title || cleanName)
+    .replace(/[()[\]]/g, ',')
+    .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+)\s*/)
+    .map(p => cleanProductSearchSubject(p))
+    .filter(p => p.length >= 3);
+  for (const part of subParts) pushHeading(part);
+
+  const focusedQueries = buildFocusedVisualSearchQueries(cleanName, cleanCategory);
+  for (const fq of focusedQueries) pushHeading(fq);
+
+  const nounStop = new Set([
+    'verified', 'prod', 'bulk', 'wholesale', 'export', 'grade', 'quality', 'premium', 'pure',
+    'natural', 'fresh', 'raw', 'custom', 'private', 'label', 'series', 'collection', 'direct',
+    'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'grade',
+    'hand', 'stitched', 'full', 'grain', 'casual', 'dress', 'green', 'white', 'black', 'red',
+    'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new'
+  ]);
+  const coreNouns = extractMeaningfulAuditTokens(cleanName).filter(t => t.length >= 3 && !nounStop.has(t));
+  if (coreNouns.length >= 2) {
+    pushHeading(coreNouns.slice(0, 2).join(' '));
+    pushHeading(coreNouns.slice(-2).join(' '));
+  }
+  for (let i = coreNouns.length - 1; i >= 0; i--) {
+    pushHeading(coreNouns[i]);
+  }
+  const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
+  if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
+  else if (catNouns.length === 1) pushHeading(catNouns[0]);
+
+  const tryPickAndMirrorFromPool = async (
+    candidatesList: VisualImageCandidate[],
+    matchedQueryLabel: string
+  ) => {
+    let mirrorAttempts = 0;
+    for (const cand of candidatesList) {
+      const rawCandUrl = String(cand?.url || '').trim();
+      if (!rawCandUrl) continue;
+      if (globalRegistry.isCandidateUsed(rawCandUrl, cand?.sourcePageUrl)) continue;
+
+      let resolvedLocal = normalizeAuditImageUrl(
+        serverProductImageState.urlReplacements?.[rawCandUrl] || rawCandUrl
+      );
+      if (globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)) continue;
+
+      if (/^https?:\/\//i.test(resolvedLocal) && params.allowLiveGeminiNetwork !== false) {
+        if (mirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
+          continue;
+        }
+        mirrorAttempts++;
+        const mirrored = await Promise.race([
+          mirrorExternalProductImageToLocalUploads({
+            externalUrl: resolvedLocal,
+            productId: params.recordId,
+            productName: cleanName,
+            category: cleanCategory,
+            flushNow: false,
+            skipBind: true,
+            rejectIfUsedByOther: globalRegistry
+          }),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), params.wallDeadlineMs ? 2200 : 5000))
+        ]);
+        if (!mirrored) continue;
+        resolvedLocal = normalizeAuditImageUrl(mirrored);
+      }
+
+      if (
+        resolvedLocal &&
+        resolvedLocal.startsWith('/assets/uploads/') &&
+        isLocalUploadPresentOnDisk(resolvedLocal) &&
+        !params.usedUrls.has(resolvedLocal) &&
+        !globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)
+      ) {
+        const meta = mirroredAssetMetaByLocalUrl.get(resolvedLocal);
+        const contentHash = meta?.rawSha256 || getLocalUploadFileSha256(resolvedLocal) || undefined;
+        const sourceUrl = /^https?:\/\//i.test(rawCandUrl) ? rawCandUrl : meta?.sourceUrl;
+
+        params.usedUrls.add(resolvedLocal);
+        globalRegistry.claim({ localUrl: resolvedLocal, sourceUrl, contentHash });
+        bindAutoSavedImageOverride({
+          localUrl: resolvedLocal,
+          rawExternalUrl: sourceUrl,
+          productId: params.recordId,
+          productName: cleanName,
+          gallery: [resolvedLocal],
+          flushNow: false,
+          forceOverwrite: true,
+          bindByTitle: false
+        });
+        return {
+          newImageUrl: resolvedLocal,
+          queryUsed: matchedQueryLabel || queryUsed,
+          source: 'gemini_google_search_grounding',
+          sourceUrl,
+          imageContentHash: contentHash
+        };
+      }
+    }
+    return null;
+  };
+
+  // First try any cached unused pool candidates
+  if (poolCandidates.length > 0) {
+    const cachedPicked = await tryPickAndMirrorFromPool(poolCandidates, cleanName);
+    if (cachedPicked) return cachedPicked;
+  }
+
+  // Automatic Sequential Heading Advancement across Full Heading -> Sub-headings -> Core 1-2 word nouns
+  if (params.allowLiveGeminiNetwork !== false && withinNetworkDeadline()) {
     const hadExhaustedCache = Boolean(cached && Array.isArray(cached.images) && cached.images.length > 0);
     const angleVariants = ['bulk packaging', 'wholesale lot', 'industrial warehouse', 'export quality closeup', 'factory direct'];
     const variantIdx = parseInt(crypto.createHash('sha1').update(params.recordId).digest('hex').slice(0, 2), 16) % angleVariants.length;
-    const diversifiedSpecs = hadExhaustedCache
-      ? `${params.specifications || ''} ${angleVariants[variantIdx]}`.trim()
-      : params.specifications;
-    const freshPool = await runLiveSearchBounded(cleanName, diversifiedSpecs, hadExhaustedCache);
-    poolCandidates = freshPool.filter(c => {
-      const u = String(c?.url || '').trim();
-      return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-    });
-  }
 
-  // Try to pick a 100% unique, never-before-attached image from the pool
-  let mirrorAttempts = 0;
-  for (const cand of poolCandidates) {
-    const rawCandUrl = String(cand?.url || '').trim();
-    if (!rawCandUrl) continue;
-    if (globalRegistry.isCandidateUsed(rawCandUrl, cand?.sourcePageUrl)) continue;
-
-    let resolvedLocal = normalizeAuditImageUrl(
-      serverProductImageState.urlReplacements?.[rawCandUrl] || rawCandUrl
-    );
-    if (globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)) continue;
-
-    if (/^https?:\/\//i.test(resolvedLocal) && params.allowLiveGeminiNetwork !== false) {
-      if (mirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
-        continue;
-      }
-      mirrorAttempts++;
-      const mirrored = await Promise.race([
-        mirrorExternalProductImageToLocalUploads({
-          externalUrl: resolvedLocal,
-          productId: params.recordId,
-          productName: cleanName,
-          category: cleanCategory,
-          flushNow: false,
-          skipBind: true,
-          rejectIfUsedByOther: globalRegistry
-        }),
-        new Promise<null>(resolve => setTimeout(() => resolve(null), params.wallDeadlineMs ? 2200 : 5000))
-      ]);
-      if (!mirrored) continue;
-      resolvedLocal = normalizeAuditImageUrl(mirrored);
-    }
-
-    if (
-      resolvedLocal &&
-      resolvedLocal.startsWith('/assets/uploads/') &&
-      isLocalUploadPresentOnDisk(resolvedLocal) &&
-      !params.usedUrls.has(resolvedLocal) &&
-      !globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)
-    ) {
-      const meta = mirroredAssetMetaByLocalUrl.get(resolvedLocal);
-      const contentHash = meta?.rawSha256 || getLocalUploadFileSha256(resolvedLocal) || undefined;
-      const sourceUrl = /^https?:\/\//i.test(rawCandUrl) ? rawCandUrl : meta?.sourceUrl;
-
-      params.usedUrls.add(resolvedLocal);
-      globalRegistry.claim({ localUrl: resolvedLocal, sourceUrl, contentHash });
-      bindAutoSavedImageOverride({
-        localUrl: resolvedLocal,
-        rawExternalUrl: sourceUrl,
-        productId: params.recordId,
-        productName: cleanName,
-        gallery: [resolvedLocal],
-        flushNow: false,
-        forceOverwrite: true,
-        bindByTitle: false
+    for (let hIdx = 0; hIdx < Math.min(headingQueue.length, 8); hIdx++) {
+      if (!withinNetworkDeadline()) break;
+      const headingChip = headingQueue[hIdx];
+      const diversifiedSpecs =
+        hIdx === 0 && hadExhaustedCache
+          ? `${params.specifications || ''} ${angleVariants[variantIdx]}`.trim()
+          : hIdx === 0
+            ? params.specifications
+            : undefined;
+      const freshPool = await runLiveSearchBounded(headingChip, diversifiedSpecs, hIdx === 0 && hadExhaustedCache);
+      const unusedFresh = freshPool.filter(c => {
+        const u = String(c?.url || '').trim();
+        return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
       });
-      return {
-        newImageUrl: resolvedLocal,
-        queryUsed,
-        source: 'gemini_google_search_grounding',
-        sourceUrl,
-        imageContentHash: contentHash
-      };
+      if (unusedFresh.length > 0) {
+        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip);
+        if (picked) return picked;
+      }
     }
   }
 
@@ -25310,6 +25254,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   );
   if (
     localMatch.exactUnusedUrl &&
+    isLocalUploadPresentOnDisk(localMatch.exactUnusedUrl) &&
     !params.usedUrls.has(localMatch.exactUnusedUrl) &&
     !globalRegistry.isCandidateUsed(localMatch.exactUnusedUrl)
   ) {
@@ -25333,31 +25278,11 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     };
   }
 
-  // 3. Synthesize a unique, high-resolution .webp product card on disk (NEVER cloning an already-attached product's photo!)
-  const generatedLocalUrl = await generateUniqueLocalVerifiedProductWebp({
-    recordId: params.recordId,
-    title: cleanName,
-    category: cleanCategory,
-    templatePath: localMatch.bestTemplatePath,
-    usedUrls: params.usedUrls
-  });
-  const genContentHash = getLocalUploadFileSha256(generatedLocalUrl) || undefined;
-  params.usedUrls.add(generatedLocalUrl);
-  globalRegistry.claim({ localUrl: generatedLocalUrl, contentHash: genContentHash });
-  bindAutoSavedImageOverride({
-    localUrl: generatedLocalUrl,
-    productId: params.recordId,
-    productName: cleanName,
-    gallery: [generatedLocalUrl],
-    flushNow: false,
-    forceOverwrite: true,
-    bindByTitle: false
-  });
+  // 3. NEVER generate synthetic text-card or spec-card fallback graphics!
   return {
-    newImageUrl: generatedLocalUrl,
+    newImageUrl: '',
     queryUsed,
-    source: 'gemini_grounded_unique_webp',
-    imageContentHash: genContentHash
+    source: 'no_real_photo_found'
   };
 }
 
@@ -26420,7 +26345,10 @@ async function fixSingleCatalogImageRecord(params: {
       source = resolved.source;
       queryUsed = resolved.queryUsed;
       resolvedSourceUrl = resolved.sourceUrl;
-      resolvedContentHash = resolved.imageContentHash || getLocalUploadFileSha256(finalImageUrl) || undefined;
+      resolvedContentHash = resolved.imageContentHash || (finalImageUrl ? getLocalUploadFileSha256(finalImageUrl) || undefined : undefined);
+      if (!finalImageUrl) {
+        throw new Error(`No real matching product photo found automatically for "${resolvedTitle}".`);
+      }
     }
 
     if (finalImageUrl) {

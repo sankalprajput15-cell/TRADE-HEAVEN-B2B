@@ -21,6 +21,9 @@ import { Product } from '../../types';
 import {
   fetchVisualProductImages,
   extractProductHeadingSearchQueries,
+  isSyntheticSpecCardOrPlaceholder,
+  validateRealImageUrlLoads,
+  markBrokenExternalImageUrl,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
@@ -163,22 +166,51 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       if (!q) return;
       setIsLoadingCandidates(true);
       try {
-        const res = await fetchVisualProductImages({
-          productName: q,
-          productId: product.id,
-          category: product.category,
-          count: 20,
-          forceRefresh
-        });
-        const list = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
-        setCandidates(list);
+        // Build ordered heading advancement queue starting from the requested query
+        const queue: string[] = [q];
+        const lowerStart = q.toLowerCase();
+        const startIdx = headingSearchQueries.findIndex(hq => hq.toLowerCase() === lowerStart);
+        const remainingChips =
+          startIdx >= 0
+            ? headingSearchQueries.slice(startIdx + 1)
+            : headingSearchQueries.filter(hq => hq.toLowerCase() !== lowerStart);
+        for (const chip of remainingChips) {
+          if (!queue.some(item => item.toLowerCase() === chip.toLowerCase())) {
+            queue.push(chip);
+          }
+        }
+
+        let foundList: VisualProductImageCandidate[] = [];
+        let matchedQuery = q;
+
+        for (const attemptQuery of queue) {
+          const res = await fetchVisualProductImages({
+            productName: attemptQuery,
+            productId: product.id,
+            category: product.category,
+            count: 20,
+            forceRefresh
+          });
+          const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
+          const cleanList = rawList.filter(c => c?.url && !isSyntheticSpecCardOrPlaceholder(c));
+          if (cleanList.length > 0) {
+            foundList = cleanList;
+            matchedQuery = String(res?.queryUsed || attemptQuery).trim() || attemptQuery;
+            break;
+          }
+        }
+
+        setCandidates(foundList);
+        if (matchedQuery && matchedQuery.toLowerCase() !== q.toLowerCase()) {
+          setSearchQuery(matchedQuery);
+        }
       } catch {
         setCandidates([]);
       } finally {
         setIsLoadingCandidates(false);
       }
     },
-    [product.id, product.title, product.category]
+    [product.id, product.title, product.category, headingSearchQueries]
   );
 
   useEffect(() => {
@@ -246,6 +278,14 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     setIsApplying(true);
     setStatusMessage(null);
     try {
+      if (isSyntheticSpecCardOrPlaceholder(candidateUrl)) {
+        throw new Error('Synthetic spec-card or placeholder images are blocked. Please select a real product photo.');
+      }
+      const loadsOk = await validateRealImageUrlLoads(candidateUrl);
+      if (!loadsOk) {
+        setCandidates(prev => prev.filter(c => c.url !== candidateUrl));
+        throw new Error('Selected image failed loadability check (HTTP 200 & naturalWidth > 0). Please pick another photo.');
+      }
       const json = await replaceViaWholeSiteEndpoint({ imageUrl: candidateUrl });
       const deletedOldUrls: string[] = Array.isArray(json.deletedOldUrls) ? json.deletedOldUrls : [];
       await syncAfterUpdate(
@@ -856,6 +896,9 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                               } else if (step !== '2' && /^https?:\/\//i.test(cand.url)) {
                                 imgEl.setAttribute('data-fallback-step', '2');
                                 imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                              } else {
+                                markBrokenExternalImageUrl(cand.url);
+                                setCandidates(prev => prev.filter(item => item.url !== cand.url));
                               }
                             }}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
