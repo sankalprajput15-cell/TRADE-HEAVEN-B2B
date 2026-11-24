@@ -820,7 +820,7 @@ export async function validateRealImageUrlLoads(url: string, timeoutMs = 4500): 
 
 export async function filterLoadableRealCandidates(
   candidates: VisualProductImageCandidate[],
-  desiredCount = 20,
+  desiredCount = 48,
   timeoutMs = 3500
 ): Promise<VisualProductImageCandidate[]> {
   const cleanList = (candidates || []).filter(
@@ -828,8 +828,8 @@ export async function filterLoadableRealCandidates(
   );
   if (cleanList.length === 0) return [];
   const verified: VisualProductImageCandidate[] = [];
-  const batchSize = 8;
-  const maxToInspect = Math.min(cleanList.length, Math.max(desiredCount + 10, 24));
+  const batchSize = 12;
+  const maxToInspect = Math.min(cleanList.length, Math.max(desiredCount + 20, 64));
   for (let i = 0; i < maxToInspect && verified.length < desiredCount; i += batchSize) {
     const batch = cleanList.slice(i, i + batchSize);
     const checks = await Promise.all(
@@ -1116,6 +1116,8 @@ export async function fetchVisualProductImages(params: {
   count?: number;
   forceRefresh?: boolean;
   shuffleOnly?: boolean;
+  excludeUrls?: string[];
+  searchPage?: number;
 }): Promise<VisualProductSearchResponse> {
   hydrateSessionCacheFromLocalStorage();
 
@@ -1125,7 +1127,8 @@ export async function fetchVisualProductImages(params: {
   const productId = String(params.productId || '').trim();
   const category = String(params.category || '').trim();
   const specifications = String(params.specifications || '').trim();
-  const count = Math.max(15, Math.min(24, Number(params.count) || 20));
+  const count = Math.max(20, Math.min(60, Number(params.count) || 48));
+  const searchPage = Math.max(0, Number(params.searchPage) || 0);
 
   if (productName.length < 2) {
     return {
@@ -1137,6 +1140,18 @@ export async function fetchVisualProductImages(params: {
     };
   }
 
+  const callerExcludeBases = new Set<string>();
+  const callerExcludeHashes = new Set<string>();
+  if (Array.isArray(params.excludeUrls)) {
+    for (const ex of params.excludeUrls) {
+      const s = String(ex || '').trim();
+      if (!s) continue;
+      callerExcludeBases.add(s.split('?')[0].split('#')[0]);
+      const tok = extractClientUploadUrlHashToken(s);
+      if (tok) callerExcludeHashes.add(tok);
+    }
+  }
+
   const key = normalizeVisualQueryKey(productName, category);
   const attachedRegistry = buildClientAttachedRegistry(productId);
   const filterUnused = (list: VisualProductImageCandidate[]): VisualProductImageCandidate[] => {
@@ -1145,9 +1160,12 @@ export async function fetchVisualProductImages(params: {
       const rawU = String(img?.url || '').trim();
       if (!rawU || BROKEN_EXTERNAL_URLS.has(rawU)) return false;
       const mapped = resolveLocalMirroredImageUrl(rawU);
+      const rawBase = rawU.split('?')[0].split('#')[0];
       const base = mapped.split('?')[0].split('#')[0];
       const tok = extractClientUploadUrlHashToken(mapped) || extractClientUploadUrlHashToken(rawU);
       if (seen.has(base) || (tok && seen.has(`h:${tok}`))) return false;
+      if (callerExcludeBases.has(base) || callerExcludeBases.has(rawBase)) return false;
+      if (tok && callerExcludeHashes.has(tok)) return false;
       if (attachedRegistry.isUsed(mapped) || attachedRegistry.isUsed(rawU)) return false;
       seen.add(base);
       if (tok) seen.add(`h:${tok}`);
@@ -1155,8 +1173,8 @@ export async function fetchVisualProductImages(params: {
     });
   };
 
-  // Instant Fisher-Yates shuffle on cached session pool when user clicks Shuffle/Refresh
-  if (params.shuffleOnly && SESSION_CACHE.has(key)) {
+  // Instant Fisher-Yates shuffle on cached session pool when user clicks Shuffle/Refresh without forcing new network results
+  if (params.shuffleOnly && searchPage === 0 && SESSION_CACHE.has(key)) {
     const cached = SESSION_CACHE.get(key)!.data;
     if (cached.success && Array.isArray(cached.pool) && cached.pool.length > 0) {
       const healthyPool = filterUnused(cached.pool).map(img => ({
@@ -1179,7 +1197,7 @@ export async function fetchVisualProductImages(params: {
     }
   }
 
-  if (!params.forceRefresh && SESSION_CACHE.has(key)) {
+  if (!params.forceRefresh && searchPage === 0 && SESSION_CACHE.has(key)) {
     const entry = SESSION_CACHE.get(key)!;
     if (Date.now() - entry.cachedAt < CACHE_TTL_MS && entry.data.success && entry.data.pool.length > 0) {
       const healthyPool = filterUnused(entry.data.pool).map(img => ({
@@ -1189,8 +1207,8 @@ export async function fetchVisualProductImages(params: {
           ? resolveLocalMirroredImageUrl(img.url)
           : (img.thumbnailUrl || resolveLocalMirroredImageUrl(img.url))
       }));
-      // Only serve from client session cache if there are enough unused photos left
-      if (healthyPool.length >= Math.min(12, count)) {
+      // Only serve from client session cache if there are plenty of unseen photos left
+      if (healthyPool.length >= Math.min(20, count)) {
         const shuffled = fisherYatesShuffle(healthyPool);
         return {
           ...entry.data,
@@ -1203,7 +1221,7 @@ export async function fetchVisualProductImages(params: {
     }
   }
 
-  const inflightKey = `${key}::${productId || 'anon'}::${params.forceRefresh ? 'fresh' : 'std'}`;
+  const inflightKey = `${key}::${productId || 'anon'}::p${searchPage}::ex${callerExcludeBases.size}::${params.forceRefresh ? 'fresh' : 'std'}`;
   if (INFLIGHT_REQUESTS.has(inflightKey)) {
     return INFLIGHT_REQUESTS.get(inflightKey)!;
   }
@@ -1262,6 +1280,12 @@ export async function fetchVisualProductImages(params: {
       queryChip: string
     ): Promise<VisualProductSearchResponse | null> => {
       try {
+        const mergedExcludeUrls = Array.from(
+          new Set([
+            ...(Array.isArray(params.excludeUrls) ? params.excludeUrls : []),
+            ...Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
+          ])
+        ).slice(0, 300);
         const payload = {
           product_name: queryChip,
           product_id: productId,
@@ -1269,7 +1293,8 @@ export async function fetchVisualProductImages(params: {
           specifications,
           count,
           force_refresh: Boolean(params.forceRefresh),
-          exclude_urls: Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
+          search_page: searchPage,
+          exclude_urls: mergedExcludeUrls
         };
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -2271,6 +2296,7 @@ export async function fixSingleCatalogImage(params: {
   recordType?: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title?: string;
   category?: string;
+  specifications?: string;
   customImageUrl?: string;
   previousImageUrl?: string;
   revert?: boolean;
@@ -2280,6 +2306,7 @@ export async function fixSingleCatalogImage(params: {
     record_type: params.recordType,
     title: params.title,
     category: params.category,
+    specifications: params.specifications,
     custom_image_url: params.customImageUrl,
     previous_image_url: params.previousImageUrl,
     revert: Boolean(params.revert)
@@ -2378,7 +2405,8 @@ export async function fixSingleCatalogImage(params: {
         productName: queryChip,
         productId: cleanId,
         category: resolvedCategory,
-        count: 15,
+        specifications: params.specifications,
+        count: 36,
         forceRefresh: true
       });
       const pool = Array.isArray(visual.pool) && visual.pool.length > 0 ? visual.pool : visual.images || [];

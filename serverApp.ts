@@ -22952,7 +22952,9 @@ async function runGeminiGroundedImageSearchRound(params: {
 
 async function fetchGoogleImagesProductPhotos(
   productName: string,
-  category?: string
+  category?: string,
+  specifications?: string,
+  pageOffset: number = 0
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const fullHeading = normalizeFullProductHeading(productName);
@@ -22961,25 +22963,38 @@ async function fetchGoogleImagesProductPhotos(
   const primaryQuery = `${fullHeading || focused[0] || hints.primaryQuery}`.replace(/\s+/g, ' ').trim();
   if (!primaryQuery) return discovered;
 
+  const specKeywords = String(specifications || '')
+    .replace(/[^\w\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
+    .slice(0, 4)
+    .join(' ');
+
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
   ];
 
   const googleQueries = Array.from(
-    new Set([
-      primaryQuery,
-      `${primaryQuery} product photo`,
-      ...focused.slice(0, 3).map(q => `${q} product`),
-      `${focused[0] || primaryQuery} commercial wholesale`
-    ])
-  ).slice(0, 4);
+    new Set(
+      [
+        primaryQuery,
+        `${primaryQuery} product photo`,
+        specKeywords ? `${focused[0] || primaryQuery} ${specKeywords}` : '',
+        `site:alibaba.com ${focused[0] || primaryQuery}`,
+        ...focused.slice(0, 3).map(q => `${q} product`),
+        `${focused[0] || primaryQuery} commercial wholesale`
+      ].filter(Boolean)
+    )
+  ).slice(0, 5);
+
+  const ijnPage = Math.max(0, Number(pageOffset) || 0) % 5;
 
   await Promise.allSettled(
     googleQueries.map(async (q, idx) => {
       try {
         const ua = userAgents[idx % userAgents.length];
-        const url = `https://www.google.com/search?tbm=isch&hl=en&gl=us&safe=active&q=${encodeURIComponent(q)}`;
+        const url = `https://www.google.com/search?tbm=isch&hl=en&gl=us&safe=active&q=${encodeURIComponent(q)}&ijn=${ijnPage}`;
         const resp = await fetch(url, {
           headers: {
             'User-Agent': ua,
@@ -23121,10 +23136,130 @@ async function fetchWikimediaCommonsProductImages(
   return discovered;
 }
 
+async function fetchAlibabaProductImages(
+  productName: string,
+  category?: string,
+  specifications?: string,
+  pageOffset: number = 0
+): Promise<VisualImageCandidate[]> {
+  const discovered: VisualImageCandidate[] = [];
+  const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+  const focused = buildFocusedVisualSearchQueries(productName, category);
+  const fullHeading = normalizeFullProductHeading(productName);
+  const primaryQ = fullHeading || focused[0] || cleanedSubject;
+  if (primaryQ.length < 2) return discovered;
+
+  const specHint = String(specifications || '')
+    .replace(/[^\w\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
+    .slice(0, 4)
+    .join(' ');
+
+  const safeOffset = Math.max(0, Number(pageOffset) || 0);
+  const firstIdx = 1 + safeOffset * 35;
+  const alibabaPage = 1 + (safeOffset % 4);
+  const alibabaQuery = focused[0] || primaryQ;
+
+  const bannedAlibabaRegex = /watermark|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf|logo|icon|badge|avatar|sprite|-tps-\d+|favicon/i;
+
+  // 1. Direct Alibaba product search page + Bing/Google site:alibaba.com image queries in parallel
+  const bingEndpoints = [
+    `https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${primaryQ}`)}&first=${firstIdx}&count=45&mmasync=1`,
+    `https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${alibabaQuery} wholesale`)}&first=${firstIdx}&count=40&mmasync=1`,
+    ...(specHint
+      ? [`https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${alibabaQuery} ${specHint}`)}&first=${firstIdx}&count=35&mmasync=1`]
+      : [])
+  ];
+
+  await Promise.allSettled([
+    ...bingEndpoints.map(async ep => {
+      try {
+        const resp = await fetch(ep, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!resp.ok) return;
+        const html = await resp.text();
+        const attrMatches = html.matchAll(/m="(\{&quot;[^"]+\})"/g);
+        for (const m of attrMatches) {
+          try {
+            const rawJson = m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'");
+            const meta = JSON.parse(rawJson);
+            const murl = String(meta?.murl || '').trim();
+            if (!murl || !isSafePublicHttpUrl(murl)) continue;
+            if (/\.(svg|gif|ico)(\?|$)/i.test(murl)) continue;
+            const purl = String(meta?.purl || '').trim();
+            const titleStr = String(meta?.t || meta?.desc || '').trim();
+            if (bannedAlibabaRegex.test(`${titleStr} ${murl}`)) continue;
+            discovered.push({
+              url: murl,
+              thumbnailUrl: String(meta?.turl || murl).trim(),
+              sourcePageUrl: purl || 'https://www.alibaba.com',
+              title: (titleStr || `${alibabaQuery} Alibaba Product`)
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/[\uE000-\uF8FF]/g, '')
+                .trim(),
+              sourceDomain: 'alibaba.com',
+              relevanceScore: 16
+            });
+          } catch {}
+        }
+      } catch {}
+    }),
+    (async () => {
+      try {
+        const tradeUrl = `https://www.alibaba.com/trade/search?SearchText=${encodeURIComponent(
+          specHint ? `${alibabaQuery} ${specHint.split(' ').slice(0, 2).join(' ')}` : alibabaQuery
+        )}&page=${alibabaPage}`;
+        const resp = await fetch(tradeUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          signal: AbortSignal.timeout(4200)
+        });
+        if (!resp.ok) return;
+        const html = await resp.text();
+        const alicdnMatches = html.matchAll(/(?:https?:)?\/\/sc0\d\.alicdn\.com\/kf\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)(?:_[0-9]+x[0-9]+q?\d*\.(?:jpg|jpeg|webp))?/gi);
+        const seenAli = new Set<string>();
+        for (const m of alicdnMatches) {
+          let imgUrl = m[0];
+          if (imgUrl.startsWith('//')) imgUrl = `https:${imgUrl}`;
+          // Normalize tiny thumbnails to high-res or base image
+          imgUrl = imgUrl.replace(/_(?:50|60|80|100|120|140|160|220)x(?:50|60|80|100|120|140|160|220)[^.]*\.(?:jpg|jpeg|webp)$/i, '');
+          if (seenAli.has(imgUrl) || bannedAlibabaRegex.test(imgUrl)) continue;
+          seenAli.add(imgUrl);
+          if (!isSafePublicHttpUrl(imgUrl)) continue;
+          discovered.push({
+            url: imgUrl,
+            thumbnailUrl: imgUrl,
+            sourcePageUrl: tradeUrl,
+            title: `${alibabaQuery} Alibaba Verified Supplier`,
+            sourceDomain: 'alibaba.com',
+            relevanceScore: 17
+          });
+          if (discovered.length >= 60) break;
+        }
+      } catch {}
+    })()
+  ]);
+
+  return discovered;
+}
+
 async function fetchLiveCommercialWebProductImages(
   productName: string,
   category?: string,
-  specifications?: string
+  specifications?: string,
+  pageOffset: number = 0
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
@@ -23133,10 +23268,13 @@ async function fetchLiveCommercialWebProductImages(
     ? specifications
         .replace(/[^\w\s-]/g, ' ')
         .split(/\s+/)
-        .filter(w => w.length >= 3)
-        .slice(0, 2)
+        .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
+        .slice(0, 4)
         .join(' ')
     : '';
+
+  const safeOffset = Math.max(0, Number(pageOffset) || 0);
+  const firstIdx = 1 + safeOffset * 35;
 
   const fullHeading = normalizeFullProductHeading(productName);
   const primaryQ = fullHeading || focused[0] || cleanedSubject;
@@ -23144,32 +23282,32 @@ async function fetchLiveCommercialWebProductImages(
   const searchEndpoints: Array<{ url: string; label: string }> = [];
   if (primaryQ.length >= 2) {
     searchEndpoints.push({
-      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC3&first=1`,
+      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC3&first=${firstIdx}`,
       label: primaryQ
     });
     searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=1&count=35&mmasync=1`,
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=${firstIdx}&count=45&mmasync=1`,
       label: `${primaryQ} product photo`
     });
     for (const headingClause of focused.slice(0, 4)) {
       if (headingClause && headingClause.toLowerCase() !== primaryQ.toLowerCase()) {
         searchEndpoints.push({
-          url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=1&count=30&mmasync=1`,
+          url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=${firstIdx}&count=40&mmasync=1`,
           label: headingClause
         });
       }
     }
     if (secondaryQ && secondaryQ !== primaryQ && !searchEndpoints.some(e => e.label === secondaryQ)) {
       searchEndpoints.push({
-        url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=1&count=30&mmasync=1`,
+        url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=${firstIdx}&count=40&mmasync=1`,
         label: secondaryQ
       });
     }
   }
   if (specHint && primaryQ.length >= 2) {
     searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} ${specHint}`)}&first=1&count=25&mmasync=1`,
-      label: `${primaryQ} ${specHint}`
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${focused[0] || primaryQ} ${specHint}`)}&first=${firstIdx}&count=35&mmasync=1`,
+      label: `${focused[0] || primaryQ} ${specHint}`
     });
   }
 
@@ -23290,13 +23428,37 @@ async function handleVisualProductImageSearch(params: {
   specifications?: string;
   count?: number;
   forceRefresh?: boolean;
+  excludeUrls?: string[];
+  searchPage?: number;
 }) {
   const rawInputName = String(params.productName || '').trim();
   const fullHeading = normalizeFullProductHeading(rawInputName);
   const cleanName = fullHeading || cleanProductSearchSubject(rawInputName);
   const cleanCategory = String(params.category || '').trim();
   const cleanSpecs = String(params.specifications || '').trim();
-  const requestedCount = Math.max(15, Math.min(24, Number(params.count) || 20));
+  const requestedCount = Math.max(20, Math.min(60, Number(params.count) || 48));
+  const searchPage = Math.max(0, Number(params.searchPage) || 0);
+
+  const excludeBaseSet = new Set<string>();
+  const excludeHashSet = new Set<string>();
+  if (Array.isArray(params.excludeUrls)) {
+    for (const rawEx of params.excludeUrls) {
+      const s = String(rawEx || '').trim();
+      if (!s) continue;
+      excludeBaseSet.add(normalizeAuditImageUrl(s));
+      const tok = extractUploadUrlHashToken(s);
+      if (tok) excludeHashSet.add(tok);
+    }
+  }
+  const isExcludedCandidateUrl = (u: string): boolean => {
+    const cleanU = String(u || '').trim();
+    if (!cleanU) return true;
+    const base = normalizeAuditImageUrl(cleanU);
+    if (excludeBaseSet.has(base)) return true;
+    const tok = extractUploadUrlHashToken(cleanU);
+    if (tok && excludeHashSet.has(tok)) return true;
+    return false;
+  };
 
   if (cleanName.length < 2) {
     return {
@@ -23311,15 +23473,14 @@ async function handleVisualProductImageSearch(params: {
   const normalizedKey = normalizeVisualSearchKeyword(fullHeading || cleanName, cleanCategory);
   const queryUsed = buildCommercialProductImageQuery(fullHeading || cleanName, cleanCategory, cleanSpecs);
 
-  // 1. Check 7-day persistent cache first (refresh from disk on cache miss)
+  // 1. Check 7-day persistent cache first (skip when forceRefresh or paginated searchPage > 0)
   if (!serverProductImageCacheMap.has(normalizedKey)) {
     loadProductImageCacheFromDisk();
   }
   const cached = serverProductImageCacheMap.get(normalizedKey);
-  if (cached && !params.forceRefresh) {
+  if (cached && !params.forceRefresh && searchPage === 0) {
     const ageMs = Date.now() - Date.parse(cached.updatedAt || '');
     if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && Array.isArray(cached.images)) {
-      // Map any already-replaced URLs immediately and prune any deleted local /assets/uploads/ files
       cached.images = cached.images.filter(img => {
         if (!img || !img.url) return false;
         const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
@@ -23333,15 +23494,14 @@ async function handleVisualProductImageSearch(params: {
         return !isGenericOrPlaceholderServerUrl(img.url);
       });
     }
-    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 4) {
-      // Eagerly mirror up to 4 items on cache hit if fewer than 4 are local /assets/uploads/ files
+    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 12) {
       const currentLocalCount = cached.images.filter(
         img => String(img.url || '').startsWith('/assets/uploads/') && isLocalUploadPresentOnDisk(img.url)
       ).length;
-      if (currentLocalCount < 4) {
+      if (currentLocalCount < 6) {
         const externalToMirror = cached.images
           .filter(img => /^https?:\/\//i.test(String(img.url || '')))
-          .slice(0, 4 - currentLocalCount);
+          .slice(0, 6 - currentLocalCount);
         if (externalToMirror.length > 0) {
           await Promise.allSettled(
             externalToMirror.map(async item => {
@@ -23362,7 +23522,6 @@ async function handleVisualProductImageSearch(params: {
         }
       }
 
-      // Self-upgrade any remaining external URLs in cached pool in background
       if (cached.images.some(img => /^https?:\/\//i.test(img.url))) {
         void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, cached.images);
       }
@@ -23377,7 +23536,11 @@ async function handleVisualProductImageSearch(params: {
             thumbnailUrl: isLocal ? mappedUrl : (img.thumbnailUrl || mappedUrl)
           };
         })
-        .filter(img => !img.url.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(img.url));
+        .filter(
+          img =>
+            (!img.url.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(img.url)) &&
+            !isExcludedCandidateUrl(img.url)
+        );
       const localItems = fisherYatesShuffle(
         mappedCached.filter(img => img.url.startsWith('/assets/uploads/'))
       );
@@ -23385,7 +23548,8 @@ async function handleVisualProductImageSearch(params: {
         mappedCached.filter(img => !img.url.startsWith('/assets/uploads/'))
       );
       const shuffledPool = [...localItems, ...externalItems];
-      if (shuffledPool.length >= 4) {
+      // Only return from cache if we have enough unseen results (at least 16, or requestedCount)
+      if (shuffledPool.length >= Math.min(requestedCount, 16)) {
         const selected = shuffledPool.slice(0, requestedCount);
         return {
           success: true,
@@ -23426,11 +23590,13 @@ async function handleVisualProductImageSearch(params: {
       const sourceBoost =
         c.sourceDomain === 'commons.wikimedia.org'
           ? 1
-          : isCommercialCdn
-            ? 14
-            : c.sourceDomain === 'images.google.com'
-              ? 12
-              : 10;
+          : c.sourceDomain === 'alibaba.com' || cleanUrl.includes('alicdn.com')
+            ? 16
+            : isCommercialCdn
+              ? 14
+              : c.sourceDomain === 'images.google.com'
+                ? 12
+                : 10;
       const rel = isCandidateStrictlyRelevant(c, tokenProfile, {
         allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn
       });
@@ -23449,7 +23615,9 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  const verifyPendingBatch = async (limit: number = 48) => {
+  const effectivePageOffset = searchPage + (params.forceRefresh && searchPage === 0 ? 1 : 0);
+
+  const verifyPendingBatch = async (limit: number = 90) => {
     const sortedPending = Array.from(candidateMap.entries()).sort(
       (a, b) => (b[1].relevanceScore || 0) - (a[1].relevanceScore || 0)
     );
@@ -23463,33 +23631,35 @@ async function handleVisualProductImageSearch(params: {
     for (const chk of checks) {
       if (chk.status === 'fulfilled' && chk.value) {
         const vKey = chk.value.url.split('#')[0];
-        if (!verifiedMap.has(vKey)) {
+        if (!verifiedMap.has(vKey) && !isExcludedCandidateUrl(chk.value.url)) {
           verifiedMap.set(vKey, chk.value);
         }
       }
     }
   };
 
-  // 3A + 3C. Commercial Product Search (Bing + Bing Async + Google Images) FIRST, with Wikimedia & relaxed search candidates to ensure ~20 results
+  // Multi-source discovery: Alibaba + Commercial Web + Google Images + Wikimedia Commons
   const directWebDiscoveryPromise = Promise.all([
-    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs),
-    fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
+    fetchAlibabaProductImages(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
+    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
+    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
     fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
-  ]).then(async ([webCandidates, googleCandidates, wikiCandidates]) => {
+  ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
+    collectAndFilter(alibabaCandidates, true);
     collectAndFilter(webCandidates, true);
     collectAndFilter(googleCandidates, true);
-    await verifyPendingBatch(45);
-    if (verifiedMap.size < 22) {
+    await verifyPendingBatch(90);
+    if (verifiedMap.size < 45) {
       collectAndFilter(wikiCandidates, false);
-      await verifyPendingBatch(25);
+      await verifyPendingBatch(45);
     }
-    if (verifiedMap.size < 20 && relaxedCandidateMap.size > 0) {
+    if (verifiedMap.size < 45 && relaxedCandidateMap.size > 0) {
       for (const [k, v] of relaxedCandidateMap.entries()) {
         if (!verifiedMap.has(k) && !candidateMap.has(k)) {
           candidateMap.set(k, v);
         }
       }
-      await verifyPendingBatch(30);
+      await verifyPendingBatch(50);
     }
   });
 
@@ -23559,8 +23729,8 @@ Return ONLY valid JSON in this format:
   let matchedHeadingQuery = queryUsed;
 
   // Automatic Sequential Heading Advancement inside handleVisualProductImageSearch:
-  // If the full heading returned 0 (or < 4) results, step through Sub-headings -> Focused 2-3 word queries -> Core 1-2 word nouns
-  if (verifiedMap.size < 4) {
+  // If initial query returned fewer than desired unseen photos, step through Sub-headings -> RFQ spec clauses -> Core 1-2 word nouns
+  if (verifiedMap.size < Math.min(18, requestedCount)) {
     const fallbackHeadings: string[] = [];
     const seenFb = new Set<string>([cleanName.toLowerCase()]);
     const pushFb = (q: string) => {
@@ -23578,6 +23748,23 @@ Return ONLY valid JSON in this format:
       .map(p => cleanProductSearchSubject(p))
       .filter(p => p.length >= 3);
     for (const sc of subClauses) pushFb(sc);
+
+    // Extract concrete product nouns/phrases from RFQ details & specifications when available
+    if (cleanSpecs.length >= 4) {
+      const specClauses = cleanSpecs
+        .replace(/[()[\]]/g, ',')
+        .split(/\s*(?:[—–|;,/\n]|(?:\s+-\s+))\s*/i)
+        .map(s => cleanProductSearchSubject(s))
+        .filter(s => s.length >= 4 && s.length <= 56);
+      for (const sc of specClauses.slice(0, 3)) pushFb(sc);
+      const specTokens = extractMeaningfulAuditTokens(cleanSpecs).filter(
+        t => t.length >= 3 && !/^(need|looking|buy|rfq|quote|urgent|monthly|tons|ton|mt|pcs|kg|usd|fob|cif|port|destination|packaging|payment|terms|minimum|order|quantity|details|specifications|spec|target|country)$/i.test(t)
+      );
+      if (specTokens.length >= 2) {
+        pushFb(specTokens.slice(0, 3).join(' '));
+      }
+    }
+
     for (const fq of buildFocusedVisualSearchQueries(cleanName, cleanCategory)) pushFb(fq);
 
     const stopSet = new Set([
@@ -23593,45 +23780,48 @@ Return ONLY valid JSON in this format:
     }
     for (const ct of coreToks) pushFb(ct);
 
-    for (const nextHeading of fallbackHeadings.slice(0, 5)) {
-      // Check cached pool for this fallback heading first
-      for (const ck of [
-        normalizeVisualSearchKeyword(nextHeading, cleanCategory),
-        normalizeVisualSearchKeyword(nextHeading, '')
-      ]) {
-        const subCached = serverProductImageCacheMap.get(ck);
-        if (subCached && Array.isArray(subCached.images)) {
-          for (const img of subCached.images) {
-            const u = serverProductImageState.urlReplacements?.[img.url] || img.url;
-            if (!u || isGenericOrPlaceholderServerUrl(u)) continue;
-            if (u.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(u)) continue;
-            if (!verifiedMap.has(u)) {
-              verifiedMap.set(u, {
-                ...img,
-                url: u,
-                thumbnailUrl: u.startsWith('/assets/uploads/') ? u : (img.thumbnailUrl || u)
-              });
+    for (const nextHeading of fallbackHeadings.slice(0, 6)) {
+      if (!params.forceRefresh && searchPage === 0) {
+        for (const ck of [
+          normalizeVisualSearchKeyword(nextHeading, cleanCategory),
+          normalizeVisualSearchKeyword(nextHeading, '')
+        ]) {
+          const subCached = serverProductImageCacheMap.get(ck);
+          if (subCached && Array.isArray(subCached.images)) {
+            for (const img of subCached.images) {
+              const u = serverProductImageState.urlReplacements?.[img.url] || img.url;
+              if (!u || isGenericOrPlaceholderServerUrl(u) || isExcludedCandidateUrl(u)) continue;
+              if (u.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(u)) continue;
+              if (!verifiedMap.has(u)) {
+                verifiedMap.set(u, {
+                  ...img,
+                  url: u,
+                  thumbnailUrl: u.startsWith('/assets/uploads/') ? u : (img.thumbnailUrl || u)
+                });
+              }
             }
           }
         }
-      }
-      if (verifiedMap.size >= 8) {
-        matchedHeadingQuery = nextHeading;
-        break;
+        if (verifiedMap.size >= Math.min(28, requestedCount)) {
+          matchedHeadingQuery = nextHeading;
+          break;
+        }
       }
 
-      // Live commercial + Google Images + Wikimedia search for nextHeading
+      // Live Alibaba + Commercial Web + Google Images + Wikimedia search for nextHeading
       try {
-        const [subWeb, subGoogle, subWiki] = await Promise.all([
-          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, ''),
-          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory),
+        const [subAli, subWeb, subGoogle, subWiki] = await Promise.all([
+          fetchAlibabaProductImages(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
+          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
+          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
           fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
         ]);
+        collectAndFilter(subAli, true);
         collectAndFilter(subWeb, true);
         collectAndFilter(subGoogle, true);
         collectAndFilter(subWiki, false);
-        await verifyPendingBatch(28);
-        if (verifiedMap.size >= 4) {
+        await verifyPendingBatch(45);
+        if (verifiedMap.size >= Math.min(24, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -23647,7 +23837,7 @@ Return ONLY valid JSON in this format:
         if (hToks.length === 0) continue;
         const minHits = hToks.length === 1 ? 1 : Math.min(2, hToks.length);
         for (const entry of preindexed) {
-          if (verifiedMap.has(entry.webUrl) || isGenericOrPlaceholderServerUrl(entry.webUrl)) continue;
+          if (verifiedMap.has(entry.webUrl) || isGenericOrPlaceholderServerUrl(entry.webUrl) || isExcludedCandidateUrl(entry.webUrl)) continue;
           let hits = 0;
           for (const ht of hToks) {
             if (entry.tokens.includes(ht) || (ht.length >= 5 && entry.tokens.some(et => et.length >= 5 && (et.includes(ht) || ht.includes(et))))) {
@@ -23666,7 +23856,7 @@ Return ONLY valid JSON in this format:
             });
           }
         }
-        if (verifiedMap.size >= 6) {
+        if (verifiedMap.size >= requestedCount) {
           if (matchedHeadingQuery === queryUsed) matchedHeadingQuery = hChip;
           break;
         }
@@ -23692,9 +23882,9 @@ Return ONLY valid JSON in this format:
 
   const geminiVerified = await filterCandidatesWithGemini(cleanName, cleanCategory, allVerified, geminiKey);
 
-  // Auto-upload top 4 verified images onto our site (/assets/uploads/auto-...webp) immediately,
-  // and mirror the rest of the >10 pool in the background so subsequent loads take 0ms!
-  const topToMirrorNow = geminiVerified.slice(0, 4);
+  // Auto-upload top 6 verified images onto our site (/assets/uploads/auto-...webp) immediately,
+  // and mirror the rest of the pool in the background so subsequent loads take 0ms!
+  const topToMirrorNow = geminiVerified.slice(0, 6);
   await Promise.allSettled(
     topToMirrorNow.map(async item => {
       const localUrl = await mirrorExternalProductImageToLocalUploads({
@@ -23710,11 +23900,21 @@ Return ONLY valid JSON in this format:
     })
   );
 
-  // Persist verified pool in 7-day cache
+  // Merge newly discovered verified photos with existing cached pool so cache grows across pages instead of shrinking
+  const existingCachedImgs = Array.isArray(cached?.images) ? cached.images : [];
+  const mergedForCacheMap = new Map<string, VisualImageCandidate>();
+  for (const item of [...geminiVerified, ...existingCachedImgs]) {
+    const u = String(item?.url || '').trim();
+    if (!u || isGenericOrPlaceholderServerUrl(u)) continue;
+    if (u.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(u)) continue;
+    const key = normalizeAuditImageUrl(u);
+    if (!mergedForCacheMap.has(key)) mergedForCacheMap.set(key, item);
+  }
+
   serverProductImageCacheMap.set(normalizedKey, {
     keyword: normalizedKey,
     queryUsed: matchedHeadingQuery,
-    images: geminiVerified,
+    images: Array.from(mergedForCacheMap.values()).slice(0, 120),
     updatedAt: new Date().toISOString(),
     provider: 'gemini_google_search_grounding'
   });
@@ -23723,9 +23923,11 @@ Return ONLY valid JSON in this format:
   // Mirror remaining pool items in background
   void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
 
-  // Keep highest-relevance real photographs (local uploads first) while preserving randomness within top tier
-  const topLocal = geminiVerified.filter(item => String(item.url || '').startsWith('/assets/uploads/'));
-  const topExternal = fisherYatesShuffle(geminiVerified.filter(item => !String(item.url || '').startsWith('/assets/uploads/')));
+  // Filter out caller-excluded URLs so repeated searches always return brand-new images
+  const freshOnly = geminiVerified.filter(item => !isExcludedCandidateUrl(item.url));
+  const finalCandidates = freshOnly.length > 0 ? freshOnly : geminiVerified;
+  const topLocal = finalCandidates.filter(item => String(item.url || '').startsWith('/assets/uploads/'));
+  const topExternal = fisherYatesShuffle(finalCandidates.filter(item => !String(item.url || '').startsWith('/assets/uploads/')));
   const orderedPool = [...topLocal, ...topExternal];
   const selected = orderedPool.slice(0, requestedCount);
 
@@ -24369,8 +24571,10 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
     const productName = String(body.product_name || body.productName || body.query || '');
     const productId = String(body.product_id || body.productId || '').trim();
     const category = String(body.category || '');
-    const requestedCount = Math.max(15, Math.min(24, Number(body.count || 20) || 20));
+    const specifications = String(body.specifications || body.specs || body.description || '');
+    const requestedCount = Math.max(20, Math.min(60, Number(body.count || 48) || 48));
     const forceRefresh = Boolean(body.force_refresh || body.forceRefresh || body.shuffle);
+    const searchPage = Math.max(0, Number(body.search_page ?? body.searchPage ?? 0) || 0);
     const extraExcludeUrls: string[] = Array.isArray(body.exclude_urls || body.excludeUrls)
       ? (body.exclude_urls || body.excludeUrls).map((u: any) => String(u || '').trim()).filter(Boolean)
       : [];
@@ -24380,9 +24584,11 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
     let result = await handleVisualProductImageSearch({
       productName,
       category,
-      specifications: String(body.specifications || body.specs || ''),
+      specifications,
       count: requestedCount,
-      forceRefresh
+      forceRefresh,
+      excludeUrls: extraExcludeUrls,
+      searchPage
     });
 
     const filterUnusedPool = (list: VisualImageCandidate[] | undefined) => {
@@ -24403,14 +24609,16 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     let unusedPool = filterUnusedPool(result.pool?.length ? result.pool : result.images);
 
-    // If cached pool has fewer than 12 unused candidates, run a fresh live search for ~20 brand-new unique photos
-    if (result.success && result.fromCache && unusedPool.length < 12 && !forceRefresh) {
+    // If cached pool has fewer than 18 unused candidates, run a fresh live search for brand-new unique photos
+    if (result.success && result.fromCache && unusedPool.length < Math.min(18, requestedCount) && !forceRefresh) {
       const freshResult = await handleVisualProductImageSearch({
         productName,
         category,
-        specifications: String(body.specifications || body.specs || ''),
-        count: Math.max(requestedCount, 22),
-        forceRefresh: true
+        specifications,
+        count: Math.max(requestedCount, 48),
+        forceRefresh: true,
+        excludeUrls: extraExcludeUrls,
+        searchPage: searchPage + 1
       });
       if (freshResult.success) {
         const freshUnused = filterUnusedPool(freshResult.pool?.length ? freshResult.pool : freshResult.images);
@@ -24473,15 +24681,17 @@ app.get('/api/v1/products/fetch-images', async (req, res) => {
     const productName = String(req.query.product_name || req.query.productName || req.query.q || '');
     const productId = String(req.query.product_id || req.query.productId || '').trim();
     const category = String(req.query.category || '');
-    const requestedCount = Math.max(15, Math.min(24, Number(req.query.count || 20) || 20));
+    const requestedCount = Math.max(20, Math.min(60, Number(req.query.count || 48) || 48));
+    const searchPage = Math.max(0, Number(req.query.search_page || req.query.searchPage || 0) || 0);
     const registry = buildGlobalAttachedImageRegistry(productId || undefined);
 
     const result = await handleVisualProductImageSearch({
       productName,
       category,
-      specifications: String(req.query.specifications || ''),
+      specifications: String(req.query.specifications || req.query.description || ''),
       count: requestedCount,
-      forceRefresh: req.query.force_refresh === '1' || req.query.forceRefresh === 'true'
+      forceRefresh: req.query.force_refresh === '1' || req.query.forceRefresh === 'true',
+      searchPage
     });
     const rawPool = Array.isArray(result.pool) && result.pool.length > 0 ? result.pool : (result.images || []);
     const unusedPool = rawPool.filter(img => img?.url && !registry.isCandidateUsed(img.url, img.sourcePageUrl));
@@ -25202,7 +25412,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         productName: searchName,
         category: cleanCategory,
         specifications: searchSpecs,
-        count: 18,
+        count: 36,
         forceRefresh
       });
       const timeoutSentinel = Symbol('gemini_timeout');
@@ -25223,7 +25433,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     loadProductImageCacheFromDisk();
   }
 
-  // Build ordered heading advancement sequence: Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun -> Category noun
+  // Build ordered heading advancement sequence: Full Heading -> Sub-headings -> RFQ/Spec details -> Core 2-word noun -> Core 1-word noun -> Category noun
   const headingQueue: string[] = [];
   const seenHeadings = new Set<string>();
   const pushHeading = (raw: string) => {
@@ -25244,6 +25454,17 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     .filter(p => p.length >= 3);
   for (const part of subParts) pushHeading(part);
 
+  // Include concrete RFQ/product specification clauses & nouns in sequential advancement
+  const specText = String(params.specifications || '').trim();
+  if (specText.length >= 4) {
+    const specParts = specText
+      .replace(/[()[\]]/g, ',')
+      .split(/\s*(?:[—–|;,/\n]|(?:\s+-\s+))\s*/i)
+      .map(p => cleanProductSearchSubject(p))
+      .filter(p => p.length >= 4 && p.length <= 56);
+    for (const sp of specParts.slice(0, 3)) pushHeading(sp);
+  }
+
   const focusedQueries = buildFocusedVisualSearchQueries(cleanName, cleanCategory);
   for (const fq of focusedQueries) pushHeading(fq);
 
@@ -25252,14 +25473,15 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     'natural', 'fresh', 'raw', 'custom', 'private', 'label', 'series', 'collection', 'direct',
     'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'certified',
     'hand', 'stitched', 'full', 'grain', 'casual', 'dress', 'green', 'white', 'black', 'red',
-    'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new', 'bayan'
+    'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new', 'bayan',
+    'need', 'looking', 'supply', 'specifications', 'spec', 'packaging', 'target', 'country'
   ]);
-  const coreNouns = extractMeaningfulAuditTokens(cleanName).filter(t => t.length >= 3 && !nounStop.has(t));
+  const coreNouns = extractMeaningfulAuditTokens(`${cleanName} ${specText}`).filter(t => t.length >= 3 && !nounStop.has(t));
   if (coreNouns.length >= 2) {
     pushHeading(coreNouns.slice(0, 2).join(' '));
     pushHeading(coreNouns.slice(-2).join(' '));
   }
-  for (let i = 0; i < coreNouns.length; i++) {
+  for (let i = 0; i < Math.min(coreNouns.length, 6); i++) {
     pushHeading(coreNouns[i]);
   }
   const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
@@ -26315,6 +26537,7 @@ async function fixSingleCatalogImageRecord(params: {
   recordType?: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
   title?: string;
   category?: string;
+  specifications?: string;
   customImageUrl?: string;
   previousImageUrl?: string;
   revert?: boolean;
@@ -26501,12 +26724,25 @@ async function fixSingleCatalogImageRecord(params: {
         isManual: true
       });
     } else {
+      const combinedSpecifications = [
+        params.specifications,
+        matchedRfq?.specifications,
+        matchedRfq?.description,
+        matchedRfq?.details,
+        matchedRfq?.packagingRequirements,
+        matchedListing?.description,
+        matchedProduct?.description
+      ]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join(' | ');
+
       const resolved = await resolveUniqueVerifiedCatalogImage({
         recordId: cleanId,
         recordType: resolvedType,
         title: resolvedTitle,
         category: resolvedCategory,
-        specifications: String(matchedListing?.description || matchedProduct?.description || matchedRfq?.specifications || ''),
+        specifications: combinedSpecifications,
         usedUrls: usedUrlsSet,
         sharedRegistry: globalRegistry,
         allowLiveGeminiNetwork: true
@@ -27389,6 +27625,7 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
       const type = String(item?.type || item?.targetType || item?.record_type || 'PRODUCT').toUpperCase();
       const title = String(item?.title || id).trim();
       const category = String(item?.category || 'General').trim();
+      const specifications = String(item?.specifications || item?.details || item?.description || '').trim();
       const currentUrl = String(item?.currentUrl || item?.oldImageUrl || '').trim();
       const fieldPath = String(item?.fieldPath || '').trim();
       if (!id) continue;
@@ -27402,6 +27639,7 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
           recordType: recordTypeArg,
           title,
           category,
+          specifications: specifications || undefined,
           previousImageUrl: currentUrl || undefined
         });
 

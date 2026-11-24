@@ -41,6 +41,7 @@ export interface SiteImageAutoFixItemInput {
   type: UnifiedSiteImageTargetType;
   title: string;
   category: string;
+  specifications?: string;
   currentUrl?: string;
   fieldPath?: string;
 }
@@ -407,6 +408,7 @@ export async function autoFixSiteImages(
         recordType: recordTypeArg,
         title: item.title,
         category: item.category,
+        specifications: item.specifications,
         previousImageUrl: item.currentUrl
       });
 
