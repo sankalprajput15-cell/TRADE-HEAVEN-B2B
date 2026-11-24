@@ -39,6 +39,10 @@ interface AdminQuickImageInspectorModalProps {
   fieldPath?: string;
   siteLocationLabel?: string;
   liveHref?: string;
+  status?: 'VERIFIED' | 'DUPLICATE' | 'NEEDS_FIX';
+  statusDetail?: string;
+  duplicatePeers?: Array<{ id: string; title: string; type: string }>;
+  skippedReason?: string;
   onCheckLiveOnSite?: () => void;
   onImageDeleted?: (productId: string, deletedFile: boolean) => void;
   onClose: () => void;
@@ -62,6 +66,10 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   fieldPath,
   siteLocationLabel,
   liveHref,
+  status,
+  statusDetail,
+  duplicatePeers,
+  skippedReason,
   onCheckLiveOnSite,
   onImageDeleted,
   onClose,
@@ -157,7 +165,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
           productName: q,
           productId: product.id,
           category: product.category,
-          count: 15,
+          count: 20,
           forceRefresh
         });
         const list = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
@@ -446,6 +454,40 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
 
         {/* Body */}
         <div className="p-5 overflow-y-auto space-y-5">
+          {(status === 'DUPLICATE' || status === 'NEEDS_FIX' || skippedReason) && (
+            <div
+              className={`px-3.5 py-2.5 rounded-xl border text-xs space-y-1.5 ${
+                status === 'DUPLICATE'
+                  ? 'bg-amber-50 border-amber-200 text-amber-900'
+                  : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}
+            >
+              <div className="font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  {skippedReason
+                    ? `Skipped / Needs Replacement: ${skippedReason}`
+                    : status === 'DUPLICATE'
+                      ? `Duplicate Image Detected (${statusDetail || 'Shared across multiple records'})`
+                      : `Image Needs Fix (${statusDetail || 'Missing or unverified image'})`}
+                </span>
+              </div>
+              {Array.isArray(duplicatePeers) && duplicatePeers.length > 0 && (
+                <div className="text-[11px] text-amber-800">
+                  Also attached to:{' '}
+                  {duplicatePeers
+                    .slice(0, 5)
+                    .map(p => `${p.title} (${p.id})`)
+                    .join(' · ')}
+                  {duplicatePeers.length > 5 ? ` +${duplicatePeers.length - 5} more` : ''}
+                </div>
+              )}
+              <div className="text-[11px] opacity-90">
+                Click any of the ~20 fetched Google/Web photos below or click <strong>Manual Upload</strong> to permanently replace this image on the site and delete the old file.
+              </div>
+            </div>
+          )}
+
           {statusMessage && (
             <div
               className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
@@ -742,8 +784,8 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
 
             {pickerTab === 'CANDIDATES' ? (
               isLoadingCandidates ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                  {[0, 1, 2, 3, 4].map(i => (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
                     <div key={i} className="aspect-4/3 rounded-lg bg-slate-100 animate-pulse border border-slate-200" />
                   ))}
                 </div>
@@ -752,10 +794,11 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                   No matching candidates found for this query. Try editing the search words above or click <strong>Manual Upload</strong>.
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                  {candidates.slice(0, 15).map((cand, idx) => {
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {candidates.slice(0, 20).map((cand, idx) => {
                     const isCurrent =
                       cand.url.split('?')[0] === liveUrl.split('?')[0];
+                    const initialThumb = cand.thumbnailUrl || cand.url;
                     return (
                       <button
                         key={`${cand.url}-${idx}`}
@@ -770,14 +813,26 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                       >
                         <div className="aspect-4/3 bg-slate-100 overflow-hidden">
                           <img
-                            src={cand.thumbnailUrl || cand.url}
+                            src={initialThumb}
                             alt={cand.title || product.title}
+                            referrerPolicy="no-referrer"
                             loading="lazy"
+                            onError={e => {
+                              const imgEl = e.currentTarget;
+                              const step = imgEl.getAttribute('data-fallback-step') || '0';
+                              if (step === '0' && cand.url && cand.url !== initialThumb) {
+                                imgEl.setAttribute('data-fallback-step', '1');
+                                imgEl.src = cand.url;
+                              } else if (step !== '2' && /^https?:\/\//i.test(cand.url)) {
+                                imgEl.setAttribute('data-fallback-step', '2');
+                                imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                              }
+                            }}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         </div>
                         <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
-                          <span className="truncate">{cand.sourceDomain || 'Verified'}</span>
+                          <span className="truncate">#{idx + 1} · {cand.sourceDomain || 'Google/Web'}</span>
                           {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
                         </div>
                       </button>

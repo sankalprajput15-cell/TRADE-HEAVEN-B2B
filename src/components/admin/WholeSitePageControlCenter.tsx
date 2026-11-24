@@ -363,11 +363,41 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingUploadTargetRef = useRef<{ kind: 'item' | 'cms'; id: string; cmsPath?: string } | null>(null);
 
-  // Keep draft synced with live server content only when there are NO active draft edits
+  const autoSaveDisplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep draft synced with live server content; when draft edits exist, still merge fresh category/hero/banner image URLs
+  // so publishing a draft never reverts images replaced in WholeSiteImageStudio
   useEffect(() => {
-    if (!hasDraftEdits && !savedDraftAt && siteContent) {
+    if (!siteContent) return;
+    if (!hasDraftEdits && !savedDraftAt) {
       setDraft(mergeSiteContentDefaults(siteContent));
+      return;
     }
+    setDraft(prev => {
+      const liveMerged = mergeSiteContentDefaults(siteContent);
+      const liveCatMap = new Map(
+        (liveMerged.homepage?.categoriesList || []).map(c => [c.id, c.image])
+      );
+      const liveSlideMap = new Map(
+        (liveMerged.homepage?.heroSlides || []).map(s => [s.id, s.image])
+      );
+      const nextCats = (prev.homepage?.categoriesList || []).map(c => ({
+        ...c,
+        image: liveCatMap.get(c.id) || c.image
+      }));
+      const nextSlides = (prev.homepage?.heroSlides || []).map(s => ({
+        ...s,
+        image: liveSlideMap.get(s.id) || s.image
+      }));
+      return {
+        ...prev,
+        homepage: {
+          ...prev.homepage,
+          categoriesList: nextCats,
+          heroSlides: nextSlides
+        }
+      };
+    });
   }, [siteContent, hasDraftEdits, savedDraftAt]);
 
   useEffect(() => {
@@ -736,13 +766,35 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
     noticeText?: string
   ) => {
     const nextConfig = updater(displayConfig);
-    setDraft(prev => ({
-      ...prev,
-      homepageDisplayConfig: nextConfig
-    }));
+    setDraft(prev => {
+      const nextDraft: SiteContent = {
+        ...prev,
+        homepageDisplayConfig: nextConfig
+      };
+      const nowIso = new Date().toISOString();
+      try {
+        localStorage.setItem(
+          WHOLE_SITE_DRAFT_STORAGE_KEY,
+          JSON.stringify({
+            draft: nextDraft,
+            stagedItemImages,
+            savedAt: nowIso
+          })
+        );
+      } catch {}
+
+      if (autoSaveDisplayTimerRef.current) {
+        clearTimeout(autoSaveDisplayTimerRef.current);
+      }
+      autoSaveDisplayTimerRef.current = setTimeout(() => {
+        void updateSiteContent(nextDraft, currentUser);
+      }, 300);
+
+      return nextDraft;
+    });
     setHasDraftEdits(true);
     if (noticeText) {
-      flashNotice('success', `${noticeText} (Staged in draft — preview or click Publish Live)`);
+      flashNotice('success', `${noticeText} (Saved live to Homepage)`);
     }
   };
 

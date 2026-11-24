@@ -627,7 +627,38 @@ export const HeroSection: React.FC<Props> = ({
     activeSlide.highlight === DEFAULT_HERO_BANNER_SLIDES[0].highlight &&
     activeSlide.subtitle === DEFAULT_HERO_BANNER_SLIDES[0].subtitle;
 
-  const sidebarCategories = useMemo(() => (CATEGORIES_TREE || []).slice(0, 10), []);
+  const orderedCategories = useMemo(() => {
+    const displayCfg = siteContent?.homepageDisplayConfig;
+    const hiddenSet = new Set(displayCfg?.hiddenCategoryIds || []);
+    const pinnedIds = displayCfg?.pinnedCategoryIds || [];
+    const cmsCatsMap = new Map(
+      (siteContent?.homepage?.categoriesList || []).map(c => [c.id, c])
+    );
+
+    const mergedTree = (CATEGORIES_TREE || [])
+      .filter(c => !hiddenSet.has(c.id))
+      .map(c => {
+        const cmsCat = cmsCatsMap.get(c.id);
+        return cmsCat
+          ? {
+              ...c,
+              name: cmsCat.name || c.name,
+              count: cmsCat.productCount || c.count,
+              image: cmsCat.image || (c as any).image
+            }
+          : c;
+      });
+
+    if (pinnedIds.length > 0) {
+      const byId = new Map(mergedTree.map(c => [c.id, c]));
+      const pinned = pinnedIds.map(id => byId.get(id)).filter(Boolean) as typeof mergedTree;
+      const pinnedSet = new Set(pinned.map(c => c.id));
+      return [...pinned, ...mergedTree.filter(c => !pinnedSet.has(c.id))];
+    }
+    return mergedTree;
+  }, [siteContent?.homepageDisplayConfig, siteContent?.homepage?.categoriesList]);
+
+  const sidebarCategories = useMemo(() => orderedCategories.slice(0, 10), [orderedCategories]);
   const activeFlyoutCat = useMemo(
     () => sidebarCategories.find(c => c.id === hoveredPortalCatId) || null,
     [sidebarCategories, hoveredPortalCatId]
@@ -831,7 +862,7 @@ export const HeroSection: React.FC<Props> = ({
                     <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
                       <span className="uppercase tracking-wider">{t('categoriesHeading')}</span>
                       <span className="text-[11px] text-slate-500 font-semibold tabular-nums">
-                        {CATEGORIES_TREE.length} sectors
+                        {orderedCategories.length} sectors
                       </span>
                     </div>
 
@@ -854,7 +885,7 @@ export const HeroSection: React.FC<Props> = ({
                       </button>
 
                       {/* Category Options */}
-                      {CATEGORIES_TREE.map(cat => {
+                      {orderedCategories.map(cat => {
                         const isSelected = selectedCat === cat.name;
                         return (
                           <button

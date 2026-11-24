@@ -769,7 +769,7 @@ export async function fetchVisualProductImages(params: {
   const productId = String(params.productId || '').trim();
   const category = String(params.category || '').trim();
   const specifications = String(params.specifications || '').trim();
-  const count = Math.max(12, Math.min(18, Number(params.count) || 15));
+  const count = Math.max(15, Math.min(24, Number(params.count) || 20));
 
   if (productName.length < 2) {
     return {
@@ -806,7 +806,9 @@ export async function fetchVisualProductImages(params: {
       const healthyPool = filterUnused(cached.pool).map(img => ({
         ...img,
         url: resolveLocalMirroredImageUrl(img.url),
-        thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
+        thumbnailUrl: img.url.startsWith('/assets/uploads/')
+          ? resolveLocalMirroredImageUrl(img.url)
+          : (img.thumbnailUrl || resolveLocalMirroredImageUrl(img.url))
       }));
       if (healthyPool.length > 0) {
         const shuffled = fisherYatesShuffle(healthyPool);
@@ -827,10 +829,12 @@ export async function fetchVisualProductImages(params: {
       const healthyPool = filterUnused(entry.data.pool).map(img => ({
         ...img,
         url: resolveLocalMirroredImageUrl(img.url),
-        thumbnailUrl: resolveLocalMirroredImageUrl(img.thumbnailUrl || img.url)
+        thumbnailUrl: img.url.startsWith('/assets/uploads/')
+          ? resolveLocalMirroredImageUrl(img.url)
+          : (img.thumbnailUrl || resolveLocalMirroredImageUrl(img.url))
       }));
-      // Only serve from client session cache if there are still genuinely unused photos left!
-      if (healthyPool.length >= 3) {
+      // Only serve from client session cache if there are enough unused photos left
+      if (healthyPool.length >= Math.min(12, count)) {
         const shuffled = fisherYatesShuffle(healthyPool);
         return {
           ...entry.data,
@@ -867,11 +871,17 @@ export async function fetchVisualProductImages(params: {
         : [];
       const healthyPool = rawPool
         .filter(c => c?.url && !BROKEN_EXTERNAL_URLS.has(c.url))
-        .map(c => ({
-          ...c,
-          url: resolveLocalMirroredImageUrl(c.url),
-          thumbnailUrl: resolveLocalMirroredImageUrl(c.thumbnailUrl || c.url)
-        }));
+        .map(c => {
+          const resolvedUrl = resolveLocalMirroredImageUrl(c.url);
+          const resolvedThumb = resolvedUrl.startsWith('/assets/uploads/')
+            ? resolvedUrl
+            : (c.thumbnailUrl || resolvedUrl);
+          return {
+            ...c,
+            url: resolvedUrl,
+            thumbnailUrl: resolvedThumb
+          };
+        });
       const rankedPool = (healthyPool.length > 0 ? healthyPool : rawPool).slice().sort(
         (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
       );
@@ -904,13 +914,23 @@ export async function fetchVisualProductImages(params: {
         if (!json || typeof json !== 'object') return null;
         if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
         const normalized = parsePayload(json);
-        // Reject off-topic, single-word false-match, AND already-attached duplicate candidates
-        const cleanPool = filterUnused(normalized.pool).filter(
+        const serverVerifiedUnused = filterUnused(normalized.pool).filter(
+          c => !isGenericOrPlaceholderImageUrl(c.url)
+        );
+        const strictPool = serverVerifiedUnused.filter(
           c =>
-            !isGenericOrPlaceholderImageUrl(c.url) &&
             !isMismatchedProductImageUrl(c.url, productName, category) &&
             !isCandidateOffTopicClient(c, productName)
         );
+        // Keep strict matches first, then top up with remaining server-verified candidates so the modal reliably displays ~20 photos
+        const strictUrls = new Set(strictPool.map(c => c.url));
+        const cleanPool =
+          strictPool.length >= count
+            ? strictPool
+            : [
+                ...strictPool,
+                ...serverVerifiedUnused.filter(c => !strictUrls.has(c.url))
+              ];
         if (normalized.success && cleanPool.length > 0) {
           const finalNorm: VisualProductSearchResponse = {
             ...normalized,

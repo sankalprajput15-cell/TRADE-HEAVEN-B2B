@@ -71,7 +71,7 @@ interface BulkUploadQueueItem {
   message?: string;
 }
 
-type ScopeFilter = 'ALL' | 'CHANGED' | 'NEEDS_FIX' | 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'BANNERS';
+type ScopeFilter = 'ALL' | 'CHANGED' | 'NEEDS_FIX' | 'DUPLICATE' | 'SKIPPED' | 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'BANNERS';
 
 interface WholeSiteImageStudioProps {
   onViewLiveItem?: (item: { recordId: string; recordType: string }) => void;
@@ -177,6 +177,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [sessionChanges, setSessionChanges] = useState<
     Record<string, { changedAt: number; action: 'UPLOAD' | 'AUTO_FIX' | 'URL'; deletedOldCount: number }>
   >({});
+  const [skippedItems, setSkippedItems] = useState<Record<string, { reason: string; at: number }>>({});
 
   // Batch Auto-Fix state
   const [batchProgress, setBatchProgress] = useState<{
@@ -522,11 +523,23 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, rfqs, siteContent, stateVersion, sessionChanges]);
 
+  const duplicatePeersByUrl = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; title: string; type: SiteImageTargetType }>>();
+    for (const it of allItems) {
+      if (it.type === 'SITE_ASSET' || it.type === 'HERO_SLIDE' || !it.currentUrl) continue;
+      const list = map.get(it.currentUrl) || [];
+      list.push({ id: it.id, title: it.title, type: it.type });
+      map.set(it.currentUrl, list);
+    }
+    return map;
+  }, [allItems]);
+
   const stats = useMemo(() => {
     let verified = 0;
     let duplicates = 0;
     let needsFix = 0;
     let changedCount = 0;
+    let skippedCount = 0;
     let productsCount = 0;
     let categoriesCount = 0;
     let rfqsCount = 0;
@@ -538,6 +551,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       else needsFix++;
 
       if (it.isChangedLive) changedCount++;
+      if (skippedItems[it.id]) skippedCount++;
 
       if (it.type === 'PRODUCT') productsCount++;
       else if (it.type === 'CATEGORY') categoriesCount++;
@@ -550,19 +564,22 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       duplicates,
       needsFix,
       changedCount,
+      skippedCount,
       flaggedTotal: duplicates + needsFix,
       productsCount,
       categoriesCount,
       rfqsCount,
       bannersCount
     };
-  }, [allItems]);
+  }, [allItems, skippedItems]);
 
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const matched = allItems.filter(it => {
       if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
+      if (scopeFilter === 'DUPLICATE' && it.status !== 'DUPLICATE') return false;
+      if (scopeFilter === 'SKIPPED' && !skippedItems[it.id] && it.status !== 'NEEDS_FIX') return false;
       if (scopeFilter === 'PRODUCT' && it.type !== 'PRODUCT') return false;
       if (scopeFilter === 'CATEGORY' && it.type !== 'CATEGORY') return false;
       if (scopeFilter === 'RFQ' && it.type !== 'RFQ') return false;
@@ -581,7 +598,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       return [...matched].sort((a, b) => (b.changedAtMs || 0) - (a.changedAtMs || 0));
     }
     return matched;
-  }, [allItems, scopeFilter, searchQuery]);
+  }, [allItems, scopeFilter, searchQuery, skippedItems]);
 
   // Direct live-site jump handler for every item type (Products, Categories, RFQs, Hero Slides, Site Banners)
   const handleCheckLiveOnSite = useCallback(
@@ -679,6 +696,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             action: e.action || 'UPLOAD',
             deletedOldCount: Array.isArray(e.deletedOldUrls) ? e.deletedOldUrls.length : 0
           };
+        }
+        return next;
+      });
+      setSkippedItems(prev => {
+        const next = { ...prev };
+        for (const e of entries) {
+          delete next[e.id];
         }
         return next;
       });
@@ -914,9 +938,15 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         showChangedTabShortcut: true
       });
     } catch (err: any) {
+      const errReason = err?.message || 'Auto-fix could not find a unique replacement photo.';
+      setSkippedItems(prev => ({
+        ...prev,
+        [item.id]: { reason: errReason, at: Date.now() }
+      }));
       setBannerNotice({
         type: 'error',
-        text: `Auto-Fix failed for "${item.title}": ${err?.message || 'Try uploading a custom image.'}`
+        text: `Auto-Fix skipped "${item.title}": ${errReason} Click the item to pick from ~20 Google/Web photos or upload manually.`,
+        changedItem: item
       });
     } finally {
       setBusyRowIds(prev => {
@@ -983,6 +1013,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           updatedAt?: string;
           action?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
         }> = [];
+        const newlySkipped: Record<string, { reason: string; at: number }> = {};
 
         for (const c of chunk) {
           const match = resList.find(r => r.id === c.id);
@@ -1002,15 +1033,30 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             });
           } else {
             failed++;
+            newlySkipped[c.id] = {
+              reason: match?.error || 'Auto-fix skipped item (open inspector to pick from ~20 Google/Web images).',
+              at: Date.now()
+            };
           }
         }
 
+        if (Object.keys(newlySkipped).length > 0) {
+          setSkippedItems(prev => ({ ...prev, ...newlySkipped }));
+        }
         if (toSync.length > 0) {
           await applyLocalSync(toSync);
         }
-      } catch {
+      } catch (err: any) {
         completed += chunk.length;
         failed += chunk.length;
+        const newlySkipped: Record<string, { reason: string; at: number }> = {};
+        for (const c of chunk) {
+          newlySkipped[c.id] = {
+            reason: err?.message || 'Batch auto-fix request failed for this item.',
+            at: Date.now()
+          };
+        }
+        setSkippedItems(prev => ({ ...prev, ...newlySkipped }));
       }
 
       setBatchProgress({
@@ -1026,11 +1072,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
     setBatchProgress(null);
     setSelectedIds({});
+    if (failed > 0 && fixed === 0) {
+      setScopeFilter('SKIPPED');
+    }
     setBannerNotice({
       type: fixed > 0 ? 'success' : 'error',
       text: abortBatchRef.current
         ? `Batch Auto-Fix stopped: fixed ${fixed} of ${targets.length} items (${deletedOld} old server files permanently deleted).`
-        : `Batch Auto-Fix finished: ${fixed} fixed, ${failed} skipped/failed, ${deletedOld} old server files permanently deleted.`,
+        : `Batch Auto-Fix finished: ${fixed} fixed, ${failed} skipped/failed (click "Skipped" tab or any row to open ~20 Google/Web photos), ${deletedOld} old server files permanently deleted.`,
       showChangedTabShortcut: fixed > 0
     });
   };
@@ -1264,32 +1313,64 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         </div>
       </div>
 
-      {/* Clean Single-Row Metric Strip (No nested cards, tabular numerals) */}
+      {/* Clean Single-Row Interactive Metric Strip (Click any KPI to filter & inspect items) */}
       <div className="grid grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-b border-slate-200 bg-slate-50/70">
-        <div className="px-5 py-3">
+        <button
+          type="button"
+          onClick={() => setScopeFilter('ALL')}
+          className={`px-5 py-3 text-left transition-colors cursor-pointer hover:bg-white ${
+            scopeFilter === 'ALL' ? 'bg-white ring-1 ring-inset ring-[#0F294D]/20' : ''
+          }`}
+        >
           <div className="text-xs text-slate-500">Total Site Images</div>
           <div className="text-xl font-bold text-slate-900 font-mono tabular-nums mt-0.5">
             {stats.total.toLocaleString()}
           </div>
-        </div>
-        <div className="px-5 py-3">
+        </button>
+        <button
+          type="button"
+          onClick={() => setScopeFilter('CHANGED')}
+          className={`px-5 py-3 text-left transition-colors cursor-pointer hover:bg-white ${
+            scopeFilter === 'CHANGED' ? 'bg-white ring-1 ring-inset ring-emerald-500/30' : ''
+          }`}
+        >
           <div className="text-xs text-slate-500">Verified on Server</div>
           <div className="text-xl font-bold text-emerald-700 font-mono tabular-nums mt-0.5">
             {stats.verified.toLocaleString()}
           </div>
-        </div>
-        <div className="px-5 py-3">
-          <div className="text-xs text-slate-500">Duplicates</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setScopeFilter('DUPLICATE')}
+          className={`px-5 py-3 text-left transition-colors cursor-pointer hover:bg-amber-50/60 ${
+            scopeFilter === 'DUPLICATE' ? 'bg-amber-50 ring-1 ring-inset ring-amber-400' : ''
+          }`}
+          title="Click to view and open all duplicate images"
+        >
+          <div className="text-xs text-slate-500 flex items-center justify-between">
+            <span>Duplicates</span>
+            <span className="text-[10px] font-semibold text-amber-700 underline">View All</span>
+          </div>
           <div className={`text-xl font-bold font-mono tabular-nums mt-0.5 ${stats.duplicates > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
             {stats.duplicates.toLocaleString()}
           </div>
-        </div>
-        <div className="px-5 py-3">
-          <div className="text-xs text-slate-500">Missing / Stock</div>
-          <div className={`text-xl font-bold font-mono tabular-nums mt-0.5 ${stats.needsFix > 0 ? 'text-red-600' : 'text-slate-900'}`}>
-            {stats.needsFix.toLocaleString()}
+        </button>
+        <button
+          type="button"
+          onClick={() => setScopeFilter(stats.skippedCount > 0 ? 'SKIPPED' : 'NEEDS_FIX')}
+          className={`px-5 py-3 text-left transition-colors cursor-pointer hover:bg-red-50/60 ${
+            scopeFilter === 'NEEDS_FIX' || scopeFilter === 'SKIPPED' ? 'bg-red-50 ring-1 ring-inset ring-red-400' : ''
+          }`}
+          title="Click to view and open all missing, stock, or skipped images"
+        >
+          <div className="text-xs text-slate-500 flex items-center justify-between">
+            <span>Missing / Skipped</span>
+            <span className="text-[10px] font-semibold text-red-700 underline">View All</span>
           </div>
-        </div>
+          <div className={`text-xl font-bold font-mono tabular-nums mt-0.5 ${stats.needsFix + stats.skippedCount > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+            {(stats.needsFix + stats.skippedCount).toLocaleString()}
+          </div>
+        </button>
         <div className="px-5 py-3">
           <div className="text-xs text-slate-500">Old Files Deleted</div>
           <div className="text-xl font-bold text-slate-900 font-mono tabular-nums mt-0.5">
@@ -1534,6 +1615,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               { id: 'ALL', label: `All (${stats.total})` },
               { id: 'CHANGED', label: `Changed Live (${stats.changedCount})` },
               { id: 'NEEDS_FIX', label: `Needs Fix (${stats.flaggedTotal})` },
+              { id: 'DUPLICATE', label: `Duplicates (${stats.duplicates})` },
+              { id: 'SKIPPED', label: `Skipped (${stats.skippedCount + stats.needsFix})` },
               { id: 'PRODUCT', label: `Products (${stats.productsCount})` },
               { id: 'CATEGORY', label: `Categories (${stats.categoriesCount})` },
               { id: 'RFQ', label: `Buy Leads (${stats.rfqsCount})` },
@@ -1548,7 +1631,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 scopeFilter === tab.id
                   ? tab.id === 'CHANGED'
                     ? 'bg-emerald-700 text-white font-semibold shadow-xs'
-                    : 'bg-white text-slate-900 font-semibold shadow-xs'
+                    : tab.id === 'DUPLICATE'
+                      ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                      : tab.id === 'SKIPPED'
+                        ? 'bg-red-600 text-white font-semibold shadow-xs'
+                        : 'bg-white text-slate-900 font-semibold shadow-xs'
                   : tab.id === 'CHANGED' && Object.keys(sessionChanges).length > 0
                     ? 'text-emerald-800 hover:text-emerald-950 font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -1731,25 +1818,35 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       </td>
 
                       <td className="py-3 px-3 align-middle">
-                        <div className="w-16 h-12 rounded-md border border-slate-200 bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setInspectingItem(item)}
+                          title="Click to inspect & choose from ~20 Google/Web photos"
+                          className="w-16 h-12 rounded-md border border-slate-200 hover:border-[#0F294D] bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer group relative"
+                        >
                           {thumbSrc ? (
                             <img
                               src={thumbSrc}
                               alt={item.title}
                               referrerPolicy="no-referrer"
                               loading="lazy"
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                           ) : (
                             <span className="text-[10px] text-slate-400 font-medium">No Image</span>
                           )}
-                        </div>
+                        </button>
                       </td>
 
                       <td className="py-3 px-3 align-middle min-w-0 max-w-sm">
-                        <div className="font-semibold text-slate-900 truncate" title={item.title}>
+                        <button
+                          type="button"
+                          onClick={() => setInspectingItem(item)}
+                          className="font-semibold text-slate-900 hover:text-[#0F294D] hover:underline truncate block max-w-full text-left cursor-pointer"
+                          title={`Click to open Image Inspector for ${item.title}`}
+                        >
                           {item.title}
-                        </div>
+                        </button>
                         <div className="text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
                           <span className="font-medium text-slate-700">{item.type.replace('_', ' ')}</span>
                           <span aria-hidden="true">·</span>
@@ -1789,27 +1886,40 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       </td>
 
                       <td className="py-3 px-3 align-middle">
-                        <div
-                          className={`font-semibold ${
-                            item.status === 'VERIFIED'
-                              ? 'text-emerald-700'
-                              : item.status === 'DUPLICATE'
-                                ? 'text-amber-700'
-                                : 'text-red-700'
-                          }`}
+                        <button
+                          type="button"
+                          onClick={() => setInspectingItem(item)}
+                          className="text-left cursor-pointer group"
+                          title="Click to open Image Inspector and fix/replace this image"
                         >
-                          {item.status === 'VERIFIED'
-                            ? 'Verified'
-                            : item.status === 'DUPLICATE'
-                              ? 'Duplicate'
-                              : 'Needs Image'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">{item.statusDetail}</div>
-                        {item.changedAtMs > 0 && (
-                          <div className="text-[11px] text-emerald-700 font-medium mt-0.5 tabular-nums">
-                            Updated {formatRelativeChangeTime(item.changedAtMs)}
+                          <div
+                            className={`font-semibold group-hover:underline ${
+                              skippedItems[item.id]
+                                ? 'text-red-700'
+                                : item.status === 'VERIFIED'
+                                  ? 'text-emerald-700'
+                                  : item.status === 'DUPLICATE'
+                                    ? 'text-amber-700'
+                                    : 'text-red-700'
+                            }`}
+                          >
+                            {skippedItems[item.id]
+                              ? 'Skipped (Click to Fix)'
+                              : item.status === 'VERIFIED'
+                                ? 'Verified'
+                                : item.status === 'DUPLICATE'
+                                  ? 'Duplicate (Click to Open)'
+                                  : 'Needs Image (Click to Open)'}
                           </div>
-                        )}
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {skippedItems[item.id]?.reason || item.statusDetail}
+                          </div>
+                          {item.changedAtMs > 0 && (
+                            <div className="text-[11px] text-emerald-700 font-medium mt-0.5 tabular-nums">
+                              Updated {formatRelativeChangeTime(item.changedAtMs)}
+                            </div>
+                          )}
+                        </button>
                       </td>
 
                       <td className="py-3 pl-3 pr-6 align-middle text-right">
@@ -2025,6 +2135,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           fieldPath={inspectingItem.fieldPath}
           siteLocationLabel={inspectingItem.siteLocationLabel}
           liveHref={inspectingItem.liveHref}
+          status={inspectingItem.status}
+          statusDetail={inspectingItem.statusDetail}
+          duplicatePeers={
+            inspectingItem.currentUrl
+              ? (duplicatePeersByUrl.get(inspectingItem.currentUrl) || []).filter(p => p.id !== inspectingItem.id)
+              : undefined
+          }
+          skippedReason={skippedItems[inspectingItem.id]?.reason}
           onCheckLiveOnSite={() => handleCheckLiveOnSite(inspectingItem)}
           onImageDeleted={(_id, deletedFile) => {
             if (deletedFile) {
@@ -2054,6 +2172,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 deletedOldCount: deletedCount
               }
             }));
+            setSkippedItems(prev => {
+              const next = { ...prev };
+              delete next[id];
+              return next;
+            });
             setStateVersion(v => v + 1);
             if (
               inspectingItem.type === 'CATEGORY' ||

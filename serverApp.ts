@@ -12197,9 +12197,37 @@ Message: ${formattedInquiry.message}`
 
   if (action === 'save_content' || action === 'save_homepage_config') {
     const cleanPayload = extractSiteContentPayload(input);
-    serverSiteContent = { ...(serverSiteContent || {}), ...cleanPayload, siteContentUpdatedAt: Date.now() };
-    invalidateSiteContentResponseCache();
+    const currentTs = Number((serverSiteContent as any)?.siteContentUpdatedAt || 0);
+    const incomingTs = Number((cleanPayload as any)?.siteContentUpdatedAt || 0);
+    const nextTs = Math.max(currentTs + 1, incomingTs || 0, Date.now());
+    const mergedHomepage =
+      cleanPayload?.homepage && typeof cleanPayload.homepage === 'object'
+        ? { ...(serverSiteContent?.homepage || {}), ...cleanPayload.homepage }
+        : serverSiteContent?.homepage;
+    const mergedDisplayConfig =
+      cleanPayload?.homepageDisplayConfig && typeof cleanPayload.homepageDisplayConfig === 'object'
+        ? {
+            ...(serverSiteContent?.homepageDisplayConfig || {}),
+            ...cleanPayload.homepageDisplayConfig,
+            sectionVisibility: {
+              ...(serverSiteContent?.homepageDisplayConfig?.sectionVisibility || {}),
+              ...(cleanPayload.homepageDisplayConfig?.sectionVisibility || {})
+            },
+            sectionLayouts: {
+              ...(serverSiteContent?.homepageDisplayConfig?.sectionLayouts || {}),
+              ...(cleanPayload.homepageDisplayConfig?.sectionLayouts || {})
+            }
+          }
+        : serverSiteContent?.homepageDisplayConfig;
+    serverSiteContent = {
+      ...(serverSiteContent || {}),
+      ...cleanPayload,
+      ...(mergedHomepage ? { homepage: mergedHomepage } : {}),
+      ...(mergedDisplayConfig ? { homepageDisplayConfig: mergedDisplayConfig } : {}),
+      siteContentUpdatedAt: nextTs
+    };
     syncSiteContentCategoriesToImageOverrides(serverSiteContent);
+    invalidateSiteContentResponseCache();
     saveServerSiteContentToDisk();
     const liveSync = await awaitLiveSyncBounded(replicateSiteContentToLiveServer(serverSiteContent), 900);
 
@@ -17670,15 +17698,35 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
   let updated = false;
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
+  const payloadTs = Number(contentPayload?.siteContentUpdatedAt || 0);
+
   if (Array.isArray(cats)) {
     for (const cat of cats) {
-      if (!cat || !cat.id || !cat.image) continue;
+      if (!cat || !cat.id) continue;
       const cid = String(cat.id).trim();
-      const cleanImg = normalizeServerAssetUrl(String(cat.image).trim()).split('?')[0];
+      const rawCatImg = String(cat.image || '').trim();
+      const cleanImg = rawCatImg ? normalizeServerAssetUrl(rawCatImg).split('?')[0] : '';
+      const existing = serverProductImageState.overrides[cid];
+      const existingPrimary = existing?.primary ? normalizeServerAssetUrl(existing.primary).split('?')[0] : '';
+      const existingTs = Number(existing?.imageUpdatedAt || (existing?.updatedAt ? Date.parse(existing.updatedAt) : 0) || 0);
+
+      // Protect newer or locked image override if incoming cat.image is empty, missing on disk, blocked/replaced, or older than existing override
+      if (
+        existingPrimary &&
+        (!existingPrimary.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(existingPrimary)) &&
+        (!cleanImg ||
+          isGenericOrPlaceholderServerUrl(cleanImg) ||
+          (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) ||
+          isUrlBlockedForOverride(existing, cleanImg) ||
+          (existing.locked && existingPrimary !== cleanImg && existingTs > 0 && (payloadTs === 0 || existingTs >= payloadTs)))
+      ) {
+        cat.image = existingPrimary;
+        continue;
+      }
+
       if (!cleanImg || isGenericOrPlaceholderServerUrl(cleanImg)) continue;
       if (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) continue;
-      const existing = serverProductImageState.overrides[cid];
-      if (!existing || normalizeServerAssetUrl(existing.primary).split('?')[0] !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
+      if (!existing || existingPrimary !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
         serverProductImageState.overrides[cid] = {
           ...(existing || {}),
           primary: cleanImg,
@@ -17700,13 +17748,30 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
   }
   if (Array.isArray(slides)) {
     for (const slide of slides) {
-      if (!slide || !slide.id || !slide.image) continue;
+      if (!slide || !slide.id) continue;
       const sid = String(slide.id).trim();
-      const cleanImg = normalizeServerAssetUrl(String(slide.image).trim()).split('?')[0];
+      const rawSlideImg = String(slide.image || '').trim();
+      const cleanImg = rawSlideImg ? normalizeServerAssetUrl(rawSlideImg).split('?')[0] : '';
+      const existing = serverProductImageState.overrides[sid];
+      const existingPrimary = existing?.primary ? normalizeServerAssetUrl(existing.primary).split('?')[0] : '';
+      const existingTs = Number(existing?.imageUpdatedAt || (existing?.updatedAt ? Date.parse(existing.updatedAt) : 0) || 0);
+
+      if (
+        existingPrimary &&
+        (!existingPrimary.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(existingPrimary)) &&
+        (!cleanImg ||
+          isGenericOrPlaceholderServerUrl(cleanImg) ||
+          (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) ||
+          isUrlBlockedForOverride(existing, cleanImg) ||
+          (existing.locked && existingPrimary !== cleanImg && existingTs > 0 && (payloadTs === 0 || existingTs >= payloadTs)))
+      ) {
+        slide.image = existingPrimary;
+        continue;
+      }
+
       if (!cleanImg || isGenericOrPlaceholderServerUrl(cleanImg)) continue;
       if (cleanImg.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanImg)) continue;
-      const existing = serverProductImageState.overrides[sid];
-      if (!existing || normalizeServerAssetUrl(existing.primary).split('?')[0] !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
+      if (!existing || existingPrimary !== cleanImg || !isManualOverrideEntry(existing) || !existing.locked) {
         serverProductImageState.overrides[sid] = {
           ...(existing || {}),
           primary: cleanImg,
@@ -17725,6 +17790,85 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
       }
     }
   }
+
+  // Reconcile core site asset slots against locked overrides so stale siteContent saves never revert replaced banners/logos
+  const coreSiteSlotChecks: Array<{
+    slotId: string;
+    getVal: () => string;
+    setVal: (v: string) => void;
+  }> = [
+    {
+      slotId: 'site-brand-logo',
+      getVal: () => String(contentPayload?.branding?.logoUrl || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.branding) contentPayload.branding = {};
+        contentPayload.branding.logoUrl = v;
+      }
+    },
+    {
+      slotId: 'site-promo-popup-banner',
+      getVal: () => String(contentPayload?.promoPopup?.image || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.promoPopup) contentPayload.promoPopup = {};
+        contentPayload.promoPopup.image = v;
+      }
+    },
+    {
+      slotId: 'site-Inspect-feature-1',
+      getVal: () => String(contentPayload?.homepage?.InspectionSection?.feature1Image || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        if (!contentPayload.homepage.InspectionSection) contentPayload.homepage.InspectionSection = {};
+        contentPayload.homepage.InspectionSection.feature1Image = v;
+      }
+    },
+    {
+      slotId: 'site-Inspect-feature-2',
+      getVal: () => String(contentPayload?.homepage?.InspectionSection?.feature2Image || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        if (!contentPayload.homepage.InspectionSection) contentPayload.homepage.InspectionSection = {};
+        contentPayload.homepage.InspectionSection.feature2Image = v;
+      }
+    },
+    {
+      slotId: 'site-escrow-badge-banner',
+      getVal: () => String(contentPayload?.homepage?.escrowSection?.badgeImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        if (!contentPayload.homepage.escrowSection) contentPayload.homepage.escrowSection = {};
+        contentPayload.homepage.escrowSection.badgeImage = v;
+      }
+    },
+    {
+      slotId: 'site-app-download-banner',
+      getVal: () => String(contentPayload?.homepage?.appBanner?.image || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        if (!contentPayload.homepage.appBanner) contentPayload.homepage.appBanner = {};
+        contentPayload.homepage.appBanner.image = v;
+      }
+    }
+  ];
+
+  for (const slot of coreSiteSlotChecks) {
+    const existing = serverProductImageState.overrides[slot.slotId];
+    if (!existing?.primary) continue;
+    const existingPrimary = normalizeServerAssetUrl(existing.primary).split('?')[0];
+    if (existingPrimary.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(existingPrimary)) continue;
+    const rawCurrent = slot.getVal().trim();
+    const cleanCurrent = rawCurrent ? normalizeServerAssetUrl(rawCurrent).split('?')[0] : '';
+    const existingTs = Number(existing?.imageUpdatedAt || (existing?.updatedAt ? Date.parse(existing.updatedAt) : 0) || 0);
+    if (
+      !cleanCurrent ||
+      (cleanCurrent.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanCurrent)) ||
+      isUrlBlockedForOverride(existing, cleanCurrent) ||
+      (existing.locked && existingPrimary !== cleanCurrent && existingTs > 0 && (payloadTs === 0 || existingTs >= payloadTs))
+    ) {
+      slot.setVal(existingPrimary);
+    }
+  }
+
   if (updated) {
     saveServerProductImageState();
   }
@@ -17882,33 +18026,59 @@ app.put('/api/site-content', async (req, res) => {
   collectSiteUploadUrls(serverSiteContent, prevSiteUploadUrls);
 
   const nowMs = Date.now();
+  const nextTs = Math.max(currentTs + 1, incomingTs || 0, nowMs);
+  const mergedHomepage =
+    cleanPayload?.homepage && typeof cleanPayload.homepage === 'object'
+      ? { ...(serverSiteContent?.homepage || {}), ...cleanPayload.homepage }
+      : serverSiteContent?.homepage;
+  const mergedDisplayConfig =
+    cleanPayload?.homepageDisplayConfig && typeof cleanPayload.homepageDisplayConfig === 'object'
+      ? {
+          ...(serverSiteContent?.homepageDisplayConfig || {}),
+          ...cleanPayload.homepageDisplayConfig,
+          sectionVisibility: {
+            ...(serverSiteContent?.homepageDisplayConfig?.sectionVisibility || {}),
+            ...(cleanPayload.homepageDisplayConfig?.sectionVisibility || {})
+          },
+          sectionLayouts: {
+            ...(serverSiteContent?.homepageDisplayConfig?.sectionLayouts || {}),
+            ...(cleanPayload.homepageDisplayConfig?.sectionLayouts || {})
+          }
+        }
+      : serverSiteContent?.homepageDisplayConfig;
+
   serverSiteContent = {
     ...(serverSiteContent || {}),
     ...cleanPayload,
-    siteContentUpdatedAt: Math.max(incomingTs || 0, nowMs)
+    ...(mergedHomepage ? { homepage: mergedHomepage } : {}),
+    ...(mergedDisplayConfig ? { homepageDisplayConfig: mergedDisplayConfig } : {}),
+    siteContentUpdatedAt: nextTs
   };
-  invalidateSiteContentResponseCache();
   syncSiteContentCategoriesToImageOverrides(serverSiteContent);
+  invalidateSiteContentResponseCache();
 
-  // Permanently delete any old site-content uploaded images that were replaced or removed
+  // Permanently delete any old site-content uploaded images that were replaced or removed,
+  // while protecting any upload URL that is still active in serverProductImageState.overrides
   const nextSiteUploadUrls = new Set<string>();
   collectSiteUploadUrls(serverSiteContent, nextSiteUploadUrls);
-  const removedSiteUploadUrls = Array.from(prevSiteUploadUrls).filter(u => !nextSiteUploadUrls.has(u));
-  let deletedOldUrls: string[] = [];
-  if (removedSiteUploadUrls.length > 0) {
-    const removedSet = new Set(removedSiteUploadUrls);
-    let clearedSiteOv = false;
-    for (const [ovKey, ovVal] of Object.entries(serverProductImageState.overrides || {})) {
-      if (ovKey.startsWith('site-') || ovKey.startsWith('hero-slide-')) {
-        const ovPrim = stripUrlQueryBase(ovVal?.primary);
-        if (ovPrim && removedSet.has(ovPrim)) {
-          delete serverProductImageState.overrides[ovKey];
-          clearedSiteOv = true;
-        }
+  const activeOverrideUrls = new Set<string>();
+  for (const ovVal of Object.values(serverProductImageState.overrides || {})) {
+    const p = stripUrlQueryBase(ovVal?.primary);
+    if (p) activeOverrideUrls.add(p);
+    if (Array.isArray(ovVal?.gallery)) {
+      for (const g of ovVal.gallery) {
+        const gb = stripUrlQueryBase(g);
+        if (gb) activeOverrideUrls.add(gb);
       }
     }
-    deletedOldUrls = permanentlyDeleteReplacedUploadFiles(removedSiteUploadUrls, []);
-    if (deletedOldUrls.length > 0 || clearedSiteOv) {
+  }
+  const removedSiteUploadUrls = Array.from(prevSiteUploadUrls).filter(
+    u => !nextSiteUploadUrls.has(u) && !activeOverrideUrls.has(u)
+  );
+  let deletedOldUrls: string[] = [];
+  if (removedSiteUploadUrls.length > 0) {
+    deletedOldUrls = permanentlyDeleteReplacedUploadFiles(removedSiteUploadUrls, Array.from(nextSiteUploadUrls));
+    if (deletedOldUrls.length > 0) {
       saveServerProductImageState();
     }
   }
@@ -22566,18 +22736,27 @@ async function verifyLiveProductImageUrl(
     }
 
     const finalUrl = resp.url && /^https?:\/\//i.test(resp.url) ? resp.url : url;
+    const preservedThumb =
+      cand.thumbnailUrl && /^https?:\/\//i.test(cand.thumbnailUrl) ? cand.thumbnailUrl : finalUrl;
     return {
       ...cand,
       url: finalUrl,
-      thumbnailUrl: finalUrl
+      thumbnailUrl: preservedThumb
     };
   };
+
+  const browserUa =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const hasVerifiedSearchThumb =
+    Boolean(cand.thumbnailUrl) &&
+    (/tse\d+\.mm\.bing\.net\/th/i.test(String(cand.thumbnailUrl)) ||
+      /encrypted-tbn0\.gstatic\.com\/images/i.test(String(cand.thumbnailUrl)));
 
   try {
     const headResp = await fetch(url, {
       method: 'HEAD',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)',
+        'User-Agent': browserUa,
         Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8'
       },
       redirect: 'follow',
@@ -22586,6 +22765,9 @@ async function verifyLiveProductImageUrl(
     const checked = inspectResponse(headResp);
     if (checked) return checked;
     if (headResp.status !== 405 && headResp.status !== 403 && headResp.status !== 501 && headResp.status !== 400) {
+      if (hasVerifiedSearchThumb && DIRECT_IMAGE_EXT_REGEX.test(url)) {
+        return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
+      }
       return null;
     }
   } catch {
@@ -22593,12 +22775,17 @@ async function verifyLiveProductImageUrl(
   }
 
   try {
+    let refererOrigin = '';
+    try {
+      refererOrigin = `${new URL(url).origin}/`;
+    } catch {}
     const getResp = await fetch(url, {
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)',
+        'User-Agent': browserUa,
         Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8',
-        Range: 'bytes=0-4095'
+        Range: 'bytes=0-4095',
+        ...(refererOrigin ? { Referer: refererOrigin } : {})
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(2500)
@@ -22607,8 +22794,15 @@ async function verifyLiveProductImageUrl(
     try {
       await getResp.body?.cancel();
     } catch {}
-    return checked;
+    if (checked) return checked;
+    if (hasVerifiedSearchThumb && DIRECT_IMAGE_EXT_REGEX.test(url)) {
+      return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
+    }
+    return null;
   } catch {
+    if (hasVerifiedSearchThumb && DIRECT_IMAGE_EXT_REGEX.test(url)) {
+      return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
+    }
     return null;
   }
 }
@@ -22735,60 +22929,92 @@ async function fetchGoogleImagesProductPhotos(
   const discovered: VisualImageCandidate[] = [];
   const hints = buildRealPhotoSubjectHints(productName, category);
   const focused = buildFocusedVisualSearchQueries(productName, category);
-  const query = `${focused[0] || hints.primaryQuery} photograph`.replace(/\s+/g, ' ').trim();
+  const query = `${focused[0] || hints.primaryQuery}`.replace(/\s+/g, ' ').trim();
   if (!query) return discovered;
 
   const userAgents = [
-    'Googlebot/2.1 (+http://www.google.com/bot.html)',
-    'Opera/9.80 (J2ME/MIDP; Opera Mini/9.80 (S60; SymbOS; Opera Mobi/23.348; U; en) Presto/2.5.25 Version/10.54)'
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
   ];
 
-  for (const ua of userAgents) {
-    try {
-      const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
-      const resp = await fetch(url, {
-        headers: {
-          'User-Agent': ua,
-          'Accept-Language': 'en-US,en;q=0.9'
-        },
-        signal: AbortSignal.timeout(4000)
-      });
-      if (!resp.ok) continue;
-      const html = await resp.text();
-      if (/sorry\/index|recaptcha/i.test(html)) continue;
+  const googleQueries = [
+    `${query} product photo`,
+    `${query} commercial wholesale`
+  ];
 
-      const imgurlMatches = [...html.matchAll(/imgurl=([^&"']+)/gi)].slice(0, 12);
-      for (const m of imgurlMatches) {
-        try {
-          const decoded = decodeURIComponent(m[1]).trim();
-          if (!/^https?:\/\//i.test(decoded)) continue;
-          if (/google\.com|gstatic\.com|googleapis\.com/i.test(decoded)) continue;
-          discovered.push({
-            url: decoded,
-            thumbnailUrl: decoded,
-            title: `${focused[0] || hints.primaryQuery} Google Photo`,
-            sourceDomain: 'images.google.com',
-            relevanceScore: 10
-          });
-        } catch {}
-      }
-
-      const tbnMatches = [...html.matchAll(/https:\/\/encrypted-tbn0\.gstatic\.com\/images\?q=tbn:[^"'<>\s\\]+/gi)].slice(0, 12);
-      for (const m of tbnMatches) {
-        const cleanTbn = m[0].replace(/&amp;/g, '&').trim();
-        if (!cleanTbn) continue;
-        discovered.push({
-          url: cleanTbn,
-          thumbnailUrl: cleanTbn,
-          title: `${focused[0] || hints.primaryQuery} Google Image`,
-          sourceDomain: 'images.google.com',
-          relevanceScore: 8
+  await Promise.allSettled(
+    googleQueries.map(async (q, idx) => {
+      try {
+        const ua = userAgents[idx % userAgents.length];
+        const url = `https://www.google.com/search?tbm=isch&hl=en&gl=us&safe=active&q=${encodeURIComponent(q)}`;
+        const resp = await fetch(url, {
+          headers: {
+            'User-Agent': ua,
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          signal: AbortSignal.timeout(4200)
         });
-      }
+        if (!resp.ok) return;
+        const html = await resp.text();
+        if (/sorry\/index|recaptcha/i.test(html)) return;
 
-      if (discovered.length >= 6) break;
-    } catch {}
-  }
+        // Parse full-res image URLs embedded in Google Images script blocks: ["https://...jpg",height,width]
+        const fullResMatches = [
+          ...html.matchAll(/\["(https?:\/\/[^"\\\s]+\.(?:jpg|jpeg|png|webp)(?:\?[^"\\\s]*)?)",\s*(\d{3,4}),\s*(\d{3,4})\]/gi)
+        ].slice(0, 24);
+        for (const m of fullResMatches) {
+          try {
+            const rawUrl = m[1].replace(/\\u003d/g, '=').replace(/\\u0026/g, '&').trim();
+            if (!isSafePublicHttpUrl(rawUrl)) continue;
+            if (/google\.com|gstatic\.com|googleapis\.com|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf/i.test(rawUrl)) continue;
+            let domain = 'images.google.com';
+            try {
+              domain = new URL(rawUrl).hostname.toLowerCase();
+            } catch {}
+            discovered.push({
+              url: rawUrl,
+              thumbnailUrl: rawUrl,
+              title: `${focused[0] || hints.primaryQuery} Google Photo`,
+              sourceDomain: domain,
+              width: Number(m[3]) || undefined,
+              height: Number(m[2]) || undefined,
+              relevanceScore: 13
+            });
+          } catch {}
+        }
+
+        const imgurlMatches = [...html.matchAll(/imgurl=([^&"']+)/gi)].slice(0, 20);
+        for (const m of imgurlMatches) {
+          try {
+            const decoded = decodeURIComponent(m[1]).trim();
+            if (!/^https?:\/\//i.test(decoded)) continue;
+            if (/google\.com|gstatic\.com|googleapis\.com/i.test(decoded)) continue;
+            discovered.push({
+              url: decoded,
+              thumbnailUrl: decoded,
+              title: `${focused[0] || hints.primaryQuery} Google Photo`,
+              sourceDomain: 'images.google.com',
+              relevanceScore: 12
+            });
+          } catch {}
+        }
+
+        const tbnMatches = [...html.matchAll(/https:\/\/encrypted-tbn0\.gstatic\.com\/images\?q=tbn:[^"'<>\s\\]+/gi)].slice(0, 20);
+        for (const m of tbnMatches) {
+          const cleanTbn = m[0].replace(/\\u003d/g, '=').replace(/\\u0026/g, '&').replace(/&amp;/g, '&').trim();
+          if (!cleanTbn) continue;
+          discovered.push({
+            url: cleanTbn,
+            thumbnailUrl: cleanTbn,
+            title: `${focused[0] || hints.primaryQuery} Google Image`,
+            sourceDomain: 'images.google.com',
+            relevanceScore: 9
+          });
+        }
+      } catch {}
+    })
+  );
 
   return discovered;
 }
@@ -22819,7 +23045,7 @@ async function fetchWikimediaCommonsProductImages(
         const phraseQuery = qStr.includes(' ') ? `"${qStr}"` : qStr;
         const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
           `${phraseQuery} filetype:bitmap`
-        )}&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
+        )}&gsrnamespace=6&gsrlimit=22&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
         const resp = await fetch(apiUrl, {
           headers: {
             'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
@@ -22838,7 +23064,7 @@ async function fetchWikimediaCommonsProductImages(
           if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
           const w = Number(info.width || 0);
           const h = Number(info.height || 0);
-          if ((w > 0 && w < 420) || (h > 0 && h < 300)) continue;
+          if ((w > 0 && w < 380) || (h > 0 && h < 280)) continue;
           const candidateUrl = String(info.thumburl || info.url || '').trim();
           if (!candidateUrl || !isSafePublicHttpUrl(candidateUrl)) continue;
           const titleText = rawTitle
@@ -22880,29 +23106,36 @@ async function fetchLiveCommercialWebProductImages(
     : '';
 
   const primaryQ = focused[0] || cleanedSubject;
+  const secondaryQ = focused[1] || (category ? `${cleanedSubject} ${category}` : `${cleanedSubject} industrial commercial`);
   const searchEndpoints: Array<{ url: string; label: string }> = [];
-  if (primaryQ.length >= 3) {
+  if (primaryQ.length >= 2) {
     searchEndpoints.push({
-      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC2&first=1`,
+      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC3&first=1`,
       label: primaryQ
     });
     searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=1&count=28&mmasync=1`,
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=1&count=35&mmasync=1`,
       label: `${primaryQ} product photo`
     });
     searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} bulk wholesale`)}&first=1&count=24&mmasync=1`,
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} wholesale supplier`)}&first=1&count=35&mmasync=1`,
       label: `${primaryQ} wholesale`
     });
+    if (secondaryQ && secondaryQ !== primaryQ) {
+      searchEndpoints.push({
+        url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=1&count=30&mmasync=1`,
+        label: secondaryQ
+      });
+    }
   }
-  if (specHint && primaryQ.length >= 3) {
+  if (specHint && primaryQ.length >= 2) {
     searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} ${specHint}`)}&first=1&count=18&mmasync=1`,
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} ${specHint}`)}&first=1&count=25&mmasync=1`,
       label: `${primaryQ} ${specHint}`
     });
   }
 
-  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph/i;
+  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph/i;
 
   await Promise.allSettled(
     searchEndpoints.map(async ep => {
@@ -22939,6 +23172,7 @@ async function fetchLiveCommercialWebProductImages(
             discovered.push({
               url: murl,
               thumbnailUrl: String(meta?.turl || murl).trim(),
+              sourcePageUrl: purl || undefined,
               title: (titleStr || cleanedSubject)
                 .replace(/&gt;/g, '>')
                 .replace(/&amp;/g, '&')
@@ -23023,7 +23257,7 @@ async function handleVisualProductImageSearch(params: {
   const cleanName = cleanProductSearchSubject(rawInputName);
   const cleanCategory = String(params.category || '').trim();
   const cleanSpecs = String(params.specifications || '').trim();
-  const requestedCount = Math.max(12, Math.min(20, Number(params.count) || 15));
+  const requestedCount = Math.max(15, Math.min(24, Number(params.count) || 20));
 
   if (cleanName.length < 2) {
     return {
@@ -23045,7 +23279,7 @@ async function handleVisualProductImageSearch(params: {
   const cached = serverProductImageCacheMap.get(normalizedKey);
   if (cached && !params.forceRefresh) {
     const ageMs = Date.now() - Date.parse(cached.updatedAt || '');
-    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 10) {
+    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= Math.min(16, requestedCount)) {
       // Map any already-replaced URLs immediately
       for (const img of cached.images) {
         const mappedUrl = serverProductImageState.urlReplacements?.[img.url];
@@ -23088,10 +23322,11 @@ async function handleVisualProductImageSearch(params: {
 
       const mappedCached = cached.images.map(img => {
         const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
+        const isLocal = mappedUrl.startsWith('/assets/uploads/');
         return {
           ...img,
           url: mappedUrl,
-          thumbnailUrl: mappedUrl
+          thumbnailUrl: isLocal ? mappedUrl : (img.thumbnailUrl || mappedUrl)
         };
       });
       const localItems = fisherYatesShuffle(
@@ -23126,6 +23361,7 @@ async function handleVisualProductImageSearch(params: {
 
   const tokenProfile = extractProductKeywordTokens(cleanName);
   const candidateMap = new Map<string, VisualImageCandidate>();
+  const relaxedCandidateMap = new Map<string, VisualImageCandidate>();
   const verifiedMap = new Map<string, VisualImageCandidate>();
   let quotaErrorMessage = '';
 
@@ -23136,11 +23372,6 @@ async function handleVisualProductImageSearch(params: {
       if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
       const isGoogleThumb = cleanUrl.includes('encrypted-tbn0.gstatic.com/images');
       const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads|media-amazon\.com|susercontent\.com|walmartimages\.com|ebayimg\.com|bhg\.com|thespruce\.com|health\.com|bigcommerce\.com|squarespace-cdn\.com|wixstatic\.com)\b/i.test(cleanUrl);
-      const rel = isCandidateStrictlyRelevant(c, tokenProfile, {
-        allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn
-      });
-      if (!rel.valid) continue;
-      // Strongly prefer genuine commercial product photography over encyclopedia/Wikimedia images
       const sourceBoost =
         c.sourceDomain === 'commons.wikimedia.org'
           ? 1
@@ -23149,11 +23380,25 @@ async function handleVisualProductImageSearch(params: {
             : c.sourceDomain === 'images.google.com'
               ? 12
               : 10;
+      const rel = isCandidateStrictlyRelevant(c, tokenProfile, {
+        allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn
+      });
+      if (!rel.valid) {
+        if (
+          !relaxedCandidateMap.has(dedupKey) &&
+          (DIRECT_IMAGE_EXT_REGEX.test(cleanUrl) || isGoogleThumb || isCommercialCdn) &&
+          !BLOCKED_IMAGE_DOMAINS.some(d => cleanUrl.toLowerCase().includes(d)) &&
+          !EXCLUDED_IMAGE_TERMS_REGEX.test(cleanUrl)
+        ) {
+          relaxedCandidateMap.set(dedupKey, { ...c, relevanceScore: Math.max(4, sourceBoost) });
+        }
+        continue;
+      }
       candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score + sourceBoost });
     }
   };
 
-  const verifyPendingBatch = async (limit: number = 40) => {
+  const verifyPendingBatch = async (limit: number = 48) => {
     const sortedPending = Array.from(candidateMap.entries()).sort(
       (a, b) => (b[1].relevanceScore || 0) - (a[1].relevanceScore || 0)
     );
@@ -23174,7 +23419,7 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  // 3A + 3C. Commercial Product Search (Bing + Bing Async + Google Images) FIRST, with strict exact-phrase Wikimedia only as supplement
+  // 3A + 3C. Commercial Product Search (Bing + Bing Async + Google Images) FIRST, with Wikimedia & relaxed search candidates to ensure ~20 results
   const directWebDiscoveryPromise = Promise.all([
     fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs),
     fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
@@ -23182,11 +23427,18 @@ async function handleVisualProductImageSearch(params: {
   ]).then(async ([webCandidates, googleCandidates, wikiCandidates]) => {
     collectAndFilter(webCandidates, true);
     collectAndFilter(googleCandidates, true);
-    await verifyPendingBatch(36);
-    // Only add exact-phrase Wikimedia Commons results if commercial sources returned fewer than 12 verified photos
-    if (verifiedMap.size < 12) {
+    await verifyPendingBatch(45);
+    if (verifiedMap.size < 22) {
       collectAndFilter(wikiCandidates, false);
-      await verifyPendingBatch(20);
+      await verifyPendingBatch(25);
+    }
+    if (verifiedMap.size < 20 && relaxedCandidateMap.size > 0) {
+      for (const [k, v] of relaxedCandidateMap.entries()) {
+        if (!verifiedMap.has(k) && !candidateMap.has(k)) {
+          candidateMap.set(k, v);
+        }
+      }
+      await verifyPendingBatch(30);
     }
   });
 
@@ -23847,6 +24099,42 @@ async function mirrorVerifiedPoolInBackground(
   } catch {}
 }
 
+app.get('/api/v1/products/proxy-image', async (req, res) => {
+  try {
+    const targetUrl = String(req.query.url || '').trim();
+    if (!targetUrl || !isSafePublicHttpUrl(targetUrl)) {
+      return res.status(400).end();
+    }
+    let refererOrigin = '';
+    try {
+      refererOrigin = `${new URL(targetUrl).origin}/`;
+    } catch {}
+    const upstream = await fetch(targetUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
+        ...(refererOrigin ? { Referer: refererOrigin } : {})
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!upstream.ok) {
+      return res.status(upstream.status).end();
+    }
+    const ctype = String(upstream.headers.get('content-type') || 'image/jpeg');
+    if (ctype.includes('text/html') || ctype.includes('application/json')) {
+      return res.status(415).end();
+    }
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader('Content-Type', ctype);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.status(200).end(buf);
+  } catch {
+    return res.status(502).end();
+  }
+});
+
 app.post('/api/v1/products/auto-upload-image', async (req, res) => {
   try {
     const body = req.body || {};
@@ -23912,7 +24200,7 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
     const productName = String(body.product_name || body.productName || body.query || '');
     const productId = String(body.product_id || body.productId || '').trim();
     const category = String(body.category || '');
-    const requestedCount = Number(body.count || 15) || 15;
+    const requestedCount = Math.max(15, Math.min(24, Number(body.count || 20) || 20));
     const forceRefresh = Boolean(body.force_refresh || body.forceRefresh || body.shuffle);
     const extraExcludeUrls: string[] = Array.isArray(body.exclude_urls || body.excludeUrls)
       ? (body.exclude_urls || body.excludeUrls).map((u: any) => String(u || '').trim()).filter(Boolean)
@@ -23946,13 +24234,13 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     let unusedPool = filterUnusedPool(result.pool?.length ? result.pool : result.images);
 
-    // If cached pool was already exhausted by other products, automatically run a fresh live search for brand-new unique photos
-    if (result.success && result.fromCache && unusedPool.length < 3 && !forceRefresh) {
+    // If cached pool has fewer than 12 unused candidates, run a fresh live search for ~20 brand-new unique photos
+    if (result.success && result.fromCache && unusedPool.length < 12 && !forceRefresh) {
       const freshResult = await handleVisualProductImageSearch({
         productName,
         category,
         specifications: String(body.specifications || body.specs || ''),
-        count: Math.max(requestedCount, 18),
+        count: Math.max(requestedCount, 22),
         forceRefresh: true
       });
       if (freshResult.success) {
@@ -23966,8 +24254,15 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     const filteredImages = unusedPool.slice(0, requestedCount);
 
-    // Only auto-bind if a productId was explicitly provided AND the chosen image is 100% unused across all other products
-    if (result.success && productId && filteredImages.length > 0) {
+    // Only auto-bind if a productId was explicitly provided, no override exists yet, and auto_bind is not disabled
+    const existingOv = productId ? serverProductImageState.overrides?.[productId] : undefined;
+    if (
+      result.success &&
+      productId &&
+      body.auto_bind === true &&
+      !existingOv?.primary &&
+      filteredImages.length > 0
+    ) {
       const unusedLocalMatches = filteredImages
         .map(img => String(img?.url || '').trim())
         .filter(u => u.startsWith('/assets/uploads/') && !registry.isCandidateUsed(u));
@@ -24009,7 +24304,7 @@ app.get('/api/v1/products/fetch-images', async (req, res) => {
     const productName = String(req.query.product_name || req.query.productName || req.query.q || '');
     const productId = String(req.query.product_id || req.query.productId || '').trim();
     const category = String(req.query.category || '');
-    const requestedCount = Number(req.query.count || 15) || 15;
+    const requestedCount = Math.max(15, Math.min(24, Number(req.query.count || 20) || 20));
     const registry = buildGlobalAttachedImageRegistry(productId || undefined);
 
     const result = await handleVisualProductImageSearch({
@@ -26665,8 +26960,15 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
     let finalFormat = 'WEBP';
     let finalSizeBytes = 0;
 
-    if (base64Data && typeof base64Data === 'string') {
-      const parsed = parseBase64DataUrl(base64Data, mimeType || 'image/webp');
+    const effectiveBase64 =
+      base64Data && typeof base64Data === 'string'
+        ? base64Data
+        : typeof imageUrl === 'string' && imageUrl.trim().startsWith('data:image/')
+          ? imageUrl.trim()
+          : '';
+
+    if (effectiveBase64) {
+      const parsed = parseBase64DataUrl(effectiveBase64, mimeType || 'image/webp');
       if (!parsed) {
         return res.status(400).json({ success: false, message: 'Invalid image file payload.' });
       }

@@ -628,7 +628,13 @@ class ProductImageManagerService {
 
   private isManualEntry(entry?: ProductImageOverrideEntry | null): boolean {
     if (!entry?.primary) return false;
-    return entry.updatedBy === 'admin-manual' || entry.updatedBy === 'user-upload';
+    return (
+      entry.locked === true ||
+      entry.serverVerified === true ||
+      entry.updatedBy === 'admin-manual' ||
+      entry.updatedBy === 'user-upload' ||
+      entry.updatedBy === 'catalog-image-auditor'
+    );
   }
 
   private isProtectedManualOrAuditEntry(entry?: ProductImageOverrideEntry | null): boolean {
@@ -798,7 +804,13 @@ class ProductImageManagerService {
     if (typeof window === 'undefined') return base;
 
     try {
-      const raw = this.memoryStorage.get(STORAGE_KEY);
+      let raw = this.memoryStorage.get(STORAGE_KEY) || null;
+      if (!raw) {
+        try {
+          raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) this.memoryStorage.set(STORAGE_KEY, raw);
+        } catch {}
+      }
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
@@ -809,14 +821,10 @@ class ProductImageManagerService {
             if (!builtin) {
               base.overrides[k] = entry;
             } else {
-              const builtinTime = Date.parse(builtin.updatedAt || '') || 0;
-              const loadedTime = Date.parse(entry.updatedAt || '') || 0;
-              const entryIsManual = this.isManualEntry(entry);
-              const builtinIsManual = this.isManualEntry(builtin);
-              if (
-                (entryIsManual && (!builtinIsManual || entry.updatedBy === 'admin-manual' || loadedTime >= builtinTime)) ||
-                (loadedTime > builtinTime && entry.updatedBy !== 'auto-site-upload')
-              ) {
+              const builtinTime = this.getEntryTimestampMs(builtin);
+              const loadedTime = this.getEntryTimestampMs(entry);
+              const entryIsProtected = this.isProtectedManualOrAuditEntry(entry);
+              if (entryIsProtected || loadedTime >= builtinTime) {
                 base.overrides[k] = entry;
               }
             }
@@ -846,8 +854,14 @@ class ProductImageManagerService {
         }
       }
 
-      // Merge legacy overrides if present in memory storage
-      const legacyRaw = this.memoryStorage.get(LEGACY_OVERRIDES_KEY);
+      // Merge legacy overrides if present in browser localStorage or memory storage
+      let legacyRaw = this.memoryStorage.get(LEGACY_OVERRIDES_KEY) || null;
+      if (!legacyRaw) {
+        try {
+          legacyRaw = window.localStorage.getItem(LEGACY_OVERRIDES_KEY);
+          if (legacyRaw) this.memoryStorage.set(LEGACY_OVERRIDES_KEY, legacyRaw);
+        } catch {}
+      }
       if (legacyRaw) {
         const legacyParsed = JSON.parse(legacyRaw);
         if (legacyParsed && typeof legacyParsed === 'object') {
@@ -857,8 +871,8 @@ class ProductImageManagerService {
             if (!existing) {
               base.overrides[key] = entry;
             } else {
-              const legacyTime = Date.parse(entry.updatedAt || '') || 0;
-              const baseTime = Date.parse(existing.updatedAt || '') || 0;
+              const legacyTime = this.getEntryTimestampMs(entry);
+              const baseTime = this.getEntryTimestampMs(existing);
               const legacyIsManual = this.isManualEntry(entry);
               const existingIsManual = this.isManualEntry(existing);
               if (
@@ -872,7 +886,7 @@ class ProductImageManagerService {
         }
       }
     } catch (err) {
-      console.warn('[ProductImageManagerService] Error reading memory storage:', err);
+      console.warn('[ProductImageManagerService] Error reading persistent storage:', err);
     }
 
     return base;
@@ -950,13 +964,37 @@ class ProductImageManagerService {
     // 1. Always persist full state to IndexedDB (unlimited quota for base64 & high-res assets)
     this.saveToIndexedDb(this.state);
 
-    // 2. Store serialized snapshot in the in-memory Map (never writes to browser localStorage)
+    // 2. Store serialized snapshot in both in-memory Map and browser localStorage (filtering out data: URIs so localStorage never overflows)
     try {
-      this.memoryStorage.set(STORAGE_KEY, JSON.stringify(this.state));
+      const fullSerialized = JSON.stringify(this.state);
+      this.memoryStorage.set(STORAGE_KEY, fullSerialized);
       this.memoryStorage.set(LEGACY_OVERRIDES_KEY, JSON.stringify(this.state.overrides));
+      try {
+        const compactOverrides: Record<string, ProductImageOverrideEntry> = {};
+        for (const [k, v] of Object.entries(this.state.overrides || {})) {
+          if (!v?.primary || v.primary.startsWith('data:')) continue;
+          compactOverrides[k] = {
+            ...v,
+            gallery: Array.isArray(v.gallery) ? v.gallery.filter(u => u && !u.startsWith('data:')).slice(0, 4) : [v.primary]
+          };
+        }
+        const compactState: ProductImageSystemState = {
+          overrides: compactOverrides,
+          productActivityTimestamps: this.state.productActivityTimestamps || {},
+          globalDefaultImage:
+            this.state.globalDefaultImage && !this.state.globalDefaultImage.startsWith('data:')
+              ? this.state.globalDefaultImage
+              : null,
+          categoryOverrides: this.state.categoryOverrides || {},
+          urlReplacements: this.state.urlReplacements || {},
+          mediaLibrary: (this.state.mediaLibrary || []).filter(m => m?.url && !m.url.startsWith('data:')).slice(0, 120)
+        };
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(compactState));
+        window.localStorage.setItem(LEGACY_OVERRIDES_KEY, JSON.stringify(compactOverrides));
+      } catch {}
       this.syncCachedProductsInLocalStorage();
     } catch (err) {
-      console.warn('[ProductImageManagerService] Error saving to memory storage:', err);
+      console.warn('[ProductImageManagerService] Error saving to persistent storage:', err);
     } finally {
       // 3. ALWAYS emit custom events so EditableImage & SafeImage re-render immediately
       this.emitImageSavedEvent(context);
@@ -1205,28 +1243,10 @@ class ProductImageManagerService {
           ...DEFAULT_BUILTIN_OVERRIDES
         };
 
-        // Server overrides merge strictly by monotonic timestamp (older server entries never downgrade newer entries)
+        // Server overrides unconditionally supersede static DEFAULT_BUILTIN_OVERRIDES
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
           if (this.locallyDeletedIds.has(pid)) continue;
-          const existing = mergedOverrides[pid];
-          const srvIsManual = this.isManualEntry(srvEntry);
-          const srvIsAuditFixed =
-            srvIsManual ||
-            srvEntry.updatedBy === 'catalog-image-auditor' ||
-            srvEntry.updatedBy === 'system-repair';
-          const existingIsManual = this.isManualEntry(existing);
-          const srvTime = this.getEntryTimestampMs(srvEntry);
-          const existingTime = this.getEntryTimestampMs(existing);
-
-          if (!existing) {
-            mergedOverrides[pid] = srvEntry;
-          } else if (existingIsManual && !srvIsAuditFixed && existingTime >= srvTime) {
-            continue;
-          } else if (srvTime > existingTime) {
-            mergedOverrides[pid] = srvEntry;
-          } else if (srvTime === existingTime && (srvIsManual || (srvIsAuditFixed && !existingIsManual))) {
-            mergedOverrides[pid] = srvEntry;
-          }
+          mergedOverrides[pid] = srvEntry;
         }
 
         // Preserve ANY local override that is strictly newer by monotonic timestamp than server state
@@ -1235,16 +1255,23 @@ class ProductImageManagerService {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
           const localTime = this.getEntryTimestampMs(localEntry);
           const localIsProtected = this.isProtectedManualOrAuditEntry(localEntry);
-          const srvEntry = mergedOverrides[pid];
+          const srvEntry = srvOverrides[pid];
           const srvTime = this.getEntryTimestampMs(srvEntry);
           const srvIsProtected = this.isProtectedManualOrAuditEntry(srvEntry);
           const mutatedInTab = this.localMutationTimes.has(pid);
 
           if (!srvEntry) {
-            if (mutatedInTab) {
+            if (mutatedInTab || (localIsProtected && !DEFAULT_BUILTIN_OVERRIDES[pid])) {
+              mergedOverrides[pid] = localEntry;
+            } else if (
+              localIsProtected &&
+              DEFAULT_BUILTIN_OVERRIDES[pid] &&
+              localEntry.primary.split('?')[0] !== DEFAULT_BUILTIN_OVERRIDES[pid].primary.split('?')[0] &&
+              localTime > this.getEntryTimestampMs(DEFAULT_BUILTIN_OVERRIDES[pid])
+            ) {
               mergedOverrides[pid] = localEntry;
             }
-          } else if (mutatedInTab && localTime > srvTime) {
+          } else if ((mutatedInTab || localIsProtected) && localTime > srvTime) {
             mergedOverrides[pid] = localEntry;
           } else if (mutatedInTab && localTime === srvTime && localIsProtected && !srvIsProtected) {
             mergedOverrides[pid] = localEntry;
@@ -2492,6 +2519,16 @@ class ProductImageManagerService {
         'admin'
       );
 
+      if (options?.productId) {
+        void this.logAndVerifyUploadPropagation({
+          targetId: options.productId,
+          targetType: 'PRODUCT',
+          expectedUrl: finalUrl,
+          deletedOldUrls,
+          source: 'uploadAndAssignImageFile'
+        });
+      }
+
       return {
         url: finalUrl,
         format: finalFormat,
@@ -2798,6 +2835,13 @@ class ProductImageManagerService {
           body: bodyStr
         }).catch(() => {});
       }
+
+      void this.logAndVerifyUploadPropagation({
+        targetId: cleanId,
+        targetType: 'PRODUCT',
+        expectedUrl: cleanPrimary,
+        source: 'setProductImage'
+      });
     } finally {
       this.endWrite();
     }
@@ -3378,6 +3422,124 @@ class ProductImageManagerService {
     } finally {
       this.endWrite();
     }
+  }
+
+  private uploadDiagnosticsLog: Array<{
+    id: string;
+    timestamp: string;
+    targetId: string;
+    targetType: string;
+    expectedUrl: string;
+    serverReadbackUrl: string;
+    assetHttpStatus: number;
+    verifiedOnServer: boolean;
+    autoHealed: boolean;
+    deletedOldUrls: string[];
+    source: string;
+  }> = [];
+
+  public getUploadDiagnosticsLog() {
+    return [...this.uploadDiagnosticsLog];
+  }
+
+  /**
+   * Diagnostic logging and immediate server GET readback callback verification for every 200 OK upload/replacement.
+   * Ensures the uploaded file is reachable on disk and persisted in server overrides / siteContent, auto-healing any discrepancy.
+   */
+  public async logAndVerifyUploadPropagation(params: {
+    targetId: string;
+    targetType?: string;
+    expectedUrl: string;
+    deletedOldUrls?: string[];
+    source: string;
+  }) {
+    const cleanTargetId = String(params.targetId || '').trim();
+    const expectedBase = normalizeProductAssetUrl(String(params.expectedUrl || '').trim()).split('?')[0];
+    const targetType = String(params.targetType || 'PRODUCT').toUpperCase();
+    const deletedOldUrls = Array.isArray(params.deletedOldUrls) ? params.deletedOldUrls : [];
+    const nowIso = new Date().toISOString();
+
+    let assetHttpStatus = 0;
+    let serverReadbackUrl = '';
+    let verifiedOnServer = false;
+    let autoHealed = false;
+
+    if (typeof window !== 'undefined' && cleanTargetId && expectedBase) {
+      try {
+        // 1. Verify the uploaded asset file responds 200 OK
+        if (expectedBase.startsWith('/')) {
+          const headRes = await fetch(`${expectedBase}?_verify=${Date.now()}`, {
+            method: 'HEAD',
+            cache: 'no-store'
+          }).catch(() => null);
+          assetHttpStatus = headRes ? headRes.status : 0;
+        } else {
+          assetHttpStatus = 200;
+        }
+
+        // 2. Immediate GET readback callback from server override store
+        const stateRes = await fetch(`/api/v1/admin/product-images?_verify=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+        }).catch(() => null);
+        if (stateRes && stateRes.ok) {
+          const stateJson = await stateRes.json().catch(() => null);
+          const srvOverrides = stateJson?.data?.overrides || stateJson?.overrides || {};
+          const srvEntry = srvOverrides?.[cleanTargetId];
+          serverReadbackUrl = srvEntry?.primary ? normalizeProductAssetUrl(String(srvEntry.primary)).split('?')[0] : '';
+          verifiedOnServer = serverReadbackUrl === expectedBase;
+        }
+
+        // 3. Auto-heal if server override readback did not match expectedBase
+        if (!verifiedOnServer && (assetHttpStatus === 200 || assetHttpStatus === 304)) {
+          const healTs = Date.now();
+          const healRes = await fetch('/api/v1/admin/product-images', {
+            method: 'PUT',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: cleanTargetId,
+              primaryUrl: expectedBase,
+              galleryUrls: [expectedBase],
+              format: this.detectFormatFromUrl(expectedBase),
+              imageUpdatedAt: healTs,
+              updatedAt: new Date(healTs).toISOString(),
+              updatedBy: 'admin-manual',
+              locked: true,
+              serverVerified: true,
+              verifiedAt: new Date(healTs).toISOString(),
+              replacedOldUrls: deletedOldUrls
+            })
+          }).catch(() => null);
+          if (healRes && healRes.ok) {
+            autoHealed = true;
+            verifiedOnServer = true;
+            serverReadbackUrl = expectedBase;
+          }
+        }
+      } catch {}
+    }
+
+    const entry = {
+      id: `diag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: nowIso,
+      targetId: cleanTargetId,
+      targetType,
+      expectedUrl: expectedBase,
+      serverReadbackUrl,
+      assetHttpStatus,
+      verifiedOnServer,
+      autoHealed,
+      deletedOldUrls,
+      source: params.source
+    };
+
+    this.uploadDiagnosticsLog = [entry, ...this.uploadDiagnosticsLog].slice(0, 100);
+    console.info(
+      `[UploadDiagnostic] target=${cleanTargetId} (${targetType}) url=${expectedBase} http=${assetHttpStatus} verified=${verifiedOnServer} autoHealed=${autoHealed} deletedOld=${deletedOldUrls.length} src=${params.source}`
+    );
+    return entry;
   }
 }
 

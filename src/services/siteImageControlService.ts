@@ -214,10 +214,19 @@ export async function replaceSiteImage(
       });
       const json = await res.json().catch(() => null);
       if (res.ok && json?.success && json?.newUrl) {
+        const cleanNewUrl = normalizeProductAssetUrl(String(json.newUrl)).split('?')[0];
+        const deletedOldUrls = Array.isArray(json.deletedOldUrls) ? json.deletedOldUrls : [];
+        void productImageManagerService.logAndVerifyUploadPropagation({
+          targetId: params.targetId,
+          targetType: params.targetType,
+          expectedUrl: cleanNewUrl,
+          deletedOldUrls,
+          source: `replaceSiteImage:${endpoint}`
+        });
         return {
           success: true,
-          newUrl: normalizeProductAssetUrl(String(json.newUrl)).split('?')[0],
-          deletedOldUrls: Array.isArray(json.deletedOldUrls) ? json.deletedOldUrls : [],
+          newUrl: cleanNewUrl,
+          deletedOldUrls,
           replacedOldUrls: Array.isArray(json.replacedOldUrls) ? json.replacedOldUrls : undefined,
           updatedAt: String(json.updatedAt || new Date().toISOString()),
           imageUpdatedAt: Number(json.imageUpdatedAt || Date.now())
@@ -328,6 +337,17 @@ export async function autoFixSiteImages(
     });
     const json = await res.json().catch(() => null);
     if (res.ok && Array.isArray(json?.results) && json.results.length > 0) {
+      for (const r of json.results) {
+        if (r?.success && r?.id && r?.newUrl) {
+          void productImageManagerService.logAndVerifyUploadPropagation({
+            targetId: r.id,
+            targetType: r.type,
+            expectedUrl: r.newUrl,
+            deletedOldUrls: r.deletedOldUrls,
+            source: 'autoFixSiteImages'
+          });
+        }
+      }
       return { results: json.results };
     }
     if (!isUnmatchedGatewayResponse(res, json) && json?.message) {

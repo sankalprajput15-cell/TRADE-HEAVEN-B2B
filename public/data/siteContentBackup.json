@@ -155,7 +155,7 @@
         "name": "Building & Construction Materials",
         "description": "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         "iconName": "Box",
-        "image": "/assets/uploads/auto-building-construction-materials-0cf6edcfd5d5.webp",
+        "image": "/assets/uploads/auto-building-construction-materials-37394a3c058e.webp",
         "badge": "ASTM / ISO",
         "productCount": "37,000+ Products"
       }
@@ -349,9 +349,11 @@
       "faqSection": true,
       "whyChooseSection": true,
       "regionBar": true
-    }
+    },
+    "pinnedCategoryIds": [],
+    "sectionLayouts": {}
   },
-  "siteContentUpdatedAt": 1795429321643,
+  "siteContentUpdatedAt": 1795502763905,
   "escrow": {
     "bannerImage": ""
   }

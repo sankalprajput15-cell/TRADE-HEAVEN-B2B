@@ -452,6 +452,9 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return;
         }
         setSiteContent(prev => {
+          if (!shouldAcceptIncomingSiteContent(contentRes.data, prev)) {
+            return prev;
+          }
           const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
           try {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
@@ -477,23 +480,22 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       const contentRes = await apiClient.getSiteContent(true);
       if (
-        !hasLocalSiteMutationRef.current &&
         contentRes.success &&
         contentRes.data &&
         typeof contentRes.data === 'object' &&
         !Array.isArray(contentRes.data)
       ) {
         setSiteContent(prev => {
-          if (hasLocalSiteMutationRef.current) return prev;
           const prevTs = Number((prev as any)?.siteContentUpdatedAt || 0);
           const incomingTs = Number((contentRes.data as any)?.siteContentUpdatedAt || 0);
-          if (prevTs > 0 && incomingTs > 0 && prevTs > incomingTs) {
-            return prev;
-          }
-          if (lastLocalSaveTsRef.current > 0 && (incomingTs === 0 || lastLocalSaveTsRef.current > incomingTs)) {
+          if (hasLocalSiteMutationRef.current && prevTs > 0 && incomingTs > 0 && prevTs > incomingTs) {
             return prev;
           }
           const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
+          if (incomingTs > 0) {
+            lastLocalSaveTsRef.current = Math.max(lastLocalSaveTsRef.current, incomingTs);
+          }
+          hasLocalSiteMutationRef.current = false;
           try {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
           } catch {}
@@ -612,6 +614,18 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return { success: false, message: apiResult.message || 'Server rejected changes. Saved locally in browser cache.' };
     }
 
+    hasLocalSiteMutationRef.current = false;
+    const serverReturnedData = (apiResult as any)?.data;
+    if (serverReturnedData && typeof serverReturnedData === 'object' && !Array.isArray(serverReturnedData)) {
+      const serverTs = Number(serverReturnedData.siteContentUpdatedAt || nowMs);
+      lastLocalSaveTsRef.current = Math.max(lastLocalSaveTsRef.current, serverTs);
+      const synced = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...stampedContent, ...serverReturnedData });
+      setSiteContent(synced);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(synced));
+      } catch {}
+    }
+
     setSaveStatus('saved');
     setTimeout(() => {
       setSaveStatus(prev => prev === 'saved' ? 'idle' : prev);
@@ -632,47 +646,57 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const nowMs = Date.now();
     lastLocalSaveTsRef.current = nowMs;
     hasLocalSiteMutationRef.current = true;
-    const stampedContent: SiteContent = {
-      ...(newContent as any),
-      siteContentUpdatedAt: nowMs
-    };
+    const stampedContent: SiteContent = JSON.parse(
+      JSON.stringify({
+        ...(newContent as any),
+        siteContentUpdatedAt: nowMs
+      })
+    );
     const prevCats = siteContent?.homepage?.categoriesList || [];
     const nextCats = stampedContent?.homepage?.categoriesList || [];
     const prevSlides = siteContent?.homepage?.heroSlides || [];
     const nextSlides = stampedContent?.homepage?.heroSlides || [];
 
+    const syncTasks: Promise<any>[] = [];
+
+    // Reconcile category cover images with productImageManagerService overrides:
+    // Only overwrite productImageManagerService if cat.image explicitly changed in newContent;
+    // otherwise inherit any newer locked override from productImageManagerService so pinning categories never reverts images.
+    for (const cat of nextCats) {
+      if (!cat?.id) continue;
+      const cleanImg = cat.image ? normalizeProductAssetUrl(cat.image).split('?')[0] : '';
+      const prevCat = prevCats.find(c => c.id === cat.id);
+      const prevImg = prevCat?.image ? normalizeProductAssetUrl(prevCat.image).split('?')[0] : '';
+      const existingOv = productImageManagerService.getProductImage(cat.id);
+      const existingOvBase = existingOv ? normalizeProductAssetUrl(existingOv).split('?')[0] : '';
+
+      if (cleanImg && cleanImg !== prevImg) {
+        syncTasks.push(productImageManagerService.setProductImage(cat.id, cleanImg, [cleanImg]).catch(() => {}));
+      } else if (existingOvBase && existingOvBase !== cleanImg) {
+        cat.image = existingOvBase;
+      }
+    }
+
+    // Reconcile Hero Carousel Slides with productImageManagerService overrides
+    for (const slide of nextSlides) {
+      if (!slide?.id) continue;
+      const cleanSlideImg = slide.image ? normalizeProductAssetUrl(slide.image).split('?')[0] : '';
+      const prevSlide = prevSlides.find(s => s.id === slide.id);
+      const prevSlideImg = prevSlide?.image ? normalizeProductAssetUrl(prevSlide.image).split('?')[0] : '';
+      const existingOv = productImageManagerService.getProductImage(slide.id);
+      const existingOvBase = existingOv ? normalizeProductAssetUrl(existingOv).split('?')[0] : '';
+
+      if (cleanSlideImg && cleanSlideImg !== prevSlideImg) {
+        syncTasks.push(productImageManagerService.setProductImage(slide.id, cleanSlideImg, [cleanSlideImg]).catch(() => {}));
+      } else if (existingOvBase && existingOvBase !== cleanSlideImg) {
+        slide.image = existingOvBase;
+      }
+    }
+
     setSiteContent(stampedContent);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stampedContent));
     } catch {}
-
-    const syncTasks: Promise<any>[] = [];
-
-    // Keep productImageManagerService overrides in sync for any updated category cover images
-    for (const cat of nextCats) {
-      if (!cat?.id || !cat?.image) continue;
-      const cleanImg = normalizeProductAssetUrl(cat.image);
-      if (!cleanImg) continue;
-      const prevCat = prevCats.find(c => c.id === cat.id);
-      const prevImg = prevCat?.image ? normalizeProductAssetUrl(prevCat.image) : '';
-      const existingOv = productImageManagerService.getProductImage(cat.id);
-      if (cleanImg !== prevImg || !existingOv || existingOv.split('?')[0] !== cleanImg.split('?')[0]) {
-        syncTasks.push(productImageManagerService.setProductImage(cat.id, cleanImg, [cleanImg]).catch(() => {}));
-      }
-    }
-
-    // Keep productImageManagerService overrides in sync for any updated Hero Carousel Slides
-    for (const slide of nextSlides) {
-      if (!slide?.id || !slide?.image) continue;
-      const cleanSlideImg = normalizeProductAssetUrl(slide.image);
-      if (!cleanSlideImg) continue;
-      const prevSlide = prevSlides.find(s => s.id === slide.id);
-      const prevSlideImg = prevSlide?.image ? normalizeProductAssetUrl(prevSlide.image) : '';
-      const existingOv = productImageManagerService.getProductImage(slide.id);
-      if (cleanSlideImg !== prevSlideImg || !existingOv || existingOv.split('?')[0] !== cleanSlideImg.split('?')[0]) {
-        syncTasks.push(productImageManagerService.setProductImage(slide.id, cleanSlideImg, [cleanSlideImg]).catch(() => {}));
-      }
-    }
 
     if (syncTasks.length > 0) {
       await Promise.allSettled(syncTasks);

@@ -302,15 +302,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       pushCandidateWithRawFallback(manualMirrored, optManualEff);
     }
 
-    if (pid.startsWith('prod-leather-belt-')) {
-      const num = pid.replace('prod-leather-belt-', '');
-      const legacyBelt = `/assets/uploads/verified-belt-${num}.webp`;
-      if (!list.includes(legacyBelt)) list.push(legacyBelt);
-    } else if (pid.startsWith('prod-exc-')) {
-      const legacyExc = `/assets/uploads/verified-${pid}.webp`;
-      if (!list.includes(legacyExc)) list.push(legacyExc);
-    }
-
     if (
       !optManualEff &&
       effectiveSrc &&
@@ -327,8 +318,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       pushCandidateWithRawFallback(mirroredEff, optEff);
     }
 
+    const hasLocalUploadEffective =
+      Boolean(effectiveSrc) &&
+      typeof effectiveSrc === 'string' &&
+      effectiveSrc.trim().startsWith('/assets/uploads/');
+
     if (
       !optManualEff &&
+      !hasLocalUploadEffective &&
       src &&
       typeof src === 'string' &&
       src.trim() &&
@@ -344,7 +341,19 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       pushCandidateWithRawFallback(mirroredRawSrc, optRawSrc);
     }
 
+    if (!optManualEff && !hasLocalUploadEffective) {
+      if (pid.startsWith('prod-leather-belt-')) {
+        const num = pid.replace('prod-leather-belt-', '');
+        const legacyBelt = `/assets/uploads/verified-belt-${num}.webp`;
+        if (!list.includes(legacyBelt)) list.push(legacyBelt);
+      } else if (pid.startsWith('prod-exc-')) {
+        const legacyExc = `/assets/uploads/verified-${pid}.webp`;
+        if (!list.includes(legacyExc)) list.push(legacyExc);
+      }
+    }
+
     if (
+      !optManualEff &&
       fallbackSrc &&
       typeof fallbackSrc === 'string' &&
       fallbackSrc.trim() &&
@@ -358,7 +367,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       pushCandidateWithRawFallback(mirroredFb, optFb);
     }
 
-    if (!isLogoOrAvatar && visualPool.length > 0) {
+    if (!isLogoOrAvatar && !optManualEff && visualPool.length > 0) {
       const seedStr = String(productId || imageIndex || productTitle || '');
       let offset = 0;
       if (seedStr && visualPool.length > 1) {
@@ -379,8 +388,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    // Subject-matched real local fallback photo ONLY when topic explicitly matches (otherwise render bespoke spec card SVG instead of wrong photo)
-    if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
+    // Subject-matched real local fallback photo ONLY when no primary candidate exists and topic explicitly matches
+    if (list.length === 0 && !isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
       const subjectText = `${productId || ''} ${productTitle || ''} ${category || ''} ${alt || ''}`.toLowerCase();
       let verifiedRealFallback = '';
       if (/vanilla|pod|bean|extract|spice/.test(subjectText)) {
@@ -412,7 +421,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     const validList = list.filter(u => u && !FAILED_IMAGE_URLS.has(u));
-    if (validList.length === 0 || (!isLogoOrAvatar && (type === 'category' || type === 'product' || type === 'rfq' || Boolean(productId || productTitle)))) {
+    if (validList.length === 0) {
       const PALETTES: Array<[string, string, string]> = [
         ['#064E3B', '#047857', '#6EE7B7'],
         ['#7F1D1D', '#B91C1C', '#FCA5A5'],
@@ -540,15 +549,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
       LOADED_IMAGE_URLS.add(currentCandidate);
-      // Auto-upload & bind displayed product/category/RFQ image onto the site (/assets/uploads/...) so next load is instant & persistent
-      if (!isLogoOrAvatar && !hasManualOverride && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
+      // Auto-upload & bind displayed product/category/RFQ image ONLY when no override exists yet and primary candidate loaded
+      if (
+        !isLogoOrAvatar &&
+        !hasManualOverride &&
+        effectiveAttemptIndex === 0 &&
+        (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))
+      ) {
         const resolvedTitle = (productTitle || alt || '').trim();
         const stateOverrides = productImageManagerService.getState()?.overrides || {};
         const pidOv = productId ? (stateOverrides[productId.trim()] || stateOverrides[productId.trim().toLowerCase()]) : undefined;
         const titleOv = resolvedTitle ? (stateOverrides[resolvedTitle] || stateOverrides[resolvedTitle.toLowerCase()]) : undefined;
-        const isProtectedUpdater = (u?: string) =>
-          u === 'admin-manual' || u === 'user-upload' || u === 'catalog-image-auditor';
-        if (isProtectedUpdater(pidOv?.updatedBy) || isProtectedUpdater(titleOv?.updatedBy)) {
+        if (pidOv?.primary || titleOv?.primary) {
           setHasError(false);
           setIsLoaded(true);
           callerOnLoad?.(e);
@@ -564,9 +576,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         const hasSavedLocalPid = Boolean(existingPidOverride && existingPidOverride.startsWith('/assets/uploads/'));
         const hasSavedLocalTitle = Boolean(existingTitleOverride && existingTitleOverride.startsWith('/assets/uploads/'));
         const needsPersistence =
-          /^https?:\/\//i.test(cleanCandidate) ||
-          (Boolean(productId) && !hasSavedLocalPid) ||
-          (!productId && resolvedTitle.length >= 3 && !hasSavedLocalTitle);
+          /^https?:\/\//i.test(cleanCandidate) &&
+          ((Boolean(productId) && !hasSavedLocalPid) ||
+            (!productId && resolvedTitle.length >= 3 && !hasSavedLocalTitle));
 
         const cleanBasePath = cleanCandidate.split('?')[0];
         const isGenericFallbackAsset =
