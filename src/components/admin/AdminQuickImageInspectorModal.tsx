@@ -104,7 +104,9 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaLibraryItems = productImageManagerService.getState().mediaLibrary || [];
+  const mediaLibraryItems = (productImageManagerService.getState().mediaLibrary || []).filter(
+    m => m?.url && !isSyntheticSpecCardOrPlaceholder(m)
+  );
   const filteredLibraryItems = libraryFilter.trim()
     ? mediaLibraryItems.filter(m =>
         `${m.name || ''} ${m.url || ''}`.toLowerCase().includes(libraryFilter.trim().toLowerCase())
@@ -234,36 +236,114 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     setIsApplying(true);
     setStatusMessage(null);
     try {
-      const json = await autoFixSiteImages([
-        {
-          id: product.id,
-          type: targetType,
-          title: product.title,
-          category: product.category,
-          currentUrl: liveUrl,
-          fieldPath
+      const cleanLive = String(liveUrl || '').split('?')[0];
+      // 1. Try server autoFixSiteImages first, but strictly reject synthetic cards and validate loadability
+      try {
+        const json = await autoFixSiteImages([
+          {
+            id: product.id,
+            type: targetType,
+            title: product.title,
+            category: product.category,
+            currentUrl: liveUrl,
+            fieldPath
+          }
+        ]);
+        const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
+        if (
+          rowRes?.success &&
+          rowRes?.newUrl &&
+          !isSyntheticSpecCardOrPlaceholder(rowRes) &&
+          !isSyntheticSpecCardOrPlaceholder(rowRes.newUrl) &&
+          (await validateRealImageUrlLoads(rowRes.newUrl))
+        ) {
+          const deletedOldUrls: string[] = Array.isArray(rowRes.deletedOldUrls) ? rowRes.deletedOldUrls : [];
+          await syncAfterUpdate(
+            rowRes.newUrl,
+            liveUrl,
+            rowRes.updatedAt,
+            rowRes.imageUpdatedAt,
+            liveUrl ? [liveUrl] : undefined,
+            deletedOldUrls,
+            'AUTO_FIX'
+          );
+          setStatusMessage({
+            type: 'success',
+            text: `Auto-fixed with real verified photo (${rowRes.newUrl})${
+              deletedOldUrls.length > 0 ? ` — ${deletedOldUrls.length} old file permanently deleted from server.` : '.'
+            }`
+          });
+          return;
         }
-      ]);
-      const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
-      if (!rowRes?.success || !rowRes?.newUrl) {
-        throw new Error(rowRes?.error || 'Could not auto-fetch a replacement photo.');
+      } catch {
+        // Proceed to sequential heading advancement fallback
       }
-      const deletedOldUrls: string[] = Array.isArray(rowRes.deletedOldUrls) ? rowRes.deletedOldUrls : [];
-      await syncAfterUpdate(
-        rowRes.newUrl,
-        liveUrl,
-        rowRes.updatedAt,
-        rowRes.imageUpdatedAt,
-        liveUrl ? [liveUrl] : undefined,
-        deletedOldUrls,
-        'AUTO_FIX'
-      );
-      setStatusMessage({
-        type: 'success',
-        text: `Auto-fixed (${rowRes.newUrl})${
-          deletedOldUrls.length > 0 ? ` — ${deletedOldUrls.length} old file permanently deleted from server.` : '.'
-        }`
-      });
+
+      // 2. Sequential Heading Advancement:
+      // Step through Full Heading -> Sub-headings -> Core 1-2 word product noun until a real photo is validated and uploaded
+      const orderedQueries =
+        headingSearchQueries.length > 0 ? headingSearchQueries : [String(product.title || '').trim()];
+
+      for (const queryChip of orderedQueries) {
+        if (!queryChip) continue;
+        setSearchQuery(queryChip);
+        const searchRes = await fetchVisualProductImages({
+          productName: queryChip,
+          productId: product.id,
+          category: product.category,
+          count: 20,
+          forceRefresh: true
+        });
+        const rawPool =
+          Array.isArray(searchRes?.pool) && searchRes.pool.length > 0
+            ? searchRes.pool
+            : searchRes?.images || [];
+        const validPool = rawPool.filter(
+          c =>
+            c?.url &&
+            !isSyntheticSpecCardOrPlaceholder(c) &&
+            c.url.split('?')[0] !== cleanLive
+        );
+        if (validPool.length > 0) {
+          setCandidates(validPool);
+        }
+
+        for (const cand of validPool) {
+          const loadsOk = await validateRealImageUrlLoads(cand.url);
+          if (!loadsOk) continue;
+
+          const replaced = await replaceViaWholeSiteEndpoint({ imageUrl: cand.url });
+          if (
+            replaced?.newUrl &&
+            !isSyntheticSpecCardOrPlaceholder(replaced.newUrl) &&
+            (await validateRealImageUrlLoads(replaced.newUrl))
+          ) {
+            const deletedOldUrls: string[] = Array.isArray(replaced.deletedOldUrls)
+              ? replaced.deletedOldUrls
+              : [];
+            await syncAfterUpdate(
+              replaced.newUrl,
+              liveUrl,
+              replaced.updatedAt,
+              replaced.imageUpdatedAt,
+              replaced.replacedOldUrls,
+              deletedOldUrls,
+              'AUTO_FIX'
+            );
+            setStatusMessage({
+              type: 'success',
+              text: `Auto-fixed via heading "${queryChip}" (${replaced.newUrl})${
+                deletedOldUrls.length > 0
+                  ? ` — ${deletedOldUrls.length} old file permanently deleted from server.`
+                  : '.'
+              }`
+            });
+            return;
+          }
+        }
+      }
+
+      throw new Error('Could not auto-fetch a real loadable product photo across any heading queries.');
     } catch (err: any) {
       setStatusMessage({
         type: 'error',
