@@ -380,29 +380,104 @@ export function resolveLocalMirroredImageUrl(url?: string): string {
   return clean;
 }
 
-export function cleanProductSearchSubject(rawName: string): string {
+export function normalizeFullProductHeadingClient(rawName: string): string {
   let s = String(rawName || '').trim();
   if (!s) return '';
-  // Remove parenthetical and bracketed logistics, VIP tags, engine, or port notes first
-  s = s.replace(/\([^)]*\)/g, ' ');
-  s = s.replace(/\[[^\]]*\]/g, ' ');
-  // Remove emoji / symbol prefixes and RFQ boilerplate tags
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
-  s = s.replace(/^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/gi, '');
+  s = s.replace(
+    /^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/gi,
+    ''
+  );
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
-  // Remove leading quantity/volume phrases e.g. "75,000 MT ", "10 Units ", "25,000 Barrels "
-  s = s.replace(/^\d[\d,.]*\s*(?:mt|metric\s+tons?|tons?|units?|pcs|pieces|barrels?|bbl|containers?|fcl|teu|kg|kgs|liters?|lbs)\b\s*(?:of\s+)?/i, '');
-  // Remove trailing contract/volume/tonnage specs e.g. "- 100,000 MT x 12 Months", "30-Ton", "500kW - 2,000kW"
-  s = s.replace(/\s+[-–—]\s*\d[\d,.]*\s*(?:mt|tons?|units?|pcs|barrels?|fcl|mw|kw|months?|years?).*$/i, '');
-  s = s.replace(/\b\d+(?:\.\d+)?\s*-\s*ton\b/gi, ' ');
-  // Remove "Grade A" / "Grade-A" suffixes that narrow image search unnecessarily
-  s = s.replace(/\bgrade\s+[a-z0-9+-]+\b/gi, ' ');
-  // Remove manufacturer slash lists like "CAT / Cummins " so core product noun remains dominant
-  s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
-  s = s.replace(/\s*&\s*/g, ' ');
   s = normalizeCompoundProductTermsClient(s);
-  s = s.replace(/\s+/g, ' ').trim();
+  s = s.replace(/[—–]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return s || String(rawName || '').trim();
+}
+
+export function cleanProductSearchSubject(rawName: string): string {
+  let s = normalizeFullProductHeadingClient(rawName);
+  if (!s) return '';
+  s = s.replace(/\[[^\]]*\]/g, ' ');
+  s = s.replace(/^\d[\d,.]*\s*(?:mt|metric\s+tons?|tons?|units?|pcs|pieces|barrels?|bbl|containers?|fcl|teu|kg|kgs|liters?|lbs)\b\s*(?:of\s+)?/i, '');
+  s = s.replace(/\s+[-–—]\s*\d[\d,.]*\s*(?:mt|tons?|units?|pcs|barrels?|fcl|mw|kw|months?|years?).*$/i, '');
+  s = normalizeCompoundProductTermsClient(s);
+  s = s.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
   return s || normalizeCompoundProductTermsClient(String(rawName || '').trim());
+}
+
+export function extractProductHeadingSearchQueries(rawHeading: string, category?: string): string[] {
+  const full = String(rawHeading || '').trim();
+  if (!full) return [];
+  const normalizedFull = normalizeFullProductHeadingClient(full);
+  const cleaned = cleanProductSearchSubject(full);
+  const parts = full
+    .replace(/[()[\]]/g, ',')
+    .split(/\s*(?:[—–|;,]|(?:\s+-\s+)|\s+&\s+)\s*/)
+    .map(p => normalizeFullProductHeadingClient(p))
+    .filter(p => p.length >= 3);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const pushUnique = (val: string) => {
+    const t = String(val || '').replace(/\s+/g, ' ').trim();
+    if (t.length < 3) return;
+    const key = t.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(t);
+  };
+
+  pushUnique(full);
+  if (normalizedFull && normalizedFull.toLowerCase() !== full.toLowerCase()) {
+    pushUnique(normalizedFull);
+  }
+  if (cleaned && cleaned.toLowerCase() !== full.toLowerCase()) {
+    pushUnique(cleaned);
+  }
+  for (const part of parts) {
+    pushUnique(part);
+  }
+  if (category && String(category).trim().length >= 3) {
+    pushUnique(`${cleaned || full} ${String(category).trim()}`);
+  }
+  return out.slice(0, 8);
+}
+
+export function matchesProductHeadingSearch(
+  rawQuery: string,
+  fields: Array<string | undefined | null>
+): boolean {
+  const q = String(rawQuery || '').trim().toLowerCase();
+  if (!q) return true;
+  const rawCombined = fields
+    .map(f => String(f || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  if (!rawCombined) return false;
+  if (rawCombined.includes(q)) return true;
+
+  const normalizeText = (str: string) =>
+    normalizeCompoundProductTermsClient(str)
+      .toLowerCase()
+      .replace(/[—–\-_/|,;&()+[\]]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const normQuery = normalizeText(q);
+  const normHay = normalizeText(rawCombined);
+  if (!normQuery) return true;
+  if (normHay.includes(normQuery)) return true;
+
+  const queryTokens = normQuery.split(' ').filter(t => t.length >= 2);
+  if (queryTokens.length === 0) return true;
+  const hayWords = normHay.split(' ').filter(Boolean);
+
+  return queryTokens.every(tok => {
+    if (normHay.includes(tok)) return true;
+    const stem = tok.endsWith('s') && tok.length > 4 ? tok.slice(0, -1) : tok;
+    return hayWords.some(w => w.includes(stem) || stem.includes(w));
+  });
 }
 
 function hydrateSessionCacheFromLocalStorage(): void {
@@ -469,10 +544,10 @@ export function fisherYatesShuffle<T>(list: T[]): T[] {
 }
 
 export function normalizeVisualQueryKey(productName: string, category?: string): string {
-  const cleanedSubject = cleanProductSearchSubject(productName);
-  const n = String(cleanedSubject || productName || '')
+  const fullHeading = normalizeFullProductHeadingClient(productName);
+  const n = String(fullHeading || productName || '')
     .toLowerCase()
-    .replace(/[^\w\s-]/g, ' ')
+    .replace(/[^\w\s/-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   const c = String(category || '')
@@ -764,8 +839,8 @@ export async function fetchVisualProductImages(params: {
   hydrateSessionCacheFromLocalStorage();
 
   const rawProductName = String(params.productName || '').trim();
-  const cleanedProductName = cleanProductSearchSubject(rawProductName);
-  const productName = cleanedProductName.length >= 2 ? cleanedProductName : rawProductName;
+  const fullProductHeading = normalizeFullProductHeadingClient(rawProductName);
+  const productName = fullProductHeading.length >= 2 ? fullProductHeading : rawProductName;
   const productId = String(params.productId || '').trim();
   const category = String(params.category || '').trim();
   const specifications = String(params.specifications || '').trim();

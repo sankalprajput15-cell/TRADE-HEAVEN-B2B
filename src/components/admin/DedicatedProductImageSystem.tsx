@@ -16,7 +16,10 @@ import type {
 } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
-import { isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
+import {
+  isManuallyUploadedImageUrl,
+  matchesProductHeadingSearch
+} from '../../services/visualProductImageService';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { WholeSiteImageStudio } from './WholeSiteImageStudio';
@@ -487,7 +490,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
 
   // Filtered products
   const filteredProducts = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = searchQuery.trim();
     return allProducts.filter(p => {
       if (selectedCategory !== 'ALL' && p.category !== selectedCategory) return false;
 
@@ -501,13 +504,14 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       if (statusFilter === 'DEFAULT' && isCustom) return false;
 
       if (!q) return true;
-      return (
-        p.title?.toLowerCase().includes(q) ||
-        p.id?.toLowerCase().includes(q) ||
-        p.supplierName?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q) ||
-        p.subCategory?.toLowerCase().includes(q)
-      );
+      return matchesProductHeadingSearch(q, [
+        p.title,
+        p.id,
+        p.supplierName,
+        p.category,
+        p.subCategory,
+        p.description
+      ]);
     });
   }, [allProducts, searchQuery, selectedCategory, statusFilter, systemState]);
 

@@ -45,6 +45,7 @@ import {
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { matchesProductHeadingSearch } from '../../services/visualProductImageService';
 import { mergeHomepageDisplayConfig } from '../../utils/gridLayoutUtils';
 import { SafeImage } from '../common/SafeImage';
 import { WholeSitePagePreviewModal } from './WholeSitePagePreviewModal';
@@ -612,13 +613,10 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   ]);
 
   const filteredCategoriesForPicker = useMemo(() => {
-    const q = categorySearch.trim().toLowerCase();
+    const q = categorySearch.trim();
     if (!q) return allCategoriesPool;
-    return allCategoriesPool.filter(
-      c =>
-        (c.name || '').toLowerCase().includes(q) ||
-        (c.description || '').toLowerCase().includes(q) ||
-        (c.id || '').toLowerCase().includes(q)
+    return allCategoriesPool.filter(c =>
+      matchesProductHeadingSearch(q, [c.name, c.description, c.id])
     );
   }, [allCategoriesPool, categorySearch]);
 
@@ -1024,32 +1022,36 @@ export const WholeSitePageControlCenter: React.FC<WholeSitePageControlCenterProp
   const activePageMeta = SITE_PAGES.find(p => p.key === selectedPage) || SITE_PAGES[0];
 
   const filteredCatalogForPicker = useMemo(() => {
-    const q = productSearch.trim().toLowerCase();
+    const q = productSearch.trim();
     const list = syncedProducts;
     if (!q) return list.slice(0, 36);
     return list
-      .filter(
-        p =>
-          (p.title || '').toLowerCase().includes(q) ||
-          (p.id || '').toLowerCase().includes(q) ||
-          (p.category || '').toLowerCase().includes(q) ||
-          (p.supplierName || '').toLowerCase().includes(q)
+      .filter(p =>
+        matchesProductHeadingSearch(q, [
+          p.title,
+          p.id,
+          p.category,
+          p.subCategory,
+          p.supplierName,
+          p.description
+        ])
       )
-      .slice(0, 48);
+      .slice(0, 150);
   }, [syncedProducts, productSearch]);
 
   const filteredRfqsForPicker = useMemo(() => {
-    const q = rfqSearch.trim().toLowerCase();
+    const q = rfqSearch.trim();
     if (!q) return syncedRfqs.slice(0, 32);
     return syncedRfqs
-      .filter(
-        r =>
-          (r.productName || '').toLowerCase().includes(q) ||
-          (r.id || '').toLowerCase().includes(q) ||
-          (r.category || '').toLowerCase().includes(q) ||
-          (r.buyerCountry || '').toLowerCase().includes(q)
+      .filter(r =>
+        matchesProductHeadingSearch(q, [
+          r.productName,
+          r.id,
+          r.category,
+          r.buyerCountry
+        ])
       )
-      .slice(0, 48);
+      .slice(0, 150);
   }, [syncedRfqs, rfqSearch]);
 
   const filteredSuppliers = useMemo(() => {

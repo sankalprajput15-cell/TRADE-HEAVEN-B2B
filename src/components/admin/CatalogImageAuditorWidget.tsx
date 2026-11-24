@@ -34,7 +34,7 @@ import {
   fixSingleCatalogImage,
   verifyAndLockSavedCatalogImages,
   fetchVisualProductImages,
-  cleanProductSearchSubject,
+  matchesProductHeadingSearch,
   CatalogImageAuditSummary,
   CatalogImageAuditLogItem,
   CatalogScannedCleanRecord,
@@ -527,7 +527,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
   }, [activeFilter, auditRows, cleanRecords, homepageCategories]);
 
   const filteredRows = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
+    const q = searchTerm.trim();
     const list = combinedSourceRows.filter(row => {
       if (activeFilter === 'DUPLICATE') {
         if (row.issue_type !== 'DUPLICATE' || row.status !== 'FLAGGED') {
@@ -550,13 +550,13 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       }
 
       if (!q) return true;
-      return (
-        row.record_id.toLowerCase().includes(q) ||
-        row.title.toLowerCase().includes(q) ||
-        row.category.toLowerCase().includes(q) ||
-        row.issue_reason.toLowerCase().includes(q) ||
-        row.issue_type.toLowerCase().includes(q)
-      );
+      return matchesProductHeadingSearch(q, [
+        row.title,
+        row.record_id,
+        row.category,
+        row.issue_reason,
+        row.issue_type
+      ]);
     });
 
     if (activeFilter === 'FIXED') {
@@ -613,7 +613,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           productName: effectiveQuery,
           productId: rid,
           category: row.category,
-          count: 12,
+          count: 20,
           forceRefresh: forceRefresh || Boolean(customQuery && customQuery.trim()),
           shuffleOnly: !forceRefresh && !customQuery && Boolean(candidatesByRecord[rid]?.length)
         });
@@ -621,7 +621,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
           Array.isArray(res.images) && res.images.length > 0
             ? res.images
             : Array.isArray(res.pool)
-            ? res.pool.slice(0, 12)
+            ? res.pool.slice(0, 20)
             : [];
         if (list.length === 0) {
           setCandidateError(
@@ -644,7 +644,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
     setShowWorkbench(true);
     setSelectedRecordId(row.record_id);
     setCandidateError(null);
-    setCandidateSearchQuery(cleanProductSearchSubject(row.title) || row.title);
+    setCandidateSearchQuery(String(row.title || '').trim());
     const currentResolved =
       row.new_image_url && row.new_image_url !== '(pending audit fix)' ? row.new_image_url : '';
     setStagedPreviewUrl(currentResolved);
@@ -675,7 +675,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
       selectedRecord.new_image_url && selectedRecord.new_image_url !== '(pending audit fix)'
         ? selectedRecord.new_image_url
         : '';
-    setCandidateSearchQuery(cleanProductSearchSubject(selectedRecord.title) || selectedRecord.title);
+    setCandidateSearchQuery(String(selectedRecord.title || '').trim());
     setStagedPreviewUrl(currentResolved);
     setCustomUrlInput(
       currentResolved ||
@@ -819,7 +819,7 @@ export const CatalogImageAuditorWidget: React.FC<CatalogImageAuditorWidgetProps>
         if (nowFixed && isFlaggedQueue) {
           if (nextFlaggedRow) {
             setSelectedRecordId(nextFlaggedRow.record_id);
-            setCandidateSearchQuery(cleanProductSearchSubject(nextFlaggedRow.title) || nextFlaggedRow.title);
+            setCandidateSearchQuery(String(nextFlaggedRow.title || '').trim());
             setStagedPreviewUrl('');
             setCustomUrlInput(
               nextFlaggedRow.old_image_url && nextFlaggedRow.old_image_url !== '(empty)'

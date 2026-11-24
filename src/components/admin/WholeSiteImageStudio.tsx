@@ -32,7 +32,10 @@ import {
   normalizeProductAssetUrl,
   optimizeImageUrl
 } from '../../services/productImageManagerService';
-import { isGenericOrPlaceholderImageUrl } from '../../services/visualProductImageService';
+import {
+  isGenericOrPlaceholderImageUrl,
+  matchesProductHeadingSearch
+} from '../../services/visualProductImageService';
 import {
   replaceSiteImage,
   autoFixSiteImages,
@@ -220,35 +223,80 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         await productImageManagerService.ensureHydrated().catch(() => {});
       }
 
-      const [prodRes, rfqRes] = await Promise.allSettled([
+      const [prodRes, rfqRes, snapRes] = await Promise.allSettled([
         api.getProducts(),
-        api.getRfqs()
+        api.getRfqs(),
+        fetch('/data/fullCatalogSnapshot.json', { cache: 'no-store' })
+          .then(r => (r.ok ? r.json() : null))
+          .catch(() => null)
       ]);
 
-      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value) && prodRes.value.length > 0) {
-        const mergedMap = new Map<string, Product>();
+      const snapItems: any[] =
+        snapRes.status === 'fulfilled' && snapRes.value
+          ? Array.isArray(snapRes.value)
+            ? snapRes.value
+            : Array.isArray(snapRes.value.items)
+              ? snapRes.value.items
+              : Array.isArray(snapRes.value.records)
+                ? snapRes.value.records
+                : []
+          : [];
+
+      const mergedProdMap = new Map<string, Product>();
+      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
         for (const p of prodRes.value) {
-          if (p?.id) mergedMap.set(String(p.id).trim(), p);
+          if (p?.id) mergedProdMap.set(String(p.id).trim(), p);
         }
-        for (const p of MOCK_PRODUCTS) {
-          if (p?.id && !mergedMap.has(String(p.id).trim())) {
-            mergedMap.set(String(p.id).trim(), p);
-          }
+      }
+      for (const p of MOCK_PRODUCTS) {
+        if (p?.id && !mergedProdMap.has(String(p.id).trim())) {
+          mergedProdMap.set(String(p.id).trim(), p);
         }
-        setProducts(Array.from(mergedMap.values()));
+      }
+      for (const s of snapItems) {
+        if (!s?.id || s.type === 'RFQ' || s.type === 'CATEGORY') continue;
+        const sid = String(s.id).trim();
+        if (!sid || mergedProdMap.has(sid)) continue;
+        const imgUrl = String(s.image_url || s.image || s.images?.[0] || '').trim();
+        mergedProdMap.set(sid, {
+          id: sid,
+          title: String(s.title || sid),
+          category: String(s.category || 'General Trade'),
+          subCategory: String(s.subCategory || ''),
+          images: imgUrl ? [imgUrl] : [],
+          description: String(s.description || s.title || '')
+        } as Product);
+      }
+      if (mergedProdMap.size > 0) {
+        setProducts(Array.from(mergedProdMap.values()));
       }
 
-      if (rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value) && rfqRes.value.length > 0) {
-        const mergedRfqs = new Map<string, RfqRequirement>();
+      const mergedRfqMap = new Map<string, RfqRequirement>();
+      if (rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value)) {
         for (const r of rfqRes.value) {
-          if (r?.id) mergedRfqs.set(String(r.id).trim(), r);
+          if (r?.id) mergedRfqMap.set(String(r.id).trim(), r);
         }
-        for (const r of MOCK_RFQS) {
-          if (r?.id && !mergedRfqs.has(String(r.id).trim())) {
-            mergedRfqs.set(String(r.id).trim(), r);
-          }
+      }
+      for (const r of MOCK_RFQS) {
+        if (r?.id && !mergedRfqMap.has(String(r.id).trim())) {
+          mergedRfqMap.set(String(r.id).trim(), r);
         }
-        setRfqs(Array.from(mergedRfqs.values()));
+      }
+      for (const s of snapItems) {
+        if (!s?.id || s.type !== 'RFQ') continue;
+        const sid = String(s.id).trim();
+        if (!sid || mergedRfqMap.has(sid)) continue;
+        const imgUrl = String(s.image_url || s.image || s.images?.[0] || '').trim();
+        mergedRfqMap.set(sid, {
+          id: sid,
+          productName: String(s.title || s.productName || sid),
+          category: String(s.category || 'Buy Lead'),
+          image: imgUrl,
+          images: imgUrl ? [imgUrl] : []
+        } as unknown as RfqRequirement);
+      }
+      if (mergedRfqMap.size > 0) {
+        setRfqs(Array.from(mergedRfqMap.values()));
       }
       setStateVersion(v => v + 1);
     } finally {
@@ -574,7 +622,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   }, [allItems, skippedItems]);
 
   const filteredItems = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = searchQuery.trim();
     const matched = allItems.filter(it => {
       if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
@@ -586,13 +634,13 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (scopeFilter === 'BANNERS' && it.type !== 'HERO_SLIDE' && it.type !== 'SITE_ASSET') return false;
 
       if (!q) return true;
-      return (
-        it.id.toLowerCase().includes(q) ||
-        it.title.toLowerCase().includes(q) ||
-        it.category.toLowerCase().includes(q) ||
-        it.siteLocationLabel.toLowerCase().includes(q) ||
-        it.currentUrl.toLowerCase().includes(q)
-      );
+      return matchesProductHeadingSearch(q, [
+        it.title,
+        it.id,
+        it.category,
+        it.siteLocationLabel,
+        it.currentUrl
+      ]);
     });
     if (scopeFilter === 'CHANGED') {
       return [...matched].sort((a, b) => (b.changedAtMs || 0) - (a.changedAtMs || 0));
@@ -641,14 +689,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   );
 
   const bulkTargetOptions = useMemo(() => {
-    const q = bulkTargetFilter.trim().toLowerCase();
+    const q = bulkTargetFilter.trim();
     const list = q
-      ? allItems.filter(
-          it =>
-            it.id.toLowerCase().includes(q) ||
-            it.title.toLowerCase().includes(q) ||
-            it.type.toLowerCase().includes(q) ||
-            it.category.toLowerCase().includes(q)
+      ? allItems.filter(it =>
+          matchesProductHeadingSearch(q, [it.title, it.id, it.type, it.category])
         )
       : allItems;
     return list.slice(0, 400);
@@ -1647,15 +1691,25 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 sm:w-80">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search ID, title, category, file..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F294D]/20 focus:border-[#0F294D]"
+              placeholder="Search any full product heading, ID, category..."
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F294D]/20 focus:border-[#0F294D]"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {selectedIdList.length > 0 && (

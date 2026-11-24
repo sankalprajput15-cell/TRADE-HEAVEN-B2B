@@ -20,7 +20,7 @@ import {
 import { Product } from '../../types';
 import {
   fetchVisualProductImages,
-  cleanProductSearchSubject,
+  extractProductHeadingSearchQueries,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
@@ -85,8 +85,10 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const [pickerTab, setPickerTab] = useState<'CANDIDATES' | 'MEDIA_LIBRARY'>('CANDIDATES');
   const [libraryFilter, setLibraryFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>(
-    cleanProductSearchSubject(product.title || '') || product.title || ''
+  const [searchQuery, setSearchQuery] = useState<string>(String(product.title || '').trim());
+  const headingSearchQueries = React.useMemo(
+    () => extractProductHeadingSearchQueries(product.title || '', product.category),
+    [product.title, product.category]
   );
   const [candidates, setCandidates] = useState<VisualProductImageCandidate[]>([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState<boolean>(false);
@@ -743,19 +745,19 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
 
               {pickerTab === 'CANDIDATES' ? (
                 <form
-                  className="flex items-center gap-2 w-full sm:w-auto"
+                  className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:max-w-md"
                   onSubmit={e => {
                     e.preventDefault();
                     void loadCandidates(searchQuery, true);
                   }}
                 >
-                  <div className="relative flex-1 sm:w-64">
+                  <div className="relative flex-1">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="Refine photo search..."
+                      placeholder="Search full product heading..."
                       className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500"
                     />
                   </div>
@@ -781,6 +783,34 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                 </div>
               )}
             </div>
+
+            {pickerTab === 'CANDIDATES' && headingSearchQueries.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-slate-500 mr-1">Heading queries:</span>
+                {headingSearchQueries.map((hq, idx) => {
+                  const isActive = searchQuery.trim().toLowerCase() === hq.toLowerCase();
+                  return (
+                    <button
+                      key={`${hq}-${idx}`}
+                      type="button"
+                      disabled={isLoadingCandidates}
+                      onClick={() => {
+                        setSearchQuery(hq);
+                        void loadCandidates(hq, true);
+                      }}
+                      className={`px-2 py-0.5 rounded-md border text-[11px] font-medium transition-colors cursor-pointer max-w-full truncate ${
+                        isActive
+                          ? 'bg-[#0F294D] text-white border-[#0F294D]'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                      title={`Search photos for: ${hq}`}
+                    >
+                      {idx === 0 ? `Full Heading: ${hq.length > 52 ? `${hq.slice(0, 52)}...` : hq}` : hq}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {pickerTab === 'CANDIDATES' ? (
               isLoadingCandidates ? (

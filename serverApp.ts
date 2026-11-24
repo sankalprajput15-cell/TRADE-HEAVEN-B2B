@@ -22091,35 +22091,39 @@ function isSafePublicHttpUrl(rawUrl: string): boolean {
   }
 }
 
-function cleanProductSearchSubject(rawName: string): string {
+function normalizeFullProductHeading(rawName: string): string {
   let s = String(rawName || '').trim();
   if (!s) return '';
-  s = s.replace(/\([^)]*\)/g, ' ');
-  s = s.replace(/\[[^\]]*\]/g, ' ');
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
   s = s.replace(
     /^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/gi,
     ''
   );
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
+  s = normalizeCompoundProductTerms(s);
+  s = s.replace(/[—–]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return s || String(rawName || '').trim();
+}
+
+function cleanProductSearchSubject(rawName: string): string {
+  let s = normalizeFullProductHeading(rawName);
+  if (!s) return '';
+  s = s.replace(/\[[^\]]*\]/g, ' ');
   s = s.replace(
     /^\d[\d,.]*\s*(?:mt|metric\s+tons?|tons?|units?|pcs|pieces|barrels?|bbl|containers?|fcl|teu|kg|kgs|liters?|lbs)\b\s*(?:of\s+)?/i,
     ''
   );
   s = s.replace(/\s+[-–—]\s*\d[\d,.]*\s*(?:mt|tons?|units?|pcs|barrels?|fcl|mw|kw|months?|years?).*$/i, '');
-  s = s.replace(/\b\d+(?:\.\d+)?\s*-\s*ton\b/gi, ' ');
-  s = s.replace(/\bgrade\s+[a-z0-9+-]+\b/gi, ' ');
-  s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
   s = normalizeCompoundProductTerms(s);
-  s = s.replace(/\s+/g, ' ').trim();
+  s = s.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
   return s || normalizeCompoundProductTerms(String(rawName || '').trim());
 }
 
 function normalizeVisualSearchKeyword(productName: string, category?: string): string {
-  const cleanedSubject = cleanProductSearchSubject(productName);
-  const cleanName = String(cleanedSubject || productName || '')
+  const fullHeading = normalizeFullProductHeading(productName);
+  const cleanName = String(fullHeading || productName || '')
     .toLowerCase()
-    .replace(/[^\w\s-]/g, ' ')
+    .replace(/[^\w\s/-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   const cleanCat = String(category || '')
@@ -22127,11 +22131,12 @@ function normalizeVisualSearchKeyword(productName: string, category?: string): s
     .replace(/[^\w\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!cleanName) return cleanCat ? `v2:${cleanCat}` : '';
-  return cleanCat ? `v2:${cleanName}::${cleanCat}` : `v2:${cleanName}`;
+  if (!cleanName) return cleanCat ? `v3:${cleanCat}` : '';
+  return cleanCat ? `v3:${cleanName}::${cleanCat}` : `v3:${cleanName}`;
 }
 
 function buildCommercialProductImageQuery(productName: string, category?: string, specifications?: string): string {
+  const fullHeading = normalizeFullProductHeading(productName);
   const cleanName = cleanProductSearchSubject(productName);
   const cleanCat = String(category || '').replace(/\s+/g, ' ').trim();
   const specHints = String(specifications || '')
@@ -22141,11 +22146,11 @@ function buildCommercialProductImageQuery(productName: string, category?: string
     .slice(0, 3)
     .join(' ');
   const catWord =
-    cleanCat && !cleanName.toLowerCase().includes(cleanCat.toLowerCase().split(' ')[0])
+    cleanCat && !fullHeading.toLowerCase().includes(cleanCat.toLowerCase().split(' ')[0])
       ? cleanCat.split(/[&,]/)[0].trim()
       : '';
-  const core = [cleanName, catWord, specHints].filter(Boolean).join(' ').trim();
-  return `"${cleanName}" ${core} product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme`;
+  const core = [fullHeading, cleanName !== fullHeading ? cleanName : '', catWord, specHints].filter(Boolean).join(' ').trim();
+  return `"${fullHeading}" ${core} product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme`;
 }
 
 const BLOCKED_IMAGE_DOMAINS = [
@@ -22324,29 +22329,53 @@ function buildRealPhotoSubjectHints(productName: string, _category?: string): {
 }
 
 function buildFocusedVisualSearchQueries(productName: string, category?: string): string[] {
+  const fullHeading = normalizeFullProductHeading(productName);
   const cleaned = cleanProductSearchSubject(productName).replace(/\s*&\s*/g, ', ');
   const hints = buildRealPhotoSubjectHints(productName, category);
+
+  // Split full product heading into all meaningful heading segments/sub-headings (e.g. "—", "–", " - ", ",", "&", "|", "()")
+  const rawHeadingParts = String(productName || '')
+    .replace(/[()[\]]/g, ',')
+    .split(/\s*(?:[—–|;,]|(?:\s+-\s+)|\s+&\s+)\s*/)
+    .map(p => normalizeFullProductHeading(p))
+    .filter(p => p.length >= 3);
+
   const clauses = cleaned
-    .split(/[,;/]+/)
+    .split(/[,;|]+/)
     .map(c => c.trim())
     .filter(c => c.length >= 3);
   const { allTokens, coreNouns } = extractProductKeywordTokens(cleaned);
-  // Extract meaningful technical specs like "550w", "2000kw", "80gsm" to keep product precision
-  const specTokens = cleaned
+  // Extract meaningful technical specs like "550w", "2000kw", "80gsm", "hms 1/2" to keep product precision
+  const specTokens = fullHeading
     .toLowerCase()
-    .match(/\b\d{2,5}(?:w|kw|mw|v|ah|gsm|mm|cm|ml|kg|ton|hp|rpm)\b/gi) || [];
+    .match(/\b(?:\d{1,5}\/\d{1,3}|\d{2,5}(?:w|kw|mw|v|ah|gsm|mm|cm|ml|kg|ton|hp|rpm))\b/gi) || [];
   const primarySpec = specTokens[0] ? specTokens[0].toLowerCase() : '';
 
   const queries: string[] = [];
 
-  // 1. Lead with exact subject hint if specialized (e.g. "monocrystalline solar panel 550w")
+  // 1. Always search the FULL product heading first so the entire heading is used for fixing the image
+  if (fullHeading.length >= 3) {
+    queries.push(fullHeading);
+  }
+  if (cleaned.length >= 3 && cleaned.toLowerCase() !== fullHeading.toLowerCase()) {
+    queries.push(cleaned);
+  }
+
+  // 2. Include all distinct sub-headings / clauses of the product heading
+  for (const part of rawHeadingParts.slice(0, 4)) {
+    if (part.length >= 4) {
+      queries.push(part);
+    }
+  }
+
+  // 3. Exact subject hint if specialized (e.g. "monocrystalline solar panel 550w")
   if (hints.expandedTokens.length > 0 && hints.primaryQuery) {
     queries.push(hints.primaryQuery);
   }
 
-  // 2. Core product noun phrase + spec (keep full compound phrase intact — never drop the lead noun)
+  // 4. Core product noun phrase + spec
   if (coreNouns.length >= 2) {
-    const corePhrase = coreNouns.slice(0, 4).join(' ');
+    const corePhrase = coreNouns.slice(0, 6).join(' ');
     if (primarySpec && !corePhrase.includes(primarySpec)) {
       queries.push(`${corePhrase} ${primarySpec}`);
     }
@@ -22355,21 +22384,20 @@ function buildFocusedVisualSearchQueries(productName: string, category?: string)
     queries.push(primarySpec ? `${coreNouns[0]} ${primarySpec}` : coreNouns[0]);
   }
 
-  // 3. Multi-clause sub-items (e.g. "bamboo toothpicks", "wooden skewers", "ice cream sticks")
-  for (const clause of clauses.slice(0, 3)) {
+  // 5. Multi-clause sub-items (e.g. "bamboo toothpicks", "wooden skewers", "ice cream sticks")
+  for (const clause of clauses.slice(0, 4)) {
     const clauseToks = clause
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/[^a-z0-9/\s]/g, ' ')
       .split(/\s+/)
       .filter(
         t =>
           t.length >= 3 &&
           !/^\d+$/.test(t) &&
-          !PRODUCT_STOPWORDS.has(t) &&
-          !GENERIC_MODIFIER_WORDS.has(t)
+          !PRODUCT_STOPWORDS.has(t)
       );
     if (clauseToks.length >= 2) {
-      queries.push(clauseToks.slice(0, 3).join(' '));
+      queries.push(clauseToks.slice(0, 5).join(' '));
     } else if (clauseToks.length === 1 && coreNouns.length >= 2 && clauseToks[0] !== coreNouns[0]) {
       queries.push(`${coreNouns[0]} ${clauseToks[0]}`);
     } else if (clauseToks.length === 1 && clauseToks[0].length >= 4) {
@@ -22378,12 +22406,12 @@ function buildFocusedVisualSearchQueries(productName: string, category?: string)
   }
 
   if (queries.length === 0 && allTokens.length > 0) {
-    queries.push(allTokens.slice(0, 3).join(' '));
+    queries.push(allTokens.join(' '));
   }
   if (queries.length === 0 && category) {
     queries.push(cleanProductSearchSubject(category));
   }
-  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 4);
+  return Array.from(new Set(queries.map(q => q.trim()).filter(q => q.length >= 3))).slice(0, 6);
 }
 
 interface ProductTokenProfile {
@@ -22927,20 +22955,25 @@ async function fetchGoogleImagesProductPhotos(
   category?: string
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
+  const fullHeading = normalizeFullProductHeading(productName);
   const hints = buildRealPhotoSubjectHints(productName, category);
   const focused = buildFocusedVisualSearchQueries(productName, category);
-  const query = `${focused[0] || hints.primaryQuery}`.replace(/\s+/g, ' ').trim();
-  if (!query) return discovered;
+  const primaryQuery = `${fullHeading || focused[0] || hints.primaryQuery}`.replace(/\s+/g, ' ').trim();
+  if (!primaryQuery) return discovered;
 
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
   ];
 
-  const googleQueries = [
-    `${query} product photo`,
-    `${query} commercial wholesale`
-  ];
+  const googleQueries = Array.from(
+    new Set([
+      primaryQuery,
+      `${primaryQuery} product photo`,
+      ...focused.slice(0, 3).map(q => `${q} product`),
+      `${focused[0] || primaryQuery} commercial wholesale`
+    ])
+  ).slice(0, 4);
 
   await Promise.allSettled(
     googleQueries.map(async (q, idx) => {
@@ -23105,7 +23138,8 @@ async function fetchLiveCommercialWebProductImages(
         .join(' ')
     : '';
 
-  const primaryQ = focused[0] || cleanedSubject;
+  const fullHeading = normalizeFullProductHeading(productName);
+  const primaryQ = fullHeading || focused[0] || cleanedSubject;
   const secondaryQ = focused[1] || (category ? `${cleanedSubject} ${category}` : `${cleanedSubject} industrial commercial`);
   const searchEndpoints: Array<{ url: string; label: string }> = [];
   if (primaryQ.length >= 2) {
@@ -23117,11 +23151,15 @@ async function fetchLiveCommercialWebProductImages(
       url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=1&count=35&mmasync=1`,
       label: `${primaryQ} product photo`
     });
-    searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} wholesale supplier`)}&first=1&count=35&mmasync=1`,
-      label: `${primaryQ} wholesale`
-    });
-    if (secondaryQ && secondaryQ !== primaryQ) {
+    for (const headingClause of focused.slice(0, 4)) {
+      if (headingClause && headingClause.toLowerCase() !== primaryQ.toLowerCase()) {
+        searchEndpoints.push({
+          url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=1&count=30&mmasync=1`,
+          label: headingClause
+        });
+      }
+    }
+    if (secondaryQ && secondaryQ !== primaryQ && !searchEndpoints.some(e => e.label === secondaryQ)) {
       searchEndpoints.push({
         url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=1&count=30&mmasync=1`,
         label: secondaryQ
@@ -23254,7 +23292,8 @@ async function handleVisualProductImageSearch(params: {
   forceRefresh?: boolean;
 }) {
   const rawInputName = String(params.productName || '').trim();
-  const cleanName = cleanProductSearchSubject(rawInputName);
+  const fullHeading = normalizeFullProductHeading(rawInputName);
+  const cleanName = fullHeading || cleanProductSearchSubject(rawInputName);
   const cleanCategory = String(params.category || '').trim();
   const cleanSpecs = String(params.specifications || '').trim();
   const requestedCount = Math.max(15, Math.min(24, Number(params.count) || 20));
@@ -23269,8 +23308,8 @@ async function handleVisualProductImageSearch(params: {
     };
   }
 
-  const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
-  const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, cleanSpecs);
+  const normalizedKey = normalizeVisualSearchKeyword(fullHeading || cleanName, cleanCategory);
+  const queryUsed = buildCommercialProductImageQuery(fullHeading || cleanName, cleanCategory, cleanSpecs);
 
   // 1. Check 7-day persistent cache first (refresh from disk on cache miss)
   if (!serverProductImageCacheMap.has(normalizedKey)) {
