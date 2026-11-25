@@ -13,7 +13,7 @@ import {
   PaymentCheckoutData,
   AuthUser
 } from './types';
-import { api, getDeletedProductIdsSet, markProductIdsDeleted, syncDeletedProductIdsFromServer } from './services/apiService';
+import { api, getDeletedProductIdsSet, getDeletedRfqIdsSet, markProductIdsDeleted, syncDeletedProductIdsFromServer } from './services/apiService';
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
@@ -1344,13 +1344,20 @@ const MainApp: React.FC = () => {
     try {
       const loadedRfqs = await apiClient.getRfqs();
       const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs : [];
-      if (extraLoaded.length > 0) {
-        setRfqs(prev => {
-          const merged = sortRfqsRealFirst(mergeRfqLists(mergeRfqLists(MOCK_RFQS, prev), extraLoaded));
-          setSelectedRfqId(currId => (currId && merged.some(r => r.id === currId)) ? currId : (merged[0]?.id || null));
-          return merged as any;
-        });
-      }
+      const deletedRfqSet = getDeletedRfqIdsSet();
+      const isRfqActive = (r: RfqRequirement | null | undefined) => {
+        if (!r || !r.id) return false;
+        const rid = String(r.id).trim();
+        const stripped = rid.replace(/^rfq-/i, '');
+        return !deletedRfqSet.has(rid) && !deletedRfqSet.has(stripped) && !deletedRfqSet.has(`rfq-${stripped}`);
+      };
+      setRfqs(prev => {
+        const merged = sortRfqsRealFirst(
+          mergeRfqLists(mergeRfqLists(MOCK_RFQS, prev), extraLoaded).filter(isRfqActive)
+        );
+        setSelectedRfqId(currId => (currId && merged.some(r => r.id === currId)) ? currId : (merged[0]?.id || null));
+        return merged as any;
+      });
     } catch (err) {}
   };
 
@@ -1501,6 +1508,7 @@ const MainApp: React.FC = () => {
       fetchProducts();
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
+    window.addEventListener('tradeheaven_rfqs_updated', handleRfqRefresh);
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
@@ -1508,6 +1516,7 @@ const MainApp: React.FC = () => {
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
+      window.removeEventListener('tradeheaven_rfqs_updated', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
@@ -3589,7 +3598,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 6. REAL-TIME AI LIVE CHAT & WHATSAPP DESK WIDGET (Hidden inside Admin workspaces so floating buttons never overlap admin controls) */}
-      {activeView !== 'ADMIN_DASHBOARD' && activeView !== 'PRODUCT_IMAGE_ADMIN' && (
+      {activeView !== 'CLIENT_ADMIN' && activeView !== 'PRODUCT_IMAGE_ADMIN' && (
         <TradeHeavenLiveChatWidget
           currentUser={currentUser}
           onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}

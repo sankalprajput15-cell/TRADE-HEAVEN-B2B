@@ -152,6 +152,101 @@ export function syncDeletedProductIdsFromServer(serverDeletedIds: string[]): voi
     }
   } catch {}
 }
+
+const DELETED_RFQ_IDS_KEY = 'trade_heaven_deleted_rfq_ids';
+
+function getWindowDeletedRfqSet(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  const w = window as any;
+  if (!(w.__TRADEHEAVEN_DELETED_RFQ_IDS__ instanceof Set)) {
+    w.__TRADEHEAVEN_DELETED_RFQ_IDS__ = new Set<string>();
+  }
+  return w.__TRADEHEAVEN_DELETED_RFQ_IDS__ as Set<string>;
+}
+
+export function getDeletedRfqIdsSet(): Set<string> {
+  const combined = new Set<string>(getWindowDeletedRfqSet());
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(DELETED_RFQ_IDS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(id => {
+            if (id) {
+              const s = String(id).trim();
+              combined.add(s);
+              const stripped = s.replace(/^rfq-/i, '');
+              if (stripped) {
+                combined.add(stripped);
+                combined.add(`rfq-${stripped}`);
+              }
+            }
+          });
+        }
+      }
+    }
+  } catch {}
+  return combined;
+}
+
+export function markRfqIdsDeleted(ids: string[]): void {
+  const cleanIds = ids.map(id => String(id || '').trim()).filter(Boolean);
+  if (cleanIds.length === 0) return;
+
+  const winSet = getWindowDeletedRfqSet();
+  cleanIds.forEach(id => {
+    winSet.add(id);
+    const stripped = id.replace(/^rfq-/i, '');
+    if (stripped) {
+      winSet.add(stripped);
+      winSet.add(`rfq-${stripped}`);
+    }
+  });
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const merged = Array.from(getDeletedRfqIdsSet());
+      localStorage.setItem(DELETED_RFQ_IDS_KEY, JSON.stringify(merged));
+    }
+  } catch {}
+
+  // Also strip from persisted local RFQs cache
+  try {
+    const delSet = getDeletedRfqIdsSet();
+    activeRfqsStore = (activeRfqsStore || []).filter(r => {
+      if (!r?.id) return false;
+      const rid = String(r.id).trim();
+      return !delSet.has(rid) && !delSet.has(rid.replace(/^rfq-/i, ''));
+    });
+    persistStoredRfqs(activeRfqsStore);
+  } catch {}
+}
+
+export function syncDeletedRfqIdsFromServer(serverDeletedIds: string[]): void {
+  const cleanIds = Array.from(
+    new Set(
+      (serverDeletedIds || [])
+        .map(id => String(id || '').trim())
+        .filter(Boolean)
+    )
+  );
+  const winSet = getWindowDeletedRfqSet();
+  winSet.clear();
+  cleanIds.forEach(id => {
+    winSet.add(id);
+    const stripped = id.replace(/^rfq-/i, '');
+    if (stripped) {
+      winSet.add(stripped);
+      winSet.add(`rfq-${stripped}`);
+    }
+  });
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(DELETED_RFQ_IDS_KEY, JSON.stringify(cleanIds));
+    }
+  } catch {}
+}
 const DELETED_USERS_STORAGE_KEY = 'th_permanently_deleted_users_v1';
 const USER_DELETION_LOGS_STORAGE_KEY = 'th_user_deletion_logs_v1';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
@@ -2276,15 +2371,23 @@ export const api = {
       const rawList = Array.isArray(liveRfqs) && liveRfqs.length > 0 ? liveRfqs : [];
       const stored = loadStoredRfqs();
       
-      // Merge live RFQs, stored local RFQs, and MOCK_RFQS avoiding duplicates
+      // Merge live RFQs, stored local RFQs, and MOCK_RFQS avoiding duplicates, filtering permanently deleted RFQs
+      const deletedRfqIds = getDeletedRfqIdsSet();
+      const isDeletedRfq = (rfq: RfqRequirement | null | undefined) => {
+        if (!rfq || !rfq.id) return true;
+        const rid = String(rfq.id).trim();
+        const stripped = rid.replace(/^rfq-/i, '');
+        return deletedRfqIds.has(rid) || deletedRfqIds.has(stripped) || deletedRfqIds.has(`rfq-${stripped}`);
+      };
+
       const map = new Map<string, RfqRequirement>();
       [...MOCK_RFQS, ...stored, ...rawList].forEach(rfq => {
-        if (rfq && rfq.id) {
+        if (rfq && rfq.id && !isDeletedRfq(rfq)) {
           map.set(rfq.id, rfq);
         }
       });
 
-      let list = Array.from(map.values());
+      let list = Array.from(map.values()).filter(r => !isDeletedRfq(r));
 
       if (queryParams?.category && queryParams.category !== 'ALL') {
         list = list.filter(r => (r.category || '').toLowerCase() === queryParams!.category!.toLowerCase());
@@ -2307,7 +2410,10 @@ export const api = {
       return list.map(rfq => securityService.gateRfqRequirement(rfq, actualUser || null));
     } catch (err) {
       console.warn('[api.getRfqs fetch]:', err);
-      return MOCK_RFQS.map(rfq => securityService.gateRfqRequirement(rfq, actualUser || null));
+      const deletedRfqIds = getDeletedRfqIdsSet();
+      return MOCK_RFQS
+        .filter(r => r?.id && !deletedRfqIds.has(String(r.id)) && !deletedRfqIds.has(String(r.id).replace(/^rfq-/i, '')))
+        .map(rfq => securityService.gateRfqRequirement(rfq, actualUser || null));
     }
   },
 

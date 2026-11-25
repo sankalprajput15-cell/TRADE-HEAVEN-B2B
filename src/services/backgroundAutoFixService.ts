@@ -74,6 +74,8 @@ class BackgroundAutoFixService {
   private processedServerResultKeys = new Set<string>();
   private siteContentRefresher: (() => Promise<void>) | null = null;
   private bootHydrated = false;
+  private lastServerOverridesSyncAt = 0;
+  private lastSyncedFixedCount = 0;
 
   private state: BackgroundAutoFixSnapshot = {
     active: false,
@@ -192,6 +194,12 @@ class BackgroundAutoFixService {
     this.emit();
   }
 
+  public clearAllSkipped() {
+    if (Object.keys(this.state.skippedItems).length === 0) return;
+    this.state.skippedItems = {};
+    this.emit();
+  }
+
   public recordManualSessionChange(
     entries: Array<{
       id: string;
@@ -294,8 +302,10 @@ class BackgroundAutoFixService {
   private applyServerJobPayload(job: ServerJobPayload | null, opts?: { emitNoticeOnFinish?: boolean }) {
     if (!job) return;
     const wasActive = this.state.active && this.state.jobId === job.jobId;
+    const prevFixed = this.state.fixed;
     if (this.state.jobId !== job.jobId) {
       this.processedServerResultKeys.clear();
+      this.lastSyncedFixedCount = 0;
     }
 
     this.state.jobId = job.jobId;
@@ -319,7 +329,27 @@ class BackgroundAutoFixService {
       this.applyProcessedResultRows(job.results);
     }
 
-    if (wasActive && !job.active) {
+    const jobJustFinished = wasActive && !job.active;
+    const fixedAdvanced = this.state.fixed > prevFixed || this.state.fixed > this.lastSyncedFixedCount;
+    const nowMs = Date.now();
+    if (
+      jobJustFinished ||
+      (fixedAdvanced && nowMs - this.lastServerOverridesSyncAt >= 5000)
+    ) {
+      this.lastServerOverridesSyncAt = nowMs;
+      this.lastSyncedFixedCount = this.state.fixed;
+      void productImageManagerService
+        .syncFromServer(true, false, { bypassCooldown: true, emitEvenIfUnchanged: true })
+        .then(() => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
+            window.dispatchEvent(new Event('tradeheaven_products_updated'));
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (jobJustFinished) {
       this.state.lastCompletedNotice = {
         type: job.fixed > 0 ? 'success' : job.failed > 0 ? 'error' : 'info',
         text: job.cancelRequested
@@ -392,6 +422,19 @@ class BackgroundAutoFixService {
     if (!Array.isArray(items) || items.length === 0) return;
 
     this.state.lastCompletedNotice = null;
+    // Clear stale skipped status for any items being re-queued so fresh retries display cleanly
+    const nextSkipped = { ...this.state.skippedItems };
+    let skippedChanged = false;
+    for (const it of items) {
+      if (it?.id && nextSkipped[it.id]) {
+        delete nextSkipped[it.id];
+        skippedChanged = true;
+      }
+    }
+    if (skippedChanged) {
+      this.state.skippedItems = nextSkipped;
+      this.emit();
+    }
 
     // 1. Try submitting to the persistent server-side background job queue first
     try {

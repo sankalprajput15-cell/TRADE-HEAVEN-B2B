@@ -495,3 +495,66 @@ export async function deleteSiteImageFile(params: {
   );
   return { deletedFile };
 }
+
+export interface SiteListingDeleteInput {
+  id: string;
+  type: UnifiedSiteImageTargetType;
+  currentUrl?: string;
+  fieldPath?: string;
+}
+
+export interface SiteListingDeleteResult {
+  success: boolean;
+  deletedCount: number;
+  deletedFiles: string[];
+  deletedProductIds: string[];
+  deletedRfqIds: string[];
+  message?: string;
+}
+
+/**
+ * Permanently deletes one or many listed items (Product, Buy Lead / RFQ, Hero Slide, Category, or Site Asset)
+ * from the website catalog, database stores, snapshot, AND permanently removes their uploaded image file(s) from server storage.
+ */
+export async function deleteSiteListingsPermanently(
+  items: SiteListingDeleteInput[]
+): Promise<SiteListingDeleteResult> {
+  if (!Array.isArray(items) || items.length === 0) {
+    return {
+      success: false,
+      deletedCount: 0,
+      deletedFiles: [],
+      deletedProductIds: [],
+      deletedRfqIds: [],
+      message: 'No items selected to delete.'
+    };
+  }
+
+  const res = await fetch('/api/v1/admin/site-items/delete-listing', {
+    method: 'POST',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ items })
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) {
+    throw new Error(json?.message || `Failed to permanently delete listing(s) (HTTP ${res.status}).`);
+  }
+
+  // Clear local override entries for every deleted item immediately
+  for (const it of items) {
+    if (it?.id) {
+      await productImageManagerService.resetProductImage(it.id).catch(() => {});
+    }
+  }
+
+  return {
+    success: true,
+    deletedCount: Number(json.deletedCount || items.length),
+    deletedFiles: Array.isArray(json.deletedFiles) ? json.deletedFiles : [],
+    deletedProductIds: Array.isArray(json.deletedProductIds) ? json.deletedProductIds : [],
+    deletedRfqIds: Array.isArray(json.deletedRfqIds) ? json.deletedRfqIds : [],
+    message: json.message
+  };
+}
+

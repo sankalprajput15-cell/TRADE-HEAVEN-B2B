@@ -719,6 +719,26 @@ export const bigrockApi = {
 
       const json = await safeParseJson(response);
       if (!json) return [];
+      if (Array.isArray(json.deletedRfqIds) && typeof window !== 'undefined') {
+        try {
+          const cleanIds = Array.from(new Set(json.deletedRfqIds.map((x: any) => String(x || '').trim()).filter(Boolean)));
+          const w = window as any;
+          if (!(w.__TRADEHEAVEN_DELETED_RFQ_IDS__ instanceof Set)) {
+            w.__TRADEHEAVEN_DELETED_RFQ_IDS__ = new Set<string>();
+          }
+          w.__TRADEHEAVEN_DELETED_RFQ_IDS__.clear();
+          cleanIds.forEach((id: any) => {
+            const s = String(id);
+            w.__TRADEHEAVEN_DELETED_RFQ_IDS__.add(s);
+            const stripped = s.replace(/^rfq-/i, '');
+            if (stripped) {
+              w.__TRADEHEAVEN_DELETED_RFQ_IDS__.add(stripped);
+              w.__TRADEHEAVEN_DELETED_RFQ_IDS__.add(`rfq-${stripped}`);
+            }
+          });
+          window.localStorage?.setItem('trade_heaven_deleted_rfq_ids', JSON.stringify(cleanIds));
+        } catch {}
+      }
       const rawList = Array.isArray(json) ? json : (json.data || json.rfqs || []);
 
       if (Array.isArray(rawList)) {

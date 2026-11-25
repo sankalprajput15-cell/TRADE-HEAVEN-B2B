@@ -28,7 +28,15 @@ import { AdminQuickImageInspectorModal } from './AdminQuickImageInspectorModal';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { CATEGORIES_TREE, MOCK_PRODUCTS, MOCK_RFQS } from '../../data/mockData';
-import { api } from '../../services/apiService';
+import {
+  api,
+  getDeletedProductIdsSet,
+  getDeletedRfqIdsSet,
+  markProductIdsDeleted,
+  markRfqIdsDeleted,
+  syncDeletedProductIdsFromServer,
+  syncDeletedRfqIdsFromServer
+} from '../../services/apiService';
 import {
   productImageManagerService,
   normalizeProductAssetUrl,
@@ -43,7 +51,8 @@ import {
 import {
   replaceSiteImage,
   autoFixSiteImages,
-  deleteSiteImageFile
+  deleteSiteImageFile,
+  deleteSiteListingsPermanently
 } from '../../services/siteImageControlService';
 import {
   backgroundAutoFixService,
@@ -190,6 +199,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [busyRowIds, setBusyRowIds] = useState<Record<string, string>>({});
   const [urlEditor, setUrlEditor] = useState<{ itemId: string; value: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
   const [inspectingItem, setInspectingItem] = useState<UnifiedSiteImageItem | null>(null);
   const [croppingItem, setCroppingItem] = useState<UnifiedSiteImageItem | null>(null);
   const [bannerNotice, setBannerNotice] = useState<{
@@ -202,9 +213,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     backgroundAutoFixService.getSnapshot()
   );
   const [localSkippedItems, setLocalSkippedItems] = useState<Record<string, { reason: string; at: number }>>({});
-  const [brokenThumbIds, setBrokenThumbIds] = useState<Record<string, boolean>>({});
-  const autoFixedOutRowIdsRef = useRef<Set<string>>(new Set());
-  const isAutoFixingVisibleOutRef = useRef<boolean>(false);
+  // Keyed by item.id -> exact URL that failed to load, so any new URL immediately clears the broken state
+  const [brokenThumbUrls, setBrokenThumbUrls] = useState<Record<string, string>>({});
+  const prevBgActiveRef = useRef<boolean>(bgSnapshot.active);
 
   const sessionChanges = bgSnapshot.sessionChanges;
   const totalDeletedFilesSession = bgSnapshot.totalDeletedFilesSession;
@@ -275,13 +286,38 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         await productImageManagerService.ensureHydrated().catch(() => {});
       }
 
-      const [prodRes, rfqRes, snapRes] = await Promise.allSettled([
+      const [prodRes, rfqRes, snapRes, delRes] = await Promise.allSettled([
         api.getProducts(),
         api.getRfqs(),
-        fetch('/data/fullCatalogSnapshot.json', { cache: 'no-store' })
+        fetch(`/data/fullCatalogSnapshot.json?_t=${Date.now()}`, { cache: 'no-store' })
+          .then(r => (r.ok ? r.json() : null))
+          .catch(() => null),
+        fetch(`/api/v1/admin/site-items/deleted-ids?_t=${Date.now()}`, { cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
           .catch(() => null)
       ]);
+
+      if (delRes.status === 'fulfilled' && delRes.value?.success) {
+        if (Array.isArray(delRes.value.deletedProductIds)) {
+          syncDeletedProductIdsFromServer(delRes.value.deletedProductIds);
+        }
+        if (Array.isArray(delRes.value.deletedRfqIds)) {
+          syncDeletedRfqIdsFromServer(delRes.value.deletedRfqIds);
+        }
+      }
+
+      const deletedProdSet = getDeletedProductIdsSet();
+      const deletedRfqSet = getDeletedRfqIdsSet();
+      const isProdDeleted = (rawId: string) => {
+        const s = String(rawId || '').trim();
+        const stripped = s.replace(/^prod-db-/i, '');
+        return deletedProdSet.has(s) || deletedProdSet.has(stripped) || deletedProdSet.has(`prod-db-${stripped}`);
+      };
+      const isRfqDeleted = (rawId: string) => {
+        const s = String(rawId || '').trim();
+        const stripped = s.replace(/^rfq-/i, '');
+        return deletedRfqSet.has(s) || deletedRfqSet.has(stripped) || deletedRfqSet.has(`rfq-${stripped}`);
+      };
 
       const snapItems: any[] =
         snapRes.status === 'fulfilled' && snapRes.value
@@ -297,18 +333,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const mergedProdMap = new Map<string, Product>();
       if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
         for (const p of prodRes.value) {
-          if (p?.id) mergedProdMap.set(String(p.id).trim(), p);
+          const pid = String(p?.id || '').trim();
+          if (pid && !isProdDeleted(pid)) mergedProdMap.set(pid, p);
         }
       }
       for (const p of MOCK_PRODUCTS) {
-        if (p?.id && !mergedProdMap.has(String(p.id).trim())) {
-          mergedProdMap.set(String(p.id).trim(), p);
+        const pid = String(p?.id || '').trim();
+        if (pid && !isProdDeleted(pid) && !mergedProdMap.has(pid)) {
+          mergedProdMap.set(pid, p);
         }
       }
       for (const s of snapItems) {
         if (!s?.id || s.type === 'RFQ' || s.type === 'CATEGORY') continue;
         const sid = String(s.id).trim();
-        if (!sid || mergedProdMap.has(sid)) continue;
+        if (!sid || isProdDeleted(sid) || mergedProdMap.has(sid)) continue;
         const imgUrl = String(s.image_url || s.image || s.images?.[0] || '').trim();
         mergedProdMap.set(sid, {
           id: sid,
@@ -319,25 +357,25 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           description: String(s.description || s.title || '')
         } as Product);
       }
-      if (mergedProdMap.size > 0) {
-        setProducts(Array.from(mergedProdMap.values()));
-      }
+      setProducts(Array.from(mergedProdMap.values()));
 
       const mergedRfqMap = new Map<string, RfqRequirement>();
       if (rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value)) {
         for (const r of rfqRes.value) {
-          if (r?.id) mergedRfqMap.set(String(r.id).trim(), r);
+          const rid = String(r?.id || '').trim();
+          if (rid && !isRfqDeleted(rid)) mergedRfqMap.set(rid, r);
         }
       }
       for (const r of MOCK_RFQS) {
-        if (r?.id && !mergedRfqMap.has(String(r.id).trim())) {
-          mergedRfqMap.set(String(r.id).trim(), r);
+        const rid = String(r?.id || '').trim();
+        if (rid && !isRfqDeleted(rid) && !mergedRfqMap.has(rid)) {
+          mergedRfqMap.set(rid, r);
         }
       }
       for (const s of snapItems) {
         if (!s?.id || s.type !== 'RFQ') continue;
         const sid = String(s.id).trim();
-        if (!sid || mergedRfqMap.has(sid)) continue;
+        if (!sid || isRfqDeleted(sid) || mergedRfqMap.has(sid)) continue;
         const imgUrl = String(s.image_url || s.image || s.images?.[0] || '').trim();
         mergedRfqMap.set(sid, {
           id: sid,
@@ -349,9 +387,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           images: imgUrl ? [imgUrl] : []
         } as unknown as RfqRequirement);
       }
-      if (mergedRfqMap.size > 0) {
-        setRfqs(Array.from(mergedRfqMap.values()));
-      }
+      setRfqs(Array.from(mergedRfqMap.values()));
+      setBrokenThumbUrls({});
       setStateVersion(v => v + 1);
     } finally {
       setIsLoadingInventory(false);
@@ -362,8 +399,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     void loadAllInventory(true);
     void backgroundAutoFixService.pollServerJobOnce();
     const unsubBg = backgroundAutoFixService.subscribe(snap => {
+      const wasActive = prevBgActiveRef.current;
+      prevBgActiveRef.current = snap.active;
       setBgSnapshot(snap);
       setStateVersion(v => v + 1);
+      if (wasActive && !snap.active) {
+        // Force fresh authoritative server sync whenever a background batch finishes or stops
+        void loadAllInventory(true);
+      }
       if (!snap.active && snap.lastCompletedNotice) {
         const n = snap.lastCompletedNotice;
         if (Date.now() - n.at < 15 * 60 * 1000) {
@@ -618,9 +661,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         (ov.locked === true || ov.serverVerified === true || ov.updatedBy === 'admin-manual')
       );
 
+      const isThumbMarkedBroken = Boolean(u && brokenThumbUrls[item.id] === u);
       if (
         !u ||
-        brokenThumbIds[item.id] ||
+        isThumbMarkedBroken ||
         isGenericOrPlaceholderImageUrl(u) ||
         isSyntheticSpecCardOrPlaceholder(u) ||
         /^https?:\/\//i.test(u)
@@ -630,7 +674,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           status: 'NEEDS_FIX' as const,
           statusDetail: !u
             ? 'Missing image'
-            : brokenThumbIds[item.id]
+            : isThumbMarkedBroken
               ? 'Broken / missing file on server'
               : isGenericOrPlaceholderImageUrl(u) || isSyntheticSpecCardOrPlaceholder(u)
                 ? 'Placeholder / synthetic card image'
@@ -661,7 +705,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, rfqs, siteContent, stateVersion, sessionChanges, brokenThumbIds]);
+  }, [products, rfqs, siteContent, stateVersion, sessionChanges, brokenThumbUrls]);
 
   const duplicatePeersByUrl = useMemo(() => {
     const map = new Map<string, Array<{ id: string; title: string; type: SiteImageTargetType }>>();
@@ -720,7 +764,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
       if (scopeFilter === 'DUPLICATE' && it.status !== 'DUPLICATE') return false;
-      if (scopeFilter === 'SKIPPED' && !skippedItems[it.id] && it.status !== 'NEEDS_FIX') return false;
+      if (scopeFilter === 'SKIPPED' && !skippedItems[it.id]) return false;
       if (scopeFilter === 'PRODUCT' && it.type !== 'PRODUCT') return false;
       if (scopeFilter === 'CATEGORY' && it.type !== 'CATEGORY') return false;
       if (scopeFilter === 'RFQ' && it.type !== 'RFQ') return false;
@@ -861,7 +905,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         }
         return next;
       });
-      setBrokenThumbIds(prev => {
+      setBrokenThumbUrls(prev => {
         const next = { ...prev };
         for (const e of entries) {
           delete next[e.id];
@@ -1031,6 +1075,103 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
+  // Permanently delete entire listed thing(s) (Product / Buy Lead / Hero Slide / Category) + their image file(s) from the whole website & storage
+  const handlePermanentDeleteEntireListing = async (targets: UnifiedSiteImageItem[]) => {
+    if (targets.length === 0) return;
+    setDeleteConfirmId(null);
+    setBulkDeleteConfirm(false);
+    setBannerNotice(null);
+    const isBulk = targets.length > 1;
+    if (isBulk) setIsBulkDeleting(true);
+    setBusyRowIds(prev => {
+      const next = { ...prev };
+      for (const t of targets) next[t.id] = 'Deleting...';
+      return next;
+    });
+
+    try {
+      const res = await deleteSiteListingsPermanently(
+        targets.map(t => ({
+          id: t.id,
+          type: t.type,
+          currentUrl: t.currentUrl || t.baseUrl,
+          fieldPath: t.fieldPath
+        }))
+      );
+
+      if (res.deletedProductIds.length > 0) {
+        syncDeletedProductIdsFromServer(res.deletedProductIds);
+      }
+      if (res.deletedRfqIds.length > 0) {
+        syncDeletedRfqIdsFromServer(res.deletedRfqIds);
+      }
+
+      const deletedProdIds = targets.filter(t => t.type === 'PRODUCT').map(t => t.id);
+      const deletedRfqIds = targets.filter(t => t.type === 'RFQ').map(t => t.id);
+      const hasSiteContentChanges = targets.some(
+        t => t.type === 'HERO_SLIDE' || t.type === 'CATEGORY' || t.type === 'SITE_ASSET'
+      );
+
+      if (deletedProdIds.length > 0) {
+        markProductIdsDeleted(deletedProdIds);
+        const delSet = new Set(deletedProdIds);
+        setProducts(prev => prev.filter(p => !delSet.has(String(p.id))));
+      }
+      if (deletedRfqIds.length > 0) {
+        markRfqIdsDeleted(deletedRfqIds);
+        const delSet = new Set(deletedRfqIds);
+        setRfqs(prev => prev.filter(r => !delSet.has(String(r.id))));
+      }
+
+      const targetIdSet = new Set(targets.map(t => t.id));
+      setSelectedIds(prev => {
+        const next = { ...prev };
+        for (const id of targetIdSet) delete next[id];
+        return next;
+      });
+      setLocalSkippedItems(prev => {
+        const next = { ...prev };
+        for (const id of targetIdSet) delete next[id];
+        return next;
+      });
+      for (const id of targetIdSet) {
+        backgroundAutoFixService.clearSkippedItem(id);
+      }
+
+      if (hasSiteContentChanges) {
+        await refreshFromServer().catch(() => {});
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+        window.dispatchEvent(new Event('tradeheaven_rfqs_updated'));
+      }
+      setStateVersion(v => v + 1);
+
+      setBannerNotice({
+        type: 'success',
+        text:
+          targets.length === 1
+            ? `Permanently deleted "${targets[0].title}" from the entire website${
+                res.deletedFiles.length > 0 ? ` and removed ${res.deletedFiles.length} image file from server storage.` : '.'
+              }`
+            : `Permanently deleted ${res.deletedCount} selected listing(s) from the website and removed ${res.deletedFiles.length} image file(s) from server storage.`
+      });
+    } catch (err: any) {
+      setBannerNotice({
+        type: 'error',
+        text: `Permanent delete failed: ${err?.message || 'Unable to delete listing(s).'}`
+      });
+    } finally {
+      setIsBulkDeleting(false);
+      setBusyRowIds(prev => {
+        const next = { ...prev };
+        for (const t of targets) delete next[t.id];
+        return next;
+      });
+    }
+  };
+
   // Save edited/cropped canvas data directly via replace endpoint (auto-deletes old file)
   const handleSaveCroppedRowImage = async (item: UnifiedSiteImageItem, editedDataUrl: string) => {
     setCroppingItem(null);
@@ -1119,45 +1260,16 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
-  // Automatically step through headings and upload real matching photos for visible rows whose images are out/missing/broken
-  useEffect(() => {
-    if (isLoadingInventory || batchProgress?.active || isAutoFixingVisibleOutRef.current) return;
-    const outCandidate = pageItems.find(it => {
-      if (autoFixedOutRowIdsRef.current.has(it.id) || busyRowIds[it.id]) return false;
-      const u = it.currentUrl;
-      return (
-        !u ||
-        Boolean(brokenThumbIds[it.id]) ||
-        isGenericOrPlaceholderImageUrl(u) ||
-        isSyntheticSpecCardOrPlaceholder(u)
-      );
-    });
-    if (!outCandidate) return;
-
-    autoFixedOutRowIdsRef.current.add(outCandidate.id);
-    isAutoFixingVisibleOutRef.current = true;
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          await handleAutoFixSingle(outCandidate);
-        } finally {
-          isAutoFixingVisibleOutRef.current = false;
-        }
-      })();
-    }, 120);
-
-    return () => {
-      window.clearTimeout(timer);
-      isAutoFixingVisibleOutRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageItems, brokenThumbIds, isLoadingInventory, batchProgress?.active, busyRowIds]);
-
   // Persistent Background Batch Auto-Fix (keeps running across Admin tab switches, page navigation, and reloads)
   const runBatchAutoFix = async (targets: UnifiedSiteImageItem[]) => {
     if (targets.length === 0 || localUploadProgress?.active) return;
     setBannerNotice(null);
     backgroundAutoFixService.dismissNotice();
+    setLocalSkippedItems(prev => {
+      const next = { ...prev };
+      for (const t of targets) delete next[t.id];
+      return next;
+    });
     const queueItems: BackgroundAutoFixItem[] = targets.map(c => ({
       id: c.id,
       type: c.type,
@@ -1445,7 +1557,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               { id: 'CHANGED', label: `Changed Live (${stats.changedCount})` },
               { id: 'NEEDS_FIX', label: `Needs Fix (${stats.flaggedTotal})` },
               { id: 'DUPLICATE', label: `Duplicates (${stats.duplicates})` },
-              { id: 'SKIPPED', label: `Skipped (${stats.skippedCount + stats.needsFix})` },
+              { id: 'SKIPPED', label: `Skipped (${stats.skippedCount})` },
               { id: 'PRODUCT', label: `Products (${stats.productsCount})` },
               { id: 'CATEGORY', label: `Categories (${stats.categoriesCount})` },
               { id: 'RFQ', label: `Buy Leads (${stats.rfqsCount})` },
@@ -1475,6 +1587,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               {tab.label}
             </button>
           ))}
+          {stats.skippedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                backgroundAutoFixService.clearAllSkipped();
+                setLocalSkippedItems({});
+                if (scopeFilter === 'SKIPPED') setScopeFilter('NEEDS_FIX');
+              }}
+              className="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-red-700 border border-red-200 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap"
+              title="Clear skipped markers so items can be retried cleanly"
+            >
+              Clear Skipped
+            </button>
+          )}
         </div>
 
         {/* Third Row: Search + Select Page + Batch Selection Actions + Top Pagination in One Place */}
@@ -1546,7 +1672,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedIds({})}
+                  disabled={isBulkDeleting || Boolean(localUploadProgress?.active)}
+                  onClick={() => setBulkDeleteConfirm(prev => !prev)}
+                  className="px-2.5 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                  title="Permanently delete selected listings & images from the entire website"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Selected ({selectedIdList.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedIds({});
+                    setBulkDeleteConfirm(false);
+                  }}
                   className="px-2 py-1.5 rounded-md bg-white border border-slate-300 text-slate-600 hover:text-slate-900 text-xs font-medium cursor-pointer whitespace-nowrap shrink-0"
                 >
                   Clear
@@ -1597,6 +1736,38 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             </div>
           </div>
         </div>
+
+        {/* Inline Bulk Permanent Delete Confirmation Bar */}
+        {bulkDeleteConfirm && selectedIdList.length > 0 && (
+          <div className="px-3.5 sm:px-5 py-2.5 border-t border-red-200 bg-red-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="text-red-900 font-semibold">
+              Permanently delete {selectedIdList.length} selected listing(s) and their image files from the entire website? This cannot be undone.
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => {
+                  const idSet = new Set(selectedIdList);
+                  const targets = allItems.filter(it => idSet.has(it.id));
+                  void handlePermanentDeleteEntireListing(targets);
+                }}
+                className="px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isBulkDeleting ? 'Deleting...' : `Confirm Permanent Delete (${selectedIdList.length})`}</span>
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => setBulkDeleteConfirm(false)}
+                className="px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:text-slate-900 font-medium cursor-pointer whitespace-nowrap"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status Notice Banner with Direct Live Check & Changed-Items Jump */}
@@ -1996,14 +2167,18 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                         title="Click to inspect & choose from verified photos"
                         className="w-20 h-16 sm:w-22 sm:h-18 rounded-md border border-slate-200 hover:border-[#0F294D] bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer group relative"
                       >
-                        {thumbSrc && !brokenThumbIds[item.id] && !isSyntheticSpecCardOrPlaceholder(item.currentUrl) ? (
+                        {thumbSrc && brokenThumbUrls[item.id] !== item.currentUrl && !isSyntheticSpecCardOrPlaceholder(item.currentUrl) ? (
                           <img
                             src={thumbSrc}
                             alt={item.title}
                             referrerPolicy="no-referrer"
                             loading="lazy"
                             onError={() => {
-                              setBrokenThumbIds(prev => (prev[item.id] ? prev : { ...prev, [item.id]: true }));
+                              setBrokenThumbUrls(prev =>
+                                prev[item.id] === item.currentUrl
+                                  ? prev
+                                  : { ...prev, [item.id]: item.currentUrl }
+                              );
                             }}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -2173,20 +2348,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
                       <button
                         type="button"
-                        disabled={Boolean(rowBusyLabel) || !item.currentUrl}
+                        disabled={Boolean(rowBusyLabel)}
                         onClick={() => {
                           setUrlEditor(null);
                           setDeleteConfirmId(isConfirmingDelete ? null : item.id);
                         }}
-                        className={`px-2 py-1.5 rounded-md border text-xs font-medium inline-flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-40 ${
+                        className={`px-2 py-1.5 rounded-md border text-xs font-semibold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-40 ${
                           isConfirmingDelete
                             ? 'bg-red-600 text-white border-red-600'
-                            : 'bg-white hover:bg-red-50 text-red-700 border-slate-300 hover:border-red-300'
+                            : 'bg-red-50/70 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300'
                         }`}
-                        title="Permanently delete server image & clear override"
+                        title="Permanently delete this listing from website or delete its image"
                       >
                         <Trash2 className="w-3 h-3" />
-                        <span>Delete</span>
+                        <span>{rowBusyLabel === 'Deleting...' ? 'Deleting...' : 'Delete'}</span>
                       </button>
                     </div>
                   </div>
@@ -2221,21 +2396,39 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                     </div>
                   )}
 
-                  {/* Inline Delete Confirmation (Expands cleanly inside the card) */}
+                  {/* Inline Delete Confirmation: Permanent Delete Entire Listing + Image OR Image Only */}
                   {isConfirmingDelete && (
-                    <div className="mt-2.5 pt-2.5 border-t border-red-200 bg-red-50/70 -mx-3 -mb-3 p-3 rounded-b-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <div className="text-red-900 font-medium break-all">
-                        Permanently delete <span className="font-mono font-semibold">{shortFileName}</span> from server?
+                    <div className="mt-2.5 pt-2.5 border-t border-red-200 bg-red-50/85 -mx-3 -mb-3 p-3 rounded-b-lg flex flex-col gap-2 text-xs">
+                      <div className="text-red-900 font-medium leading-snug">
+                        {item.type === 'SITE_ASSET'
+                          ? `Permanently delete image (${shortFileName}) and clear this site banner slot?`
+                          : `Permanently delete "${item.title}" (${item.type.replace('_', ' ')}) from the entire website & server storage?`}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => void handlePermanentDeleteItemImage(item)}
-                          className="px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Confirm Delete</span>
-                        </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {item.type !== 'SITE_ASSET' && (
+                          <button
+                            type="button"
+                            onClick={() => void handlePermanentDeleteEntireListing([item])}
+                            className="px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Listing & Image</span>
+                          </button>
+                        )}
+                        {item.currentUrl && (
+                          <button
+                            type="button"
+                            onClick={() => void handlePermanentDeleteItemImage(item)}
+                            className={`px-3 py-1.5 rounded-md font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                              item.type === 'SITE_ASSET'
+                                ? 'bg-red-600 hover:bg-red-700 text-white'
+                                : 'bg-white hover:bg-red-100 text-red-700 border border-red-300'
+                            }`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>{item.type === 'SITE_ASSET' ? 'Delete Image & Clear Slot' : 'Delete Image Only'}</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmId(null)}
