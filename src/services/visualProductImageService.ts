@@ -68,12 +68,20 @@ const GENERIC_PLACEHOLDER_PATTERNS = [
   '.svg',
   'spec-card',
   'speccard',
+  'spec-sheet',
+  'spec_sheet',
+  'datasheet',
+  'data-sheet',
+  'details-card',
   'fallback-card',
   'verified-b2b-export-spec',
   'company-isolated-catalog-asset',
   'unique-verified-asset',
   'auto-tyre-scraps-4a0f5066c723',
-  'verified-prod-iqf-molai-broccoli-garlic'
+  'verified-prod-iqf-molai-broccoli-garlic',
+  'auto-bulk-steam-coal-5500-nar-russia-or-eabdf37b2a71',
+  'auto-certified-steam-coal-5500-nar-aust-44114af24caa',
+  'auto-oem-specification-compressors-910ef77ccbbf'
 ];
 
 const HEADING_NON_NOUN_WORDS = new Set([
@@ -156,7 +164,7 @@ const COMPOUND_PRODUCT_NORMALIZATIONS_CLIENT: Array<[RegExp, string]> = [
 ];
 
 const OFF_TOPIC_CANDIDATE_RE =
-  /(nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|diagram|chart|logo|icon|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i;
+  /(nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|diagram|chart|logo|icon|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d|spec[-_]?sheet|datasheet|data[-_]?sheet|details[-_]?card|specification[-_]?sheet|price[-_]?list|quotation|invoice|certificate|msds|test[-_]?report|comparison[-_]?chart|spec[-_]?card|text[-_]?card|flexpay|hsn\.com|qvc\.com|steampowered|steamcommunity)/i;
 
 const CLIENT_GENERIC_MODIFIERS = new Set([
   'fresh', 'raw', 'black', 'white', 'red', 'green', 'yellow', 'blue', 'golden', 'silver',
@@ -220,9 +228,13 @@ function isCandidateOffTopicClient(
     (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(targetCore.slice(0, 2).join(' ')) ||
       (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
 
-  // For local/trusted mirrored tradeheaven uploads or Google thumbnails without descriptive filenames, don't discard if title already matches
+  // For local/trusted mirrored tradeheaven uploads or Alibaba CDN hash URLs already verified by backend, don't discard if at least 1 core token matches or local
   const isLocalUpload = String(cand.url || '').startsWith('/assets/uploads/');
   if (isLocalUpload) return false;
+  const isAlibabaPhoto =
+    String(cand.sourceDomain || '').toLowerCase().includes('alibaba.com') ||
+    String(cand.url || '').toLowerCase().includes('alicdn.com');
+  if (isAlibabaPhoto && coreHits >= 1) return false;
 
   if (targetCore.length >= 2 && coreHits < 2 && !exactPhraseHit) {
     return true;

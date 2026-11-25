@@ -21,12 +21,27 @@ const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Pr
   }
   const timeout = 25000; // 25 seconds timeout to prevent premature aborts on slow environments or cold starts
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+  let timedOut = false;
+  const id = setTimeout(() => {
+    timedOut = true;
+    try {
+      controller.abort(new DOMException('Request timed out', 'TimeoutError'));
+    } catch {
+      controller.abort();
+    }
+  }, timeout);
   try {
     return await nativeFetch(resource, {
       ...options,
       signal: options.signal || controller.signal
     });
+  } catch (err: any) {
+    if (timedOut) {
+      const timeoutErr = new Error('BigRock API request timed out');
+      timeoutErr.name = 'TimeoutError';
+      throw timeoutErr;
+    }
+    throw err;
   } finally {
     clearTimeout(id);
   }
@@ -858,7 +873,15 @@ export const bigrockApi = {
           return Array.isArray(list) ? list : [];
         }
       }
-    } catch (err) { console.warn('[BigRock API fetchListings]:', err); }
+    } catch (err: any) {
+      const isAbortOrTimeout =
+        err?.name === 'AbortError' ||
+        err?.name === 'TimeoutError' ||
+        /abort|timed?\s*out/i.test(String(err?.message || ''));
+      if (!isAbortOrTimeout) {
+        console.warn('[BigRock API fetchListings]:', err);
+      }
+    }
     return [];
   },
 

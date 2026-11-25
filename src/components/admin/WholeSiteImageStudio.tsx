@@ -511,13 +511,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         (rfq as any).specifications,
         rfq.detailedRequirements,
         rfq.detailedDescription,
-        (rfq as any).description,
-        (rfq as any).details,
-        (rfq as any).packagingRequirements,
-        rfq.targetQuantity ? `Quantity: ${rfq.targetQuantity} ${rfq.quantityUnit || ''}`.trim() : '',
-        rfq.destinationCountry || rfq.destinationPort || rfq.buyerCountry
-          ? `Destination: ${rfq.destinationCountry || rfq.destinationPort || rfq.buyerCountry}`
-          : ''
+        (rfq as any).description
       ]
         .map(v => String(v || '').trim())
         .filter(Boolean)

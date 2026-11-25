@@ -1117,7 +1117,15 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                           />
                         </div>
                         <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
-                          <span className="truncate">#{idx + 1} · {cand.sourceDomain || 'Google/Web'}</span>
+                          <span className="truncate flex items-center gap-1">
+                            <span>#{idx + 1}</span>
+                            {(String(cand.sourceDomain || '').toLowerCase().includes('alibaba') ||
+                              String(cand.url || '').toLowerCase().includes('alicdn.com')) ? (
+                              <span className="text-orange-600 font-bold">Alibaba</span>
+                            ) : (
+                              <span>· {cand.sourceDomain || 'Google/Web'}</span>
+                            )}
+                          </span>
                           {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
                         </div>
                       </button>

@@ -917,15 +917,17 @@ async function executeUpstreamHttpRequest(
   method: string,
   headers: Record<string, string>,
   bodyBuffer?: Buffer,
-  timeoutMs = 15000
+  timeoutMs = 15000,
+  maxAttempts = 2
 ): Promise<{ status: number; headers: Record<string, string | string[] | undefined>; body: Buffer }> {
   let lastError: any = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const attempts = Math.max(1, maxAttempts);
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       return await executeUpstreamHttpRequestOnce(targetUrl, method, headers, bodyBuffer, timeoutMs);
     } catch (err: any) {
       lastError = err;
-      if (attempt === 0) {
+      if (attempt < attempts - 1) {
         await new Promise((r) => setTimeout(r, 150));
       }
     }
@@ -9835,7 +9837,28 @@ async function forwardApiPhpToLiveUpstream(
       }
     }
 
-    const upstreamRes = await executeUpstreamHttpRequest(targetUrl, method, headers, bodyBuffer, 15000);
+    const isFastReadAction =
+      method === 'GET' &&
+      [
+        'get_listings',
+        'listings',
+        'products',
+        'get_products',
+        'get_rfqs',
+        'rfqs',
+        'stats',
+        'get_stats',
+        'commodity_indices',
+        'flash_deals'
+      ].includes(action);
+    const upstreamRes = await executeUpstreamHttpRequest(
+      targetUrl,
+      method,
+      headers,
+      bodyBuffer,
+      isFastReadAction ? 4500 : 12000,
+      isFastReadAction ? 1 : 2
+    );
     const rawText = upstreamRes.body.toString('utf8');
     let parsed: any = null;
     try {
@@ -14347,6 +14370,7 @@ function clearConflictingTitleOverridesForProductId(productId: string, keepPrima
 function isGenericOrPlaceholderServerUrl(url: string | undefined | null): boolean {
   const clean = String(url || '').trim().toLowerCase();
   if (!clean) return true;
+  if (clean.startsWith('data:image/svg') || clean.endsWith('.svg')) return true;
   return [
     'picsum.photos',
     'via.placeholder.com',
@@ -14367,7 +14391,23 @@ function isGenericOrPlaceholderServerUrl(url: string | undefined | null): boolea
     'vecteezy_',
     'default-icon',
     'diwali-offer-banner',
-    'tradeheavenb2bbest.svg'
+    'tradeheavenb2bbest.svg',
+    'spec-card',
+    'speccard',
+    'spec-sheet',
+    'spec_sheet',
+    'datasheet',
+    'data-sheet',
+    'details-card',
+    'fallback-card',
+    'verified-b2b-export-spec',
+    'company-isolated-catalog-asset',
+    'unique-verified-asset',
+    'auto-tyre-scraps-4a0f5066c723',
+    'verified-prod-iqf-molai-broccoli-garlic',
+    'auto-bulk-steam-coal-5500-nar-russia-or-eabdf37b2a71',
+    'auto-certified-steam-coal-5500-nar-aust-44114af24caa',
+    'auto-oem-specification-compressors-910ef77ccbbf'
   ].some(p => clean.includes(p));
 }
 
@@ -22198,7 +22238,53 @@ const BLOCKED_IMAGE_DOMAINS = [
 ];
 
 const EXCLUDED_IMAGE_TERMS_REGEX =
-  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|map|maps|political|territory|boundary|geography|atlas|flag|coat[-_]?of[-_]?arms|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|spec[-_]?sheet|datasheet|data[-_]?sheet|details[-_]?card|detail[-_]?page|specification[-_]?sheet|price[-_]?list|quotation|invoice|certificate|msds|coa[-_]|test[-_]?report|comparison[-_]?chart|table[-_]?of|spec[-_]?card|text[-_]?card|flexpay|hsn\.com|qvc\.com|infomercial|steampowered|steamcommunity|verified[-_]?b2b[-_]?export[-_]?spec|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+
+const RFQ_METADATA_NOISE_WORDS = new Set([
+  'spec', 'specs', 'specification', 'specifications', 'required', 'requirement', 'requirements',
+  'supply', 'supplier', 'suppliers', 'need', 'needed', 'looking', 'please', 'send', 'quote', 'quotes',
+  'quotation', 'moq', 'usd', 'eur', 'gbp', 'inr', 'cif', 'fob', 'cnf', 'cfr', 'ddp', 'exw', 'dap',
+  'port', 'ports', 'target', 'country', 'destination', 'origin', 'packaging', 'packing', 'payment',
+  'terms', 'quantity', 'qty', 'order', 'orders', 'minimum', 'maximum', 'urgent', 'urgently', 'immediate',
+  'immediately', 'buyer', 'buyers', 'company', 'contact', 'details', 'detail', 'delivery', 'shipment',
+  'shipping', 'container', 'containers', 'fcl', 'lcl', 'monthly', 'annual', 'trial', 'sample', 'samples',
+  'tons', 'ton', 'metric', 'pcs', 'pieces', 'kgs', 'kg', 'liters', 'litres', 'barrels', 'bbl', 'drums',
+  'bags', 'boxes', 'cartons', 'pallets', 'sgs', 'iso', 'halal', 'kosher', 'haccp', 'fda', 'ce', 'rohs',
+  'certificate', 'certified', 'inspection', 'verified', 'price', 'pricing', 'budget', 'lead', 'rfq',
+  'buying', 'purchase', 'purchasing', 'procure', 'procurement', 'contract', 'spot', 'trial', 'wanted',
+  'available', 'interested', 'best', 'good', 'high', 'quality', 'grade', 'export', 'import', 'global',
+  'international', 'worldwide', 'direct', 'factory', 'manufacturer', 'wholesale', 'bulk', 'commercial',
+  'industrial', 'standard', 'genuine', 'original', 'custom', 'oem', 'odm', 'with', 'from', 'that', 'this',
+  'have', 'must', 'should', 'will', 'into', 'for', 'and', 'the', 'per', 'month', 'year', 'week', 'days'
+]);
+
+/**
+ * Extracts ONLY clean product/material/form descriptors from RFQ details/specifications
+ * to help frame the real product photo query alongside the product name.
+ * Strips commercial/logistics/quantity/port metadata so image searches NEVER return spec sheets or details cards.
+ */
+function extractRfqProductFramingHint(specifications?: string): string {
+  const raw = String(specifications || '').trim();
+  if (!raw) return '';
+  // Remove labeled RFQ commercial metadata segments like "Quantity: 500 MT", "Destination: Rotterdam", "Payment: LC", etc.
+  const stripped = raw
+    .replace(/\b(?:quantity|qty|target\s*quantity|destination|port|payment(?:\s*terms)?|incoterm|incoterms|packaging|packing|moq|target\s*price|budget|delivery|origin|country|buyer|lead\s*time|inspection|certificate)\s*[:=-]\s*[^|;\n,]+/gi, ' ')
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:mt|metric\s*tons?|tons?|kgs?|pcs|pieces|containers?|fcl|lcl|usd|eur|days?|weeks?|months?)\b/gi, ' ')
+    .replace(/[^\w\s/-]/g, ' ');
+
+  const words = stripped
+    .split(/\s+/)
+    .map(w => w.trim().toLowerCase())
+    .filter(
+      w =>
+        w.length >= 3 &&
+        !/^\d+$/.test(w) &&
+        !RFQ_METADATA_NOISE_WORDS.has(w) &&
+        !EXCLUDED_IMAGE_TERMS_REGEX.test(w)
+    );
+
+  return Array.from(new Set(words)).slice(0, 4).join(' ');
+}
 
 const PRODUCT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
@@ -22775,6 +22861,7 @@ async function verifyLiveProductImageUrl(
 
   const browserUa =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const isAlibabaCdn = /alicdn\.com|alibaba\.com/i.test(url);
   const hasVerifiedSearchThumb =
     Boolean(cand.thumbnailUrl) &&
     (/tse\d+\.mm\.bing\.net\/th/i.test(String(cand.thumbnailUrl)) ||
@@ -22785,10 +22872,11 @@ async function verifyLiveProductImageUrl(
       method: 'HEAD',
       headers: {
         'User-Agent': browserUa,
-        Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8'
+        Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8',
+        ...(isAlibabaCdn ? { Referer: 'https://www.alibaba.com/' } : {})
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(2200)
+      signal: AbortSignal.timeout(1700)
     });
     const checked = inspectResponse(headResp);
     if (checked) return checked;
@@ -22803,10 +22891,12 @@ async function verifyLiveProductImageUrl(
   }
 
   try {
-    let refererOrigin = '';
-    try {
-      refererOrigin = `${new URL(url).origin}/`;
-    } catch {}
+    let refererOrigin = isAlibabaCdn ? 'https://www.alibaba.com/' : '';
+    if (!refererOrigin) {
+      try {
+        refererOrigin = `${new URL(url).origin}/`;
+      } catch {}
+    }
     const getResp = await fetch(url, {
       method: 'GET',
       headers: {
@@ -22816,7 +22906,7 @@ async function verifyLiveProductImageUrl(
         ...(refererOrigin ? { Referer: refererOrigin } : {})
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(2500)
+      signal: AbortSignal.timeout(2000)
     });
     const checked = inspectResponse(getResp);
     try {
@@ -22963,12 +23053,7 @@ async function fetchGoogleImagesProductPhotos(
   const primaryQuery = `${fullHeading || focused[0] || hints.primaryQuery}`.replace(/\s+/g, ' ').trim();
   if (!primaryQuery) return discovered;
 
-  const specKeywords = String(specifications || '')
-    .replace(/[^\w\s-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
-    .slice(0, 4)
-    .join(' ');
+  const specKeywords = extractRfqProductFramingHint(specifications);
 
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -22982,7 +23067,7 @@ async function fetchGoogleImagesProductPhotos(
         `${primaryQuery} product photo`,
         specKeywords ? `${focused[0] || primaryQuery} ${specKeywords}` : '',
         `site:alibaba.com ${focused[0] || primaryQuery}`,
-        ...focused.slice(0, 3).map(q => `${q} product`),
+        ...focused.slice(0, 2).map(q => `${q} product`),
         `${focused[0] || primaryQuery} commercial wholesale`
       ].filter(Boolean)
     )
@@ -23001,7 +23086,7 @@ async function fetchGoogleImagesProductPhotos(
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(4200)
+          signal: AbortSignal.timeout(3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -23016,18 +23101,20 @@ async function fetchGoogleImagesProductPhotos(
             const rawUrl = m[1].replace(/\\u003d/g, '=').replace(/\\u0026/g, '&').trim();
             if (!isSafePublicHttpUrl(rawUrl)) continue;
             if (/google\.com|gstatic\.com|googleapis\.com|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf/i.test(rawUrl)) continue;
+            if (EXCLUDED_IMAGE_TERMS_REGEX.test(rawUrl)) continue;
             let domain = 'images.google.com';
             try {
               domain = new URL(rawUrl).hostname.toLowerCase();
             } catch {}
+            const isAli = domain.includes('alibaba.com') || domain.includes('alicdn.com') || q.includes('site:alibaba.com');
             discovered.push({
               url: rawUrl,
               thumbnailUrl: rawUrl,
-              title: `${focused[0] || hints.primaryQuery} Google Photo`,
-              sourceDomain: domain,
+              title: `${focused[0] || hints.primaryQuery} ${isAli ? 'Alibaba Product Photo' : 'Google Photo'}`,
+              sourceDomain: isAli ? 'alibaba.com' : domain,
               width: Number(m[3]) || undefined,
               height: Number(m[2]) || undefined,
-              relevanceScore: 13
+              relevanceScore: isAli ? 20 : 13
             });
           } catch {}
         }
@@ -23038,12 +23125,14 @@ async function fetchGoogleImagesProductPhotos(
             const decoded = decodeURIComponent(m[1]).trim();
             if (!/^https?:\/\//i.test(decoded)) continue;
             if (/google\.com|gstatic\.com|googleapis\.com/i.test(decoded)) continue;
+            if (EXCLUDED_IMAGE_TERMS_REGEX.test(decoded)) continue;
+            const isAli = /alibaba\.com|alicdn\.com/i.test(decoded) || q.includes('site:alibaba.com');
             discovered.push({
               url: decoded,
               thumbnailUrl: decoded,
-              title: `${focused[0] || hints.primaryQuery} Google Photo`,
-              sourceDomain: 'images.google.com',
-              relevanceScore: 12
+              title: `${focused[0] || hints.primaryQuery} ${isAli ? 'Alibaba Product Photo' : 'Google Photo'}`,
+              sourceDomain: isAli ? 'alibaba.com' : 'images.google.com',
+              relevanceScore: isAli ? 19 : 12
             });
           } catch {}
         }
@@ -23052,12 +23141,13 @@ async function fetchGoogleImagesProductPhotos(
         for (const m of tbnMatches) {
           const cleanTbn = m[0].replace(/\\u003d/g, '=').replace(/\\u0026/g, '&').replace(/&amp;/g, '&').trim();
           if (!cleanTbn) continue;
+          const isAli = q.includes('site:alibaba.com');
           discovered.push({
             url: cleanTbn,
             thumbnailUrl: cleanTbn,
-            title: `${focused[0] || hints.primaryQuery} Google Image`,
-            sourceDomain: 'images.google.com',
-            relevanceScore: 9
+            title: `${focused[0] || hints.primaryQuery} ${isAli ? 'Alibaba Image' : 'Google Image'}`,
+            sourceDomain: isAli ? 'alibaba.com' : 'images.google.com',
+            relevanceScore: isAli ? 14 : 9
           });
         }
       } catch {}
@@ -23149,28 +23239,51 @@ async function fetchAlibabaProductImages(
   const primaryQ = fullHeading || focused[0] || cleanedSubject;
   if (primaryQ.length < 2) return discovered;
 
-  const specHint = String(specifications || '')
-    .replace(/[^\w\s-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
-    .slice(0, 4)
-    .join(' ');
+  const specHint = extractRfqProductFramingHint(specifications);
 
   const safeOffset = Math.max(0, Number(pageOffset) || 0);
   const firstIdx = 1 + safeOffset * 35;
-  const alibabaPage = 1 + (safeOffset % 4);
-  const alibabaQuery = focused[0] || primaryQ;
+  const alibabaQuery = focused[0] || cleanedSubject || primaryQ;
+  const shortAliQuery = focused[focused.length - 1] || alibabaQuery;
 
-  const bannedAlibabaRegex = /watermark|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf|logo|icon|badge|avatar|sprite|-tps-\d+|favicon/i;
+  const bannedAlibabaRegex =
+    /watermark|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf|logo|icon|badge|avatar|sprite|-tps-\d+|favicon|spec[-_]?sheet|datasheet|price[-_]?list|certificate|chart|diagram|infographic|invoice|quotation|banner/i;
 
-  // 1. Direct Alibaba product search page + Bing/Google site:alibaba.com image queries in parallel
-  const bingEndpoints = [
-    `https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${primaryQ}`)}&first=${firstIdx}&count=45&mmasync=1`,
-    `https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${alibabaQuery} wholesale`)}&first=${firstIdx}&count=40&mmasync=1`,
-    ...(specHint
-      ? [`https://www.bing.com/images/async?q=${encodeURIComponent(`site:alibaba.com ${alibabaQuery} ${specHint}`)}&first=${firstIdx}&count=35&mmasync=1`]
-      : [])
-  ];
+  const normalizeAlicdnUrl = (rawU: string): string => {
+    let u = String(rawU || '').trim();
+    if (u.startsWith('//')) u = `https:${u}`;
+    if (/alicdn\.com\/kf\//i.test(u)) {
+      u = u.replace(
+        /_(?:50|60|80|100|120|140|160|220|250|300)x(?:50|60|80|100|120|140|160|220|250|300)[^.]*\.(?:jpg|jpeg|webp)$/i,
+        ''
+      );
+    }
+    return u;
+  };
+
+  // Query Alibaba real product photos via Bing Images (site:alibaba.com + site:alicdn.com) & Google Images (site:alibaba.com)
+  // Avoids direct alibaba.com/trade/search anti-bot captcha challenge while surfacing real sc01-sc04.alicdn.com product photos!
+  const bingQueries = Array.from(
+    new Set(
+      [
+        `site:alibaba.com ${primaryQ}`,
+        `site:alibaba.com ${alibabaQuery} wholesale`,
+        `site:alicdn.com ${alibabaQuery}`,
+        specHint ? `site:alibaba.com ${alibabaQuery} ${specHint}` : '',
+        shortAliQuery !== alibabaQuery ? `site:alibaba.com ${shortAliQuery}` : ''
+      ].filter(Boolean)
+    )
+  ).slice(0, 4);
+
+  const bingEndpoints = bingQueries.map(
+    q => `https://www.bing.com/images/async?q=${encodeURIComponent(q)}&first=${firstIdx}&count=45&mmasync=1`
+  );
+
+  const googleAlibabaUrl = `https://www.google.com/search?tbm=isch&hl=en&gl=us&safe=active&q=${encodeURIComponent(
+    `site:alibaba.com ${specHint ? `${alibabaQuery} ${specHint.split(' ').slice(0, 2).join(' ')}` : alibabaQuery}`
+  )}&ijn=${safeOffset % 4}`;
+
+  const seenAli = new Set<string>();
 
   await Promise.allSettled([
     ...bingEndpoints.map(async ep => {
@@ -23181,7 +23294,7 @@ async function fetchAlibabaProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(4500)
+          signal: AbortSignal.timeout(3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -23190,12 +23303,23 @@ async function fetchAlibabaProductImages(
           try {
             const rawJson = m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'");
             const meta = JSON.parse(rawJson);
-            const murl = String(meta?.murl || '').trim();
+            const murl = normalizeAlicdnUrl(String(meta?.murl || ''));
             if (!murl || !isSafePublicHttpUrl(murl)) continue;
+            if (seenAli.has(murl)) continue;
             if (/\.(svg|gif|ico)(\?|$)/i.test(murl)) continue;
             const purl = String(meta?.purl || '').trim();
             const titleStr = String(meta?.t || meta?.desc || '').trim();
-            if (bannedAlibabaRegex.test(`${titleStr} ${murl}`)) continue;
+            if (bannedAlibabaRegex.test(`${titleStr} ${murl}`) || EXCLUDED_IMAGE_TERMS_REGEX.test(`${titleStr} ${murl}`)) continue;
+            const isAliHost = /(?:alicdn\.com|alibaba\.com)/i.test(murl) || /(?:alicdn\.com|alibaba\.com)/i.test(purl);
+            if (!isAliHost && !/alicdn\.com/i.test(murl)) continue;
+            seenAli.add(murl);
+            const isTrueAliUrl = /(?:alicdn\.com|alibaba\.com)/i.test(murl);
+            let srcDomain = 'alibaba.com';
+            if (!isTrueAliUrl) {
+              try {
+                srcDomain = new URL(murl).hostname.replace(/^www\./, '') || 'alibaba.com';
+              } catch {}
+            }
             discovered.push({
               url: murl,
               thumbnailUrl: String(meta?.turl || murl).trim(),
@@ -23205,8 +23329,8 @@ async function fetchAlibabaProductImages(
                 .replace(/&amp;/g, '&')
                 .replace(/[\uE000-\uF8FF]/g, '')
                 .trim(),
-              sourceDomain: 'alibaba.com',
-              relevanceScore: 16
+              sourceDomain: srcDomain,
+              relevanceScore: /alicdn\.com\/kf\//i.test(murl) ? 22 : 19
             });
           } catch {}
         }
@@ -23214,39 +23338,35 @@ async function fetchAlibabaProductImages(
     }),
     (async () => {
       try {
-        const tradeUrl = `https://www.alibaba.com/trade/search?SearchText=${encodeURIComponent(
-          specHint ? `${alibabaQuery} ${specHint.split(' ').slice(0, 2).join(' ')}` : alibabaQuery
-        )}&page=${alibabaPage}`;
-        const resp = await fetch(tradeUrl, {
+        const resp = await fetch(googleAlibabaUrl, {
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(4200)
+          signal: AbortSignal.timeout(3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
-        const alicdnMatches = html.matchAll(/(?:https?:)?\/\/sc0\d\.alicdn\.com\/kf\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)(?:_[0-9]+x[0-9]+q?\d*\.(?:jpg|jpeg|webp))?/gi);
-        const seenAli = new Set<string>();
+        if (/sorry\/index|recaptcha/i.test(html)) return;
+        const alicdnMatches = html.matchAll(
+          /(?:https?:)?\/\/(?:sc0\d|s|img)\.alicdn\.com\/kf\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)(?:_[0-9]+x[0-9]+q?\d*\.(?:jpg|jpeg|webp))?/gi
+        );
         for (const m of alicdnMatches) {
-          let imgUrl = m[0];
-          if (imgUrl.startsWith('//')) imgUrl = `https:${imgUrl}`;
-          // Normalize tiny thumbnails to high-res or base image
-          imgUrl = imgUrl.replace(/_(?:50|60|80|100|120|140|160|220)x(?:50|60|80|100|120|140|160|220)[^.]*\.(?:jpg|jpeg|webp)$/i, '');
-          if (seenAli.has(imgUrl) || bannedAlibabaRegex.test(imgUrl)) continue;
-          seenAli.add(imgUrl);
+          const imgUrl = normalizeAlicdnUrl(m[0]);
+          if (!imgUrl || seenAli.has(imgUrl) || bannedAlibabaRegex.test(imgUrl)) continue;
           if (!isSafePublicHttpUrl(imgUrl)) continue;
+          seenAli.add(imgUrl);
           discovered.push({
             url: imgUrl,
             thumbnailUrl: imgUrl,
-            sourcePageUrl: tradeUrl,
-            title: `${alibabaQuery} Alibaba Verified Supplier`,
+            sourcePageUrl: 'https://www.alibaba.com',
+            title: `${alibabaQuery} Alibaba Product Photo`,
             sourceDomain: 'alibaba.com',
-            relevanceScore: 17
+            relevanceScore: 22
           });
-          if (discovered.length >= 60) break;
+          if (discovered.length >= 80) break;
         }
       } catch {}
     })()
@@ -23264,14 +23384,7 @@ async function fetchLiveCommercialWebProductImages(
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
   const focused = buildFocusedVisualSearchQueries(productName, category);
-  const specHint = specifications
-    ? specifications
-        .replace(/[^\w\s-]/g, ' ')
-        .split(/\s+/)
-        .filter(w => w.length >= 3 && !/^(spec|specs|specification|required|supply|need|looking|please|send|quote|moq|usd|cif|fob|port|target|country|packaging)$/i.test(w))
-        .slice(0, 4)
-        .join(' ')
-    : '';
+  const specHint = extractRfqProductFramingHint(specifications);
 
   const safeOffset = Math.max(0, Number(pageOffset) || 0);
   const firstIdx = 1 + safeOffset * 35;
@@ -23289,7 +23402,7 @@ async function fetchLiveCommercialWebProductImages(
       url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=${firstIdx}&count=45&mmasync=1`,
       label: `${primaryQ} product photo`
     });
-    for (const headingClause of focused.slice(0, 4)) {
+    for (const headingClause of focused.slice(0, 3)) {
       if (headingClause && headingClause.toLowerCase() !== primaryQ.toLowerCase()) {
         searchEndpoints.push({
           url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=${firstIdx}&count=40&mmasync=1`,
@@ -23311,7 +23424,8 @@ async function fetchLiveCommercialWebProductImages(
     });
   }
 
-  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph/i;
+  const bannedLiveRegex =
+    /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph|spec[-_ ]?sheet|datasheet|data[-_ ]?sheet|details[-_ ]?card|specification[-_ ]?sheet|price[-_ ]?list|quotation|invoice|certificate|msds|test[-_ ]?report|flexpay|hsn\.com|qvc\.com|infomercial/i;
 
   await Promise.allSettled(
     searchEndpoints.map(async ep => {
@@ -23322,7 +23436,7 @@ async function fetchLiveCommercialWebProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(5000)
+          signal: AbortSignal.timeout(3800)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -23340,11 +23454,12 @@ async function fetchLiveCommercialWebProductImages(
             const purl = String(meta?.purl || '').trim();
             const titleStr = String(meta?.t || meta?.desc || '').trim();
             const combinedCheck = `${titleStr} ${purl} ${murl}`.toLowerCase();
-            if (bannedLiveRegex.test(combinedCheck)) continue;
+            if (bannedLiveRegex.test(combinedCheck) || EXCLUDED_IMAGE_TERMS_REGEX.test(combinedCheck)) continue;
             let domain = '';
             try {
               domain = new URL(purl || murl).hostname.toLowerCase();
             } catch {}
+            const isAli = domain.includes('alibaba.com') || murl.toLowerCase().includes('alicdn.com');
             discovered.push({
               url: murl,
               thumbnailUrl: String(meta?.turl || murl).trim(),
@@ -23354,8 +23469,8 @@ async function fetchLiveCommercialWebProductImages(
                 .replace(/&amp;/g, '&')
                 .replace(/[\uE000-\uF8FF]/g, '')
                 .trim(),
-              sourceDomain: domain,
-              relevanceScore: 14
+              sourceDomain: isAli ? 'alibaba.com' : domain,
+              relevanceScore: isAli ? 20 : 14
             });
           } catch {}
         }
@@ -23388,12 +23503,12 @@ async function filterCandidatesWithGemini(
     }));
     const prompt = `You are a strict B2B e-commerce visual QA reviewer.
 Target product: "${productName}" (Category: "${category || 'General'}").
-Review the image candidates below and return ONLY a JSON array of integer indices (e.g. [0, 2, 5]) that genuinely depict the real commercial product "${productName}" as a REAL PHOTOGRAPH.
-Discard infographics, market share charts, AI-generated futuristic renders, collages, company logos, unrelated portraits, cartoons, or off-topic items.
+Review the image candidates below and return ONLY a JSON array of integer indices (e.g. [0, 2, 5]) that genuinely depict the real commercial product "${productName}" as a REAL PRODUCT PHOTOGRAPH.
+STRICTLY DISCARD details sheets, specification cards, datasheets, certificates, price lists, invoices, text banners, TV shopping screenshots (HSN/QVC), infographics, market share charts, AI-generated futuristic renders, collages, company logos, unrelated portraits, cartoons, or off-topic items.
 Candidates:
 ${JSON.stringify(compact)}`;
 
-    const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Gemini relevance timeout')), 6000));
+    const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Gemini relevance timeout')), 3200));
     const resp = await Promise.race([
       ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -23430,12 +23545,15 @@ async function handleVisualProductImageSearch(params: {
   forceRefresh?: boolean;
   excludeUrls?: string[];
   searchPage?: number;
+  fastMode?: boolean;
 }) {
   const rawInputName = String(params.productName || '').trim();
   const fullHeading = normalizeFullProductHeading(rawInputName);
   const cleanName = fullHeading || cleanProductSearchSubject(rawInputName);
   const cleanCategory = String(params.category || '').trim();
   const cleanSpecs = String(params.specifications || '').trim();
+  const framedRfqHint = extractRfqProductFramingHint(cleanSpecs);
+  const isFastMode = Boolean(params.fastMode);
   const requestedCount = Math.max(20, Math.min(60, Number(params.count) || 48));
   const searchPage = Math.max(0, Number(params.searchPage) || 0);
 
@@ -23585,43 +23703,61 @@ async function handleVisualProductImageSearch(params: {
       const cleanUrl = String(c.url || '').trim();
       const dedupKey = cleanUrl.split('#')[0];
       if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
-      const isGoogleThumb = cleanUrl.includes('encrypted-tbn0.gstatic.com/images');
+      const lowerUrl = cleanUrl.toLowerCase();
+      const lowerDomain = String(c.sourceDomain || '').toLowerCase();
+      const isAlibabaSource =
+        lowerDomain === 'alibaba.com' ||
+        lowerDomain.endsWith('.alibaba.com') ||
+        lowerUrl.includes('alicdn.com') ||
+        lowerUrl.includes('alibaba.com');
+      const normalizedCand: VisualImageCandidate = isAlibabaSource
+        ? { ...c, sourceDomain: 'alibaba.com' }
+        : c;
+      const isGoogleThumb = lowerUrl.includes('encrypted-tbn0.gstatic.com/images');
       const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads|media-amazon\.com|susercontent\.com|walmartimages\.com|ebayimg\.com|bhg\.com|thespruce\.com|health\.com|bigcommerce\.com|squarespace-cdn\.com|wixstatic\.com)\b/i.test(cleanUrl);
       const sourceBoost =
-        c.sourceDomain === 'commons.wikimedia.org'
+        normalizedCand.sourceDomain === 'commons.wikimedia.org'
           ? 1
-          : c.sourceDomain === 'alibaba.com' || cleanUrl.includes('alicdn.com')
-            ? 16
+          : isAlibabaSource
+            ? 24
             : isCommercialCdn
               ? 14
-              : c.sourceDomain === 'images.google.com'
+              : normalizedCand.sourceDomain === 'images.google.com'
                 ? 12
                 : 10;
-      const rel = isCandidateStrictlyRelevant(c, tokenProfile, {
-        allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn
+      const rel = isCandidateStrictlyRelevant(normalizedCand, tokenProfile, {
+        allowCdnWithoutExt: allowCdnWithoutExt || isGoogleThumb || isCommercialCdn || isAlibabaSource
       });
       if (!rel.valid) {
         if (
           !relaxedCandidateMap.has(dedupKey) &&
-          (DIRECT_IMAGE_EXT_REGEX.test(cleanUrl) || isGoogleThumb || isCommercialCdn) &&
-          !BLOCKED_IMAGE_DOMAINS.some(d => cleanUrl.toLowerCase().includes(d)) &&
-          !EXCLUDED_IMAGE_TERMS_REGEX.test(cleanUrl)
+          (DIRECT_IMAGE_EXT_REGEX.test(cleanUrl) || isGoogleThumb || isCommercialCdn || isAlibabaSource) &&
+          !BLOCKED_IMAGE_DOMAINS.some(d => lowerUrl.includes(d)) &&
+          !EXCLUDED_IMAGE_TERMS_REGEX.test(`${cleanUrl} ${normalizedCand.title || ''}`)
         ) {
-          relaxedCandidateMap.set(dedupKey, { ...c, relevanceScore: Math.max(4, sourceBoost) });
+          relaxedCandidateMap.set(dedupKey, { ...normalizedCand, relevanceScore: Math.max(4, sourceBoost) });
         }
         continue;
       }
-      candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score + sourceBoost });
+      candidateMap.set(dedupKey, { ...normalizedCand, relevanceScore: rel.score + sourceBoost });
     }
   };
 
   const effectivePageOffset = searchPage + (params.forceRefresh && searchPage === 0 ? 1 : 0);
 
-  const verifyPendingBatch = async (limit: number = 90) => {
+  const verifyPendingBatch = async (limit: number = 48) => {
     const sortedPending = Array.from(candidateMap.entries()).sort(
       (a, b) => (b[1].relevanceScore || 0) - (a[1].relevanceScore || 0)
     );
-    const batch = sortedPending.slice(0, limit);
+    // Guarantee Alibaba product photos are verified first alongside top commercial candidates
+    const aliEntries = sortedPending.filter(
+      ([u, c]) => String(c.sourceDomain || '').includes('alibaba') || u.toLowerCase().includes('alicdn.com')
+    );
+    const otherEntries = sortedPending.filter(
+      ([u, c]) => !(String(c.sourceDomain || '').includes('alibaba') || u.toLowerCase().includes('alicdn.com'))
+    );
+    const aliQuota = Math.min(aliEntries.length, Math.max(12, Math.floor(limit * 0.45)));
+    const batch = [...aliEntries.slice(0, aliQuota), ...otherEntries.slice(0, Math.max(0, limit - aliQuota))];
     if (batch.length === 0) return;
     for (const [k] of batch) candidateMap.delete(k);
 
@@ -23640,31 +23776,31 @@ async function handleVisualProductImageSearch(params: {
 
   // Multi-source discovery: Alibaba + Commercial Web + Google Images + Wikimedia Commons
   const directWebDiscoveryPromise = Promise.all([
-    fetchAlibabaProductImages(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
-    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
-    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, cleanSpecs, effectivePageOffset),
-    fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
+    fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
+    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
+    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
+    isFastMode ? Promise.resolve([]) : fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
   ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
     collectAndFilter(alibabaCandidates, true);
     collectAndFilter(webCandidates, true);
     collectAndFilter(googleCandidates, true);
-    await verifyPendingBatch(90);
-    if (verifiedMap.size < 45) {
+    await verifyPendingBatch(isFastMode ? 20 : 52);
+    if (!isFastMode && verifiedMap.size < 36) {
       collectAndFilter(wikiCandidates, false);
-      await verifyPendingBatch(45);
+      await verifyPendingBatch(30);
     }
-    if (verifiedMap.size < 45 && relaxedCandidateMap.size > 0) {
+    if (verifiedMap.size < (isFastMode ? 4 : 32) && relaxedCandidateMap.size > 0) {
       for (const [k, v] of relaxedCandidateMap.entries()) {
         if (!verifiedMap.has(k) && !candidateMap.has(k)) {
           candidateMap.set(k, v);
         }
       }
-      await verifyPendingBatch(50);
+      await verifyPendingBatch(isFastMode ? 16 : 36);
     }
   });
 
   const geminiDiscoveryPromise = (async () => {
-    if (!geminiKey) return;
+    if (!geminiKey || isFastMode) return;
     const ai = new GoogleGenAI({
       apiKey: geminiKey,
       httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
@@ -23717,7 +23853,7 @@ Return ONLY valid JSON in this format:
   })();
 
   await directWebDiscoveryPromise;
-  if (verifiedMap.size < 6) {
+  if (!isFastMode && verifiedMap.size < 6) {
     await Promise.race([
       geminiDiscoveryPromise,
       new Promise<void>(resolve => setTimeout(resolve, 4500))
@@ -23730,7 +23866,7 @@ Return ONLY valid JSON in this format:
 
   // Automatic Sequential Heading Advancement inside handleVisualProductImageSearch:
   // If initial query returned fewer than desired unseen photos, step through Sub-headings -> RFQ spec clauses -> Core 1-2 word nouns
-  if (verifiedMap.size < Math.min(18, requestedCount)) {
+  if (verifiedMap.size < (isFastMode ? 4 : Math.min(18, requestedCount))) {
     const fallbackHeadings: string[] = [];
     const seenFb = new Set<string>([cleanName.toLowerCase()]);
     const pushFb = (q: string) => {
@@ -23749,20 +23885,10 @@ Return ONLY valid JSON in this format:
       .filter(p => p.length >= 3);
     for (const sc of subClauses) pushFb(sc);
 
-    // Extract concrete product nouns/phrases from RFQ details & specifications when available
-    if (cleanSpecs.length >= 4) {
-      const specClauses = cleanSpecs
-        .replace(/[()[\]]/g, ',')
-        .split(/\s*(?:[—–|;,/\n]|(?:\s+-\s+))\s*/i)
-        .map(s => cleanProductSearchSubject(s))
-        .filter(s => s.length >= 4 && s.length <= 56);
-      for (const sc of specClauses.slice(0, 3)) pushFb(sc);
-      const specTokens = extractMeaningfulAuditTokens(cleanSpecs).filter(
-        t => t.length >= 3 && !/^(need|looking|buy|rfq|quote|urgent|monthly|tons|ton|mt|pcs|kg|usd|fob|cif|port|destination|packaging|payment|terms|minimum|order|quantity|details|specifications|spec|target|country)$/i.test(t)
-      );
-      if (specTokens.length >= 2) {
-        pushFb(specTokens.slice(0, 3).join(' '));
-      }
+    // Use RFQ details strictly to FRAME the real product name — NEVER search raw RFQ metadata/details standalone
+    if (framedRfqHint.length >= 3) {
+      const baseSubject = buildFocusedVisualSearchQueries(cleanName, cleanCategory)[0] || cleanName;
+      pushFb(`${baseSubject} ${framedRfqHint}`);
     }
 
     for (const fq of buildFocusedVisualSearchQueries(cleanName, cleanCategory)) pushFb(fq);
@@ -23780,7 +23906,8 @@ Return ONLY valid JSON in this format:
     }
     for (const ct of coreToks) pushFb(ct);
 
-    for (const nextHeading of fallbackHeadings.slice(0, 6)) {
+    const maxFallbackHeadings = isFastMode ? 2 : 5;
+    for (const nextHeading of fallbackHeadings.slice(0, maxFallbackHeadings)) {
       if (!params.forceRefresh && searchPage === 0) {
         for (const ck of [
           normalizeVisualSearchKeyword(nextHeading, cleanCategory),
@@ -23802,7 +23929,7 @@ Return ONLY valid JSON in this format:
             }
           }
         }
-        if (verifiedMap.size >= Math.min(28, requestedCount)) {
+        if (verifiedMap.size >= Math.min(isFastMode ? 12 : 28, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -23811,17 +23938,17 @@ Return ONLY valid JSON in this format:
       // Live Alibaba + Commercial Web + Google Images + Wikimedia search for nextHeading
       try {
         const [subAli, subWeb, subGoogle, subWiki] = await Promise.all([
-          fetchAlibabaProductImages(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
-          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
-          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, cleanSpecs, effectivePageOffset),
+          fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
+          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
+          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
           fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
         ]);
         collectAndFilter(subAli, true);
         collectAndFilter(subWeb, true);
         collectAndFilter(subGoogle, true);
         collectAndFilter(subWiki, false);
-        await verifyPendingBatch(45);
-        if (verifiedMap.size >= Math.min(24, requestedCount)) {
+        await verifyPendingBatch(isFastMode ? 24 : 40);
+        if (verifiedMap.size >= Math.min(isFastMode ? 10 : 24, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -23880,11 +24007,20 @@ Return ONLY valid JSON in this format:
     };
   }
 
-  const geminiVerified = await filterCandidatesWithGemini(cleanName, cleanCategory, allVerified, geminiKey);
+  const geminiVerified = isFastMode
+    ? allVerified
+    : await filterCandidatesWithGemini(cleanName, cleanCategory, allVerified, geminiKey);
 
-  // Auto-upload top 6 verified images onto our site (/assets/uploads/auto-...webp) immediately,
-  // and mirror the rest of the pool in the background so subsequent loads take 0ms!
-  const topToMirrorNow = geminiVerified.slice(0, 6);
+  // Auto-upload top verified images onto our site (/assets/uploads/trade-heaven-...webp) immediately,
+  // reserving slots for verified Alibaba product photos alongside top commercial photos!
+  const syncMirrorLimit = isFastMode ? 2 : 6;
+  const aliToMirror = geminiVerified
+    .filter(item => String(item.sourceDomain || '').includes('alibaba') || String(item.url || '').includes('alicdn.com'))
+    .slice(0, Math.ceil(syncMirrorLimit / 2));
+  const otherToMirror = geminiVerified
+    .filter(item => !aliToMirror.includes(item))
+    .slice(0, Math.max(0, syncMirrorLimit - aliToMirror.length));
+  const topToMirrorNow = [...aliToMirror, ...otherToMirror];
   await Promise.allSettled(
     topToMirrorNow.map(async item => {
       const localUrl = await mirrorExternalProductImageToLocalUploads({
@@ -23923,12 +24059,21 @@ Return ONLY valid JSON in this format:
   // Mirror remaining pool items in background
   void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
 
-  // Filter out caller-excluded URLs so repeated searches always return brand-new images
+  // Filter out caller-excluded URLs so repeated searches always return brand-new images,
+  // while keeping Alibaba product photos prominently surfaced!
   const freshOnly = geminiVerified.filter(item => !isExcludedCandidateUrl(item.url));
   const finalCandidates = freshOnly.length > 0 ? freshOnly : geminiVerified;
-  const topLocal = finalCandidates.filter(item => String(item.url || '').startsWith('/assets/uploads/'));
-  const topExternal = fisherYatesShuffle(finalCandidates.filter(item => !String(item.url || '').startsWith('/assets/uploads/')));
-  const orderedPool = [...topLocal, ...topExternal];
+  const isAlibabaItem = (item: VisualImageCandidate) =>
+    String(item.sourceDomain || '').toLowerCase().includes('alibaba') ||
+    String(item.url || '').toLowerCase().includes('alicdn.com');
+  const topAli = finalCandidates.filter(item => isAlibabaItem(item));
+  const topLocalOther = finalCandidates.filter(
+    item => !isAlibabaItem(item) && String(item.url || '').startsWith('/assets/uploads/')
+  );
+  const topExternalOther = fisherYatesShuffle(
+    finalCandidates.filter(item => !isAlibabaItem(item) && !String(item.url || '').startsWith('/assets/uploads/'))
+  );
+  const orderedPool = [...topAli, ...topLocalOther, ...topExternalOther];
   const selected = orderedPool.slice(0, requestedCount);
 
   return {
@@ -24321,15 +24466,18 @@ async function mirrorExternalProductImageToLocalUploads(params: {
   }
 
   const job = (async (): Promise<string | null> => {
+    const isAlibabaCdn = /alicdn\.com|alibaba\.com/i.test(rawUrl);
     const tryDownload = async (withReferer: boolean) => {
       const isWikimedia = rawUrl.includes('wikimedia.org');
       const headers: Record<string, string> = {
         'User-Agent': isWikimedia
           ? 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net; admin@tradeheaven.net)'
-          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8'
       };
-      if (withReferer && !isWikimedia) {
+      if (isAlibabaCdn) {
+        headers.Referer = 'https://www.alibaba.com/';
+      } else if (withReferer && !isWikimedia) {
         try {
           headers.Referer = `${new URL(rawUrl).origin}/`;
         } catch {}
@@ -24342,9 +24490,9 @@ async function mirrorExternalProductImageToLocalUploads(params: {
     };
 
     try {
-      let resp = await tryDownload(false);
+      let resp = await tryDownload(isAlibabaCdn);
       if (!resp.ok && (resp.status === 401 || resp.status === 403)) {
-        resp = await tryDownload(true);
+        resp = await tryDownload(!isAlibabaCdn);
       }
       if (!resp.ok) return null;
       const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
@@ -24360,6 +24508,26 @@ async function mirrorExternalProductImageToLocalUploads(params: {
       const arrBuf = await resp.arrayBuffer();
       const rawBuffer = Buffer.from(arrBuf);
       if (rawBuffer.length < 2500) return null;
+
+      // Reject tiny icons, ultra-wide ad banners, and flat synthetic spec/text cards before mirroring to disk
+      try {
+        const probe = sharp(rawBuffer, { failOn: 'none' });
+        const meta = await probe.metadata();
+        const w = Number(meta.width || 0);
+        const h = Number(meta.height || 0);
+        if (w < 220 || h < 220) return null;
+        const ratio = w / Math.max(1, h);
+        if (ratio > 4.2 || ratio < 0.24) return null;
+        const stats = await probe.stats();
+        const rgbChannels = (stats.channels || []).slice(0, 3);
+        if (rgbChannels.length > 0) {
+          const avgStdev = rgbChannels.reduce((acc, ch) => acc + (ch.stdev || 0), 0) / rgbChannels.length;
+          if (avgStdev < 10) return null;
+          if (w === 800 && h === 600 && avgStdev < 24 && rawBuffer.length < 22000) return null;
+        }
+      } catch {
+        return null;
+      }
 
       // Byte-content fingerprint check: NEVER upload the exact same photo bytes under a second product's filename
       const rawSha256 = crypto.createHash('sha256').update(rawBuffer).digest('hex');
@@ -24476,10 +24644,13 @@ app.get('/api/v1/products/proxy-image', async (req, res) => {
     if (!targetUrl || !isSafePublicHttpUrl(targetUrl)) {
       return res.status(400).end();
     }
-    let refererOrigin = '';
-    try {
-      refererOrigin = `${new URL(targetUrl).origin}/`;
-    } catch {}
+    const isAlibabaUrl = /alicdn\.com|alibaba\.com/i.test(targetUrl);
+    let refererOrigin = isAlibabaUrl ? 'https://www.alibaba.com/' : '';
+    if (!refererOrigin) {
+      try {
+        refererOrigin = `${new URL(targetUrl).origin}/`;
+      } catch {}
+    }
     const upstream = await fetch(targetUrl, {
       headers: {
         'User-Agent':
@@ -25391,29 +25562,31 @@ async function resolveUniqueVerifiedCatalogImage(params: {
 }> {
   const cleanName = cleanProductSearchSubject(params.title || 'Commercial Product');
   const cleanCategory = String(params.category || 'General Wholesale').trim();
-  const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, params.specifications);
+  const framedRfqHint = extractRfqProductFramingHint(params.specifications);
+  const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, framedRfqHint);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
-  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 8500);
+  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 18000);
   const timeoutMs =
     typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0
-      ? Math.min(params.geminiTimeoutMs, 3200)
-      : 3000;
-  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 3;
+      ? Math.min(params.geminiTimeoutMs, 11000)
+      : 9500;
+  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 5;
   const withinNetworkDeadline = () => Date.now() < effectiveWallDeadline;
 
   // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
   const globalRegistry = params.sharedRegistry || buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
 
   const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
-    const remainingMs = Math.max(800, Math.min(timeoutMs, effectiveWallDeadline - Date.now()));
-    if (remainingMs <= 800 && Date.now() >= effectiveWallDeadline) return [];
+    const remainingMs = Math.max(1500, Math.min(timeoutMs, effectiveWallDeadline - Date.now()));
+    if (Date.now() >= effectiveWallDeadline) return [];
     try {
       const searchPromise = handleVisualProductImageSearch({
         productName: searchName,
         category: cleanCategory,
         specifications: searchSpecs,
         count: 36,
-        forceRefresh
+        forceRefresh,
+        fastMode: true
       });
       const timeoutSentinel = Symbol('gemini_timeout');
       const searchResult = await Promise.race([
@@ -25421,7 +25594,12 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), remainingMs))
       ]);
       if (searchResult !== timeoutSentinel && searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
-        return fisherYatesShuffle([...searchResult.pool]);
+        const isAli = (c: VisualImageCandidate) =>
+          String(c?.sourceDomain || '').toLowerCase().includes('alibaba') ||
+          String(c?.url || '').toLowerCase().includes('alicdn.com');
+        const aliTier = fisherYatesShuffle(searchResult.pool.filter(isAli));
+        const otherTier = fisherYatesShuffle(searchResult.pool.filter(c => !isAli(c)));
+        return [...aliTier, ...otherTier];
       } else if (searchResult === timeoutSentinel) {
         searchPromise.catch(() => {});
       }
@@ -25433,7 +25611,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     loadProductImageCacheFromDisk();
   }
 
-  // Build ordered heading advancement sequence: Full Heading -> Sub-headings -> RFQ/Spec details -> Core 2-word noun -> Core 1-word noun -> Category noun
+  // Build ordered heading advancement sequence: Full Heading -> Framed Heading (with clean RFQ product nouns) -> Sub-headings -> Core 2-word noun -> Core 1-word noun -> Category noun
+  // NEVER push raw RFQ details/quantity/port strings as standalone headings!
   const headingQueue: string[] = [];
   const seenHeadings = new Set<string>();
   const pushHeading = (raw: string) => {
@@ -25447,23 +25626,16 @@ async function resolveUniqueVerifiedCatalogImage(params: {
 
   pushHeading(params.title || cleanName);
   pushHeading(cleanName);
+  if (framedRfqHint.length >= 3) {
+    const baseSubj = buildFocusedVisualSearchQueries(cleanName, cleanCategory)[0] || cleanName;
+    pushHeading(`${baseSubj} ${framedRfqHint}`);
+  }
   const subParts = String(params.title || cleanName)
     .replace(/[()[\]]/g, ',')
     .split(/\s*(?:[—–|;,/]|(?:\s+-\s+)|\s+&\s+|\s+\+\s+|\s+and\s+)\s*/i)
     .map(p => cleanProductSearchSubject(p))
     .filter(p => p.length >= 3);
   for (const part of subParts) pushHeading(part);
-
-  // Include concrete RFQ/product specification clauses & nouns in sequential advancement
-  const specText = String(params.specifications || '').trim();
-  if (specText.length >= 4) {
-    const specParts = specText
-      .replace(/[()[\]]/g, ',')
-      .split(/\s*(?:[—–|;,/\n]|(?:\s+-\s+))\s*/i)
-      .map(p => cleanProductSearchSubject(p))
-      .filter(p => p.length >= 4 && p.length <= 56);
-    for (const sp of specParts.slice(0, 3)) pushHeading(sp);
-  }
 
   const focusedQueries = buildFocusedVisualSearchQueries(cleanName, cleanCategory);
   for (const fq of focusedQueries) pushHeading(fq);
@@ -25476,7 +25648,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     'brown', 'blue', 'yellow', 'large', 'small', 'medium', 'extra', 'high', 'best', 'new', 'bayan',
     'need', 'looking', 'supply', 'specifications', 'spec', 'packaging', 'target', 'country'
   ]);
-  const coreNouns = extractMeaningfulAuditTokens(`${cleanName} ${specText}`).filter(t => t.length >= 3 && !nounStop.has(t));
+  const coreNouns = extractMeaningfulAuditTokens(`${cleanName} ${framedRfqHint}`).filter(t => t.length >= 3 && !nounStop.has(t));
   if (coreNouns.length >= 2) {
     pushHeading(coreNouns.slice(0, 2).join(' '));
     pushHeading(coreNouns.slice(-2).join(' '));
@@ -25484,9 +25656,11 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   for (let i = 0; i < Math.min(coreNouns.length, 6); i++) {
     pushHeading(coreNouns[i]);
   }
-  const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
-  if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
-  else if (catNouns.length === 1) pushHeading(catNouns[0]);
+  if (params.recordType === 'CATEGORY' || params.recordId.startsWith('cat-')) {
+    const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
+    if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
+    else if (catNouns.length === 1) pushHeading(catNouns[0]);
+  }
 
   const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
   let totalMirrorAttempts = 0;
@@ -25498,12 +25672,13 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   ) => {
     for (const cand of candidatesList) {
       const rawCandUrl = String(cand?.url || '').trim();
-      if (!rawCandUrl) continue;
+      if (!rawCandUrl || isGenericOrPlaceholderServerUrl(rawCandUrl)) continue;
       if (globalRegistry.isCandidateUsed(rawCandUrl, cand?.sourcePageUrl)) continue;
 
       let resolvedLocal = normalizeAuditImageUrl(
         serverProductImageState.urlReplacements?.[rawCandUrl] || rawCandUrl
       );
+      if (isGenericOrPlaceholderServerUrl(resolvedLocal)) continue;
       if (globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)) continue;
 
       if (/^https?:\/\//i.test(resolvedLocal)) {
@@ -25524,7 +25699,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
             skipBind: true,
             rejectIfUsedByOther: globalRegistry
           }),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 2200))
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
         ]);
         if (!mirrored) continue;
         resolvedLocal = normalizeAuditImageUrl(mirrored);
@@ -25537,6 +25712,12 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         !params.usedUrls.has(resolvedLocal) &&
         !globalRegistry.isCandidateUsed(resolvedLocal, rawCandUrl)
       ) {
+        const mismatchCheck = detectCatalogImageIssue(
+          { id: params.recordId, type: params.recordType, title: params.title, category: cleanCategory, imageUrl: resolvedLocal },
+          new Map()
+        );
+        if (mismatchCheck.flagged) continue;
+
         const meta = mirroredAssetMetaByLocalUrl.get(resolvedLocal);
         const contentHash = meta?.rawSha256 || getLocalUploadFileSha256(resolvedLocal) || undefined;
         const sourceUrl = /^https?:\/\//i.test(rawCandUrl) ? rawCandUrl : meta?.sourceUrl;
@@ -25685,7 +25866,12 @@ function extractMeaningfulAuditTokens(text: string): string[] {
     'pcs', 'pieces', 'kgs', 'buy', 'lead', 'rfq', 'sourcing', 'tender', 'high', 'pure',
     'natural', 'premium', 'standard', 'global', 'general', 'raw', 'materials', 'machinery',
     'auto', 'webp', 'jpeg', 'jpg', 'png', 'assets', 'uploads', 'image', 'whatsapp',
-    'trade', 'heaven', 'tradeheaven'
+    'trade', 'heaven', 'tradeheaven',
+    'frozen', 'fresh', 'dried', 'dry', 'organic', 'round', 'whole', 'slice', 'slices',
+    'cut', 'cuts', 'piece', 'pieces', 'block', 'blocks', 'powder', 'liquid', 'solid', 'leaf',
+    'refined', 'crude', 'unrefined', 'heavy', 'light', 'cold', 'hot', 'white', 'black',
+    'red', 'yellow', 'green', 'blue', 'brown', 'small', 'large', 'medium', 'extra',
+    'best', 'good', 'fine', 'coarse', 'series', 'custom', 'special'
   ]);
   return String(text || '')
     .toLowerCase()

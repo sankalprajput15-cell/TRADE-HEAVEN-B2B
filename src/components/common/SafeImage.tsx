@@ -12,6 +12,7 @@ import {
 import {
   fetchVisualProductImages,
   isGenericOrPlaceholderImageUrl,
+  isSyntheticSpecCardOrPlaceholder,
   isMismatchedProductImageUrl,
   markBrokenExternalImageUrl,
   isBrokenExternalImageUrl,
@@ -288,7 +289,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         ? resolveLocalMirroredImageUrl(effectiveSrc.trim())
         : '';
     const optManualEff =
-      manualMirrored && !isGenericOrPlaceholderImageUrl(manualMirrored)
+      manualMirrored && !isGenericOrPlaceholderImageUrl(manualMirrored) && !isSyntheticSpecCardOrPlaceholder(manualMirrored)
         ? manualMirrored.startsWith('data:image/')
           ? manualMirrored
           : optimizeImageUrl(manualMirrored, { width: optimalWidth, isThumbnail })
@@ -304,6 +305,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       typeof effectiveSrc === 'string' &&
       effectiveSrc.trim() &&
       !isGenericOrPlaceholderImageUrl(effectiveSrc.trim()) &&
+      !isSyntheticSpecCardOrPlaceholder(effectiveSrc.trim()) &&
       !isCrossCompanyAsset(effectiveSrc.trim()) &&
       !productImageManagerService.isUrlReplacedOrDeleted(effectiveSrc.trim(), productId, isLogoOrAvatar ? undefined : productTitle)
     ) {
@@ -318,7 +320,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       Boolean(effectiveSrc) &&
       typeof effectiveSrc === 'string' &&
       effectiveSrc.trim().startsWith('/assets/uploads/') &&
-      !isGenericOrPlaceholderImageUrl(effectiveSrc.trim());
+      !isGenericOrPlaceholderImageUrl(effectiveSrc.trim()) &&
+      !isSyntheticSpecCardOrPlaceholder(effectiveSrc.trim());
 
     if (
       !optManualEff &&
@@ -328,6 +331,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       src.trim() &&
       src.trim() !== (effectiveSrc || '').trim() &&
       !isGenericOrPlaceholderImageUrl(src.trim()) &&
+      !isSyntheticSpecCardOrPlaceholder(src.trim()) &&
       !isCrossCompanyAsset(src.trim()) &&
       !productImageManagerService.isUrlReplacedOrDeleted(src.trim(), productId, isLogoOrAvatar ? undefined : productTitle)
     ) {
@@ -417,8 +421,10 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    // Never return synthetic SVG flash cards — only real loadable image URLs
-    return list.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isGenericOrPlaceholderImageUrl(u));
+    // Never return synthetic SVG flash cards or details/spec cards — only real loadable product photos
+    return list.filter(
+      u => u && !FAILED_IMAGE_URLS.has(u) && !isGenericOrPlaceholderImageUrl(u) && !isSyntheticSpecCardOrPlaceholder(u)
+    );
   }, [src, effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName, type]);
 
   // When a product/RFQ/category has no valid real image candidate (or all candidates failed),
