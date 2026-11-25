@@ -345,52 +345,72 @@ export async function autoFixSiteImages(
   if (items.length === 0) return { results: [] };
 
   const serverResultsById = new Map<string, SiteImageAutoFixRowResult>();
-  try {
-    const res = await fetch('/api/v1/admin/site-images/auto-fix', {
-      method: 'POST',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ items })
-    });
-    const json = await res.json().catch(() => null);
-    if (res.ok && Array.isArray(json?.results) && json.results.length > 0) {
-      for (const r of json.results) {
-        if (
-          r?.success &&
-          r?.id &&
-          r?.newUrl &&
-          !isSyntheticSpecCardOrPlaceholder(r) &&
-          !isSyntheticSpecCardOrPlaceholder(r.newUrl)
-        ) {
-          const loadsOk = await validateRealImageUrlLoads(String(r.newUrl));
-          if (loadsOk) {
-            serverResultsById.set(String(r.id), r);
-            void productImageManagerService.logAndVerifyUploadPropagation({
-              targetId: r.id,
-              targetType: r.type,
-              expectedUrl: r.newUrl,
-              deletedOldUrls: r.deletedOldUrls,
-              source: 'autoFixSiteImages'
-            });
+  for (const endpoint of ['/api/v1/admin/site-images/auto-fix', '/api.php?action=site_images_auto_fix']) {
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ items }),
+        ...(ctrl ? { signal: ctrl.signal } : {})
+      });
+      const json = await res.json().catch(() => null);
+      if (!isUnmatchedGatewayResponse(res, json) && Array.isArray(json?.results) && json.results.length > 0) {
+        for (const r of json.results) {
+          if (!r?.id) continue;
+          const cleanId = String(r.id);
+          if (
+            r.success &&
+            r.newUrl &&
+            !isSyntheticSpecCardOrPlaceholder(r) &&
+            !isSyntheticSpecCardOrPlaceholder(r.newUrl)
+          ) {
+            const cleanNewUrl = normalizeProductAssetUrl(String(r.newUrl)).split('?')[0];
+            const isServerLocalUpload = cleanNewUrl.startsWith('/assets/uploads/');
+            const loadsOk = isServerLocalUpload ? true : await validateRealImageUrlLoads(cleanNewUrl);
+            if (loadsOk) {
+              serverResultsById.set(cleanId, { ...r, newUrl: cleanNewUrl });
+              void productImageManagerService.logAndVerifyUploadPropagation({
+                targetId: cleanId,
+                targetType: r.type,
+                expectedUrl: cleanNewUrl,
+                deletedOldUrls: r.deletedOldUrls,
+                source: `autoFixSiteImages:${endpoint}`
+              });
+              continue;
+            }
           }
+          // Record authoritative server skip/failure so we do not cascade into a 3-minute redundant retry loop
+          serverResultsById.set(cleanId, {
+            id: cleanId,
+            type: r.type || 'PRODUCT',
+            success: false,
+            oldUrl: r.oldUrl,
+            error: r.error || 'No verified unused matching photo found automatically.'
+          });
         }
+        if (serverResultsById.size === items.length) {
+          return {
+            results: items.map(it => serverResultsById.get(it.id)!).filter(Boolean)
+          };
+        }
+        break;
       }
-      if (serverResultsById.size === items.length) {
-        return {
-          results: items.map(it => serverResultsById.get(it.id)!).filter(Boolean)
-        };
-      }
+    } catch {
+      // Try next endpoint or fall through to per-item fallback
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-  } catch {
-    // Fall through to per-item sequential heading search & upload fallback below
   }
 
-  // Fallback for any item that did not receive a real, loadable photo from batch auto-fix
+  // Fallback for any item that was not handled by batch auto-fix
   const results: SiteImageAutoFixRowResult[] = [];
   for (const item of items) {
-    const verifiedServerRow = serverResultsById.get(item.id);
-    if (verifiedServerRow) {
-      results.push(verifiedServerRow);
+    const existingServerRow = serverResultsById.get(item.id);
+    if (existingServerRow) {
+      results.push(existingServerRow);
       continue;
     }
     try {

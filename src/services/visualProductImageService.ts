@@ -2352,17 +2352,20 @@ export async function fixSingleCatalogImage(params: {
 
   const singleFixEndpoints = [
     '/api/v1/admin/fix-single-catalog-image',
-    '/api.php?action=fix_single_catalog_image',
-    '/api.php?__route=v1/admin/fix-single-catalog-image'
+    '/api.php?action=fix_single_catalog_image'
   ];
 
   let lastMeaningfulError = '';
+  let authoritativeNoMatch = false;
   for (const endpoint of singleFixEndpoints) {
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 7500) : null;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        ...(ctrl ? { signal: ctrl.signal } : {})
       });
       const ctype = (res.headers.get('content-type') || '').toLowerCase();
       if (ctype.includes('text/html')) {
@@ -2370,25 +2373,31 @@ export async function fixSingleCatalogImage(params: {
       }
       const json = await res.json().catch(() => null);
       if (res.ok && isValidSingleFixResponse(json)) {
-        const loadsOk = await validateRealImageUrlLoads(json.new_image_url);
+        const isLocalUpload = String(json.new_image_url || '').startsWith('/assets/uploads/');
+        const loadsOk = isLocalUpload ? true : await validateRealImageUrlLoads(json.new_image_url);
         if (loadsOk) {
           return json;
         }
       }
       if (json && json.message && !json.service) {
         lastMeaningfulError = String(json.message);
-      } else if (res.status >= 400) {
+        if (res.status === 422) {
+          authoritativeNoMatch = true;
+          break;
+        }
+      } else if (res.status >= 400 && res.status !== 404) {
         lastMeaningfulError = `Server endpoint returned status ${res.status}`;
       }
     } catch (err: any) {
       if (err?.message && !lastMeaningfulError) {
         lastMeaningfulError = err.message;
       }
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 
-  // Sequential Heading Advancement Fallback:
-  // Step through Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun until a real, loadable photo is uploaded!
+  // Sequential Heading Advancement Fallback (bounded to 5s max so a missing match never stalls Chrome):
   let finalUrl = '';
   let source = 'direct_set_product_images';
   let matchedHeadingQuery = resolvedTitle;
@@ -2407,19 +2416,21 @@ export async function fixSingleCatalogImage(params: {
     }
     finalUrl = customCandidate;
     source = 'manual_custom_url';
-  } else {
+  } else if (!authoritativeNoMatch) {
     const cleanPrev = prevUrl.split('?')[0];
-    const headingQueries = extractProductHeadingSearchQueries(resolvedTitle, resolvedCategory);
+    const headingQueries = extractProductHeadingSearchQueries(resolvedTitle, resolvedCategory).slice(0, 2);
     if (headingQueries.length === 0) headingQueries.push(resolvedTitle);
+    const fallbackDeadline = Date.now() + 5000;
 
     for (const queryChip of headingQueries) {
+      if (Date.now() >= fallbackDeadline) break;
       const visual = await fetchVisualProductImages({
         productName: queryChip,
         productId: cleanId,
         category: resolvedCategory,
         specifications: params.specifications,
-        count: 36,
-        forceRefresh: true
+        count: 24,
+        forceRefresh: false
       });
       const pool = Array.isArray(visual.pool) && visual.pool.length > 0 ? visual.pool : visual.images || [];
       const relevantCandidates = pool.filter(
@@ -2431,7 +2442,8 @@ export async function fixSingleCatalogImage(params: {
           c.url.split('?')[0] !== cleanPrev
       );
 
-      for (const picked of relevantCandidates) {
+      for (const picked of relevantCandidates.slice(0, 4)) {
+        if (Date.now() >= fallbackDeadline) break;
         let candidateUrl = picked.url;
         const candidateLoads = await validateRealImageUrlLoads(candidateUrl);
         if (!candidateLoads) continue;
@@ -2444,12 +2456,7 @@ export async function fixSingleCatalogImage(params: {
             category: resolvedCategory
           });
           if (mirrored && !isGenericOrPlaceholderImageUrl(mirrored)) {
-            const localLoads = await validateRealImageUrlLoads(mirrored);
-            if (localLoads) {
-              candidateUrl = mirrored;
-            } else {
-              continue;
-            }
+            candidateUrl = mirrored;
           } else {
             continue;
           }

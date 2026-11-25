@@ -8849,6 +8849,266 @@ switch ($action) {
         ]);
         break;
 
+    case 'site_images_auto_fix':
+        $uploads_dir_af = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_af) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_af = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_af)) {
+            @mkdir($uploads_dir_af, 0775, true);
+        }
+        $af_raw_items = is_array($input['items'] ?? null) ? array_slice($input['items'], 0, 25) : [];
+        if (empty($af_raw_items)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Provide items array for auto-fix."]);
+            break;
+        }
+        $af_state = th_load_merged_image_state($uploads_dir_af);
+        $af_cms_file = __DIR__ . '/site_content.json';
+        $af_cms = th_read_json_locked($af_cms_file);
+        $af_cms_dirty = false;
+        $af_now_ms = (int)round(microtime(true) * 1000);
+        $af_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+
+        // Build global set of currently attached URLs across all overrides
+        $af_used_urls = [];
+        foreach (($af_state['overrides'] ?? []) as $ov_k => $ov_v) {
+            if (!is_array($ov_v)) continue;
+            $pu = th_strip_url_base($ov_v['primary'] ?? '');
+            if ($pu !== '') $af_used_urls[$pu] = (string)$ov_k;
+            if (!empty($ov_v['replacedOldUrls']) && is_array($ov_v['replacedOldUrls'])) {
+                foreach ($ov_v['replacedOldUrls'] as $ru) {
+                    $rbu = th_strip_url_base($ru);
+                    if ($rbu !== '') $af_used_urls[$rbu] = (string)$ov_k;
+                }
+            }
+        }
+
+        // Pre-scan local /assets/uploads/ directory once per batch
+        $af_local_files = [];
+        foreach (@scandir($uploads_dir_af) ?: [] as $uf_af) {
+            if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf_af) || preg_match('/(diwali-offer|unsplash|placeholder|vecteezy)/i', $uf_af)) continue;
+            $fp_af = $uploads_dir_af . '/' . $uf_af;
+            if (!is_file($fp_af) || @filesize($fp_af) < 2000) continue;
+            $af_local_files[] = [
+                'webUrl' => '/assets/uploads/' . $uf_af,
+                'lowName' => strtolower($uf_af)
+            ];
+        }
+
+        $af_stop = ['the','and','for','with','from','grade','high','pure','quality','bulk','wholesale','industrial','natural','organic','fresh','raw','export','import','india','best','price','supplier','manufacturer','buyer','lead','rfq','ton','tons','kg','mt','pack','packaging','type'];
+        $af_results = [];
+        $af_deleted_all = [];
+        $af_fixed_count = 0;
+
+        foreach ($af_raw_items as $af_item) {
+            if (!is_array($af_item)) continue;
+            $it_id = trim((string)($af_item['id'] ?? ''));
+            $it_type = strtoupper(trim((string)($af_item['type'] ?? 'PRODUCT')));
+            $it_title = trim((string)($af_item['title'] ?? $it_id));
+            $it_cat = trim((string)($af_item['category'] ?? ''));
+            $it_old = trim((string)($af_item['currentUrl'] ?? ''));
+            $it_fp = trim((string)($af_item['fieldPath'] ?? ''));
+
+            if ($it_id === '') continue;
+
+            // Never overwrite brand logo automatically
+            if ($it_id === 'site-brand-logo' || $it_fp === 'branding.logoUrl') {
+                $af_results[] = [
+                    'id' => $it_id,
+                    'type' => $it_type,
+                    'oldUrl' => $it_old,
+                    'newUrl' => $it_old,
+                    'deletedOldUrls' => [],
+                    'success' => false,
+                    'message' => 'Brand logo is protected from automatic stock photo replacement.'
+                ];
+                continue;
+            }
+
+            $old_base_af = th_strip_url_base($it_old);
+            if ($old_base_af !== '') {
+                $af_used_urls[$old_base_af] = $it_id;
+            }
+
+            $search_text_af = strtolower($it_title . ' ' . $it_cat);
+            if ($it_type === 'SITE_ASSET' || $it_type === 'HERO_SLIDE') {
+                $search_text_af .= ' global trade logistics port container ship warehouse industrial cargo';
+            }
+            $words_af = array_values(array_unique(array_filter(
+                preg_split('/[^a-z0-9]+/', $search_text_af) ?: [],
+                function($w) use ($af_stop) { return strlen($w) >= 3 && !in_array($w, $af_stop, true) && !ctype_digit($w); }
+            )));
+
+            $chosen_url = '';
+            $best_sc = 0;
+            if (!empty($words_af)) {
+                foreach ($af_local_files as $lf) {
+                    $wu = $lf['webUrl'];
+                    if (isset($af_used_urls[$wu])) continue;
+                    $sc = 0;
+                    foreach ($words_af as $w) {
+                        $st = (strlen($w) > 4 && substr($w, -1) === 's') ? substr($w, 0, -1) : $w;
+                        if (strpos($lf['lowName'], $w) !== false) $sc += 4;
+                        elseif (strlen($st) >= 4 && strpos($lf['lowName'], $st) !== false) $sc += 2;
+                    }
+                    if ($sc > $best_sc) {
+                        $best_sc = $sc;
+                        $chosen_url = $wu;
+                    }
+                }
+            }
+
+            // Bounded 3s Wikimedia fallback if no local unused upload matched
+            if ($chosen_url === '' && !empty($words_af) && function_exists('curl_init')) {
+                $q_af = implode(' ', array_slice($words_af, 0, 3));
+                $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode('filetype:bitmap ' . $q_af) . '&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
+                $ch_af = curl_init($wm_u);
+                curl_setopt($ch_af, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch_af, CURLOPT_TIMEOUT, 3);
+                curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 2);
+                curl_setopt($ch_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                $raw_wm = (string)curl_exec($ch_af);
+                $code_wm = intval(curl_getinfo($ch_af, CURLINFO_HTTP_CODE));
+                curl_close($ch_af);
+                if ($code_wm === 200 && $raw_wm !== '') {
+                    $wm_data = json_decode($raw_wm, true);
+                    $wm_pages = $wm_data['query']['pages'] ?? [];
+                    $auto_slug_af = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                    foreach ($wm_pages as $pg_af) {
+                        $info_af = $pg_af['imageinfo'][0] ?? null;
+                        if (!$info_af) continue;
+                        $mime_af = strtolower((string)($info_af['mime'] ?? ''));
+                        if (strpos($mime_af, 'jpeg') === false && strpos($mime_af, 'png') === false && strpos($mime_af, 'webp') === false) continue;
+                        $cu_af = trim((string)($info_af['thumburl'] ?? $info_af['url'] ?? ''));
+                        if ($cu_af === '' || !th_is_safe_public_http_url($cu_af)) continue;
+                        $u_hash_af = substr(sha1($cu_af), 0, 12);
+                        $local_fn_af = "auto-{$auto_slug_af}-{$u_hash_af}.jpg";
+                        $local_web_af = '/assets/uploads/' . $local_fn_af;
+                        if (isset($af_used_urls[$local_web_af])) continue;
+                        $local_fp_af = $uploads_dir_af . '/' . $local_fn_af;
+                        if (!file_exists($local_fp_af) || @filesize($local_fp_af) < 2000) {
+                            $ch_dl_af = curl_init($cu_af);
+                            curl_setopt($ch_dl_af, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch_dl_af, CURLOPT_FOLLOWLOCATION, true);
+                            curl_setopt($ch_dl_af, CURLOPT_MAXREDIRS, 2);
+                            curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 3);
+                            curl_setopt($ch_dl_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                            $bin_af = (string)curl_exec($ch_dl_af);
+                            $dl_code_af = intval(curl_getinfo($ch_dl_af, CURLINFO_HTTP_CODE));
+                            curl_close($ch_dl_af);
+                            if ($dl_code_af >= 200 && $dl_code_af < 300 && strlen($bin_af) > 2500) {
+                                @file_put_contents($local_fp_af, $bin_af, LOCK_EX);
+                            }
+                        }
+                        if (file_exists($local_fp_af) && @filesize($local_fp_af) > 2000) {
+                            $chosen_url = $local_web_af;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($chosen_url === '' || $chosen_url === $old_base_af) {
+                $af_results[] = [
+                    'id' => $it_id,
+                    'type' => $it_type,
+                    'oldUrl' => $it_old,
+                    'newUrl' => $it_old,
+                    'deletedOldUrls' => [],
+                    'success' => false,
+                    'message' => 'No verified unused matching image found for "' . $it_title . '".'
+                ];
+                continue;
+            }
+
+            $af_used_urls[$chosen_url] = $it_id;
+            $ex_ov_af = isset($af_state['overrides'][$it_id]) && is_array($af_state['overrides'][$it_id]) ? $af_state['overrides'][$it_id] : [];
+            $rep_af = array_values(array_filter(
+                th_merge_replaced_old_urls($ex_ov_af['replacedOldUrls'] ?? [], [$it_old, $ex_ov_af['primary'] ?? null]),
+                function($u) use ($chosen_url) { return th_strip_url_base($u) !== $chosen_url; }
+            ));
+
+            $af_state['overrides'][$it_id] = [
+                'primary' => $chosen_url,
+                'previousPrimary' => ($old_base_af !== '' && $old_base_af !== $chosen_url) ? $old_base_af : ($ex_ov_af['previousPrimary'] ?? null),
+                'gallery' => [$chosen_url],
+                'format' => strtoupper(pathinfo($chosen_url, PATHINFO_EXTENSION) ?: 'WEBP'),
+                'updatedAt' => $af_now_iso,
+                'imageUpdatedAt' => $af_now_ms,
+                'updatedBy' => 'catalog-image-auditor',
+                'locked' => true,
+                'serverVerified' => true,
+                'verifiedAt' => $af_now_iso,
+                'replacedOldUrls' => $rep_af
+            ];
+            $af_state['productActivityTimestamps'][$it_id] = $af_now_ms;
+            th_sync_image_override_to_db_and_cms($it_id, $chosen_url, [$chosen_url], $pdo, $db_connected);
+
+            if (is_array($af_cms)) {
+                if ($it_type === 'HERO_SLIDE' && isset($af_cms['homepage']['heroSlides']) && is_array($af_cms['homepage']['heroSlides'])) {
+                    foreach ($af_cms['homepage']['heroSlides'] as &$sl_af) {
+                        if ((string)($sl_af['id'] ?? '') === $it_id) {
+                            $sl_af['image'] = $chosen_url;
+                            $af_cms_dirty = true;
+                        }
+                    }
+                    unset($sl_af);
+                } elseif ($it_type === 'CATEGORY' && isset($af_cms['homepage']['categoriesList']) && is_array($af_cms['homepage']['categoriesList'])) {
+                    foreach ($af_cms['homepage']['categoriesList'] as &$cat_af) {
+                        if ((string)($cat_af['id'] ?? '') === $it_id) {
+                            $cat_af['image'] = $chosen_url;
+                            $af_cms_dirty = true;
+                        }
+                    }
+                    unset($cat_af);
+                } elseif ($it_fp !== '') {
+                    $parts_af = array_values(array_filter(explode('.', $it_fp), function($x) { return trim($x) !== ''; }));
+                    if (count($parts_af) > 0) {
+                        $ref_af = &$af_cms;
+                        for ($pi = 0; $pi < count($parts_af) - 1; $pi++) {
+                            if (!isset($ref_af[$parts_af[$pi]]) || !is_array($ref_af[$parts_af[$pi]])) {
+                                $ref_af[$parts_af[$pi]] = [];
+                            }
+                            $ref_af = &$ref_af[$parts_af[$pi]];
+                        }
+                        $ref_af[$parts_af[count($parts_af) - 1]] = $chosen_url;
+                        unset($ref_af);
+                        $af_cms_dirty = true;
+                    }
+                }
+            }
+
+            $af_fixed_count++;
+            $af_results[] = [
+                'id' => $it_id,
+                'type' => $it_type,
+                'oldUrl' => $it_old,
+                'newUrl' => $chosen_url,
+                'deletedOldUrls' => [],
+                'success' => true
+            ];
+        }
+
+        if ($af_cms_dirty && is_array($af_cms)) {
+            $af_cms['siteContentUpdatedAt'] = $af_now_ms;
+            th_write_json_atomic($af_cms_file, $af_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        if ($af_fixed_count > 0) {
+            th_save_image_state_atomic($uploads_dir_af, $af_state);
+        }
+
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        echo json_encode([
+            "success" => true,
+            "fixedCount" => $af_fixed_count,
+            "failedCount" => count($af_results) - $af_fixed_count,
+            "deletedOldUrls" => $af_deleted_all,
+            "results" => $af_results
+        ]);
+        break;
+
     // -------------------------------------------------------------
     // Default fallback
     // -------------------------------------------------------------

@@ -382,6 +382,8 @@ class BackgroundAutoFixService {
     }
   }
 
+  private inFlightPoll = false;
+
   private ensurePollingServerJob() {
     if (typeof window === 'undefined' || this.pollTimer !== null) return;
     this.pollTimer = window.setInterval(() => {
@@ -397,10 +399,15 @@ class BackgroundAutoFixService {
   }
 
   public async pollServerJobOnce(): Promise<void> {
+    if (this.inFlightPoll) return;
+    this.inFlightPoll = true;
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 6500) : null;
     try {
-      const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs/current', {
+      const res = await fetch(`/api/v1/admin/site-images/auto-fix-jobs/current?_t=${Date.now()}`, {
         cache: 'no-store',
-        headers: { Accept: 'application/json' }
+        headers: { Accept: 'application/json' },
+        ...(ctrl ? { signal: ctrl.signal } : {})
       });
       if (!res.ok) return;
       const json = await res.json().catch(() => null);
@@ -409,6 +416,9 @@ class BackgroundAutoFixService {
       }
     } catch {
       // Transient network error while navigating; keep polling cleanly
+    } finally {
+      if (timer) clearTimeout(timer);
+      this.inFlightPoll = false;
     }
   }
 
@@ -418,8 +428,17 @@ class BackgroundAutoFixService {
     await this.pollServerJobOnce();
   }
 
-  public async enqueue(items: BackgroundAutoFixItem[]): Promise<void> {
-    if (!Array.isArray(items) || items.length === 0) return;
+  public async enqueue(rawItems: BackgroundAutoFixItem[]): Promise<void> {
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return;
+
+    // Compact specifications & prioritize catalog items over site assets so large 3,400+ item queues transfer and start fast
+    const items: BackgroundAutoFixItem[] = rawItems
+      .filter(it => Boolean(it?.id) && it.id !== 'site-brand-logo')
+      .map(it => ({
+        ...it,
+        specifications: it.specifications ? String(it.specifications).slice(0, 220) : undefined
+      }));
+    if (items.length === 0) return;
 
     this.state.lastCompletedNotice = null;
     // Clear stale skipped status for any items being re-queued so fresh retries display cleanly
@@ -436,17 +455,41 @@ class BackgroundAutoFixService {
       this.emit();
     }
 
-    // 1. Try submitting to the persistent server-side background job queue first
+    // 1. Try submitting to the persistent server-side background job queue first (in 600-item chunks so large batches never hit body-size or proxy timeouts)
     try {
-      const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ items })
-      });
-      const json = await res.json().catch(() => null);
-      if (res.ok && json?.success && json.job) {
-        this.applyServerJobPayload(json.job);
+      const CHUNK_SIZE = 600;
+      let latestServerJob: ServerJobPayload | null = null;
+      let serverAccepted = false;
+
+      for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+        const chunk = items.slice(i, i + CHUNK_SIZE);
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 10000) : null;
+        try {
+          const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs', {
+            method: 'POST',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ items: chunk }),
+            ...(ctrl ? { signal: ctrl.signal } : {})
+          });
+          const json = await res.json().catch(() => null);
+          if (res.ok && json?.success && json.job) {
+            latestServerJob = json.job;
+            serverAccepted = true;
+            if (i === 0) {
+              this.applyServerJobPayload(json.job);
+            }
+          } else {
+            break;
+          }
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      }
+
+      if (serverAccepted && latestServerJob) {
+        this.applyServerJobPayload(latestServerJob);
         return;
       }
     } catch {
@@ -476,14 +519,17 @@ class BackgroundAutoFixService {
       this.state.deletedOld = 0;
       this.state.currentItemId = this.localQueue[0].id;
       this.state.currentLabel = this.localQueue[0].title;
-      this.state.queuedIds = this.localQueue.map(q => q.id);
+      this.state.queuedIds = this.localQueue.slice(0, 100).map(q => q.id);
       this.emit();
       void this.runLocalBackgroundWorker();
     } else {
       this.localQueue.push(...toAppend);
       this.state.total += toAppend.length;
       this.state.queuedIds = Array.from(
-        new Set([...(this.state.currentItemId ? [this.state.currentItemId] : []), ...this.localQueue.map(q => q.id)])
+        new Set([
+          ...(this.state.currentItemId ? [this.state.currentItemId] : []),
+          ...this.localQueue.slice(0, 100).map(q => q.id)
+        ])
       );
       this.emit();
     }
@@ -492,17 +538,53 @@ class BackgroundAutoFixService {
   private async runLocalBackgroundWorker() {
     if (this.localWorkerRunning) return;
     this.localWorkerRunning = true;
-    try {
+    const LOCAL_CONCURRENCY = 4;
+    const PER_ITEM_TIMEOUT_MS = 8500;
+    const activeSlots = new Map<number, BackgroundAutoFixItem>();
+
+    const updateCurrentActiveSlot = () => {
+      for (const item of activeSlots.values()) {
+        this.state.currentItemId = item.id;
+        this.state.currentLabel = item.title || item.id;
+        return;
+      }
+      if (this.localQueue.length > 0) {
+        this.state.currentItemId = this.localQueue[0].id;
+        this.state.currentLabel = this.localQueue[0].title || this.localQueue[0].id;
+      }
+    };
+
+    const runSlot = async (slotIdx: number) => {
       while (!this.localStopRequested && this.localQueue.length > 0) {
         const target = this.localQueue.shift();
         if (!target) break;
+        activeSlots.set(slotIdx, target);
         this.state.currentItemId = target.id;
-        this.state.currentLabel = target.title;
-        this.state.queuedIds = [target.id, ...this.localQueue.map(q => q.id)];
+        this.state.currentLabel = target.title || target.id;
+        this.state.queuedIds = [
+          ...Array.from(activeSlots.values()).map(a => a.id),
+          ...this.localQueue.slice(0, 96).map(q => q.id)
+        ];
         this.emit();
 
+        let timeoutHandle: number | null = null;
         try {
-          const json = await autoFixSiteImages([target]);
+          const timeoutPromise = new Promise<{ results: SiteImageAutoFixRowResult[] }>(resolve => {
+            timeoutHandle = window.setTimeout(() => {
+              resolve({
+                results: [
+                  {
+                    id: target.id,
+                    type: target.type,
+                    success: false,
+                    error: 'Timed out after 8.5s (skipped to keep batch moving).'
+                  }
+                ]
+              });
+            }, PER_ITEM_TIMEOUT_MS);
+          });
+
+          const json = await Promise.race([autoFixSiteImages([target]), timeoutPromise]);
           const resList = Array.isArray(json?.results) ? json.results : [];
           const match = resList.find(r => r.id === target.id) || resList[0];
           this.state.completed += 1;
@@ -534,11 +616,22 @@ class BackgroundAutoFixService {
               error: err?.message || 'Background auto-fix request failed for this item.'
             }
           ]);
+        } finally {
+          if (timeoutHandle !== null) window.clearTimeout(timeoutHandle);
+          activeSlots.delete(slotIdx);
+          updateCurrentActiveSlot();
+          this.state.queuedIds = [
+            ...Array.from(activeSlots.values()).map(a => a.id),
+            ...this.localQueue.slice(0, 96).map(q => q.id)
+          ];
+          this.emit();
         }
-
-        this.state.queuedIds = this.localQueue.map(q => q.id);
-        this.emit();
       }
+    };
+
+    try {
+      const workerCount = Math.min(LOCAL_CONCURRENCY, Math.max(1, this.localQueue.length));
+      await Promise.all(Array.from({ length: workerCount }, (_, idx) => runSlot(idx)));
     } finally {
       const wasStopped = this.localStopRequested;
       this.localWorkerRunning = false;

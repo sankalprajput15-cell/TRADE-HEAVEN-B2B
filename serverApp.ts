@@ -23908,6 +23908,7 @@ async function handleVisualProductImageSearch(params: {
   excludeUrls?: string[];
   searchPage?: number;
   fastMode?: boolean;
+  preindexedFiles?: IndexedUploadFileEntry[];
 }) {
   const rawInputName = String(params.productName || '').trim();
   const fullHeading = normalizeFullProductHeading(rawInputName);
@@ -23975,35 +23976,37 @@ async function handleVisualProductImageSearch(params: {
       });
     }
     if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 12) {
-      const currentLocalCount = cached.images.filter(
-        img => String(img.url || '').startsWith('/assets/uploads/') && isLocalUploadPresentOnDisk(img.url)
-      ).length;
-      if (currentLocalCount < 6) {
-        const externalToMirror = cached.images
-          .filter(img => /^https?:\/\//i.test(String(img.url || '')))
-          .slice(0, 6 - currentLocalCount);
-        if (externalToMirror.length > 0) {
-          await Promise.allSettled(
-            externalToMirror.map(async item => {
-              const localUrl = await mirrorExternalProductImageToLocalUploads({
-                externalUrl: item.url,
-                productName: cleanName,
-                category: cleanCategory,
-                skipBind: true
-              });
-              if (localUrl) {
-                item.url = localUrl;
-                item.thumbnailUrl = localUrl;
-              }
-            })
-          );
-          saveProductImageCacheToDisk();
-          saveServerProductImageState();
+      if (!isFastMode) {
+        const currentLocalCount = cached.images.filter(
+          img => String(img.url || '').startsWith('/assets/uploads/') && isLocalUploadPresentOnDisk(img.url)
+        ).length;
+        if (currentLocalCount < 6) {
+          const externalToMirror = cached.images
+            .filter(img => /^https?:\/\//i.test(String(img.url || '')))
+            .slice(0, 6 - currentLocalCount);
+          if (externalToMirror.length > 0) {
+            await Promise.allSettled(
+              externalToMirror.map(async item => {
+                const localUrl = await mirrorExternalProductImageToLocalUploads({
+                  externalUrl: item.url,
+                  productName: cleanName,
+                  category: cleanCategory,
+                  skipBind: true
+                });
+                if (localUrl) {
+                  item.url = localUrl;
+                  item.thumbnailUrl = localUrl;
+                }
+              })
+            );
+            scheduleSaveProductImageCache(false);
+            scheduleSaveOverridesState(false);
+          }
         }
-      }
 
-      if (cached.images.some(img => /^https?:\/\//i.test(img.url))) {
-        void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, cached.images);
+        if (cached.images.some(img => /^https?:\/\//i.test(img.url))) {
+          void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, cached.images);
+        }
       }
 
       const mappedCached = cached.images
@@ -24268,7 +24271,7 @@ Return ONLY valid JSON in this format:
     }
     for (const ct of coreToks) pushFb(ct);
 
-    const maxFallbackHeadings = isFastMode ? 2 : 5;
+    const maxFallbackHeadings = isFastMode ? 1 : 5;
     for (const nextHeading of fallbackHeadings.slice(0, maxFallbackHeadings)) {
       if (!params.forceRefresh && searchPage === 0) {
         for (const ck of [
@@ -24291,7 +24294,7 @@ Return ONLY valid JSON in this format:
             }
           }
         }
-        if (verifiedMap.size >= Math.min(isFastMode ? 12 : 28, requestedCount)) {
+        if (verifiedMap.size >= Math.min(isFastMode ? 6 : 28, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -24303,14 +24306,14 @@ Return ONLY valid JSON in this format:
           fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
           fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
           fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
-          fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
+          isFastMode ? Promise.resolve([]) : fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
         ]);
         collectAndFilter(subAli, true);
         collectAndFilter(subWeb, true);
         collectAndFilter(subGoogle, true);
-        collectAndFilter(subWiki, false);
-        await verifyPendingBatch(isFastMode ? 24 : 40);
-        if (verifiedMap.size >= Math.min(isFastMode ? 10 : 24, requestedCount)) {
+        if (!isFastMode) collectAndFilter(subWiki, false);
+        await verifyPendingBatch(isFastMode ? 14 : 40);
+        if (verifiedMap.size >= Math.min(isFastMode ? 6 : 24, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -24318,8 +24321,8 @@ Return ONLY valid JSON in this format:
     }
 
     // Also include real verified local photos from disk matching any heading in the sequence
-    if (verifiedMap.size < requestedCount) {
-      const preindexed = buildPreindexedLocalUploadFiles();
+    if (verifiedMap.size < (isFastMode ? 6 : requestedCount)) {
+      const preindexed = params.preindexedFiles || buildPreindexedLocalUploadFiles();
       const allHeadingTokens = [cleanName, ...fallbackHeadings];
       for (const hChip of allHeadingTokens) {
         const hToks = extractMeaningfulAuditTokens(hChip);
@@ -24345,7 +24348,7 @@ Return ONLY valid JSON in this format:
             });
           }
         }
-        if (verifiedMap.size >= requestedCount) {
+        if (verifiedMap.size >= (isFastMode ? 8 : requestedCount)) {
           if (matchedHeadingQuery === queryUsed) matchedHeadingQuery = hChip;
           break;
         }
@@ -24373,30 +24376,32 @@ Return ONLY valid JSON in this format:
     ? allVerified
     : await filterCandidatesWithGemini(cleanName, cleanCategory, allVerified, geminiKey);
 
-  // Auto-upload top verified images onto our site (/assets/uploads/trade-heaven-...webp) immediately,
-  // reserving slots for verified Alibaba product photos alongside top commercial photos!
-  const syncMirrorLimit = isFastMode ? 2 : 6;
-  const aliToMirror = geminiVerified
-    .filter(item => String(item.sourceDomain || '').includes('alibaba') || String(item.url || '').includes('alicdn.com'))
-    .slice(0, Math.ceil(syncMirrorLimit / 2));
-  const otherToMirror = geminiVerified
-    .filter(item => !aliToMirror.includes(item))
-    .slice(0, Math.max(0, syncMirrorLimit - aliToMirror.length));
-  const topToMirrorNow = [...aliToMirror, ...otherToMirror];
-  await Promise.allSettled(
-    topToMirrorNow.map(async item => {
-      const localUrl = await mirrorExternalProductImageToLocalUploads({
-        externalUrl: item.url,
-        productName: cleanName,
-        category: cleanCategory,
-        skipBind: true
-      });
-      if (localUrl) {
-        item.url = localUrl;
-        item.thumbnailUrl = localUrl;
-      }
-    })
-  );
+  // In interactive (non-fastMode) search, auto-upload top verified images immediately;
+  // in fastMode (batch auto-fix), resolveUniqueVerifiedCatalogImage mirrors ONLY the 1 selected image!
+  if (!isFastMode) {
+    const syncMirrorLimit = 6;
+    const aliToMirror = geminiVerified
+      .filter(item => String(item.sourceDomain || '').includes('alibaba') || String(item.url || '').includes('alicdn.com'))
+      .slice(0, Math.ceil(syncMirrorLimit / 2));
+    const otherToMirror = geminiVerified
+      .filter(item => !aliToMirror.includes(item))
+      .slice(0, Math.max(0, syncMirrorLimit - aliToMirror.length));
+    const topToMirrorNow = [...aliToMirror, ...otherToMirror];
+    await Promise.allSettled(
+      topToMirrorNow.map(async item => {
+        const localUrl = await mirrorExternalProductImageToLocalUploads({
+          externalUrl: item.url,
+          productName: cleanName,
+          category: cleanCategory,
+          skipBind: true
+        });
+        if (localUrl) {
+          item.url = localUrl;
+          item.thumbnailUrl = localUrl;
+        }
+      })
+    );
+  }
 
   // Merge newly discovered verified photos with existing cached pool so cache grows across pages instead of shrinking
   const existingCachedImgs = Array.isArray(cached?.images) ? cached.images : [];
@@ -24416,10 +24421,12 @@ Return ONLY valid JSON in this format:
     updatedAt: new Date().toISOString(),
     provider: 'gemini_google_search_grounding'
   });
-  saveProductImageCacheToDisk();
+  scheduleSaveProductImageCache(!isFastMode);
 
-  // Mirror remaining pool items in background
-  void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
+  // Mirror remaining pool items in background only for interactive Inspector searches
+  if (!isFastMode) {
+    void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
+  }
 
   // Filter out caller-excluded URLs so repeated searches always return brand-new images,
   // while keeping Alibaba product photos prominently surfaced!
@@ -25942,6 +25949,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
 
   // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
   const globalRegistry = params.sharedRegistry || buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
+  const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
 
   const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
     const remainingMs = Math.max(1500, Math.min(timeoutMs, effectiveWallDeadline - Date.now()));
@@ -25953,7 +25961,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         specifications: searchSpecs,
         count: 36,
         forceRefresh,
-        fastMode: true
+        fastMode: true,
+        preindexedFiles: sharedPreindexedFiles
       });
       const timeoutSentinel = Symbol('gemini_timeout');
       const searchResult = await Promise.race([
@@ -26029,7 +26038,6 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     else if (catNouns.length === 1) pushHeading(catNouns[0]);
   }
 
-  const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
   let totalMirrorAttempts = 0;
 
   const tryPickAndMirrorFromPool = async (
@@ -28244,14 +28252,28 @@ async function processSingleSiteImageAutoFix(
   }
 ): Promise<SiteImageAutoFixResultRow> {
   const { id, type, title, category, specifications, currentUrl, fieldPath } = item;
+  if (id === 'site-brand-logo') {
+    return {
+      id,
+      type,
+      success: false,
+      oldUrl: currentUrl,
+      error: 'Brand logo is protected from automatic stock photo replacement (upload custom logo manually).'
+    };
+  }
   try {
     const recordTypeArg: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
       type === 'CATEGORY' ? 'CATEGORY' : type === 'RFQ' ? 'RFQ' : type === 'PRODUCT' ? 'PRODUCT' : 'OVERRIDE';
 
+    const effectiveTitle =
+      type === 'SITE_ASSET' || type === 'HERO_SLIDE'
+        ? `${title} Shipping Container Port Cargo Warehouse`
+        : title;
+
     const fixed = await fixSingleCatalogImageRecord({
       recordId: id,
       recordType: recordTypeArg,
-      title,
+      title: effectiveTitle,
       category,
       specifications: specifications || undefined,
       previousImageUrl: currentUrl || undefined,
@@ -28341,6 +28363,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
   const CONCURRENCY = 4;
   const PER_ITEM_TIMEOUT_MS = 6000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
+  const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
   let fixedSinceLastFlush = 0;
 
   // Load state, preindex local upload files, and build ONE shared live uniqueness registry for all concurrent workers
@@ -28362,10 +28385,23 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     }
   };
 
-  const runWorkerSlot = async () => {
+  const syncCurrentActiveSlotLabel = () => {
+    for (const activeItem of activeSlotItems.values()) {
+      job.currentItemId = activeItem.id;
+      job.currentLabel = activeItem.title || activeItem.id;
+      return;
+    }
+    if (job.queue.length > 0) {
+      job.currentItemId = job.queue[0].id;
+      job.currentLabel = job.queue[0].title || job.queue[0].id;
+    }
+  };
+
+  const runWorkerSlot = async (slotIdx: number) => {
     while (!job.cancelRequested && job.queue.length > 0) {
       const nextItem = job.queue.shift();
       if (!nextItem) break;
+      activeSlotItems.set(slotIdx, nextItem);
       job.currentItemId = nextItem.id;
       job.currentLabel = nextItem.title || nextItem.id;
       job.updatedAtMs = Date.now();
@@ -28388,6 +28424,8 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
         timeoutPromise
       ]);
       if (timeoutHandle) clearTimeout(timeoutHandle);
+      activeSlotItems.delete(slotIdx);
+      syncCurrentActiveSlotLabel();
 
       job.completed += 1;
       if (resRow.success && resRow.newUrl) {
@@ -28414,7 +28452,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
 
   try {
     const workerCount = Math.min(CONCURRENCY, Math.max(1, job.queue.length));
-    await Promise.all(Array.from({ length: workerCount }, () => runWorkerSlot()));
+    await Promise.all(Array.from({ length: workerCount }, (_, idx) => runWorkerSlot(idx)));
   } finally {
     if (fixedSinceLastFlush > 0 || pendingSnapshotUpdates.length > 0) {
       flushBatchStoresToDisk();
@@ -28440,9 +28478,9 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
         ? [req.body]
         : [];
     const normalizedItems = rawItems
-      .slice(0, 2500)
+      .slice(0, 10000)
       .map(normalizeSiteImageAutoFixInputItem)
-      .filter((x): x is SiteImageAutoFixInputItem => Boolean(x));
+      .filter((x): x is SiteImageAutoFixInputItem => Boolean(x) && x.id !== 'site-brand-logo');
 
     if (normalizedItems.length === 0) {
       return res.status(400).json({ success: false, message: 'No items provided for background Auto-Fix.' });

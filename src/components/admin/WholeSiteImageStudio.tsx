@@ -662,12 +662,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       );
 
       const isThumbMarkedBroken = Boolean(u && brokenThumbUrls[item.id] === u);
+      const isOptionalEmptySiteAsset = item.type === 'SITE_ASSET' && !u;
       if (
-        !u ||
-        isThumbMarkedBroken ||
-        isGenericOrPlaceholderImageUrl(u) ||
-        isSyntheticSpecCardOrPlaceholder(u) ||
-        /^https?:\/\//i.test(u)
+        !isOptionalEmptySiteAsset &&
+        (!u ||
+          isThumbMarkedBroken ||
+          isGenericOrPlaceholderImageUrl(u) ||
+          isSyntheticSpecCardOrPlaceholder(u) ||
+          /^https?:\/\//i.test(u))
       ) {
         return {
           ...item,
@@ -1430,7 +1432,17 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     });
   };
 
-  const flaggedItems = useMemo(() => allItems.filter(it => it.status !== 'VERIFIED'), [allItems]);
+  const flaggedItems = useMemo(
+    () =>
+      allItems
+        .filter(it => it.status !== 'VERIFIED' && it.id !== 'site-brand-logo' && it.type !== 'SITE_ASSET')
+        .sort((a, b) => {
+          const rank = (t: SiteImageTargetType) =>
+            t === 'PRODUCT' ? 0 : t === 'CATEGORY' ? 1 : t === 'RFQ' ? 2 : 3;
+          return rank(a.type) - rank(b.type);
+        }),
+    [allItems]
+  );
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden" data-testid="whole-site-image-studio">
