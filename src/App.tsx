@@ -1408,9 +1408,29 @@ const MainApp: React.FC = () => {
       return changed ? nextList : prevList;
     };
 
+    const applyRfqOverridesIfChanged = (prevList: RfqRequirement[]): RfqRequirement[] => {
+      let changed = false;
+      const nextList = prevList.map(r => {
+        const currentImg = (r as any).image || (r as any).imageUrl || (r as any).images?.[0];
+        const resolved = productImageManagerService.resolveImageSrc({
+          src: currentImg,
+          productId: r.id,
+          productTitle: r.productName,
+          category: r.category
+        });
+        if (resolved && resolved !== currentImg) {
+          changed = true;
+          return { ...r, image: resolved, imageUrl: resolved, images: [resolved] } as RfqRequirement;
+        }
+        return r;
+      });
+      return changed ? nextList : prevList;
+    };
+
     const hydrationPromise = productImageManagerService.ensureHydrated().then(() => {
       if (isMounted) {
         setProducts(prev => applyOverridesIfChanged(prev));
+        setRfqs(prev => applyRfqOverridesIfChanged(prev));
         setSelectedProduct(prev => {
           if (!prev) return null;
           const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
@@ -1418,6 +1438,11 @@ const MainApp: React.FC = () => {
             return updated;
           }
           return prev;
+        });
+        setSelectedRfqForModal(prev => {
+          if (!prev) return null;
+          const [updated] = applyRfqOverridesIfChanged([prev]);
+          return updated || prev;
         });
       }
     });
@@ -1443,9 +1468,15 @@ const MainApp: React.FC = () => {
     };
     const handleProductImagesUpdated = () => {
       setProducts(prev => applyOverridesIfChanged(prev));
+      setRfqs(prev => applyRfqOverridesIfChanged(prev));
       setSelectedProduct(prev => {
         if (!prev) return null;
         const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
+        return updated || prev;
+      });
+      setSelectedRfqForModal(prev => {
+        if (!prev) return null;
+        const [updated] = applyRfqOverridesIfChanged([prev]);
         return updated || prev;
       });
     };

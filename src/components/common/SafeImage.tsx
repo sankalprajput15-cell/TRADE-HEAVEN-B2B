@@ -226,6 +226,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
     overrideSubscribers.add(checkRefresh);
     liveModeSubscribers.add(handleLive);
+    // Catch any override hydration that completed between initial render and effect mount
+    checkRefresh();
     return () => {
       overrideSubscribers.delete(checkRefresh);
       liveModeSubscribers.delete(handleLive);
@@ -552,8 +554,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
-      FAILED_IMAGE_URLS.add(currentCandidate);
-      markBrokenExternalImageUrl(currentCandidate);
+      const isLocalUpload = currentCandidate.startsWith('/assets/uploads/') || currentCandidate.includes('/assets/uploads/');
+      if (!isLocalUpload) {
+        FAILED_IMAGE_URLS.add(currentCandidate);
+        markBrokenExternalImageUrl(currentCandidate);
+      }
     }
     if (effectiveAttemptIndex < candidates.length - 1) {
       setAttemptIndex(effectiveAttemptIndex + 1);

@@ -433,8 +433,8 @@ class ProductImageManagerService {
         }
       });
 
-      // Automatically sync when tab becomes visible or window gains focus (never interrupting active or recent manual writes)
-      window.addEventListener('focus', () => {
+      // Automatically sync when tab becomes visible, window gains focus, or browser restores from bfcache
+      const triggerFocusSync = () => {
         if (
           this.inFlightWriteCount === 0 &&
           Date.now() - this.lastLocalMutationAt > 2500 &&
@@ -442,17 +442,26 @@ class ProductImageManagerService {
         ) {
           this.syncFromServer(true).catch(() => {});
         }
-      });
+      };
+      window.addEventListener('focus', triggerFocusSync);
+      window.addEventListener('pageshow', triggerFocusSync);
       document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          triggerFocusSync();
+        }
+      });
+
+      // Lightweight periodic cross-window sync (beats Chrome Third-Party Storage Partitioning between iframe preview & standalone Chrome tabs)
+      window.setInterval(() => {
         if (
           document.visibilityState === 'visible' &&
           this.inFlightWriteCount === 0 &&
-          Date.now() - this.lastLocalMutationAt > 2500 &&
-          Date.now() - this.lastServerSyncAt > 1500
+          Date.now() - this.lastLocalMutationAt > 4000 &&
+          Date.now() - this.lastServerSyncAt > 11000
         ) {
           this.syncFromServer(true).catch(() => {});
         }
-      });
+      }, 12000);
 
       // Immediately refresh authoritative server image state on login/logout so guests never see stale pre-upload images
       window.addEventListener('tradeheaven_auth_changed', () => {
@@ -1155,19 +1164,17 @@ class ProductImageManagerService {
 
     try {
       let srv: ProductImageSystemState | null = null;
-      // 1. Try public & admin Node/Express endpoints (always revalidate cleanly with server ETag / no-store so logout never shows stale images)
-      const bustQuery = force || includeFullMedia ? `_t=${Date.now()}` : '';
+      // 1. Try public & admin Node/Express endpoints (always cache-busted with no-store so another Chrome window never receives stale overrides)
+      const bustQuery = `_t=${Date.now()}`;
       const publicQueryParts = [includeFullMedia ? 'includeMedia=1' : '', bustQuery].filter(Boolean).join('&');
-      const publicUrl = publicQueryParts
-        ? `/api/v1/public/product-images?${publicQueryParts}`
-        : '/api/v1/public/product-images';
+      const publicUrl = `/api/v1/public/product-images?${publicQueryParts}`;
       const endpoints: Array<{ url: string; cacheMode: RequestCache }> = includeFullMedia
         ? [
             { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' },
             { url: publicUrl, cacheMode: 'no-store' }
           ]
         : [
-            { url: publicUrl, cacheMode: force ? 'no-store' : 'no-cache' },
+            { url: publicUrl, cacheMode: 'no-store' },
             { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
           ];
       for (const ep of endpoints) {
@@ -1249,31 +1256,27 @@ class ProductImageManagerService {
           mergedOverrides[pid] = srvEntry;
         }
 
-        // Preserve ANY local override that is strictly newer by monotonic timestamp than server state
-        // (eliminates the ~5-10 min expiry cliff where MANUAL_MUTATION_GRACE_MS allowed older server/backup snapshots to revert edits)
+        // Authoritative server sync: ONLY preserve a local override over server state if it was actively mutated
+        // in THIS tab within the last 30 seconds (prevents stale localStorage/IndexedDB in another Chrome window
+        // from ever hiding newly auto-fixed images saved on the server).
+        const nowMsForMerge = Date.now();
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
+          const mutatedAt = this.localMutationTimes.get(pid) || 0;
+          const recentlyMutatedInThisTab = mutatedAt > 0 && nowMsForMerge - mutatedAt < 30000;
+          if (!recentlyMutatedInThisTab) continue;
+
           const localTime = this.getEntryTimestampMs(localEntry);
           const localIsProtected = this.isProtectedManualOrAuditEntry(localEntry);
           const srvEntry = srvOverrides[pid];
           const srvTime = this.getEntryTimestampMs(srvEntry);
           const srvIsProtected = this.isProtectedManualOrAuditEntry(srvEntry);
-          const mutatedInTab = this.localMutationTimes.has(pid);
 
           if (!srvEntry) {
-            if (mutatedInTab || (localIsProtected && !DEFAULT_BUILTIN_OVERRIDES[pid])) {
-              mergedOverrides[pid] = localEntry;
-            } else if (
-              localIsProtected &&
-              DEFAULT_BUILTIN_OVERRIDES[pid] &&
-              localEntry.primary.split('?')[0] !== DEFAULT_BUILTIN_OVERRIDES[pid].primary.split('?')[0] &&
-              localTime > this.getEntryTimestampMs(DEFAULT_BUILTIN_OVERRIDES[pid])
-            ) {
-              mergedOverrides[pid] = localEntry;
-            }
-          } else if ((mutatedInTab || localIsProtected) && localTime > srvTime) {
             mergedOverrides[pid] = localEntry;
-          } else if (mutatedInTab && localTime === srvTime && localIsProtected && !srvIsProtected) {
+          } else if (localTime > srvTime) {
+            mergedOverrides[pid] = localEntry;
+          } else if (localTime === srvTime && localIsProtected && !srvIsProtected) {
             mergedOverrides[pid] = localEntry;
           }
         }

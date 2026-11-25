@@ -465,12 +465,57 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }).catch(() => {});
     };
 
+    let lastFocusRefreshTs = 0;
+    const refreshSiteContentIfIdle = (minGapMs = 6000) => {
+      if (hasLocalSiteMutationRef.current) return;
+      const now = Date.now();
+      if (now - lastFocusRefreshTs < minGapMs) return;
+      lastFocusRefreshTs = now;
+      void apiClient.getSiteContent(true).then(contentRes => {
+        if (
+          !isMounted ||
+          hasLocalSiteMutationRef.current ||
+          !contentRes.success ||
+          !contentRes.data ||
+          typeof contentRes.data !== 'object' ||
+          Array.isArray(contentRes.data)
+        ) {
+          return;
+        }
+        setSiteContent(prev => {
+          if (hasLocalSiteMutationRef.current) return prev;
+          if (!shouldAcceptIncomingSiteContent(contentRes.data, prev)) {
+            return prev;
+          }
+          const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }).catch(() => {});
+    };
+
+    const handleWindowFocusRefresh = () => refreshSiteContentIfIdle(6000);
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState === 'visible') refreshSiteContentIfIdle(6000);
+    };
+    const handleImagesUpdatedRefresh = () => refreshSiteContentIfIdle(8000);
+
     window.addEventListener('storage', handleStorageSync);
     window.addEventListener('tradeheaven_auth_changed', handleAuthChanged);
+    window.addEventListener('focus', handleWindowFocusRefresh);
+    window.addEventListener('pageshow', handleWindowFocusRefresh);
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
+    window.addEventListener('tradeheaven_product_images_updated', handleImagesUpdatedRefresh);
     return () => {
       isMounted = false;
       window.removeEventListener('storage', handleStorageSync);
       window.removeEventListener('tradeheaven_auth_changed', handleAuthChanged);
+      window.removeEventListener('focus', handleWindowFocusRefresh);
+      window.removeEventListener('pageshow', handleWindowFocusRefresh);
+      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
+      window.removeEventListener('tradeheaven_product_images_updated', handleImagesUpdatedRefresh);
       if (bc) {
         try { bc.close(); } catch {}
       }

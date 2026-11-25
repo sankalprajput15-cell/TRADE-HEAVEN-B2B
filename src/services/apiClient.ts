@@ -167,12 +167,12 @@ export const apiClient = {
    */
   async getSiteContent(force = false): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-      // 1. Try primary Express backend (leverage ETag/304 & stale-while-revalidate unless forced)
+      // 1. Try primary Express backend (always cache-busted with no-store so auto-fixed banners/hero slides appear immediately across Chrome windows)
       try {
-        const res = await fetch(force ? `/api/site-content?t=${Date.now()}` : '/api/site-content', {
+        const res = await fetch(`/api/site-content?t=${Date.now()}`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
-          cache: force ? 'no-store' : 'no-cache'
+          cache: 'no-store'
         });
         if (res.ok) {
           const json = await safeParseJson(res);

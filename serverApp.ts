@@ -673,7 +673,7 @@ app.get([
     !req.path.startsWith('/assets/aistudio/') &&
     !req.path.startsWith('/assets/tradeheaven/');
 
-  const targetPath = isBundledDistAsset
+  let targetPath = isBundledDistAsset
     ? (fs.existsSync(distAssetPath) ? distAssetPath : null)
     : req.path.startsWith('/src/assets')
       ? (fs.existsSync(srcPath) ? srcPath : null)
@@ -686,6 +686,22 @@ app.get([
               : fs.existsSync(distFallbackPath)
                 ? distFallbackPath
                 : null);
+
+  // Auto-heal missing /assets/uploads/:filename from live upstream (tradeheaven.net) and persist to public + dist
+  if (
+    !targetPath &&
+    req.path.startsWith('/assets/uploads/') &&
+    LIVE_UPSTREAM_PROXY_ENABLED
+  ) {
+    try {
+      const healed = await healMissingUploadFromLiveServer(safeFilename);
+      if (healed && fs.existsSync(healed)) {
+        targetPath = healed;
+      }
+    } catch {
+      // Fall through to next()
+    }
+  }
 
   if (!targetPath) {
     return next();
@@ -14723,8 +14739,13 @@ function loadServerProductImageState(
         if (!primaryClean.startsWith('/assets/uploads/')) continue;
         const resolvedPrimary = resolveValidLocalFile(pid, entry.primary);
         if (!resolvedPrimary) {
-          // NEVER delete locked, server-verified, or manual overrides even if directory scan misses a file
-          if (entry.locked === true || entry.serverVerified === true || isManualOverrideEntry(entry)) {
+          // NEVER delete locked, server-verified, manual, or live-healable overrides when local file is temporarily missing
+          if (
+            LIVE_UPSTREAM_PROXY_ENABLED ||
+            entry.locked === true ||
+            entry.serverVerified === true ||
+            isManualOverrideEntry(entry)
+          ) {
             continue;
           }
           delete defaultState.overrides[pid];
@@ -15572,6 +15593,173 @@ async function ensureLocalImagePresentOnLiveServer(params: {
   }
 }
 
+const inFlightRemoteUploadHeal = new Map<string, Promise<string | null>>();
+
+function mirrorBufferToDistUploadsIfPresent(safeFilename: string, buf: Buffer): void {
+  try {
+    const distRoot = path.join(process.cwd(), 'dist');
+    if (!fs.existsSync(distRoot)) return;
+    const distUploads = path.join(distRoot, 'assets', 'uploads');
+    if (!fs.existsSync(distUploads)) fs.mkdirSync(distUploads, { recursive: true });
+    const distFile = path.join(distUploads, safeFilename);
+    const tmpFile = `${distFile}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmpFile, buf);
+    fs.renameSync(tmpFile, distFile);
+  } catch {
+    // Non-fatal mirror failure
+  }
+}
+
+async function healMissingUploadFromLiveServer(rawFilename: string): Promise<string | null> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return null;
+  const safeFilename = path.basename(String(rawFilename || '').trim());
+  if (!safeFilename || safeFilename.includes('..') || !/\.(jpg|jpeg|png|webp|avif)$/i.test(safeFilename)) {
+    return null;
+  }
+  const primaryTarget = path.join(UPLOADS_DIR, safeFilename);
+  if (fs.existsSync(primaryTarget)) return primaryTarget;
+
+  const existingJob = inFlightRemoteUploadHeal.get(safeFilename);
+  if (existingJob) return existingJob;
+
+  const job = (async (): Promise<string | null> => {
+    try {
+      const liveOrigin = getLiveTradeHeavenOrigin();
+      const resp = await fetch(`${liveOrigin}/assets/uploads/${encodeURIComponent(safeFilename)}`, {
+        signal: AbortSignal.timeout(7000)
+      });
+      if (!resp.ok) return null;
+      const ct = (resp.headers.get('content-type') || '').toLowerCase();
+      if (!ct.startsWith('image/')) return null;
+      const buf = Buffer.from(await resp.arrayBuffer());
+      if (buf.length < 32) return null;
+      ensureUploadsDir();
+      const tmpTarget = `${primaryTarget}.${process.pid}.${Date.now()}.tmp`;
+      fs.writeFileSync(tmpTarget, buf);
+      fs.renameSync(tmpTarget, primaryTarget);
+      mirrorBufferToDistUploadsIfPresent(safeFilename, buf);
+      liveRemoteUploadUrlCache.set(`/assets/uploads/${safeFilename}`, `/assets/uploads/${safeFilename}`);
+      void prewarmSingleImageFile(primaryTarget);
+      console.log(`[CrossServerImageSync] Auto-healed missing local asset from live server: /assets/uploads/${safeFilename} (${buf.length} bytes)`);
+      return primaryTarget;
+    } catch {
+      return null;
+    } finally {
+      inFlightRemoteUploadHeal.delete(safeFilename);
+    }
+  })();
+
+  inFlightRemoteUploadHeal.set(safeFilename, job);
+  return job;
+}
+
+interface PendingLiveImageSyncItem {
+  key: string;
+  params: Parameters<typeof replicateImageOverrideToLiveServer>[0];
+  attempts: number;
+  nextAttemptAt: number;
+}
+const pendingLiveImageSyncQueue = new Map<string, PendingLiveImageSyncItem>();
+let pendingLiveSiteContentPayload: { payload: any; attempts: number; nextAttemptAt: number } | null = null;
+let pendingLiveSyncTimer: NodeJS.Timeout | null = null;
+let isDrainingPendingLiveSync = false;
+
+function enqueuePendingLiveImageSync(params: Parameters<typeof replicateImageOverrideToLiveServer>[0]) {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return;
+  const key =
+    params.productId ||
+    (Array.isArray(params.productIds) && params.productIds.length > 0 ? `ids:${params.productIds.join(',')}` : '') ||
+    (params.category ? `cat:${params.category}` : '') ||
+    (params.primaryUrl ? `url:${params.primaryUrl}` : `batch:${Date.now()}`);
+  const prev = pendingLiveImageSyncQueue.get(key);
+  const attempts = prev ? prev.attempts + 1 : 1;
+  if (attempts > 8) {
+    pendingLiveImageSyncQueue.delete(key);
+    return;
+  }
+  const delayMs = Math.min(60000, 5000 * Math.pow(2, attempts - 1));
+  pendingLiveImageSyncQueue.set(key, {
+    key,
+    params,
+    attempts,
+    nextAttemptAt: Date.now() + delayMs
+  });
+  schedulePendingLiveSyncDrain(delayMs);
+}
+
+function enqueuePendingLiveSiteContentSync(contentPayload: any) {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || !contentPayload || typeof contentPayload !== 'object') return;
+  const attempts = pendingLiveSiteContentPayload ? pendingLiveSiteContentPayload.attempts + 1 : 1;
+  if (attempts > 8) {
+    pendingLiveSiteContentPayload = null;
+    return;
+  }
+  const delayMs = Math.min(60000, 5000 * Math.pow(2, attempts - 1));
+  pendingLiveSiteContentPayload = {
+    payload: JSON.parse(JSON.stringify(contentPayload)),
+    attempts,
+    nextAttemptAt: Date.now() + delayMs
+  };
+  schedulePendingLiveSyncDrain(delayMs);
+}
+
+function schedulePendingLiveSyncDrain(delayMs = 5000) {
+  if (pendingLiveSyncTimer) return;
+  pendingLiveSyncTimer = setTimeout(() => {
+    pendingLiveSyncTimer = null;
+    void drainPendingLiveSyncQueue();
+  }, Math.max(1500, delayMs));
+}
+
+async function drainPendingLiveSyncQueue(): Promise<void> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || isDrainingPendingLiveSync) return;
+  isDrainingPendingLiveSync = true;
+  try {
+    const now = Date.now();
+    const dueItems = Array.from(pendingLiveImageSyncQueue.values()).filter(item => item.nextAttemptAt <= now);
+    for (const item of dueItems) {
+      pendingLiveImageSyncQueue.delete(item.key);
+      const res = await replicateImageOverrideToLiveServer({ ...item.params, _isRetry: true });
+      if (!res.synced) {
+        if (item.attempts < 8) {
+          const nextAttempts = item.attempts + 1;
+          const delayMs = Math.min(60000, 5000 * Math.pow(2, nextAttempts - 1));
+          pendingLiveImageSyncQueue.set(item.key, {
+            ...item,
+            attempts: nextAttempts,
+            nextAttemptAt: Date.now() + delayMs
+          });
+        }
+      }
+    }
+
+    if (pendingLiveSiteContentPayload && pendingLiveSiteContentPayload.nextAttemptAt <= Date.now()) {
+      const pendingSite = pendingLiveSiteContentPayload;
+      pendingLiveSiteContentPayload = null;
+      const siteRes = await replicateSiteContentToLiveServer(pendingSite.payload, true);
+      if (!siteRes.synced && pendingSite.attempts < 8) {
+        const nextAttempts = pendingSite.attempts + 1;
+        const delayMs = Math.min(60000, 5000 * Math.pow(2, nextAttempts - 1));
+        pendingLiveSiteContentPayload = {
+          ...pendingSite,
+          attempts: nextAttempts,
+          nextAttemptAt: Date.now() + delayMs
+        };
+      }
+    }
+
+    const nextDueTimes: number[] = [];
+    for (const item of pendingLiveImageSyncQueue.values()) nextDueTimes.push(item.nextAttemptAt);
+    if (pendingLiveSiteContentPayload) nextDueTimes.push(pendingLiveSiteContentPayload.nextAttemptAt);
+    if (nextDueTimes.length > 0) {
+      const soonest = Math.min(...nextDueTimes);
+      schedulePendingLiveSyncDrain(Math.max(2000, soonest - Date.now()));
+    }
+  } finally {
+    isDrainingPendingLiveSync = false;
+  }
+}
+
 async function replicateImageOverrideToLiveServer(params: {
   productId?: string;
   productIds?: string[];
@@ -15582,6 +15770,7 @@ async function replicateImageOverrideToLiveServer(params: {
   applyToAll?: boolean;
   oldUrlToReplace?: string;
   fullOverridesMap?: Record<string, any>;
+  _isRetry?: boolean;
 }): Promise<{ synced: boolean; remoteUrl?: string; error?: string }> {
   if (!LIVE_UPSTREAM_PROXY_ENABLED) return { synced: false };
 
@@ -15598,7 +15787,19 @@ async function replicateImageOverrideToLiveServer(params: {
         applyToAll: params.applyToAll,
         oldUrlToReplace: params.oldUrlToReplace
       });
-      if (uploadRes.synced && uploadRes.remoteUrl) {
+      if (!uploadRes.synced) {
+        // CRITICAL: Never push set_product_images with a local /assets/uploads/ path whose binary is NOT yet on tradeheaven.net,
+        // because api.php silently strips overrides pointing to missing files on disk! Queue for retry instead.
+        if (!params._isRetry) {
+          enqueuePendingLiveImageSync(params);
+        }
+        return {
+          synced: false,
+          remoteUrl: resolvedPrimary,
+          error: uploadRes.error || 'binary_upload_failed_queued_retry'
+        };
+      }
+      if (uploadRes.remoteUrl) {
         resolvedPrimary = uploadRes.remoteUrl;
         // Always still push set_product_images when updating individual/group records so locked/verified/replacedOldUrls commit on live server
         if (
@@ -15623,12 +15824,17 @@ async function replicateImageOverrideToLiveServer(params: {
           resolvedGallery.push(resolvedPrimary || cleanG);
         } else if (cleanG.startsWith('/assets/uploads/')) {
           const gRes = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanG });
-          resolvedGallery.push(gRes.remoteUrl || cleanG);
+          if (gRes.synced && gRes.remoteUrl) {
+            resolvedGallery.push(gRes.remoteUrl);
+          }
         } else {
           resolvedGallery.push(cleanG);
         }
       }
       resolvedGallery = Array.from(new Set(resolvedGallery));
+      if (resolvedGallery.length === 0 && resolvedPrimary) {
+        resolvedGallery = [resolvedPrimary];
+      }
     } else if (resolvedPrimary) {
       resolvedGallery = [resolvedPrimary];
     }
@@ -15659,7 +15865,7 @@ async function replicateImageOverrideToLiveServer(params: {
         const foregroundLimit = uncachedLocalUrls.length <= 6 ? uncachedLocalUrls.length : 4;
         const foregroundUrls = uncachedLocalUrls.slice(0, foregroundLimit);
         const backgroundUrls = uncachedLocalUrls.slice(foregroundLimit);
-        const deadlineMs = Date.now() + 1200;
+        const deadlineMs = Date.now() + 2500;
         let idx = 0;
         const workerCount = Math.min(4, foregroundUrls.length);
         await Promise.all(
@@ -15746,9 +15952,14 @@ async function replicateImageOverrideToLiveServer(params: {
     const ok = Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success'));
     if (ok) {
       console.log(`[CrossServerImageSync] Synced override (${params.productId || params.category || (params.productIds?.length ? `${params.productIds.length} items` : 'batch')}) -> ${LIVE_TRADEHEAVEN_API_URL}`);
+    } else if (!params._isRetry) {
+      enqueuePendingLiveImageSync(params);
     }
     return { synced: ok, remoteUrl: resolvedPrimary, error: ok ? undefined : (syncRes.error || parsed?.message || `HTTP ${syncRes.status}`) };
   } catch (err: any) {
+    if (!params._isRetry) {
+      enqueuePendingLiveImageSync(params);
+    }
     return { synced: false, error: err?.message || 'network_error' };
   }
 }
@@ -15775,7 +15986,10 @@ async function replicateImageDeletionToLiveServer(params: {
   }
 }
 
-async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ synced: boolean; error?: string }> {
+async function replicateSiteContentToLiveServer(
+  contentPayload: any,
+  isRetry = false
+): Promise<{ synced: boolean; error?: string }> {
   if (!LIVE_UPSTREAM_PROXY_ENABLED || !contentPayload || typeof contentPayload !== 'object') {
     return { synced: false };
   }
@@ -15808,6 +16022,41 @@ async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ 
       }
     }
 
+    // Also upload any local hero slide or page banner images referenced inside siteContent
+    if (Array.isArray(cloned?.homepage?.heroSlides)) {
+      for (const slide of cloned.homepage.heroSlides) {
+        if (!slide?.image) continue;
+        const cleanImg = normalizeServerAssetUrl(String(slide.image)).split('?')[0];
+        if (cleanImg.startsWith('/assets/uploads/')) {
+          const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanImg });
+          if (ensured.synced && ensured.remoteUrl) {
+            slide.image = ensured.remoteUrl;
+          }
+        }
+      }
+    }
+    if (cloned?.homepage?.heroBgImage) {
+      const cleanHero = normalizeServerAssetUrl(String(cloned.homepage.heroBgImage)).split('?')[0];
+      if (cleanHero.startsWith('/assets/uploads/')) {
+        const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanHero });
+        if (ensured.synced && ensured.remoteUrl) {
+          cloned.homepage.heroBgImage = ensured.remoteUrl;
+        }
+      }
+    }
+    if (cloned?.pageBanners && typeof cloned.pageBanners === 'object') {
+      for (const [bKey, bVal] of Object.entries(cloned.pageBanners)) {
+        if (typeof bVal !== 'string') continue;
+        const cleanBanner = normalizeServerAssetUrl(bVal).split('?')[0];
+        if (cleanBanner.startsWith('/assets/uploads/')) {
+          const ensured = await ensureLocalImagePresentOnLiveServer({ localUrl: cleanBanner });
+          if (ensured.synced && ensured.remoteUrl) {
+            cloned.pageBanners[bKey] = ensured.remoteUrl;
+          }
+        }
+      }
+    }
+
     if (Object.keys(categoryOverrideMap).length > 0) {
       await replicateImageOverrideToLiveServer({ fullOverridesMap: categoryOverrideMap });
     }
@@ -15819,8 +16068,15 @@ async function replicateSiteContentToLiveServer(contentPayload: any): Promise<{ 
       2
     );
     const parsed = syncRes.parsed;
-    return { synced: Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success')) };
+    const ok = Boolean(syncRes.ok && parsed && (parsed.success === true || parsed.status === 'success'));
+    if (!ok && !isRetry) {
+      enqueuePendingLiveSiteContentSync(contentPayload);
+    }
+    return { synced: ok, error: ok ? undefined : (syncRes.error || parsed?.message || `HTTP ${syncRes.status}`) };
   } catch (err: any) {
+    if (!isRetry) {
+      enqueuePendingLiveSiteContentSync(contentPayload);
+    }
     return { synced: false, error: err?.message || 'network_error' };
   }
 }
@@ -15852,52 +16108,65 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
     if (!remoteOverrides || typeof remoteOverrides !== 'object') return 0;
 
     const liveOrigin = getLiveTradeHeavenOrigin();
-    const globalRegistry = buildGlobalAttachedImageRegistry();
     let changed = false;
 
     for (const [pid, rawEntry] of Object.entries(remoteOverrides)) {
-      if (!/^(prod-|th-|rfq-|listing-|item-|cat-)/i.test(pid)) continue;
+      const cleanPid = String(pid || '').trim();
+      if (!cleanPid || cleanPid.length > 160) continue;
       const remoteEntry = rawEntry as ProductImageOverrideEntry | undefined;
-      if (!remoteEntry || !remoteEntry.primary || remoteEntry.updatedBy !== 'admin-manual') continue;
+      if (!remoteEntry || !remoteEntry.primary) continue;
+      const remoteUpdatedBy = String(remoteEntry.updatedBy || '').trim();
+      if (
+        remoteUpdatedBy &&
+        remoteUpdatedBy !== 'admin-manual' &&
+        remoteUpdatedBy !== 'catalog-image-auditor' &&
+        remoteUpdatedBy !== 'auto-site-upload'
+      ) {
+        continue;
+      }
+
       const remoteMs = Math.max(
         parseServerTimestampMs(remoteEntry.imageUpdatedAt),
         parseServerTimestampMs(remoteEntry.updatedAt)
       );
       if (remoteMs <= 0) continue;
 
-      // Current-server-wins protection: never let remote server sync overwrite an existing healthy local override,
-      // locked/verified entry, or URL already attached elsewhere.
-      if (currentServerImageEdits.has(pid)) continue;
-      const localEntry = serverProductImageState.overrides[pid];
-      if (localEntry && (localEntry.locked === true || localEntry.serverVerified === true)) {
-        continue;
-      }
-      if (localEntry?.primary) {
-        const localBase = normalizeServerAssetUrl(localEntry.primary).split('?')[0];
-        if (!isGenericOrPlaceholderServerUrl(localBase) && (!localBase.startsWith('/assets/uploads/') || isLocalUploadPresentOnDisk(localBase))) {
-          continue;
-        }
-      }
-      if (localEntry && isUrlBlockedForOverride(localEntry, remoteEntry.primary)) {
-        continue;
-      }
-
       const cleanRemotePrimary = normalizeServerAssetUrl(remoteEntry.primary).split('?')[0];
       if (!cleanRemotePrimary || isGenericOrPlaceholderServerUrl(cleanRemotePrimary)) continue;
-      if (globalRegistry.isCandidateUsed(cleanRemotePrimary)) continue;
 
-      const mismatchChk = detectCatalogImageIssue(
-        { id: pid, type: 'OVERRIDE', title: pid, category: 'General', imageUrl: cleanRemotePrimary },
-        new Map()
-      );
-      if (mismatchChk.flagged && mismatchChk.issueType !== 'BROKEN_ASSET') continue;
+      const localEntry = serverProductImageState.overrides[cleanPid];
+      const localBase = localEntry?.primary ? normalizeServerAssetUrl(localEntry.primary).split('?')[0] : '';
+      const localFileMissing = Boolean(localBase && localBase.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(localBase));
+      const localMs = localEntry
+        ? Math.max(
+            parseServerTimestampMs(localEntry.imageUpdatedAt),
+            parseServerTimestampMs(localEntry.updatedAt),
+            currentServerImageEdits.get(cleanPid) || 0
+          )
+        : (currentServerImageEdits.get(cleanPid) || 0);
+
+      // Pull if:
+      // 1) local override does not exist, OR
+      // 2) local override points to a missing/generic file, OR
+      // 3) remote override is strictly newer than our local override/edit by > 1s
+      const shouldPull =
+        !localEntry ||
+        !localBase ||
+        isGenericOrPlaceholderServerUrl(localBase) ||
+        localFileMissing ||
+        (remoteMs > localMs + 1000 && cleanRemotePrimary !== localBase);
+
+      if (!shouldPull) continue;
+      if (localEntry && !localFileMissing && isUrlBlockedForOverride(localEntry, remoteEntry.primary) && remoteMs <= localMs) {
+        continue;
+      }
 
       let localPrimary = cleanRemotePrimary;
       if (cleanRemotePrimary.startsWith('/assets/uploads/')) {
         if (!isLocalUploadPresentOnDisk(cleanRemotePrimary)) {
-          // Download binary from live server so local disk always has the exact image
+          const safeFile = path.basename(cleanRemotePrimary);
           try {
-            const imgRes = await fetch(`${liveOrigin}${cleanRemotePrimary}`, {
+            const imgRes = await fetch(`${liveOrigin}/assets/uploads/${encodeURIComponent(safeFile)}`, {
               signal: AbortSignal.timeout(6000)
             });
             const ct = (imgRes.headers.get('content-type') || '').toLowerCase();
@@ -15906,8 +16175,9 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
               const buf = Buffer.from(arrBuf);
               if (buf.length >= 32) {
                 ensureUploadsDir();
-                const targetFile = path.join(UPLOADS_DIR, path.basename(cleanRemotePrimary));
+                const targetFile = path.join(UPLOADS_DIR, safeFile);
                 fs.writeFileSync(targetFile, buf);
+                mirrorBufferToDistUploadsIfPresent(safeFile, buf);
                 liveRemoteUploadUrlCache.set(cleanRemotePrimary, cleanRemotePrimary);
               } else {
                 continue;
@@ -15918,30 +16188,39 @@ async function pullNewerManualOverridesFromLiveServer(force = false): Promise<nu
           } catch {
             continue;
           }
+        } else {
+          // Ensure existing public file is also mirrored into dist/assets/uploads/
+          try {
+            const safeFile = path.basename(cleanRemotePrimary);
+            const srcPath = path.join(UPLOADS_DIR, safeFile);
+            const distFile = path.join(process.cwd(), 'dist', 'assets', 'uploads', safeFile);
+            if (fs.existsSync(srcPath) && fs.existsSync(path.join(process.cwd(), 'dist')) && !fs.existsSync(distFile)) {
+              mirrorBufferToDistUploadsIfPresent(safeFile, fs.readFileSync(srcPath));
+            }
+          } catch {}
         }
       }
 
       const nowIso = new Date(now).toISOString();
-      serverProductImageState.overrides[pid] = {
+      serverProductImageState.overrides[cleanPid] = {
         ...remoteEntry,
         primary: localPrimary,
         gallery: [localPrimary],
         imageUpdatedAt: remoteMs,
         updatedAt: remoteEntry.updatedAt || new Date(remoteMs).toISOString(),
-        updatedBy: 'admin-manual',
+        updatedBy: (remoteUpdatedBy as any) || 'admin-manual',
         locked: true,
         serverVerified: true,
-        verifiedAt: nowIso
+        verifiedAt: remoteEntry.verifiedAt || nowIso
       };
-      globalRegistry.claim({ localUrl: localPrimary });
-      recordServerProductActivityTimestamp(pid, remoteMs);
+      recordServerProductActivityTimestamp(cleanPid, remoteMs);
       changed = true;
       pulledCount++;
     }
 
     if (changed) {
       saveServerProductImageState();
-      console.log(`[CrossServerImageSync] Pulled ${pulledCount} missing manual override(s) from ${LIVE_TRADEHEAVEN_API_URL}`);
+      console.log(`[CrossServerImageSync] Pulled ${pulledCount} newer/missing override(s) from ${LIVE_TRADEHEAVEN_API_URL}`);
     }
   } catch {
     // Non-blocking background sync
@@ -16041,9 +16320,12 @@ const handleGetProductImages = (req: express.Request, res: express.Response) => 
   if (!isAdminRoute) {
     const cached = getOrBuildPublicProductImagesCache();
     res.setHeader('ETag', cached.etag);
-    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.setHeader('Vary', 'Accept-Encoding');
-    if (req.headers['if-none-match'] === cached.etag) {
+    const hasBustQuery = Boolean(req.query._t || req.query.t);
+    if (!hasBustQuery && req.headers['if-none-match'] === cached.etag) {
       return res.status(304).end();
     }
     const acceptEncoding = String(req.headers['accept-encoding'] || '');
@@ -17994,9 +18276,12 @@ function getOrBuildSiteContentResponseCache(): PrecompressedJsonCacheEntry {
 app.get('/api/site-content', (req, res) => {
   const cached = getOrBuildSiteContentResponseCache();
   res.setHeader('ETag', cached.etag);
-  res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('Vary', 'Accept-Encoding');
-  if (req.headers['if-none-match'] === cached.etag) {
+  const hasBustQuery = Boolean(req.query._t || req.query.t);
+  if (!hasBustQuery && req.headers['if-none-match'] === cached.etag) {
     return res.status(304).end();
   }
   const acceptEncoding = String(req.headers['accept-encoding'] || '');
@@ -24554,6 +24839,7 @@ async function mirrorExternalProductImageToLocalUploads(params: {
       }
 
       fs.writeFileSync(filePath, outBuffer);
+      mirrorBufferToDistUploadsIfPresent(path.basename(filePath), outBuffer);
       void prewarmSingleImageFile(filePath);
       mirroredAssetMetaByLocalUrl.set(localUrl, {
         sourceUrl: rawUrl,
@@ -27096,7 +27382,7 @@ async function fixSingleCatalogImageRecord(params: {
           galleryUrls: [finalImageUrl],
           format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
         }),
-        900
+        2500
       );
       liveSynced = syncRes.synced;
     }
@@ -27878,6 +28164,7 @@ async function processSingleSiteImageAutoFix(item: SiteImageAutoFixInputItem): P
           extraDeleted = permanentlyDeleteReplacedUploadFiles(oldSiteUrls, [fixed.new_image_url], new Set([id]));
           if (extraDeleted.length > 0) saveServerProductImageState();
         }
+        void replicateSiteContentToLiveServer(serverSiteContent).catch(() => {});
       }
     }
 
