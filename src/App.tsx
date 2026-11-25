@@ -35,6 +35,7 @@ import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage'
 import { PlatformAnnouncementBanner } from './components/marketplace/PlatformAnnouncementBanner';
 import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
+import { GlobalBackgroundAutoFixIndicator } from './components/common/GlobalBackgroundAutoFixIndicator';
 // Non-homepage high-traffic views are lazy-loaded via lazyWithRetry below to keep initial homepage load instant
 
 // Helper for retryable lazy loaded views with automatic cache-busting reload and resilient fallback recovery
@@ -3562,6 +3563,15 @@ const MainApp: React.FC = () => {
         onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
         onOpenRfqModal={handleOpenCreateRfq}
         onOpenStorefront={handleOpenStorefront}
+      />
+
+      {/* 6.5 GLOBAL BACKGROUND AUTO-FIX STATUS INDICATOR */}
+      <GlobalBackgroundAutoFixIndicator
+        currentView={activeView}
+        onNavigateToStudio={() => {
+          handleNavigate('PRODUCT_IMAGE_ADMIN');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* 7. GLOBAL PERSISTENT MOBILE BOTTOM NAVIGATION BAR (< md) */}

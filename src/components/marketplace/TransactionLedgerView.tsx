@@ -150,7 +150,12 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
           totalPlatformFeesPaise += amt;
           escrowCount++;
           break;
+        case 'ADMIN_WALLET_CREDIT':
+          totalDepositsPaise += amt;
+          depositCount++;
+          break;
         case 'SUPPLIER_PAYOUT':
+        case 'ADMIN_WALLET_DEBIT':
           totalWithdrawalsPaise += amt;
           withdrawalCount++;
           break;
@@ -168,7 +173,7 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
       withdrawalCount,
       totalCount: entries.length
     };
-  }, [state]);
+  }, [state, isAdmin, currentUser, walletMap]);
 
   const filteredEntries = useMemo(() => {
     if (!state?.ledgerEntries) return [];
@@ -186,7 +191,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         if (!isRelatedToUser) return false;
       }
 
-      if (categoryFilter === 'DEPOSIT' && entry.transaction_type !== 'WALLET_TOPUP') {
+      if (
+        categoryFilter === 'DEPOSIT' &&
+        entry.transaction_type !== 'WALLET_TOPUP' &&
+        entry.transaction_type !== 'ADMIN_WALLET_CREDIT'
+      ) {
         return false;
       }
       if (
@@ -195,7 +204,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
       ) {
         return false;
       }
-      if (categoryFilter === 'WITHDRAWAL' && entry.transaction_type !== 'SUPPLIER_PAYOUT') {
+      if (
+        categoryFilter === 'WITHDRAWAL' &&
+        entry.transaction_type !== 'SUPPLIER_PAYOUT' &&
+        entry.transaction_type !== 'ADMIN_WALLET_DEBIT'
+      ) {
         return false;
       }
 
@@ -216,17 +229,17 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         const srcWallet = entry.source_wallet_id ? walletMap.get(entry.source_wallet_id) : null;
         const dstWallet = entry.destination_wallet_id ? walletMap.get(entry.destination_wallet_id) : null;
 
-        const matchId = entry.id.toLowerCase().includes(q);
-        const matchRef = entry.reference_id.toLowerCase().includes(q);
-        const matchType = entry.transaction_type.toLowerCase().includes(q);
-        const matchNotes = entry.notes.toLowerCase().includes(q);
+        const matchId = (entry.id || '').toLowerCase().includes(q);
+        const matchRef = (entry.reference_id || '').toLowerCase().includes(q);
+        const matchType = (entry.transaction_type || '').toLowerCase().includes(q);
+        const matchNotes = (entry.notes || '').toLowerCase().includes(q);
         const matchSrc =
-          srcWallet?.company_name.toLowerCase().includes(q) ||
-          srcWallet?.entity_name.toLowerCase().includes(q) ||
+          (srcWallet?.company_name || '').toLowerCase().includes(q) ||
+          (srcWallet?.entity_name || '').toLowerCase().includes(q) ||
           (entry.source_wallet_id || '').toLowerCase().includes(q);
         const matchDst =
-          dstWallet?.company_name.toLowerCase().includes(q) ||
-          dstWallet?.entity_name.toLowerCase().includes(q) ||
+          (dstWallet?.company_name || '').toLowerCase().includes(q) ||
+          (dstWallet?.entity_name || '').toLowerCase().includes(q) ||
           (entry.destination_wallet_id || '').toLowerCase().includes(q);
 
         if (!matchId && !matchRef && !matchType && !matchNotes && !matchSrc && !matchDst) {
@@ -236,7 +249,7 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
 
       return true;
     });
-  }, [state, categoryFilter, exactTypeFilter, walletFilter, searchQuery, walletMap]);
+  }, [state, categoryFilter, exactTypeFilter, walletFilter, searchQuery, walletMap, isAdmin, currentUser]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -276,7 +289,7 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         dst ? `"${dst.company_name}"` : 'Escrow Hold / Bank Rail',
         `"${native.nativeAmount}"`,
         `"${native.secondary}"`,
-        `"${e.notes.replace(/"/g, '""')}"`
+        `"${(e.notes || '').replace(/"/g, '""')}"`
       ].join(',');
     });
 
@@ -336,6 +349,33 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
           amountClass: 'text-purple-700',
           prefix: '-',
           icon: <ArrowUpRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+        };
+      case 'ADMIN_WALLET_CREDIT':
+        return {
+          label: 'ADMIN_WALLET_CREDIT',
+          categoryLabel: 'Treasury Credit',
+          textClass: 'text-emerald-700',
+          amountClass: 'text-emerald-600',
+          prefix: '+',
+          icon: <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        };
+      case 'ADMIN_WALLET_DEBIT':
+        return {
+          label: 'ADMIN_WALLET_DEBIT',
+          categoryLabel: 'Treasury Debit',
+          textClass: 'text-rose-700',
+          amountClass: 'text-rose-700',
+          prefix: '-',
+          icon: <ArrowUpRight className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+        };
+      default:
+        return {
+          label: String(type || 'LEDGER_ENTRY'),
+          categoryLabel: 'Adjustment',
+          textClass: 'text-slate-700',
+          amountClass: 'text-slate-700',
+          prefix: '',
+          icon: <BookOpen className="w-3.5 h-3.5 text-slate-600 shrink-0" />
         };
     }
   };
@@ -601,6 +641,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             <option value="ESCROW_RELEASE">ESCROW_RELEASE (Settlement)</option>
             <option value="PLATFORM_FEE">PLATFORM_FEE (Commission)</option>
             <option value="SUPPLIER_PAYOUT">SUPPLIER_PAYOUT (Withdrawal)</option>
+            <option value="ADMIN_WALLET_CREDIT">ADMIN_WALLET_CREDIT (Treasury Credit)</option>
+            <option value="ADMIN_WALLET_DEBIT">ADMIN_WALLET_DEBIT (Treasury Debit)</option>
           </select>
 
           <select
@@ -704,6 +746,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                   const sourceFallback =
                     entry.transaction_type === 'WALLET_TOPUP'
                       ? { label: 'Payment Gateway Webhook', sub: 'Virtual Account / RTGS Rail' }
+                      : entry.transaction_type === 'ADMIN_WALLET_CREDIT'
+                      ? { label: 'Admin Treasury Adjustment', sub: 'Platform Credit Rail' }
                       : { label: 'Escrow Mediation Lock', sub: 'Locked Balance Pool' };
 
                   const destFallback =
@@ -711,6 +755,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       ? { label: 'Trade Heaven Escrow Vault', sub: 'wallets.locked_balance' }
                       : entry.transaction_type === 'SUPPLIER_PAYOUT'
                       ? { label: 'External Beneficiary Bank', sub: 'IMPS / NEFT / SWIFT Rail' }
+                      : entry.transaction_type === 'ADMIN_WALLET_DEBIT'
+                      ? { label: 'Admin Treasury Removal', sub: 'Platform Debit Rail' }
                       : { label: 'System Settlement Account', sub: 'Internal Ledger' };
 
                   const relWallet =

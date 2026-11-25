@@ -6,6 +6,7 @@ import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
 import { apiClient } from '../services/apiClient';
 import { productImageManagerService, normalizeProductAssetUrl } from '../services/productImageManagerService';
+import { backgroundAutoFixService } from '../services/backgroundAutoFixService';
 import { mergeHomepageDisplayConfig } from '../utils/gridLayoutUtils';
 
 export interface RbacRolePermissions {
@@ -508,6 +509,17 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return false;
     }
   };
+
+  useEffect(() => {
+    backgroundAutoFixService.registerSiteContentRefresher(async () => {
+      await refreshFromServer();
+    });
+    void backgroundAutoFixService.hydrateFromServerOnBoot();
+    return () => {
+      backgroundAutoFixService.registerSiteContentRefresher(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Helper to check if a specific user is authorized to edit CMS or access admin areas
   const isUserAuthorized = (user: AuthUser | null = currentUser): UserAuthorizationResult => {

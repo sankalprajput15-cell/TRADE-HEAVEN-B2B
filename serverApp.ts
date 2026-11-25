@@ -27774,6 +27774,288 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
   }
 });
 
+interface SiteImageAutoFixResultRow {
+  id: string;
+  type: string;
+  success: boolean;
+  newUrl?: string;
+  oldUrl?: string;
+  deletedOldUrls?: string[];
+  updatedAt?: string;
+  imageUpdatedAt?: number;
+  error?: string;
+}
+
+interface SiteImageAutoFixInputItem {
+  id: string;
+  type: string;
+  title: string;
+  category: string;
+  specifications?: string;
+  currentUrl?: string;
+  fieldPath?: string;
+}
+
+interface BackgroundAutoFixJobState {
+  jobId: string;
+  active: boolean;
+  cancelRequested: boolean;
+  startedAt: string;
+  finishedAt?: string;
+  total: number;
+  completed: number;
+  fixed: number;
+  failed: number;
+  deletedOld: number;
+  currentLabel: string;
+  currentItemId: string;
+  queue: SiteImageAutoFixInputItem[];
+  results: SiteImageAutoFixResultRow[];
+  updatedAtMs: number;
+}
+
+let activeBackgroundAutoFixJob: BackgroundAutoFixJobState | null = null;
+let backgroundAutoFixWorkerRunning = false;
+
+function normalizeSiteImageAutoFixInputItem(item: any): SiteImageAutoFixInputItem | null {
+  const id = String(item?.id || item?.targetId || item?.record_id || '').trim();
+  if (!id) return null;
+  const type = String(item?.type || item?.targetType || item?.record_type || 'PRODUCT').toUpperCase();
+  const title = String(item?.title || id).trim();
+  const category = String(item?.category || 'General').trim();
+  const specifications = String(item?.specifications || item?.details || item?.description || '').trim();
+  const currentUrl = String(item?.currentUrl || item?.oldImageUrl || '').trim();
+  const fieldPath = String(item?.fieldPath || '').trim();
+  return {
+    id,
+    type,
+    title,
+    category,
+    specifications: specifications || undefined,
+    currentUrl: currentUrl || undefined,
+    fieldPath: fieldPath || undefined
+  };
+}
+
+async function processSingleSiteImageAutoFix(item: SiteImageAutoFixInputItem): Promise<SiteImageAutoFixResultRow> {
+  const { id, type, title, category, specifications, currentUrl, fieldPath } = item;
+  try {
+    const recordTypeArg: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
+      type === 'CATEGORY' ? 'CATEGORY' : type === 'RFQ' ? 'RFQ' : type === 'PRODUCT' ? 'PRODUCT' : 'OVERRIDE';
+
+    const fixed = await fixSingleCatalogImageRecord({
+      recordId: id,
+      recordType: recordTypeArg,
+      title,
+      category,
+      specifications: specifications || undefined,
+      previousImageUrl: currentUrl || undefined
+    });
+
+    // If this was a HERO_SLIDE or SITE_ASSET with fieldPath, also sync into serverSiteContent & delete old upload
+    let extraDeleted: string[] = [];
+    if ((type === 'HERO_SLIDE' || type === 'SITE_ASSET' || fieldPath) && fixed.new_image_url) {
+      let siteDirty = false;
+      const oldSiteUrls: string[] = [];
+      if (type === 'HERO_SLIDE' && Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
+        for (const slide of serverSiteContent.homepage.heroSlides) {
+          if (String(slide?.id || '') === id) {
+            if (slide.image) oldSiteUrls.push(slide.image);
+            slide.image = fixed.new_image_url;
+            siteDirty = true;
+          }
+        }
+      } else if (fieldPath) {
+        const prevV = setNestedSiteContentValue(serverSiteContent, fieldPath, fixed.new_image_url);
+        if (prevV) oldSiteUrls.push(prevV);
+        siteDirty = true;
+      }
+      if (siteDirty) {
+        (serverSiteContent as any).siteContentUpdatedAt = Date.now();
+        invalidateSiteContentResponseCache();
+        saveServerSiteContentToDisk();
+        if (oldSiteUrls.length > 0) {
+          extraDeleted = permanentlyDeleteReplacedUploadFiles(oldSiteUrls, [fixed.new_image_url], new Set([id]));
+          if (extraDeleted.length > 0) saveServerProductImageState();
+        }
+      }
+    }
+
+    const itemDeleted = Array.from(
+      new Set([...(Array.isArray(fixed.deletedOldUrls) ? fixed.deletedOldUrls : []), ...extraDeleted])
+    );
+
+    return {
+      id,
+      type,
+      success: true,
+      newUrl: fixed.new_image_url,
+      oldUrl: fixed.old_image_url,
+      deletedOldUrls: itemDeleted,
+      updatedAt: fixed.updatedAt,
+      imageUpdatedAt: fixed.imageUpdatedAt
+    };
+  } catch (err: any) {
+    return {
+      id,
+      type,
+      success: false,
+      oldUrl: currentUrl,
+      error: err?.message || 'Auto-fix failed for this item.'
+    };
+  }
+}
+
+function serializeBackgroundAutoFixJob(job: BackgroundAutoFixJobState) {
+  return {
+    jobId: job.jobId,
+    active: job.active,
+    cancelRequested: job.cancelRequested,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    total: job.total,
+    completed: job.completed,
+    fixed: job.fixed,
+    failed: job.failed,
+    deletedOld: job.deletedOld,
+    currentLabel: job.currentLabel,
+    currentItemId: job.currentItemId,
+    queuedIds: job.queue.map(q => q.id),
+    results: job.results,
+    updatedAtMs: job.updatedAtMs
+  };
+}
+
+async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
+  if (backgroundAutoFixWorkerRunning) return;
+  backgroundAutoFixWorkerRunning = true;
+  try {
+    while (!job.cancelRequested && job.queue.length > 0) {
+      const nextItem = job.queue.shift();
+      if (!nextItem) break;
+      job.currentItemId = nextItem.id;
+      job.currentLabel = nextItem.title || nextItem.id;
+      job.updatedAtMs = Date.now();
+
+      const resRow = await processSingleSiteImageAutoFix(nextItem);
+      job.completed += 1;
+      if (resRow.success && resRow.newUrl) {
+        job.fixed += 1;
+        job.deletedOld += Array.isArray(resRow.deletedOldUrls) ? resRow.deletedOldUrls.length : 0;
+      } else {
+        job.failed += 1;
+      }
+      job.results.push(resRow);
+      job.updatedAtMs = Date.now();
+    }
+  } finally {
+    job.active = false;
+    job.currentItemId = '';
+    job.currentLabel = '';
+    job.finishedAt = new Date().toISOString();
+    job.updatedAtMs = Date.now();
+    backgroundAutoFixWorkerRunning = false;
+  }
+}
+
+// POST /api/v1/admin/site-images/auto-fix-jobs
+// Enqueues selected site images into a persistent server-side background Auto-Fix worker so navigation/page changes never interrupt it.
+app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    const rawItems = Array.isArray(req.body?.items)
+      ? req.body.items
+      : req.body?.targetId || req.body?.id
+        ? [req.body]
+        : [];
+    const normalizedItems = rawItems
+      .slice(0, 2500)
+      .map(normalizeSiteImageAutoFixInputItem)
+      .filter((x): x is SiteImageAutoFixInputItem => Boolean(x));
+
+    if (normalizedItems.length === 0) {
+      return res.status(400).json({ success: false, message: 'No items provided for background Auto-Fix.' });
+    }
+
+    if (
+      activeBackgroundAutoFixJob &&
+      activeBackgroundAutoFixJob.active &&
+      !activeBackgroundAutoFixJob.cancelRequested
+    ) {
+      const existingIds = new Set<string>([
+        activeBackgroundAutoFixJob.currentItemId,
+        ...activeBackgroundAutoFixJob.queue.map(q => q.id)
+      ]);
+      let addedCount = 0;
+      for (const item of normalizedItems) {
+        if (!existingIds.has(item.id)) {
+          existingIds.add(item.id);
+          activeBackgroundAutoFixJob.queue.push(item);
+          activeBackgroundAutoFixJob.total += 1;
+          addedCount += 1;
+        }
+      }
+      activeBackgroundAutoFixJob.updatedAtMs = Date.now();
+      return res.json({
+        success: true,
+        appended: addedCount,
+        job: serializeBackgroundAutoFixJob(activeBackgroundAutoFixJob)
+      });
+    }
+
+    const job: BackgroundAutoFixJobState = {
+      jobId: `autofix-job-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      active: true,
+      cancelRequested: false,
+      startedAt: new Date().toISOString(),
+      total: normalizedItems.length,
+      completed: 0,
+      fixed: 0,
+      failed: 0,
+      deletedOld: 0,
+      currentLabel: normalizedItems[0].title || normalizedItems[0].id,
+      currentItemId: normalizedItems[0].id,
+      queue: [...normalizedItems],
+      results: [],
+      updatedAtMs: Date.now()
+    };
+    activeBackgroundAutoFixJob = job;
+    void runBackgroundAutoFixJobWorker(job);
+
+    return res.json({
+      success: true,
+      appended: normalizedItems.length,
+      job: serializeBackgroundAutoFixJob(job)
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to start background Auto-Fix job.'
+    });
+  }
+});
+
+app.get('/api/v1/admin/site-images/auto-fix-jobs/current', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  return res.json({
+    success: true,
+    job: activeBackgroundAutoFixJob ? serializeBackgroundAutoFixJob(activeBackgroundAutoFixJob) : null
+  });
+});
+
+app.post('/api/v1/admin/site-images/auto-fix-jobs/stop', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  if (activeBackgroundAutoFixJob && activeBackgroundAutoFixJob.active) {
+    activeBackgroundAutoFixJob.cancelRequested = true;
+    activeBackgroundAutoFixJob.queue = [];
+    activeBackgroundAutoFixJob.updatedAtMs = Date.now();
+  }
+  return res.json({
+    success: true,
+    job: activeBackgroundAutoFixJob ? serializeBackgroundAutoFixJob(activeBackgroundAutoFixJob) : null
+  });
+});
+
 // POST /api/v1/admin/site-images/auto-fix
 // Automatically fixes one or many site images (Product, Category, RFQ, Hero Slide, Site Banner),
 // assigns a unique topic-matched photo stored locally, and permanently deletes every replaced old file from server disk.
@@ -27790,99 +28072,26 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
       return res.status(400).json({ success: false, message: 'No items provided for Auto-Fix.' });
     }
 
-    const batchItems = rawItems.slice(0, 25);
-    const results: Array<{
-      id: string;
-      type: string;
-      success: boolean;
-      newUrl?: string;
-      oldUrl?: string;
-      deletedOldUrls?: string[];
-      updatedAt?: string;
-      imageUpdatedAt?: number;
-      error?: string;
-    }> = [];
+    const batchItems = rawItems
+      .slice(0, 25)
+      .map(normalizeSiteImageAutoFixInputItem)
+      .filter((x): x is SiteImageAutoFixInputItem => Boolean(x));
+    const results: SiteImageAutoFixResultRow[] = [];
     const allDeletedOldUrls: string[] = [];
     let fixedCount = 0;
     let failedCount = 0;
 
     for (const item of batchItems) {
-      const id = String(item?.id || item?.targetId || item?.record_id || '').trim();
-      const type = String(item?.type || item?.targetType || item?.record_type || 'PRODUCT').toUpperCase();
-      const title = String(item?.title || id).trim();
-      const category = String(item?.category || 'General').trim();
-      const specifications = String(item?.specifications || item?.details || item?.description || '').trim();
-      const currentUrl = String(item?.currentUrl || item?.oldImageUrl || '').trim();
-      const fieldPath = String(item?.fieldPath || '').trim();
-      if (!id) continue;
-
-      try {
-        const recordTypeArg: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE' =
-          type === 'CATEGORY' ? 'CATEGORY' : type === 'RFQ' ? 'RFQ' : type === 'PRODUCT' ? 'PRODUCT' : 'OVERRIDE';
-
-        const fixed = await fixSingleCatalogImageRecord({
-          recordId: id,
-          recordType: recordTypeArg,
-          title,
-          category,
-          specifications: specifications || undefined,
-          previousImageUrl: currentUrl || undefined
-        });
-
-        // If this was a HERO_SLIDE or SITE_ASSET with fieldPath, also sync into serverSiteContent & delete old upload
-        let extraDeleted: string[] = [];
-        if ((type === 'HERO_SLIDE' || type === 'SITE_ASSET' || fieldPath) && fixed.new_image_url) {
-          let siteDirty = false;
-          const oldSiteUrls: string[] = [];
-          if (type === 'HERO_SLIDE' && Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
-            for (const slide of serverSiteContent.homepage.heroSlides) {
-              if (String(slide?.id || '') === id) {
-                if (slide.image) oldSiteUrls.push(slide.image);
-                slide.image = fixed.new_image_url;
-                siteDirty = true;
-              }
-            }
-          } else if (fieldPath) {
-            const prevV = setNestedSiteContentValue(serverSiteContent, fieldPath, fixed.new_image_url);
-            if (prevV) oldSiteUrls.push(prevV);
-            siteDirty = true;
-          }
-          if (siteDirty) {
-            (serverSiteContent as any).siteContentUpdatedAt = Date.now();
-            invalidateSiteContentResponseCache();
-            saveServerSiteContentToDisk();
-            if (oldSiteUrls.length > 0) {
-              extraDeleted = permanentlyDeleteReplacedUploadFiles(oldSiteUrls, [fixed.new_image_url], new Set([id]));
-              if (extraDeleted.length > 0) saveServerProductImageState();
-            }
-          }
-        }
-
-        const itemDeleted = Array.from(
-          new Set([...(Array.isArray(fixed.deletedOldUrls) ? fixed.deletedOldUrls : []), ...extraDeleted])
-        );
-        allDeletedOldUrls.push(...itemDeleted);
+      const rowRes = await processSingleSiteImageAutoFix(item);
+      if (rowRes.success) {
         fixedCount++;
-        results.push({
-          id,
-          type,
-          success: true,
-          newUrl: fixed.new_image_url,
-          oldUrl: fixed.old_image_url,
-          deletedOldUrls: itemDeleted,
-          updatedAt: fixed.updatedAt,
-          imageUpdatedAt: fixed.imageUpdatedAt
-        });
-      } catch (err: any) {
+        if (Array.isArray(rowRes.deletedOldUrls)) {
+          allDeletedOldUrls.push(...rowRes.deletedOldUrls);
+        }
+      } else {
         failedCount++;
-        results.push({
-          id,
-          type,
-          success: false,
-          oldUrl: currentUrl,
-          error: err?.message || 'Auto-fix failed for this item.'
-        });
       }
+      results.push(rowRes);
     }
 
     return res.json({

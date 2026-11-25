@@ -43,6 +43,11 @@ import {
   autoFixSiteImages,
   deleteSiteImageFile
 } from '../../services/siteImageControlService';
+import {
+  backgroundAutoFixService,
+  BackgroundAutoFixItem,
+  BackgroundAutoFixSnapshot
+} from '../../services/backgroundAutoFixService';
 
 export type SiteImageTargetType = 'PRODUCT' | 'CATEGORY' | 'RFQ' | 'HERO_SLIDE' | 'SITE_ASSET';
 
@@ -179,17 +184,24 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     changedItem?: UnifiedSiteImageItem;
     showChangedTabShortcut?: boolean;
   } | null>(null);
-  const [totalDeletedFilesSession, setTotalDeletedFilesSession] = useState<number>(0);
-  const [sessionChanges, setSessionChanges] = useState<
-    Record<string, { changedAt: number; action: 'UPLOAD' | 'AUTO_FIX' | 'URL'; deletedOldCount: number }>
-  >({});
-  const [skippedItems, setSkippedItems] = useState<Record<string, { reason: string; at: number }>>({});
+  const [bgSnapshot, setBgSnapshot] = useState<BackgroundAutoFixSnapshot>(() =>
+    backgroundAutoFixService.getSnapshot()
+  );
+  const [localSkippedItems, setLocalSkippedItems] = useState<Record<string, { reason: string; at: number }>>({});
   const [brokenThumbIds, setBrokenThumbIds] = useState<Record<string, boolean>>({});
   const autoFixedOutRowIdsRef = useRef<Set<string>>(new Set());
   const isAutoFixingVisibleOutRef = useRef<boolean>(false);
 
-  // Batch Auto-Fix state
-  const [batchProgress, setBatchProgress] = useState<{
+  const sessionChanges = bgSnapshot.sessionChanges;
+  const totalDeletedFilesSession = bgSnapshot.totalDeletedFilesSession;
+  const skippedItems = useMemo(
+    () => ({ ...bgSnapshot.skippedItems, ...localSkippedItems }),
+    [bgSnapshot.skippedItems, localSkippedItems]
+  );
+  const bgQueuedSet = useMemo(() => new Set<string>(bgSnapshot.queuedIds), [bgSnapshot.queuedIds]);
+
+  // Local batch upload progress (file -> multiple rows) + Background Auto-Fix progress
+  const [localUploadProgress, setLocalUploadProgress] = useState<{
     active: boolean;
     total: number;
     completed: number;
@@ -199,6 +211,26 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     currentLabel: string;
   } | null>(null);
   const abortBatchRef = useRef<boolean>(false);
+
+  const batchProgress = bgSnapshot.active
+    ? {
+        active: true,
+        isBackgroundAutoFix: true,
+        stopping: bgSnapshot.stopping,
+        total: bgSnapshot.total,
+        completed: bgSnapshot.completed,
+        fixed: bgSnapshot.fixed,
+        failed: bgSnapshot.failed,
+        deletedOld: bgSnapshot.deletedOld,
+        currentLabel: bgSnapshot.currentLabel
+      }
+    : localUploadProgress
+      ? {
+          ...localUploadProgress,
+          isBackgroundAutoFix: false,
+          stopping: false
+        }
+      : null;
 
   // Bulk Upload drawer state
   const [showBulkUploader, setShowBulkUploader] = useState<boolean>(false);
@@ -314,10 +346,29 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
   useEffect(() => {
     void loadAllInventory(true);
+    void backgroundAutoFixService.pollServerJobOnce();
+    const unsubBg = backgroundAutoFixService.subscribe(snap => {
+      setBgSnapshot(snap);
+      setStateVersion(v => v + 1);
+      if (!snap.active && snap.lastCompletedNotice) {
+        const n = snap.lastCompletedNotice;
+        if (Date.now() - n.at < 15 * 60 * 1000) {
+          setBannerNotice(prev => {
+            if (prev?.text === n.text) return prev;
+            return {
+              type: n.type,
+              text: n.text,
+              showChangedTabShortcut: n.fixed > 0
+            };
+          });
+        }
+      }
+    });
     const onImageEvent = () => setStateVersion(v => v + 1);
     window.addEventListener('tradeheaven_product_images_updated', onImageEvent);
     window.addEventListener('tradeheaven_product_image_saved', onImageEvent);
     return () => {
+      unsubBg();
       window.removeEventListener('tradeheaven_product_images_updated', onImageEvent);
       window.removeEventListener('tradeheaven_product_image_saved', onImageEvent);
     };
@@ -781,18 +832,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         };
       });
 
-      setSessionChanges(prev => {
-        const next = { ...prev };
-        for (const e of entries) {
-          next[e.id] = {
-            changedAt: nowMs,
-            action: e.action || 'UPLOAD',
-            deletedOldCount: Array.isArray(e.deletedOldUrls) ? e.deletedOldUrls.length : 0
-          };
-        }
-        return next;
-      });
-      setSkippedItems(prev => {
+      backgroundAutoFixService.recordManualSessionChange(
+        entries.map(e => ({
+          id: e.id,
+          deletedOldCount: Array.isArray(e.deletedOldUrls) ? e.deletedOldUrls.length : 0,
+          action: e.action || 'UPLOAD'
+        }))
+      );
+      setLocalSkippedItems(prev => {
         const next = { ...prev };
         for (const e of entries) {
           delete next[e.id];
@@ -808,9 +855,6 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       });
 
       productImageManagerService.applyServerOverrideSnapshot(snapshotPayload);
-      if (deletedCount > 0) {
-        setTotalDeletedFilesSession(prev => prev + deletedCount);
-      }
       if (needsSiteContentRefresh) {
         await refreshFromServer().catch(() => {});
       }
@@ -941,7 +985,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         fieldPath: item.fieldPath
       });
       if (deletedFileOk) {
-        setTotalDeletedFilesSession(prev => prev + 1);
+        backgroundAutoFixService.recordManualSessionChange([
+          { id: item.id, deletedOldCount: 1, action: 'UPLOAD' }
+        ]);
       }
       await refreshFromServer().catch(() => {});
       if (typeof window !== 'undefined') {
@@ -1040,7 +1086,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       });
     } catch (err: any) {
       const errReason = err?.message || 'Auto-fix could not find a unique replacement photo.';
-      setSkippedItems(prev => ({
+      setLocalSkippedItems(prev => ({
         ...prev,
         [item.id]: { reason: errReason, at: Date.now() }
       }));
@@ -1092,132 +1138,22 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageItems, brokenThumbIds, isLoadingInventory, batchProgress?.active, busyRowIds]);
 
-  // Batch Auto-Fix (Selected OR All Flagged)
+  // Persistent Background Batch Auto-Fix (keeps running across Admin tab switches, page navigation, and reloads)
   const runBatchAutoFix = async (targets: UnifiedSiteImageItem[]) => {
-    if (targets.length === 0 || batchProgress?.active) return;
-    abortBatchRef.current = false;
+    if (targets.length === 0 || localUploadProgress?.active) return;
     setBannerNotice(null);
-
-    let completed = 0;
-    let fixed = 0;
-    let failed = 0;
-    let deletedOld = 0;
-
-    setBatchProgress({
-      active: true,
-      total: targets.length,
-      completed: 0,
-      fixed: 0,
-      failed: 0,
-      deletedOld: 0,
-      currentLabel: targets[0].title
-    });
-
-    const CHUNK_SIZE = 1;
-    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
-      if (abortBatchRef.current) break;
-      const chunk = targets.slice(i, i + CHUNK_SIZE);
-      setBatchProgress({
-        active: true,
-        total: targets.length,
-        completed,
-        fixed,
-        failed,
-        deletedOld,
-        currentLabel: chunk.map(c => c.title).slice(0, 2).join(', ')
-      });
-
-      try {
-        const json = await autoFixSiteImages(
-          chunk.map(c => ({
-            id: c.id,
-            type: c.type,
-            title: c.title,
-            category: c.category,
-            specifications: c.specifications,
-            currentUrl: c.currentUrl,
-            fieldPath: c.fieldPath
-          }))
-        );
-        const resList = Array.isArray(json?.results) ? json.results : [];
-        const toSync: Array<{
-          id: string;
-          type: SiteImageTargetType;
-          newUrl: string;
-          deletedOldUrls?: string[];
-          replacedOldUrls?: string[];
-          updatedAt?: string;
-          action?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
-        }> = [];
-        const newlySkipped: Record<string, { reason: string; at: number }> = {};
-
-        for (const c of chunk) {
-          const match = resList.find(r => r.id === c.id);
-          completed++;
-          if (match?.success && match?.newUrl) {
-            fixed++;
-            const delList: string[] = Array.isArray(match.deletedOldUrls) ? match.deletedOldUrls : [];
-            deletedOld += delList.length;
-            toSync.push({
-              id: c.id,
-              type: c.type,
-              newUrl: match.newUrl,
-              deletedOldUrls: delList,
-              replacedOldUrls: c.currentUrl ? [c.currentUrl] : undefined,
-              updatedAt: match.updatedAt,
-              action: 'AUTO_FIX'
-            });
-          } else {
-            failed++;
-            newlySkipped[c.id] = {
-              reason: match?.error || 'Auto-fix skipped item (open inspector to pick from ~20 Google/Web images).',
-              at: Date.now()
-            };
-          }
-        }
-
-        if (Object.keys(newlySkipped).length > 0) {
-          setSkippedItems(prev => ({ ...prev, ...newlySkipped }));
-        }
-        if (toSync.length > 0) {
-          await applyLocalSync(toSync);
-        }
-      } catch (err: any) {
-        completed += chunk.length;
-        failed += chunk.length;
-        const newlySkipped: Record<string, { reason: string; at: number }> = {};
-        for (const c of chunk) {
-          newlySkipped[c.id] = {
-            reason: err?.message || 'Batch auto-fix request failed for this item.',
-            at: Date.now()
-          };
-        }
-        setSkippedItems(prev => ({ ...prev, ...newlySkipped }));
-      }
-
-      setBatchProgress({
-        active: true,
-        total: targets.length,
-        completed,
-        fixed,
-        failed,
-        deletedOld,
-        currentLabel: chunk[chunk.length - 1]?.title || ''
-      });
-    }
-
-    setBatchProgress(null);
+    backgroundAutoFixService.dismissNotice();
+    const queueItems: BackgroundAutoFixItem[] = targets.map(c => ({
+      id: c.id,
+      type: c.type,
+      title: c.title,
+      category: c.category,
+      specifications: c.specifications,
+      currentUrl: c.currentUrl,
+      fieldPath: c.fieldPath
+    }));
     setSelectedIds({});
-    if (failed > 0 && fixed === 0) {
-      setScopeFilter('SKIPPED');
-    }
-    setBannerNotice({
-      type: fixed > 0 ? 'success' : 'error',
-      text: abortBatchRef.current
-        ? `Batch Auto-Fix stopped: fixed ${fixed} of ${targets.length} items (${deletedOld} old server files permanently deleted).`
-        : `Batch Auto-Fix finished: ${fixed} fixed, ${failed} skipped/failed (click "Skipped" tab or any row to open ~20 Google/Web photos), ${deletedOld} old server files permanently deleted.`,
-      showChangedTabShortcut: fixed > 0
-    });
+    await backgroundAutoFixService.enqueue(queueItems);
   };
 
   // Multi-file Bulk Uploader handlers
@@ -1304,7 +1240,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     let failed = 0;
     let deletedOld = 0;
 
-    setBatchProgress({
+    setLocalUploadProgress({
       active: true,
       total: targets.length,
       completed: 0,
@@ -1316,7 +1252,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
     for (const target of targets) {
       if (abortBatchRef.current) break;
-      setBatchProgress({
+      setLocalUploadProgress({
         active: true,
         total: targets.length,
         completed,
@@ -1335,7 +1271,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       }
     }
 
-    setBatchProgress(null);
+    setLocalUploadProgress(null);
     setSelectedIds({});
     setBannerNotice({
       type: fixed > 0 ? 'success' : 'error',
@@ -1568,7 +1504,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             )}
             <button
               type="button"
-              onClick={() => setBannerNotice(null)}
+              onClick={() => {
+                setBannerNotice(null);
+                backgroundAutoFixService.dismissNotice();
+              }}
               className="p-1 rounded hover:bg-black/5 cursor-pointer shrink-0"
               aria-label="Dismiss notice"
             >
@@ -1583,19 +1522,27 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         <div className="px-6 py-3.5 border-b border-blue-200 bg-blue-50/70 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="font-semibold text-slate-900">
-              Auto-Fixing images ({batchProgress.completed} / {batchProgress.total})
+              {batchProgress.isBackgroundAutoFix
+                ? `Auto-Fixing in background (${batchProgress.completed} / ${batchProgress.total})`
+                : `Auto-Fixing images (${batchProgress.completed} / ${batchProgress.total})`}
               <span className="text-slate-500 font-normal ml-2">
                 {batchProgress.fixed} fixed · {batchProgress.failed} skipped · {batchProgress.deletedOld} old files deleted
+                {batchProgress.isBackgroundAutoFix ? ' · Keeps running if you switch pages' : ''}
               </span>
             </div>
             <button
               type="button"
+              disabled={batchProgress.stopping}
               onClick={() => {
-                abortBatchRef.current = true;
+                if (batchProgress.isBackgroundAutoFix) {
+                  void backgroundAutoFixService.stop();
+                } else {
+                  abortBatchRef.current = true;
+                }
               }}
-              className="px-3 py-1 rounded-md bg-white border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold cursor-pointer whitespace-nowrap"
+              className="px-3 py-1 rounded-md bg-white border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
             >
-              Stop Batch
+              {batchProgress.stopping ? 'Stopping...' : 'Stop Batch'}
             </button>
           </div>
           <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -1818,7 +1765,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               </button>
               <button
                 type="button"
-                disabled={Boolean(batchProgress?.active)}
+                disabled={Boolean(localUploadProgress?.active)}
                 onClick={() => {
                   const idSet = new Set(selectedIdList);
                   const targets = allItems.filter(it => idSet.has(it.id));
@@ -1827,7 +1774,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
               >
                 <Wand2 className="w-3.5 h-3.5" />
-                <span>Auto-Fix Selected ({selectedIdList.length})</span>
+                <span>
+                  {bgSnapshot.active
+                    ? `Add to Background Auto-Fix (${selectedIdList.length})`
+                    : `Auto-Fix Selected (${selectedIdList.length})`}
+                </span>
               </button>
               <button
                 type="button"
@@ -2045,25 +1996,33 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                         >
                           <div
                             className={`font-semibold group-hover:underline ${
-                              skippedItems[item.id]
-                                ? 'text-red-700'
-                                : item.status === 'VERIFIED'
-                                  ? 'text-emerald-700'
-                                  : item.status === 'DUPLICATE'
-                                    ? 'text-amber-700'
-                                    : 'text-red-700'
+                              bgSnapshot.active && bgQueuedSet.has(item.id)
+                                ? 'text-blue-700'
+                                : skippedItems[item.id]
+                                  ? 'text-red-700'
+                                  : item.status === 'VERIFIED'
+                                    ? 'text-emerald-700'
+                                    : item.status === 'DUPLICATE'
+                                      ? 'text-amber-700'
+                                      : 'text-red-700'
                             }`}
                           >
-                            {skippedItems[item.id]
-                              ? 'Skipped (Click to Fix)'
-                              : item.status === 'VERIFIED'
-                                ? 'Verified'
-                                : item.status === 'DUPLICATE'
-                                  ? 'Duplicate (Click to Open)'
-                                  : 'Needs Image (Click to Open)'}
+                            {bgSnapshot.active && bgQueuedSet.has(item.id)
+                              ? item.id === bgSnapshot.currentItemId
+                                ? 'Auto-Fixing in Background...'
+                                : 'Queued for Background Auto-Fix'
+                              : skippedItems[item.id]
+                                ? 'Skipped (Click to Fix)'
+                                : item.status === 'VERIFIED'
+                                  ? 'Verified'
+                                  : item.status === 'DUPLICATE'
+                                    ? 'Duplicate (Click to Open)'
+                                    : 'Needs Image (Click to Open)'}
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            {skippedItems[item.id]?.reason || item.statusDetail}
+                            {bgSnapshot.active && bgQueuedSet.has(item.id)
+                              ? 'Continues automatically while you work on other pages'
+                              : skippedItems[item.id]?.reason || item.statusDetail}
                           </div>
                           {item.changedAtMs > 0 && (
                             <div className="text-[11px] text-emerald-700 font-medium mt-0.5 tabular-nums">
@@ -2297,7 +2256,9 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           onCheckLiveOnSite={() => handleCheckLiveOnSite(inspectingItem)}
           onImageDeleted={(_id, deletedFile) => {
             if (deletedFile) {
-              setTotalDeletedFilesSession(prev => prev + 1);
+              backgroundAutoFixService.recordManualSessionChange([
+                { id: inspectingItem.id, deletedOldCount: 1, action: 'UPLOAD' }
+              ]);
             }
             void refreshFromServer().catch(() => {});
             setStateVersion(v => v + 1);
@@ -2312,18 +2273,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           onClose={() => setInspectingItem(null)}
           onImageUpdated={(id, newUrl, activityMs, meta) => {
             const deletedCount = Array.isArray(meta?.deletedOldUrls) ? meta.deletedOldUrls.length : 0;
-            if (deletedCount > 0) {
-              setTotalDeletedFilesSession(prev => prev + deletedCount);
-            }
-            setSessionChanges(prev => ({
-              ...prev,
-              [id]: {
-                changedAt: activityMs || Date.now(),
-                action: meta?.action || 'UPLOAD',
-                deletedOldCount: deletedCount
+            backgroundAutoFixService.recordManualSessionChange([
+              {
+                id,
+                deletedOldCount: deletedCount,
+                action: meta?.action || 'UPLOAD'
               }
-            }));
-            setSkippedItems(prev => {
+            ]);
+            setLocalSkippedItems(prev => {
               const next = { ...prev };
               delete next[id];
               return next;
