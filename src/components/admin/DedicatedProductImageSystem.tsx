@@ -1032,6 +1032,22 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         </div>
       )}
 
+      {/* WHOLE-SITE IMAGE CONTROL, UPLOAD & AUTO-FIX STUDIO (PRIMARY TOP DECK) */}
+      <WholeSiteImageStudio
+        onViewLiveItem={
+          onViewOnHomepage
+            ? (item) =>
+                onViewOnHomepage({
+                  recordId: item.recordId,
+                  recordType:
+                    item.recordType === 'CATEGORY' || item.recordType === 'RFQ' || item.recordType === 'PRODUCT'
+                      ? item.recordType
+                      : 'OVERRIDE'
+                })
+            : undefined
+        }
+      />
+
       {/* TOP SYSTEM HEADER & FORMAT CONTROLLER */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -1236,22 +1252,6 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
           </div>
         </div>
       </div>
-
-      {/* WHOLE-SITE IMAGE CONTROL, UPLOAD & AUTO-FIX STUDIO */}
-      <WholeSiteImageStudio
-        onViewLiveItem={
-          onViewOnHomepage
-            ? (item) =>
-                onViewOnHomepage({
-                  recordId: item.recordId,
-                  recordType:
-                    item.recordType === 'CATEGORY' || item.recordType === 'RFQ' || item.recordType === 'PRODUCT'
-                      ? item.recordType
-                      : 'OVERRIDE'
-                })
-            : undefined
-        }
-      />
 
       {/* =====================================================================
           TAB 1: ALL LISTED PRODUCTS VISUAL MANAGER

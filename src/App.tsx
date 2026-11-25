@@ -3588,13 +3588,15 @@ const MainApp: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
-      {/* 6. REAL-TIME AI LIVE CHAT & WHATSAPP DESK WIDGET */}
-      <TradeHeavenLiveChatWidget
-        currentUser={currentUser}
-        onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
-        onOpenRfqModal={handleOpenCreateRfq}
-        onOpenStorefront={handleOpenStorefront}
-      />
+      {/* 6. REAL-TIME AI LIVE CHAT & WHATSAPP DESK WIDGET (Hidden inside Admin workspaces so floating buttons never overlap admin controls) */}
+      {activeView !== 'ADMIN_DASHBOARD' && activeView !== 'PRODUCT_IMAGE_ADMIN' && (
+        <TradeHeavenLiveChatWidget
+          currentUser={currentUser}
+          onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
+          onOpenRfqModal={handleOpenCreateRfq}
+          onOpenStorefront={handleOpenStorefront}
+        />
+      )}
 
       {/* 6.5 GLOBAL BACKGROUND AUTO-FIX STATUS INDICATOR */}
       <GlobalBackgroundAutoFixIndicator
