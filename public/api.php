@@ -8896,10 +8896,29 @@ switch ($action) {
             ];
         }
 
-        $af_stop = ['the','and','for','with','from','grade','high','pure','quality','bulk','wholesale','industrial','natural','organic','fresh','raw','export','import','india','best','price','supplier','manufacturer','buyer','lead','rfq','ton','tons','kg','mt','pack','packaging','type'];
+        $af_stop = ['the','and','for','with','from','grade','high','pure','quality','bulk','wholesale','industrial','natural','organic','fresh','raw','export','import','india','indian','china','chinese','japan','japanese','germany','german','chile','chilean','korea','korean','uganda','south','north','east','west','africa','african','europe','european','asia','asian','best','price','supplier','manufacturer','buyer','lead','rfq','ton','tons','kg','mt','pack','packaging','type','certified','origin','vintage','mixed','used','bale','bales','system','systems','large','small','stationary','easy','made','continuous','standby','premium','standard'];
+        $af_cat_map = [
+            ['re' => '/\b(fish|tuna|shrimp|prawn|salmon|mackerel|squid|crab|lobster|seafood|fillet|tilapia)\b/i', 'tokens' => ['fish','tuna','shrimp','prawn','salmon','seafood','fillet','marine'], 'q' => 'yellowfin tuna fish seafood'],
+            ['re' => '/\b(rice|basmati|tteokbokki|wheat|flour|grain|corn|maize|barley|soybean|lentil|pulse|bean|sesame|seed|sugar)\b/i', 'tokens' => ['rice','basmati','wheat','flour','grain','corn','soybean','lentil','pulse','bean','seed','sugar','agro','farm'], 'q' => 'basmati rice grains sacks'],
+            ['re' => '/\b(spice|pepper|turmeric|cardamom|clove|cinnamon|cumin|chilli|chili|ginger|garlic|cashew|almond|walnut|pistachio|peanut|nut|coffee|tea|cocoa)\b/i', 'tokens' => ['spice','pepper','turmeric','cardamom','clove','cumin','ginger','cashew','almond','nut','coffee','tea','cocoa'], 'q' => 'whole spices turmeric pepper'],
+            ['re' => '/\b(oil|sunflower|palm|olive|coconut|fruit|mango|apple|banana|onion|potato|tomato|vegetable|juice|beverage|honey|chicken|meat|beef|dairy|milk|food|agri)\b/i', 'tokens' => ['oil','sunflower','palm','coconut','fruit','mango','vegetable','honey','food','rice','grain','spice','agro','farm','tea','coffee'], 'q' => 'cooking sunflower oil agricultural food'],
+            ['re' => '/\b(shoe|shoes|sneaker|boot|footwear|leather|belt|wallet|handbag|luggage)\b/i', 'tokens' => ['shoe','shoes','footwear','leather','belt','wallet','handbag','bag','apparel','fashion'], 'q' => 'leather shoes footwear wholesale'],
+            ['re' => '/\b(denim|jeans|cloth|clothing|garment|apparel|textile|fabric|cotton|silk|saree|shirt|jacket|yarn|wool|linen|towel|carpet|rug|jute)\b/i', 'tokens' => ['denim','jeans','cloth','clothing','garment','apparel','textile','fabric','cotton','silk','saree','shirt','yarn','towel','carpet','jute','leather'], 'q' => 'cotton textile fabric denim garments'],
+            ['re' => '/\b(generator|genset|cummins|tank|storage|boiler|compressor|pump|valve|hvac|chiller|excavator|bulldozer|loader|crane|forklift|tractor|cnc|lathe|milling|welding|welder|machinery|machine)\b/i', 'tokens' => ['generator','genset','diesel','tank','storage','pump','valve','excavator','crane','forklift','cnc','welding','machinery','machine','industrial','equipment'], 'q' => 'industrial diesel generator machinery'],
+            ['re' => '/\b(coal|anthracite|coke|en590|diesel|jet|bitumen|petroleum|fuel|lng|lpg|solar|panel|battery|energy)\b/i', 'tokens' => ['coal','diesel','jet','bitumen','petroleum','fuel','solar','panel','battery','energy','oil','mining'], 'q' => 'steam coal solar panels energy'],
+            ['re' => '/\b(steel|iron|copper|aluminum|aluminium|brass|zinc|nickel|gold|silver|ore|ingot|billet|coil|rebar|cathode|scrap|metal|mineral|marble|granite|mining)\b/i', 'tokens' => ['steel','iron','copper','aluminum','aluminium','gold','ore','ingot','coil','scrap','metal','mineral','marble','granite','mining','coal'], 'q' => 'stainless steel coils copper ingots'],
+            ['re' => '/\b(chemical|acid|soda|urea|fertilizer|resin|polymer|hdpe|ldpe|pvc|plastic|rubber|paint|coating)\b/i', 'tokens' => ['chemical','acid','soda','urea','fertilizer','resin','polymer','hdpe','pvc','plastic','rubber','paint','drum'], 'q' => 'industrial chemical drums plastic pellets'],
+            ['re' => '/\b(cement|clinker|brick|tile|ceramic|glass|plywood|timber|lumber|wood|bamboo|sand|gravel|aggregate|building|construction)\b/i', 'tokens' => ['cement','brick','tile','ceramic','glass','plywood','timber','wood','bamboo','sand','gravel','aggregate','marble','building','construction'], 'q' => 'portland cement timber building materials'],
+            ['re' => '/\b(hotel|hospitality|restaurant|tableware|cutlery|kitchen|furniture|chair|table|sofa|bed|home|decor|appliance)\b/i', 'tokens' => ['hotel','hospitality','tableware','kitchen','ceramic','glass','linen','towel','furniture','wood','bamboo','home'], 'q' => 'hotel hospitality tableware furniture'],
+            ['re' => '/\b(electronic|electrical|cable|wire|led|light|lamp|semiconductor|computer|laptop|server|phone|camera|motor)\b/i', 'tokens' => ['electronic','electrical','cable','wire','led','light','lamp','computer','motor','solar','battery'], 'q' => 'industrial electrical cables led lighting'],
+            ['re' => '/\b(car|auto|automotive|vehicle|truck|trailer|motorcycle|tire|tyre|wheel|brake|engine|transport|logistics|shipping|container)\b/i', 'tokens' => ['auto','automotive','vehicle','truck','tire','tyre','wheel','engine','battery','transport','shipping','container','cargo'], 'q' => 'commercial truck tires automotive parts'],
+            ['re' => '/\b(medical|hospital|surgical|lab|pharma|medicine|cosmetic|skincare|beauty|soap|hygiene)\b/i', 'tokens' => ['medical','hospital','surgical','lab','pharma','cosmetic','skincare','beauty','soap','bottle','chemical'], 'q' => 'medical diagnostic supplies laboratory'],
+            ['re' => '/\b(paper|kraft|cardboard|carton|packaging|bottle|printing|office|gift|craft|jewelry|gem)\b/i', 'tokens' => ['paper','kraft','cardboard','carton','packaging','bottle','printing','office','gift','craft','jewelry','bamboo','wood'], 'q' => 'corrugated cardboard packaging kraft paper']
+        ];
         $af_results = [];
         $af_deleted_all = [];
         $af_fixed_count = 0;
+        $af_fallback_usage = [];
 
         foreach ($af_raw_items as $af_item) {
             if (!is_array($af_item)) continue;
@@ -8940,17 +8959,33 @@ switch ($action) {
                 function($w) use ($af_stop) { return strlen($w) >= 3 && !in_array($w, $af_stop, true) && !ctype_digit($w); }
             )));
 
+            // Determine similar-category profile tokens and query
+            $cat_tokens_af = ['industrial','warehouse','cargo','container','steel','machinery','grain','fabric','chemical','timber'];
+            $cat_query_af = $it_cat !== '' ? $it_cat : 'industrial wholesale product';
+            foreach ($af_cat_map as $cm_af) {
+                if (preg_match($cm_af['re'], $search_text_af)) {
+                    $cat_tokens_af = $cm_af['tokens'];
+                    $cat_query_af = $cm_af['q'];
+                    break;
+                }
+            }
+
             $chosen_url = '';
             $best_sc = 0;
-            if (!empty($words_af)) {
+            // PASS 1: Unused local file matching product title or category tokens
+            $combined_tokens_af = array_values(array_unique(array_merge($words_af, $cat_tokens_af)));
+            if (!empty($combined_tokens_af)) {
                 foreach ($af_local_files as $lf) {
                     $wu = $lf['webUrl'];
                     if (isset($af_used_urls[$wu])) continue;
                     $sc = 0;
                     foreach ($words_af as $w) {
                         $st = (strlen($w) > 4 && substr($w, -1) === 's') ? substr($w, 0, -1) : $w;
-                        if (strpos($lf['lowName'], $w) !== false) $sc += 4;
-                        elseif (strlen($st) >= 4 && strpos($lf['lowName'], $st) !== false) $sc += 2;
+                        if (strpos($lf['lowName'], $w) !== false) $sc += 6;
+                        elseif (strlen($st) >= 4 && strpos($lf['lowName'], $st) !== false) $sc += 3;
+                    }
+                    foreach ($cat_tokens_af as $cw) {
+                        if (strpos($lf['lowName'], $cw) !== false) $sc += 2;
                     }
                     if ($sc > $best_sc) {
                         $best_sc = $sc;
@@ -8959,51 +8994,94 @@ switch ($action) {
                 }
             }
 
-            // Bounded 3s Wikimedia fallback if no local unused upload matched
-            if ($chosen_url === '' && !empty($words_af) && function_exists('curl_init')) {
-                $q_af = implode(' ', array_slice($words_af, 0, 3));
-                $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode('filetype:bitmap ' . $q_af) . '&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
-                $ch_af = curl_init($wm_u);
-                curl_setopt($ch_af, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch_af, CURLOPT_TIMEOUT, 3);
-                curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 2);
-                curl_setopt($ch_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
-                $raw_wm = (string)curl_exec($ch_af);
-                $code_wm = intval(curl_getinfo($ch_af, CURLINFO_HTTP_CODE));
-                curl_close($ch_af);
-                if ($code_wm === 200 && $raw_wm !== '') {
-                    $wm_data = json_decode($raw_wm, true);
-                    $wm_pages = $wm_data['query']['pages'] ?? [];
-                    $auto_slug_af = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
-                    foreach ($wm_pages as $pg_af) {
-                        $info_af = $pg_af['imageinfo'][0] ?? null;
-                        if (!$info_af) continue;
-                        $mime_af = strtolower((string)($info_af['mime'] ?? ''));
-                        if (strpos($mime_af, 'jpeg') === false && strpos($mime_af, 'png') === false && strpos($mime_af, 'webp') === false) continue;
-                        $cu_af = trim((string)($info_af['thumburl'] ?? $info_af['url'] ?? ''));
-                        if ($cu_af === '' || !th_is_safe_public_http_url($cu_af)) continue;
-                        $u_hash_af = substr(sha1($cu_af), 0, 12);
-                        $local_fn_af = "auto-{$auto_slug_af}-{$u_hash_af}.jpg";
-                        $local_web_af = '/assets/uploads/' . $local_fn_af;
-                        if (isset($af_used_urls[$local_web_af])) continue;
-                        $local_fp_af = $uploads_dir_af . '/' . $local_fn_af;
-                        if (!file_exists($local_fp_af) || @filesize($local_fp_af) < 2000) {
-                            $ch_dl_af = curl_init($cu_af);
-                            curl_setopt($ch_dl_af, CURLOPT_RETURNTRANSFER, true);
-                            curl_setopt($ch_dl_af, CURLOPT_FOLLOWLOCATION, true);
-                            curl_setopt($ch_dl_af, CURLOPT_MAXREDIRS, 2);
-                            curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 3);
-                            curl_setopt($ch_dl_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
-                            $bin_af = (string)curl_exec($ch_dl_af);
-                            $dl_code_af = intval(curl_getinfo($ch_dl_af, CURLINFO_HTTP_CODE));
-                            curl_close($ch_dl_af);
-                            if ($dl_code_af >= 200 && $dl_code_af < 300 && strlen($bin_af) > 2500) {
-                                @file_put_contents($local_fp_af, $bin_af, LOCK_EX);
+            // PASS 2: Bounded 3s Wikimedia fetch for product noun, then category query
+            if ($chosen_url === '' && function_exists('curl_init')) {
+                $wm_queries_af = [];
+                if (!empty($words_af)) $wm_queries_af[] = implode(' ', array_slice($words_af, 0, 3));
+                if ($cat_query_af !== '') $wm_queries_af[] = $cat_query_af;
+                $auto_slug_af = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                foreach ($wm_queries_af as $q_af) {
+                    $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode($q_af . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
+                    $ch_af = curl_init($wm_u);
+                    curl_setopt($ch_af, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch_af, CURLOPT_TIMEOUT, 3);
+                    curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 2);
+                    curl_setopt($ch_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                    $raw_wm = (string)curl_exec($ch_af);
+                    $code_wm = intval(curl_getinfo($ch_af, CURLINFO_HTTP_CODE));
+                    curl_close($ch_af);
+                    if ($code_wm === 200 && $raw_wm !== '') {
+                        $wm_data = json_decode($raw_wm, true);
+                        $wm_pages = $wm_data['query']['pages'] ?? [];
+                        foreach ($wm_pages as $pg_af) {
+                            $info_af = $pg_af['imageinfo'][0] ?? null;
+                            if (!$info_af) continue;
+                            $mime_af = strtolower((string)($info_af['mime'] ?? ''));
+                            if (strpos($mime_af, 'jpeg') === false && strpos($mime_af, 'png') === false && strpos($mime_af, 'webp') === false) continue;
+                            $cu_af = trim((string)($info_af['thumburl'] ?? $info_af['url'] ?? ''));
+                            if ($cu_af === '' || !th_is_safe_public_http_url($cu_af)) continue;
+                            $u_hash_af = substr(sha1($cu_af), 0, 12);
+                            $local_fn_af = "auto-{$auto_slug_af}-{$u_hash_af}.jpg";
+                            $local_web_af = '/assets/uploads/' . $local_fn_af;
+                            if (isset($af_used_urls[$local_web_af])) continue;
+                            $local_fp_af = $uploads_dir_af . '/' . $local_fn_af;
+                            if (!file_exists($local_fp_af) || @filesize($local_fp_af) < 2000) {
+                                $ch_dl_af = curl_init($cu_af);
+                                curl_setopt($ch_dl_af, CURLOPT_RETURNTRANSFER, true);
+                                curl_setopt($ch_dl_af, CURLOPT_FOLLOWLOCATION, true);
+                                curl_setopt($ch_dl_af, CURLOPT_MAXREDIRS, 2);
+                                curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 3);
+                                curl_setopt($ch_dl_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                                $bin_af = (string)curl_exec($ch_dl_af);
+                                $dl_code_af = intval(curl_getinfo($ch_dl_af, CURLINFO_HTTP_CODE));
+                                curl_close($ch_dl_af);
+                                if ($dl_code_af >= 200 && $dl_code_af < 300 && strlen($bin_af) > 2500) {
+                                    @file_put_contents($local_fp_af, $bin_af, LOCK_EX);
+                                }
+                            }
+                            if (file_exists($local_fp_af) && @filesize($local_fp_af) > 2000) {
+                                $chosen_url = $local_web_af;
+                                break 2;
                             }
                         }
-                        if (file_exists($local_fp_af) && @filesize($local_fp_af) > 2000) {
-                            $chosen_url = $local_web_af;
-                            break;
+                    }
+                }
+            }
+
+            // PASS 3 (ZERO-SKIP GUARANTEED SIMILAR-CATEGORY PHOTO COPY):
+            // Pick best-matching least-used real local photo from same/similar category and create a unique asset copy so item is NEVER skipped
+            if (($chosen_url === '' || $chosen_url === $old_base_af) && !empty($af_local_files)) {
+                $best_tpl_web = '';
+                $best_tpl_sc = -1;
+                $best_tpl_use = PHP_INT_MAX;
+                foreach ($af_local_files as $lf) {
+                    $wu = $lf['webUrl'];
+                    if ($wu === $old_base_af) continue;
+                    $sc = 0;
+                    foreach ($words_af as $w) {
+                        if (strpos($lf['lowName'], $w) !== false) $sc += 6;
+                    }
+                    foreach ($cat_tokens_af as $cw) {
+                        if (strpos($lf['lowName'], $cw) !== false) $sc += 3;
+                    }
+                    $use_c = $af_fallback_usage[$wu] ?? 0;
+                    if ($sc > $best_tpl_sc + 2 || ($sc >= $best_tpl_sc - 2 && $use_c < $best_tpl_use)) {
+                        $best_tpl_sc = $sc;
+                        $best_tpl_use = $use_c;
+                        $best_tpl_web = $wu;
+                    }
+                }
+                if ($best_tpl_web !== '') {
+                    $src_fp_af = $uploads_dir_af . '/' . basename($best_tpl_web);
+                    if (is_file($src_fp_af)) {
+                        $ext_tpl = strtolower(pathinfo($src_fp_af, PATHINFO_EXTENSION) ?: 'webp');
+                        $slug_tpl = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                        $uniq_h = substr(sha1($it_id . '::' . microtime(true) . '::' . mt_rand()), 0, 12);
+                        $new_fn_af = "cat-{$slug_tpl}-{$uniq_h}.{$ext_tpl}";
+                        $dest_fp_af = $uploads_dir_af . '/' . $new_fn_af;
+                        if (@copy($src_fp_af, $dest_fp_af)) {
+                            $chosen_url = '/assets/uploads/' . $new_fn_af;
+                            $af_fallback_usage[$best_tpl_web] = ($af_fallback_usage[$best_tpl_web] ?? 0) + 1;
                         }
                     }
                 }
@@ -9017,7 +9095,7 @@ switch ($action) {
                     'newUrl' => $it_old,
                     'deletedOldUrls' => [],
                     'success' => false,
-                    'message' => 'No verified unused matching image found for "' . $it_title . '".'
+                    'message' => 'No verified image available for "' . $it_title . '".'
                 ];
                 continue;
             }

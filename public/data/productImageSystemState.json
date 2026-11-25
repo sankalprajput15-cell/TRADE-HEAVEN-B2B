@@ -4442,9 +4442,9 @@
       "category": "Automotive & Motorcycle Parts"
     },
     "prod-us-corp-31": {
-      "primary": "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-70d530f72448.webp?v=1795602129973",
+      "primary": "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-7e078e8ed4b3.webp?v=1795602129973",
       "gallery": [
-        "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-70d530f72448.webp?v=1795602129973"
+        "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-7e078e8ed4b3.webp?v=1795602129973"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-25T10:22:09.973Z",
@@ -9350,9 +9350,9 @@
       "updatedBy": "system-repair"
     },
     "cat-4": {
-      "primary": "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp",
+      "primary": "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp?v=1795625060984",
       "gallery": [
-        "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp"
+        "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp?v=1795625060984"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-25T16:44:20.984Z",
@@ -9376,9 +9376,9 @@
       "verifiedAt": "2026-11-25T12:16:19.684Z"
     },
     "cat-8": {
-      "primary": "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp",
+      "primary": "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp?v=1795625060984",
       "gallery": [
-        "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp"
+        "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp?v=1795625060984"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-25T16:44:20.984Z",
@@ -9748,9 +9748,9 @@
       "verifiedAt": "2026-11-25T13:48:02.519Z"
     },
     "cat-1": {
-      "primary": "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp",
+      "primary": "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp?v=1795625060984",
       "gallery": [
-        "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp"
+        "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp?v=1795625060984"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-25T16:44:20.984Z",
@@ -15046,9 +15046,9 @@
       ]
     },
     "prod-th-cb-12": {
-      "primary": "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-70d530f72448.webp?v=1795615306140",
+      "primary": "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-7e078e8ed4b3.webp?v=1795615306140",
       "gallery": [
-        "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-70d530f72448.webp?v=1795615306140"
+        "/assets/uploads/trade-heaven-impact-resistant-aluminum-hurricane-7e078e8ed4b3.webp?v=1795615306140"
       ],
       "format": "WEBP",
       "updatedAt": "2026-11-25T14:01:46.140Z",
@@ -15506,6 +15506,314 @@
       "serverVerified": true,
       "verifiedAt": "2026-11-25T16:44:20.973Z",
       "replacedOldUrls": []
+    },
+    "prod-atlantic-cummins-generators": {
+      "primary": "/assets/uploads/auto-refinery-en590-diesel-jet-494d2057d1de.webp?v=1795628357549",
+      "gallery": [
+        "/assets/uploads/auto-refinery-en590-diesel-jet-494d2057d1de.webp?v=1795628357549"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:39:17.549Z",
+      "imageUpdatedAt": 1795628357549,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "bc2d48af5f412d2c8b7099f318d07847b8f601e8ce869382718bdb4155c39c1f",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:39:17.549Z",
+      "replacedOldUrls": []
+    },
+    "prod-reverse-energy-sa-coal": {
+      "primary": "/assets/uploads/trade-heaven-crushed-aggregate-washed-gravel-pneu-05eecc2c0442.webp?v=1795628367598",
+      "gallery": [
+        "/assets/uploads/trade-heaven-crushed-aggregate-washed-gravel-pneu-05eecc2c0442.webp?v=1795628367598"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:39:27.598Z",
+      "imageUpdatedAt": 1795628367598,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "43971d1c81937b3c9a7491d485d81355f4cfc7e0c109c0568d68cec64bc4ecf5",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:39:27.598Z",
+      "replacedOldUrls": []
+    },
+    "prod-clo-22": {
+      "primary": "/assets/uploads/trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp?v=1795629516321",
+      "gallery": [
+        "/assets/uploads/trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp?v=1795629516321"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:36.321Z",
+      "imageUpdatedAt": 1795629516321,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "cf9a5f62a9fe877b18464e41c7b94d3902e78da0d0b6d1e63c4e78d0f4b2fec3",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:36.321Z",
+      "replacedOldUrls": [
+        "/assets/uploads/trade-heaven-certified-gold-dore-bars-uganda-orig-9f3bb6ab404f.webp"
+      ],
+      "sourceUrl": "https://lavintage.com/cdn/shop/products/18101cfc9cdd484a985aae07acb5ef70.thumbnail.0000000000.jpg?v=1679690786&width=2048"
+    },
+    "prod-clo-23": {
+      "primary": "/assets/uploads/trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp?v=1795629514670",
+      "gallery": [
+        "/assets/uploads/trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp?v=1795629514670"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:34.670Z",
+      "imageUpdatedAt": 1795629514670,
+      "updatedBy": "catalog-image-auditor",
+      "sourceUrl": "https://s.alicdn.com/@sc04/kf/H92807d33f8c54413b4f94198d1c35e5dD.jpg_720x720q50.jpg",
+      "imageContentHash": "f34433275300d98f59eed42fdbc51d8db762cde8934083cee85bd687fae19db5",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:34.670Z",
+      "replacedOldUrls": []
+    },
+    "prod-atlantic-large-tanks": {
+      "primary": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp?v=1795629515135",
+      "gallery": [
+        "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp?v=1795629515135"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:35.135Z",
+      "imageUpdatedAt": 1795629515135,
+      "updatedBy": "catalog-image-auditor",
+      "sourceUrl": "https://cdn11.bigcommerce.com/s-wx8ugsosfi/images/stencil/500x659/products/2427/22014/FCPWN0250-G_Alt_Image_04.23_1500x1500__81120.1764077017.jpg?c=1",
+      "imageContentHash": "2f7c375fea7433ddcd681cd1b46821b5b2e7dbeb13cff55e72f5a75dad3ff97d",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:35.135Z",
+      "replacedOldUrls": []
+    },
+    "prod-rice-03": {
+      "primary": "/assets/uploads/trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp?v=1795629516017",
+      "gallery": [
+        "/assets/uploads/trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp?v=1795629516017"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:36.017Z",
+      "imageUpdatedAt": 1795629516017,
+      "updatedBy": "catalog-image-auditor",
+      "sourceUrl": "https://i5.walmartimages.com/seo/Yopokki-Instant-Tteokbokki-Cup-Sweet-MDA05-nbsp-Mild-Spicy-Cup-2-Korean-Street-food-sweet-moderately-spicy-sauce-Topokki-Rice-Cake-Quick-Easy-Prepare_dbf2d4e4-1798-464a-b026-b4a21814f087.c2bd284955aa8fe1e2e39b2482f1c621.jpeg?odnHeight=580&odnWidth=580&odnBg=FFFFFF",
+      "imageContentHash": "3210ce2d8b6e913836c64dc224638f66cf695331858565e03f5a59abd8d4d969",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:36.017Z",
+      "replacedOldUrls": []
+    },
+    "prod-sea-32": {
+      "primary": "/assets/uploads/trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp?v=1795629516424",
+      "gallery": [
+        "/assets/uploads/trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp?v=1795629516424"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:36.424Z",
+      "imageUpdatedAt": 1795629516424,
+      "updatedBy": "catalog-image-auditor",
+      "sourceUrl": "https://sc04.alicdn.com/kf/A71e2b21b028948e7a87691c11cc20ab1I/881572726/A71e2b21b028948e7a87691c11cc20ab1I.jpg",
+      "imageContentHash": "6e400cb4f177a4e0d23f6c51cf98e0fef94935dfbf24ffa5a213bca1a9388db1",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:36.424Z",
+      "replacedOldUrls": []
+    },
+    "prod-clo-32": {
+      "primary": "/assets/uploads/trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp?v=1795629516455",
+      "gallery": [
+        "/assets/uploads/trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp?v=1795629516455"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T17:58:36.455Z",
+      "imageUpdatedAt": 1795629516455,
+      "updatedBy": "catalog-image-auditor",
+      "sourceUrl": "https://sc04.alicdn.com/kf/H2fe4c66090d048a2a5e479eac6bee0341/253498484/H2fe4c66090d048a2a5e479eac6bee0341.jpg",
+      "imageContentHash": "a5b26f4918b2c8ae61a5f43e729fbaa3fd3523afafe8be2c600ad63b7d0cf865",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T17:58:36.455Z",
+      "replacedOldUrls": []
+    },
+    "prod-sea-38": {
+      "primary": "/assets/uploads/auto-agriculture-agro-commodities-4b53960faca8.webp",
+      "gallery": [
+        "/assets/uploads/auto-agriculture-agro-commodities-4b53960faca8.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:04.818Z",
+      "imageUpdatedAt": 1795629604818,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "980c19eb0cb6200902ff99c040711209af063d3e24663f3b689e3ef707d5ea79",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:04.818Z",
+      "replacedOldUrls": []
+    },
+    "prod-van-26": {
+      "primary": "/assets/uploads/auto-agriculture-agro-commodities-63065ad556c7.webp",
+      "gallery": [
+        "/assets/uploads/auto-agriculture-agro-commodities-63065ad556c7.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:05.818Z",
+      "imageUpdatedAt": 1795629605818,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "8772f4949367384f6b405200b0fae8c43dfde6650f401548c5157f7b0e31d56f",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:05.818Z",
+      "replacedOldUrls": []
+    },
+    "prod-coal-6": {
+      "primary": "/assets/uploads/cat-certified-anthracite-coal-russia-o-6e6f3ae3ed42.webp",
+      "gallery": [
+        "/assets/uploads/cat-certified-anthracite-coal-russia-o-6e6f3ae3ed42.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:06.229Z",
+      "imageUpdatedAt": 1795629606229,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "436d898ab575133e0c0d959d2789ad83e3e037243167fe4b2bff9f2f84194c24",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:06.229Z",
+      "replacedOldUrls": []
+    },
+    "prod-van-36": {
+      "primary": "/assets/uploads/auto-agriculture-agro-commodities-6ac00099c4a7.webp",
+      "gallery": [
+        "/assets/uploads/auto-agriculture-agro-commodities-6ac00099c4a7.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:06.801Z",
+      "imageUpdatedAt": 1795629606801,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "e9f15fd55dfd2bb22f8fab89b775632ec0e7652f9b682798f18cd6fc7a2afcd7",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:06.801Z",
+      "replacedOldUrls": []
+    },
+    "prod-exc-7": {
+      "primary": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-0d30fd4da33b.webp",
+      "gallery": [
+        "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-0d30fd4da33b.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:11.882Z",
+      "imageUpdatedAt": 1795629611882,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "38ee31131aebd8859037f53f085b2755a28922de595d83a346946e1ea1a5084b",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:11.882Z",
+      "replacedOldUrls": []
+    },
+    "prod-exc-15": {
+      "primary": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-3034d3befad2.webp",
+      "gallery": [
+        "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-3034d3befad2.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:12.440Z",
+      "imageUpdatedAt": 1795629612440,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "ff6b151b2e217a37395f5f0b94e237340a0ba13894ade68d56695f225a251e5a",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:12.440Z",
+      "replacedOldUrls": []
+    },
+    "prod-exc-20": {
+      "primary": "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-40938eb110eb.webp",
+      "gallery": [
+        "/assets/uploads/trade-heaven-industrial-cnc-lathe-machine-40938eb110eb.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:13.280Z",
+      "imageUpdatedAt": 1795629613280,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "f46c2215176089829369d27518dd9165092c198065499f23abd0317970917a52",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:13.280Z",
+      "replacedOldUrls": []
+    },
+    "prod-th-turb-04": {
+      "primary": "/assets/uploads/cat-commercial-turbine-aircraft-hull-l-cc43b9474306.webp",
+      "gallery": [
+        "/assets/uploads/cat-commercial-turbine-aircraft-hull-l-cc43b9474306.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:13.633Z",
+      "imageUpdatedAt": 1795629613633,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "c53e7fdb7a0619455dbf01a0dfdb373c613255da045ab54db18e888f0178f2aa",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:13.633Z",
+      "replacedOldUrls": []
+    },
+    "prod-us-corp-57": {
+      "primary": "/assets/uploads/trade-heaven-homepage-main-hero-background-c19c835-1795615015807.webp",
+      "gallery": [
+        "/assets/uploads/trade-heaven-homepage-main-hero-background-c19c835-1795615015807.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:23.017Z",
+      "imageUpdatedAt": 1795629623017,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "0dd461c9ebf506fe7c4a7ebd28ce9f7c27252f13b29a5a9476c313f18a711f54",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:23.017Z",
+      "replacedOldUrls": []
+    },
+    "prod-ext2026-0-2": {
+      "primary": "/assets/uploads/auto-agriculture-agro-commodities-73e65a4b7a08.webp",
+      "gallery": [
+        "/assets/uploads/auto-agriculture-agro-commodities-73e65a4b7a08.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:23.103Z",
+      "imageUpdatedAt": 1795629623103,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "e322692c849217bd949e3679f38815edde6c72e3e426a7b081a74779792e63d0",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:23.103Z",
+      "replacedOldUrls": []
+    },
+    "prod-ext2026-5-0": {
+      "primary": "/assets/uploads/auto-agriculture-agro-commodities-904f7cf2767d.webp",
+      "gallery": [
+        "/assets/uploads/auto-agriculture-agro-commodities-904f7cf2767d.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:23.181Z",
+      "imageUpdatedAt": 1795629623181,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "21351f321a433fa0ecb14c550d2f09a37eb9629c08d94d11b9d499bbbec13b67",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:23.181Z",
+      "replacedOldUrls": []
+    },
+    "prod-us-corp-19": {
+      "primary": "/assets/uploads/cat-smart-zigbee-wifi-motorized-tubula-2f1d63905d71.webp",
+      "gallery": [
+        "/assets/uploads/cat-smart-zigbee-wifi-motorized-tubula-2f1d63905d71.webp"
+      ],
+      "format": "WEBP",
+      "updatedAt": "2026-11-25T18:00:40.477Z",
+      "imageUpdatedAt": 1795629640477,
+      "updatedBy": "catalog-image-auditor",
+      "imageContentHash": "39d81bd3d0f24a453b48136aacf773a1845f4f5257e9ccdaf4f2962fba6e75ff",
+      "locked": true,
+      "serverVerified": true,
+      "verifiedAt": "2026-11-25T18:00:40.477Z",
+      "replacedOldUrls": []
     }
   },
   "productActivityTimestamps": {
@@ -15755,8 +16063,8 @@
     "prod-melissa-mpcommodity-1": 1795601694000,
     "prod-middle-fox-en590": 1795601436935,
     "prod-blackstone-turquoise-rough-matrix": 1795601618000,
-    "prod-atlantic-large-tanks": 1795431325034,
-    "prod-atlantic-cummins-generators": 1795431331281,
+    "prod-atlantic-large-tanks": 1795629515135,
+    "prod-atlantic-cummins-generators": 1795628357549,
     "prod-atlantic-cat-earthmoving": 1795601907000,
     "prod-test-http200-debug": 1795436710119,
     "prod-smoke-upload-fix": 1795439660168,
@@ -16228,7 +16536,25 @@
     "test-autofix-soybean": 1795616366014,
     "test-autofix-coffee": 1795616366019,
     "test-autofix-steel": 1795616366026,
-    "prod-india-101": 1795625060973
+    "prod-india-101": 1795625060973,
+    "prod-reverse-energy-sa-coal": 1795628367598,
+    "prod-clo-22": 1795629516321,
+    "prod-clo-23": 1795629514670,
+    "prod-rice-03": 1795629516017,
+    "prod-sea-32": 1795629516424,
+    "prod-clo-32": 1795629516455,
+    "prod-sea-38": 1795629604818,
+    "prod-van-26": 1795629605818,
+    "prod-coal-6": 1795629606229,
+    "prod-van-36": 1795629606801,
+    "prod-exc-7": 1795629611882,
+    "prod-exc-15": 1795629612440,
+    "prod-exc-20": 1795629613280,
+    "prod-th-turb-04": 1795629613633,
+    "prod-us-corp-57": 1795629623017,
+    "prod-ext2026-0-2": 1795629623103,
+    "prod-ext2026-5-0": 1795629623181,
+    "prod-us-corp-19": 1795629640477
   },
   "globalDefaultImage": null,
   "categoryOverrides": {},
@@ -17022,9 +17348,90 @@
     "https://image7.slideserve.com/12338848/what-is-verification-testing-l.jpg": "/assets/uploads/trade-heaven-verification-test-item-8a466bb843b0.webp?v=1795625037163",
     "https://www.collidu.com/media/catalog/product/img/9/9/99063ba25b0146c60b06f6508efd4818d505ec21a154d7ba2270f3375ce6d50a/verification-testing-slide2.png": "/assets/uploads/trade-heaven-verification-test-item-b6c0d7e1eedb.webp?v=1795625037163",
     "https://www.collidu.com/media/catalog/product/img/2/8/2849195ff259f27c1fc0b9693c4a20513fbee0323061e6c0a0976916b2e4b256/verification-testing-slide1.png": "/assets/uploads/trade-heaven-verification-test-item-b3ce77e8dd2c.webp?v=1795625037163",
-    "https://www.softwaretestingstuff.com/wp-content/uploads/2022/11/Build-verification-testing-2.png": "/assets/uploads/trade-heaven-verification-test-cccbece6687d.webp?v=1795625037163"
+    "https://www.softwaretestingstuff.com/wp-content/uploads/2022/11/Build-verification-testing-2.png": "/assets/uploads/trade-heaven-verification-test-cccbece6687d.webp?v=1795625037163",
+    "https://s.alicdn.com/@sc04/kf/H92807d33f8c54413b4f94198d1c35e5dD.jpg_720x720q50.jpg": "/assets/uploads/trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp?v=1795629514670",
+    "https://cdn11.bigcommerce.com/s-wx8ugsosfi/images/stencil/500x659/products/2427/22014/FCPWN0250-G_Alt_Image_04.23_1500x1500__81120.1764077017.jpg": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp?v=1795629515135",
+    "https://cdn11.bigcommerce.com/s-wx8ugsosfi/images/stencil/500x659/products/2427/22014/FCPWN0250-G_Alt_Image_04.23_1500x1500__81120.1764077017.jpg?c=1": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp?v=1795629515135",
+    "https://i5.walmartimages.com/seo/Yopokki-Instant-Tteokbokki-Cup-Sweet-MDA05-nbsp-Mild-Spicy-Cup-2-Korean-Street-food-sweet-moderately-spicy-sauce-Topokki-Rice-Cake-Quick-Easy-Prepare_dbf2d4e4-1798-464a-b026-b4a21814f087.c2bd284955aa8fe1e2e39b2482f1c621.jpeg": "/assets/uploads/trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp?v=1795629516017",
+    "https://i5.walmartimages.com/seo/Yopokki-Instant-Tteokbokki-Cup-Sweet-MDA05-nbsp-Mild-Spicy-Cup-2-Korean-Street-food-sweet-moderately-spicy-sauce-Topokki-Rice-Cake-Quick-Easy-Prepare_dbf2d4e4-1798-464a-b026-b4a21814f087.c2bd284955aa8fe1e2e39b2482f1c621.jpeg?odnHeight=580&odnWidth=580&odnBg=FFFFFF": "/assets/uploads/trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp?v=1795629516017",
+    "https://lavintage.com/cdn/shop/products/18101cfc9cdd484a985aae07acb5ef70.thumbnail.0000000000.jpg": "/assets/uploads/trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp?v=1795629516321",
+    "https://lavintage.com/cdn/shop/products/18101cfc9cdd484a985aae07acb5ef70.thumbnail.0000000000.jpg?v=1679690786&width=2048": "/assets/uploads/trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp?v=1795629516321",
+    "https://sc04.alicdn.com/kf/A71e2b21b028948e7a87691c11cc20ab1I/881572726/A71e2b21b028948e7a87691c11cc20ab1I.jpg": "/assets/uploads/trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp?v=1795629516424",
+    "https://sc04.alicdn.com/kf/H2fe4c66090d048a2a5e479eac6bee0341/253498484/H2fe4c66090d048a2a5e479eac6bee0341.jpg": "/assets/uploads/trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp?v=1795629516455"
   },
   "mediaLibrary": [
+    {
+      "id": "media-cat-smart-zigbee-wifi-motorized-tubula-2f1d63905d71.webp",
+      "url": "/assets/uploads/cat-smart-zigbee-wifi-motorized-tubula-2f1d63905d71.webp",
+      "name": "cat-smart-zigbee-wifi-motorized-tubula-2f1d63905d71.webp",
+      "format": "WEBP",
+      "sizeBytes": 39764,
+      "uploadedAt": "2026-11-25T18:00:40.472Z"
+    },
+    {
+      "id": "media-cat-commercial-turbine-aircraft-hull-l-cc43b9474306.webp",
+      "url": "/assets/uploads/cat-commercial-turbine-aircraft-hull-l-cc43b9474306.webp",
+      "name": "cat-commercial-turbine-aircraft-hull-l-cc43b9474306.webp",
+      "format": "WEBP",
+      "sizeBytes": 43334,
+      "uploadedAt": "2026-11-25T18:00:13.630Z"
+    },
+    {
+      "id": "media-cat-certified-anthracite-coal-russia-o-6e6f3ae3ed42.webp",
+      "url": "/assets/uploads/cat-certified-anthracite-coal-russia-o-6e6f3ae3ed42.webp",
+      "name": "cat-certified-anthracite-coal-russia-o-6e6f3ae3ed42.webp",
+      "format": "WEBP",
+      "sizeBytes": 119688,
+      "uploadedAt": "2026-11-25T18:00:06.226Z"
+    },
+    {
+      "id": "media-trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp",
+      "url": "/assets/uploads/trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp?v=1795629516440",
+      "name": "trade-heaven-high-quality-used-shoes-bales-japan-c469fbed1aff.webp",
+      "format": "WEBP",
+      "sizeBytes": 195438,
+      "uploadedAt": "2026-11-25T17:58:36.440Z"
+    },
+    {
+      "id": "media-trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp",
+      "url": "/assets/uploads/trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp?v=1795629516409",
+      "name": "trade-heaven-high-quality-frozen-yellowfin-tuna-c-9755fcadef45.webp",
+      "format": "WEBP",
+      "sizeBytes": 30544,
+      "uploadedAt": "2026-11-25T17:58:36.409Z"
+    },
+    {
+      "id": "media-trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp",
+      "url": "/assets/uploads/trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp?v=1795629516310",
+      "name": "trade-heaven-certified-vintage-denim-bales-german-e4039b3de100.webp",
+      "format": "WEBP",
+      "sizeBytes": 61132,
+      "uploadedAt": "2026-11-25T17:58:36.310Z"
+    },
+    {
+      "id": "media-trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp",
+      "url": "/assets/uploads/trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp?v=1795629515937",
+      "name": "trade-heaven-korean-rice-cake-tteokbokki-hmr-inst-9bf06f57bf95.webp",
+      "format": "WEBP",
+      "sizeBytes": 45198,
+      "uploadedAt": "2026-11-25T17:58:35.937Z"
+    },
+    {
+      "id": "media-trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp",
+      "url": "/assets/uploads/trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp?v=1795629515120",
+      "name": "trade-heaven-large-stationary-fuel-storage-tanks-944ab11e0b5e.webp",
+      "format": "WEBP",
+      "sizeBytes": 9514,
+      "uploadedAt": "2026-11-25T17:58:35.120Z"
+    },
+    {
+      "id": "media-trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp",
+      "url": "/assets/uploads/trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp?v=1795629514650",
+      "name": "trade-heaven-premium-mixed-used-clothing-bales-gr-4a92782ace64.webp",
+      "format": "WEBP",
+      "sizeBytes": 124554,
+      "uploadedAt": "2026-11-25T17:58:34.650Z"
+    },
     {
       "id": "media-trade-heaven-verification-test-cccbece6687d.webp",
       "url": "/assets/uploads/trade-heaven-verification-test-cccbece6687d.webp?v=1795616381262",
@@ -37904,6 +38311,14 @@
       "format": "JPG",
       "sizeBytes": 91463,
       "uploadedAt": "2026-11-25T14:53:01.038Z"
+    },
+    {
+      "id": "media-trade-heaven-jatropha-oil-bulk-wholesale-234b81b37a02.webp",
+      "url": "/assets/uploads/trade-heaven-jatropha-oil-bulk-wholesale-234b81b37a02.webp?v=1795628155553",
+      "name": "trade-heaven-jatropha-oil-bulk-wholesale-234b81b37a02.webp",
+      "format": "WEBP",
+      "sizeBytes": 30844,
+      "uploadedAt": "2026-11-25T17:35:55.553Z"
     }
   ]
 }

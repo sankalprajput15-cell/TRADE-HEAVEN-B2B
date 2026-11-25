@@ -539,7 +539,7 @@ class BackgroundAutoFixService {
     if (this.localWorkerRunning) return;
     this.localWorkerRunning = true;
     const LOCAL_CONCURRENCY = 4;
-    const PER_ITEM_TIMEOUT_MS = 8500;
+    const PER_ITEM_TIMEOUT_MS = 13000;
     const activeSlots = new Map<number, BackgroundAutoFixItem>();
 
     const updateCurrentActiveSlot = () => {
@@ -577,7 +577,7 @@ class BackgroundAutoFixService {
                     id: target.id,
                     type: target.type,
                     success: false,
-                    error: 'Timed out after 8.5s (skipped to keep batch moving).'
+                    error: 'Timed out after 13s (skipped to keep batch moving).'
                   }
                 ]
               });

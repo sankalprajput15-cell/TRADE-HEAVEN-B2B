@@ -347,7 +347,7 @@ export async function autoFixSiteImages(
   const serverResultsById = new Map<string, SiteImageAutoFixRowResult>();
   for (const endpoint of ['/api/v1/admin/site-images/auto-fix', '/api.php?action=site_images_auto_fix']) {
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 13000) : null;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
