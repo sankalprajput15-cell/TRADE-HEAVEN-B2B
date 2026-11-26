@@ -3842,8 +3842,8 @@ const MainApp: React.FC = () => {
         <VipWithdrawalRequiredModal
           isOpen={isVipWithdrawalModalOpen}
           onClose={() => setIsVipWithdrawalModalOpen(false)}
-          userName={currentUser?.name || 'Melissa Prezios'}
-          companyName={currentUser?.companyName || 'MP Commodity Brokers Australia Pty Ltd'}
+          userName={currentUser?.name || 'Guest User'}
+          companyName={currentUser?.companyName || 'Trade Heaven Member'}
           balanceFormatted={vipModalBalance}
           onUpgrade={() => {
             setIsVipWithdrawalModalOpen(false);
