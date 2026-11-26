@@ -737,7 +737,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       else needsFix++;
 
       if (it.isChangedLive) changedCount++;
-      if (skippedItems[it.id]) skippedCount++;
+      if (it.status !== 'VERIFIED' && skippedItems[it.id]) skippedCount++;
 
       if (it.type === 'PRODUCT') productsCount++;
       else if (it.type === 'CATEGORY') categoriesCount++;
@@ -766,7 +766,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (scopeFilter === 'CHANGED' && !it.isChangedLive) return false;
       if (scopeFilter === 'NEEDS_FIX' && it.status === 'VERIFIED') return false;
       if (scopeFilter === 'DUPLICATE' && it.status !== 'DUPLICATE') return false;
-      if (scopeFilter === 'SKIPPED' && !skippedItems[it.id]) return false;
+      if (scopeFilter === 'SKIPPED' && (!skippedItems[it.id] || it.status === 'VERIFIED')) return false;
       if (scopeFilter === 'PRODUCT' && it.type !== 'PRODUCT') return false;
       if (scopeFilter === 'CATEGORY' && it.type !== 'CATEGORY') return false;
       if (scopeFilter === 'RFQ' && it.type !== 'RFQ') return false;

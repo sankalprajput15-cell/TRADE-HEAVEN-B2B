@@ -560,7 +560,7 @@ async function prewarmSingleImageFile(targetPath: string): Promise<number> {
 }
 
 async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOMOUS_DAEMON') {
-  if (autonomousImageOptimizerState.isRunning) return;
+  if (autonomousImageOptimizerState.isRunning || backgroundAutoFixWorkerRunning) return;
   autonomousImageOptimizerState.isRunning = true;
   const startedAt = Date.now();
 
@@ -14893,6 +14893,7 @@ function isUploadUrlStillReferenced(
 ): boolean {
   const targetBase = candidateUrl.trim().split('?')[0].split('#')[0];
   if (!targetBase) return false;
+  if (inFlightCatalogFixReservedUrls.has(targetBase)) return true;
 
   const matchesUrl = (u?: string | null) =>
     Boolean(u && String(u).trim().split('?')[0].split('#')[0] === targetBase);
@@ -14968,6 +14969,7 @@ function evictDeletedUploadFromCaches(oldBase: string, fileName: string) {
       fileContentHashCache.delete(diskPathKey);
     }
   }
+  urlContentHashMemo.delete(oldBase);
   mirroredAssetMetaByLocalUrl.delete(oldBase);
 }
 
@@ -15068,6 +15070,21 @@ function atomicWriteTextFileSync(targetPath: string, content: string) {
   }
 }
 
+async function atomicWriteTextFileAsync(targetPath: string, content: string): Promise<void> {
+  const dir = path.dirname(targetPath);
+  await fs.promises.mkdir(dir, { recursive: true });
+  const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    await fs.promises.writeFile(tmpPath, content, 'utf-8');
+    await fs.promises.rename(tmpPath, targetPath);
+  } catch (err) {
+    try {
+      await fs.promises.unlink(tmpPath);
+    } catch {}
+    throw err;
+  }
+}
+
 // Fast boot: load JSON overrides immediately and defer the 1,800+ file directory scan until after port 3000 opens
 serverProductImageState = loadServerProductImageState(undefined, { skipDirectoryScan: true });
 
@@ -15077,6 +15094,7 @@ const inFlightCatalogFixReservedUrlHashes = new Set<string>();
 const inFlightCatalogFixReservedContentHashes = new Set<string>();
 
 const fileContentHashCache = new Map<string, { mtimeMs: number; size: number; sha256: string; checkedAtMs?: number }>();
+const urlContentHashMemo = new Map<string, { sha256: string; expiresAtMs: number }>();
 const mirroredAssetMetaByLocalUrl = new Map<string, { sourceUrl?: string; rawSha256?: string; fileSha256?: string }>();
 let cachedSnapshotImageEntries: { mtimeMs: number; entries: Array<{ id: string; urls: string[] }> } | null = null;
 
@@ -15093,24 +15111,38 @@ function extractUploadUrlHashToken(rawUrl: string | undefined | null): string {
 function getLocalUploadFileSha256(rawUrl: string | undefined | null): string {
   const clean = stripUrlQueryBase(rawUrl);
   if (!clean || !clean.startsWith('/assets/uploads/')) return '';
-  const diskPath = resolveLocalUploadDiskPath(clean);
-  if (!diskPath) return '';
   const nowMs = Date.now();
+  const memo = urlContentHashMemo.get(clean);
+  if (memo && nowMs < memo.expiresAtMs) {
+    return memo.sha256;
+  }
+  const diskPath = resolveLocalUploadDiskPath(clean);
+  if (!diskPath) {
+    urlContentHashMemo.set(clean, { sha256: '', expiresAtMs: nowMs + 60_000 });
+    return '';
+  }
   const cached = fileContentHashCache.get(diskPath);
-  if (cached && cached.checkedAtMs && nowMs - cached.checkedAtMs < 15_000) {
+  if (cached && cached.checkedAtMs && nowMs - cached.checkedAtMs < 600_000) {
+    urlContentHashMemo.set(clean, { sha256: cached.sha256, expiresAtMs: nowMs + 600_000 });
     return cached.sha256;
   }
   try {
     const st = fs.statSync(diskPath);
-    if (!st.isFile() || st.size < 64) return '';
+    if (!st.isFile() || st.size < 64) {
+      urlContentHashMemo.set(clean, { sha256: '', expiresAtMs: nowMs + 60_000 });
+      return '';
+    }
     if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) {
       cached.checkedAtMs = nowMs;
+      urlContentHashMemo.set(clean, { sha256: cached.sha256, expiresAtMs: nowMs + 600_000 });
       return cached.sha256;
     }
     const sha256 = crypto.createHash('sha256').update(fs.readFileSync(diskPath)).digest('hex');
     fileContentHashCache.set(diskPath, { mtimeMs: st.mtimeMs, size: st.size, sha256, checkedAtMs: nowMs });
+    urlContentHashMemo.set(clean, { sha256, expiresAtMs: nowMs + 600_000 });
     return sha256;
   } catch {
+    urlContentHashMemo.set(clean, { sha256: '', expiresAtMs: nowMs + 60_000 });
     return '';
   }
 }
@@ -15140,9 +15172,13 @@ function loadCachedFullCatalogSnapshotImageEntries(): Array<{ id: string; urls: 
         if (urls.length > 0) entries.push({ id, urls });
       }
     };
-    if (Array.isArray(parsed?.products)) collectList(parsed.products);
-    if (Array.isArray(parsed?.rfqs)) collectList(parsed.rfqs);
-    if (Array.isArray(parsed?.categories)) collectList(parsed.categories);
+    if (Array.isArray(parsed)) {
+      collectList(parsed);
+    } else {
+      if (Array.isArray(parsed?.products)) collectList(parsed.products);
+      if (Array.isArray(parsed?.rfqs)) collectList(parsed.rfqs);
+      if (Array.isArray(parsed?.categories)) collectList(parsed.categories);
+    }
     cachedSnapshotImageEntries = { mtimeMs: st.mtimeMs, entries };
     return entries;
   } catch {
@@ -15329,17 +15365,17 @@ function saveServerProductImageState(): boolean {
     if (Object.keys(serverProductImageState.overrides || {}).length === 0) {
       serverProductImageState = loadServerProductImageState(serverProductImageState, { forceReload: true });
     }
-    const serialized = JSON.stringify(serverProductImageState, null, 2);
+    const serialized = JSON.stringify(serverProductImageState);
     // Persist atomically inside public/assets/uploads and public/data (never write into src/ at runtime)
     atomicWriteTextFileSync(IMAGE_OVERRIDES_FILE, serialized);
     atomicWriteTextFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized);
-    // Also mirror into dist/ if a built production bundle directory exists so shared previews stay 100% in sync
+    // Mirror into dist/ asynchronously so shared previews stay in sync without blocking the event loop
     const distDir = path.join(process.cwd(), 'dist');
     if (fs.existsSync(distDir)) {
-      try {
-        atomicWriteTextFileSync(path.join(distDir, 'assets', 'uploads', 'product-image-overrides.json'), serialized);
-        atomicWriteTextFileSync(path.join(distDir, 'data', 'productImageSystemState.json'), serialized);
-      } catch {}
+      void Promise.allSettled([
+        atomicWriteTextFileAsync(path.join(distDir, 'assets', 'uploads', 'product-image-overrides.json'), serialized),
+        atomicWriteTextFileAsync(path.join(distDir, 'data', 'productImageSystemState.json'), serialized)
+      ]).catch(() => {});
     }
     lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
     invalidatePublicProductImagesCache();
@@ -15677,11 +15713,13 @@ function mirrorBufferToDistUploadsIfPresent(safeFilename: string, buf: Buffer): 
     const distRoot = path.join(process.cwd(), 'dist');
     if (!fs.existsSync(distRoot)) return;
     const distUploads = path.join(distRoot, 'assets', 'uploads');
-    if (!fs.existsSync(distUploads)) fs.mkdirSync(distUploads, { recursive: true });
     const distFile = path.join(distUploads, safeFilename);
     const tmpFile = `${distFile}.${process.pid}.${Date.now()}.tmp`;
-    fs.writeFileSync(tmpFile, buf);
-    fs.renameSync(tmpFile, distFile);
+    void fs.promises
+      .mkdir(distUploads, { recursive: true })
+      .then(() => fs.promises.writeFile(tmpFile, buf))
+      .then(() => fs.promises.rename(tmpFile, distFile))
+      .catch(() => {});
   } catch {
     // Non-fatal mirror failure
   }
@@ -15790,6 +15828,10 @@ function schedulePendingLiveSyncDrain(delayMs = 5000) {
 
 async function drainPendingLiveSyncQueue(): Promise<void> {
   if (!LIVE_UPSTREAM_PROXY_ENABLED || isDrainingPendingLiveSync) return;
+  if (backgroundAutoFixWorkerRunning) {
+    schedulePendingLiveSyncDrain(5000);
+    return;
+  }
   isDrainingPendingLiveSync = true;
   try {
     const now = Date.now();
@@ -16371,10 +16413,10 @@ function getOrBuildPublicProductImagesCache(): PrecompressedJsonCacheEntry {
   const raw = Buffer.from(payload, 'utf-8');
   const hash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16);
   const etag = `"th-pimg-${hash}-${raw.length}"`;
-  const gzipped = zlib.gzipSync(raw, { level: 5 });
+  const gzipped = zlib.gzipSync(raw, { level: 3 });
   const brotli = zlib.brotliCompressSync(raw, {
     params: {
-      [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 1,
       [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
     }
   });
@@ -22382,7 +22424,13 @@ const PRODUCT_IMAGE_CACHE_FILE = path.join(process.cwd(), 'product_image_cache.j
 const PRODUCT_IMAGE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const serverProductImageCacheMap = new Map<string, ProductImageCacheRecord>();
 
-function loadProductImageCacheFromDisk() {
+let hasLoadedProductImageCacheFromDisk = false;
+let productImageCacheSaveInFlight = false;
+let productImageCacheSavePending = false;
+
+function loadProductImageCacheFromDisk(force = false) {
+  if (hasLoadedProductImageCacheFromDisk && !force) return;
+  hasLoadedProductImageCacheFromDisk = true;
   try {
     if (!fs.existsSync(PRODUCT_IMAGE_CACHE_FILE)) return;
     const raw = fs.readFileSync(PRODUCT_IMAGE_CACHE_FILE, 'utf8');
@@ -22399,18 +22447,32 @@ function loadProductImageCacheFromDisk() {
     console.warn('[VisualProductImageCache] Failed loading disk cache:', err);
   }
 }
-loadProductImageCacheFromDisk();
+loadProductImageCacheFromDisk(true);
 
-function saveProductImageCacheToDisk() {
+async function saveProductImageCacheToDiskAsync(): Promise<void> {
+  if (productImageCacheSaveInFlight) {
+    productImageCacheSavePending = true;
+    return;
+  }
+  productImageCacheSaveInFlight = true;
   try {
-    const obj: Record<string, ProductImageCacheRecord> = {};
-    for (const [k, v] of serverProductImageCacheMap.entries()) {
-      obj[k] = v;
-    }
-    fs.writeFileSync(PRODUCT_IMAGE_CACHE_FILE, JSON.stringify(obj, null, 2), 'utf8');
+    do {
+      productImageCacheSavePending = false;
+      const obj: Record<string, ProductImageCacheRecord> = {};
+      for (const [k, v] of serverProductImageCacheMap.entries()) {
+        obj[k] = v;
+      }
+      await atomicWriteTextFileAsync(PRODUCT_IMAGE_CACHE_FILE, JSON.stringify(obj));
+    } while (productImageCacheSavePending);
   } catch (err) {
     console.warn('[VisualProductImageCache] Failed writing disk cache:', err);
+  } finally {
+    productImageCacheSaveInFlight = false;
   }
+}
+
+function saveProductImageCacheToDisk() {
+  void saveProductImageCacheToDiskAsync();
 }
 
 function fisherYatesShuffle<T>(arr: T[]): T[] {
@@ -23406,7 +23468,8 @@ async function fetchGoogleImagesProductPhotos(
   productName: string,
   category?: string,
   specifications?: string,
-  pageOffset: number = 0
+  pageOffset: number = 0,
+  fastMode: boolean = false
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const fullHeading = normalizeFullProductHeading(productName);
@@ -23433,7 +23496,7 @@ async function fetchGoogleImagesProductPhotos(
         `${focused[0] || primaryQuery} commercial wholesale`
       ].filter(Boolean)
     )
-  ).slice(0, 5);
+  ).slice(0, fastMode ? 1 : 5);
 
   const ijnPage = Math.max(0, Number(pageOffset) || 0) % 5;
 
@@ -23448,7 +23511,7 @@ async function fetchGoogleImagesProductPhotos(
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(3600)
+          signal: AbortSignal.timeout(fastMode ? 2400 : 3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -23521,7 +23584,8 @@ async function fetchGoogleImagesProductPhotos(
 
 async function fetchWikimediaCommonsProductImages(
   productName: string,
-  category?: string
+  category?: string,
+  fastMode: boolean = false
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
@@ -23533,7 +23597,7 @@ async function fetchWikimediaCommonsProductImages(
       ...focused,
       cleanedSubject
     ].filter(q => q && q.length >= 3))
-  ).slice(0, 3);
+  ).slice(0, fastMode ? 1 : 3);
   if (queriesToTry.length === 0) return discovered;
 
   const wikiBadTitleRegex = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|rian|efta|lccn|ceremony|inaugur|minister|delegation|baker_electric|stetson|young_girl|18[89]\d|19[0-8]\d|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|sunset|sunrise|konark|temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|portrait|selfie|wedding)/i;
@@ -23546,12 +23610,12 @@ async function fetchWikimediaCommonsProductImages(
         const searchExpr = wordCnt <= 3 ? qStr : `"${qStr}"`;
         const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
           `${searchExpr} filetype:bitmap`
-        )}&gsrnamespace=6&gsrlimit=22&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
+        )}&gsrnamespace=6&gsrlimit=${fastMode ? 12 : 22}&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
         const resp = await fetch(apiUrl, {
           headers: {
             'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
           },
-          signal: AbortSignal.timeout(3500)
+          signal: AbortSignal.timeout(fastMode ? 2400 : 3500)
         });
         if (!resp.ok) return;
         const data: any = await resp.json();
@@ -23593,7 +23657,8 @@ async function fetchAlibabaProductImages(
   productName: string,
   category?: string,
   specifications?: string,
-  pageOffset: number = 0
+  pageOffset: number = 0,
+  fastMode: boolean = false
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
@@ -23636,10 +23701,10 @@ async function fetchAlibabaProductImages(
         shortAliQuery !== alibabaQuery ? `site:alibaba.com ${shortAliQuery}` : ''
       ].filter(Boolean)
     )
-  ).slice(0, 4);
+  ).slice(0, fastMode ? 1 : 4);
 
   const bingEndpoints = bingQueries.map(
-    q => `https://www.bing.com/images/async?q=${encodeURIComponent(q)}&first=${firstIdx}&count=45&mmasync=1`
+    q => `https://www.bing.com/images/async?q=${encodeURIComponent(q)}&first=${firstIdx}&count=${fastMode ? 24 : 45}&mmasync=1`
   );
 
   const googleAlibabaUrl = `https://www.google.com/search?tbm=isch&hl=en&gl=us&safe=active&q=${encodeURIComponent(
@@ -23657,7 +23722,7 @@ async function fetchAlibabaProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(3600)
+          signal: AbortSignal.timeout(fastMode ? 2400 : 3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -23700,6 +23765,7 @@ async function fetchAlibabaProductImages(
       } catch {}
     }),
     (async () => {
+      if (fastMode) return;
       try {
         const resp = await fetch(googleAlibabaUrl, {
           headers: {
@@ -23742,7 +23808,8 @@ async function fetchLiveCommercialWebProductImages(
   productName: string,
   category?: string,
   specifications?: string,
-  pageOffset: number = 0
+  pageOffset: number = 0,
+  fastMode: boolean = false
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
   const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
@@ -23757,30 +23824,34 @@ async function fetchLiveCommercialWebProductImages(
   const secondaryQ = focused[1] || (category ? `${cleanedSubject} ${category}` : `${cleanedSubject} industrial commercial`);
   const searchEndpoints: Array<{ url: string; label: string }> = [];
   if (primaryQ.length >= 2) {
+    if (!fastMode) {
+      searchEndpoints.push({
+        url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC3&first=${firstIdx}`,
+        label: primaryQ
+      });
+    }
     searchEndpoints.push({
-      url: `https://www.bing.com/images/search?q=${encodeURIComponent(primaryQ)}&qft=+filterui:photo-photo&form=HDRSC3&first=${firstIdx}`,
-      label: primaryQ
-    });
-    searchEndpoints.push({
-      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=${firstIdx}&count=45&mmasync=1`,
+      url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${primaryQ} product photo`)}&first=${firstIdx}&count=${fastMode ? 24 : 45}&mmasync=1`,
       label: `${primaryQ} product photo`
     });
-    for (const headingClause of focused.slice(0, 3)) {
-      if (headingClause && headingClause.toLowerCase() !== primaryQ.toLowerCase()) {
-        searchEndpoints.push({
-          url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=${firstIdx}&count=40&mmasync=1`,
-          label: headingClause
-        });
+    if (!fastMode) {
+      for (const headingClause of focused.slice(0, 3)) {
+        if (headingClause && headingClause.toLowerCase() !== primaryQ.toLowerCase()) {
+          searchEndpoints.push({
+            url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${headingClause} product`)}&first=${firstIdx}&count=40&mmasync=1`,
+            label: headingClause
+          });
+        }
       }
     }
     if (secondaryQ && secondaryQ !== primaryQ && !searchEndpoints.some(e => e.label === secondaryQ)) {
       searchEndpoints.push({
-        url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=${firstIdx}&count=40&mmasync=1`,
+        url: `https://www.bing.com/images/async?q=${encodeURIComponent(secondaryQ)}&first=${firstIdx}&count=${fastMode ? 20 : 40}&mmasync=1`,
         label: secondaryQ
       });
     }
   }
-  if (specHint && primaryQ.length >= 2) {
+  if (!fastMode && specHint && primaryQ.length >= 2) {
     searchEndpoints.push({
       url: `https://www.bing.com/images/async?q=${encodeURIComponent(`${focused[0] || primaryQ} ${specHint}`)}&first=${firstIdx}&count=35&mmasync=1`,
       label: `${focused[0] || primaryQ} ${specHint}`
@@ -23791,7 +23862,7 @@ async function fetchLiveCommercialWebProductImages(
     /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph|spec[-_ ]?sheet|datasheet|data[-_ ]?sheet|details[-_ ]?card|specification[-_ ]?sheet|price[-_ ]?list|quotation|invoice|certificate|msds|test[-_ ]?report|flexpay|hsn\.com|qvc\.com|infomercial/i;
 
   await Promise.allSettled(
-    searchEndpoints.map(async ep => {
+    searchEndpoints.slice(0, fastMode ? 2 : searchEndpoints.length).map(async ep => {
       try {
         const resp = await fetch(ep.url, {
           headers: {
@@ -23799,7 +23870,7 @@ async function fetchLiveCommercialWebProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(3800)
+          signal: AbortSignal.timeout(fastMode ? 2400 : 3800)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -24140,28 +24211,28 @@ async function handleVisualProductImageSearch(params: {
     }
   };
 
-  // Multi-source discovery: Alibaba + Commercial Web + Google Images + Wikimedia Commons (always enabled even in fastMode)
+  // Multi-source discovery: Alibaba + Commercial Web + Google Images + Wikimedia Commons (lean fanout in fastMode)
   const directWebDiscoveryPromise = Promise.all([
-    fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
-    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
-    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset),
-    fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
+    fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+    fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+    fetchWikimediaCommonsProductImages(cleanName, cleanCategory, isFastMode)
   ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
     collectAndFilter(alibabaCandidates, true);
     collectAndFilter(webCandidates, true);
     collectAndFilter(googleCandidates, true);
-    await verifyPendingBatch(isFastMode ? 20 : 52);
-    if (verifiedMap.size < (isFastMode ? 8 : 36)) {
+    await verifyPendingBatch(isFastMode ? 8 : 52);
+    if (verifiedMap.size < (isFastMode ? 3 : 36)) {
       collectAndFilter(wikiCandidates, false);
-      await verifyPendingBatch(isFastMode ? 16 : 30);
+      await verifyPendingBatch(isFastMode ? 6 : 30);
     }
-    if (verifiedMap.size < (isFastMode ? 4 : 32) && relaxedCandidateMap.size > 0) {
+    if (verifiedMap.size < (isFastMode ? 2 : 32) && relaxedCandidateMap.size > 0) {
       for (const [k, v] of relaxedCandidateMap.entries()) {
         if (!verifiedMap.has(k) && !candidateMap.has(k)) {
           candidateMap.set(k, v);
         }
       }
-      await verifyPendingBatch(isFastMode ? 16 : 36);
+      await verifyPendingBatch(isFastMode ? 6 : 36);
     }
   });
 
@@ -24232,7 +24303,7 @@ Return ONLY valid JSON in this format:
 
   // Automatic Sequential Heading Advancement inside handleVisualProductImageSearch:
   // If initial query returned fewer than desired unseen photos, step through Sub-headings -> RFQ spec clauses -> Core 1-2 word nouns
-  if (verifiedMap.size < (isFastMode ? 4 : Math.min(18, requestedCount))) {
+  if (verifiedMap.size < (isFastMode ? 1 : Math.min(18, requestedCount))) {
     const fallbackHeadings: string[] = [];
     const seenFb = new Set<string>([cleanName.toLowerCase()]);
     const pushFb = (q: string) => {
@@ -24295,7 +24366,7 @@ Return ONLY valid JSON in this format:
             }
           }
         }
-        if (verifiedMap.size >= Math.min(isFastMode ? 6 : 28, requestedCount)) {
+        if (verifiedMap.size >= Math.min(isFastMode ? 4 : 28, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -24304,17 +24375,17 @@ Return ONLY valid JSON in this format:
       // Live Alibaba + Commercial Web + Google Images + Wikimedia search for nextHeading
       try {
         const [subAli, subWeb, subGoogle, subWiki] = await Promise.all([
-          fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
-          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
-          fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset),
-          fetchWikimediaCommonsProductImages(nextHeading, cleanCategory)
+          fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          isFastMode ? Promise.resolve([]) : fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, true),
+          fetchWikimediaCommonsProductImages(nextHeading, cleanCategory, isFastMode)
         ]);
         collectAndFilter(subAli, true);
         collectAndFilter(subWeb, true);
         collectAndFilter(subGoogle, true);
         collectAndFilter(subWiki, false);
-        await verifyPendingBatch(isFastMode ? 18 : 40);
-        if (verifiedMap.size >= Math.min(isFastMode ? 6 : 24, requestedCount)) {
+        await verifyPendingBatch(isFastMode ? 8 : 40);
+        if (verifiedMap.size >= Math.min(isFastMode ? 3 : 24, requestedCount)) {
           matchedHeadingQuery = nextHeading;
           break;
         }
@@ -24324,30 +24395,41 @@ Return ONLY valid JSON in this format:
     // Also include real verified local photos from disk matching any heading in the sequence
     if (verifiedMap.size < (isFastMode ? 6 : requestedCount)) {
       const preindexed = params.preindexedFiles || buildPreindexedLocalUploadFiles();
-      const allHeadingTokens = [cleanName, ...fallbackHeadings];
+      const targetSubjectLower = `${cleanName} ${cleanCategory}`.toLowerCase();
+      const allHeadingTokens = [cleanName, ...fallbackHeadings].slice(0, isFastMode ? 4 : 8);
       for (const hChip of allHeadingTokens) {
         const hToks = extractMeaningfulAuditTokens(hChip);
         if (hToks.length === 0) continue;
         const minHits = hToks.length === 1 ? 1 : Math.min(2, hToks.length);
         for (const entry of preindexed) {
-          if (verifiedMap.has(entry.webUrl) || isGenericOrPlaceholderServerUrl(entry.webUrl) || isExcludedCandidateUrl(entry.webUrl)) continue;
+          if (verifiedMap.has(entry.webUrl) || recentlyDeletedUploadUrls.has(entry.webUrl)) continue;
+          // Fast pure-memory token overlap check FIRST so 99% of files skip without any regex or disk syscall
           let hits = 0;
           for (const ht of hToks) {
             if (entry.tokens.includes(ht) || (ht.length >= 5 && entry.tokens.some(et => et.length >= 5 && (et.includes(ht) || ht.includes(et))))) {
               hits++;
             }
           }
-          if (hits >= minHits) {
-            verifiedMap.set(entry.webUrl, {
-              url: entry.webUrl,
-              thumbnailUrl: entry.webUrl,
-              title: hChip,
-              sourceDomain: 'tradeheaven.net',
-              width: 800,
-              height: 600,
-              relevanceScore: 20 + hits * 5
-            });
-          }
+          if (hits < minHits) continue;
+          if (isGenericOrPlaceholderServerUrl(entry.webUrl) || isExcludedCandidateUrl(entry.webUrl)) continue;
+          if (isExtremeCrossCategoryUploadUrl(entry.webUrl.toLowerCase(), targetSubjectLower)) continue;
+          const issueChk = detectCatalogImageIssue(
+            { id: 'search-probe', type: 'PRODUCT', title: cleanName, category: cleanCategory, imageUrl: entry.webUrl },
+            new Map(),
+            { skipDiskStat: true }
+          );
+          if (issueChk.flagged) continue;
+          if (!isLocalUploadPresentOnDisk(entry.webUrl)) continue;
+          verifiedMap.set(entry.webUrl, {
+            url: entry.webUrl,
+            thumbnailUrl: entry.webUrl,
+            title: hChip,
+            sourceDomain: 'tradeheaven.net',
+            width: 800,
+            height: 600,
+            relevanceScore: 20 + hits * 5
+          });
+          if (verifiedMap.size >= (isFastMode ? 8 : requestedCount)) break;
         }
         if (verifiedMap.size >= (isFastMode ? 8 : requestedCount)) {
           if (matchedHeadingQuery === queryUsed) matchedHeadingQuery = hChip;
@@ -24471,32 +24553,45 @@ function scheduleSaveOverridesState(immediate = false) {
     saveServerProductImageState();
     return;
   }
+  // During background batch jobs, flushBatchStoresToDisk persists asynchronously in batches so 500ms timers don't freeze the event loop
+  if (backgroundAutoFixWorkerRunning) return;
   if (saveOverridesDebounceTimer) return;
   saveOverridesDebounceTimer = setTimeout(() => {
     saveOverridesDebounceTimer = null;
-    saveServerProductImageState();
-  }, 500);
+    if (!backgroundAutoFixWorkerRunning) {
+      saveServerProductImageState();
+    }
+  }, 1500);
 }
 
 function scheduleSaveProductImageCache(immediate = false) {
-  if (immediate) {
+  if (immediate && !backgroundAutoFixWorkerRunning) {
     if (saveCacheDebounceTimer) {
       clearTimeout(saveCacheDebounceTimer);
       saveCacheDebounceTimer = null;
     }
-    saveProductImageCacheToDisk();
+    void saveProductImageCacheToDiskAsync();
+    return;
+  }
+  if (backgroundAutoFixWorkerRunning) {
+    if (saveCacheDebounceTimer) return;
+    saveCacheDebounceTimer = setTimeout(() => {
+      saveCacheDebounceTimer = null;
+      void saveProductImageCacheToDiskAsync();
+    }, 15000);
     return;
   }
   if (saveCacheDebounceTimer) return;
   saveCacheDebounceTimer = setTimeout(() => {
     saveCacheDebounceTimer = null;
-    saveProductImageCacheToDisk();
-  }, 500);
+    void saveProductImageCacheToDiskAsync();
+  }, 1500);
 }
 
 function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
   const clean = String(url || '').trim().split('?')[0];
   if (!clean.startsWith('/assets/uploads/')) return false;
+  if (recentlyDeletedUploadUrls.has(clean)) return false;
   try {
     const baseName = path.basename(clean);
     if (!baseName || baseName.includes('..')) return false;
@@ -24923,9 +25018,11 @@ async function mirrorExternalProductImageToLocalUploads(params: {
         return null;
       }
 
-      fs.writeFileSync(filePath, outBuffer);
+      await fs.promises.writeFile(filePath, outBuffer);
       mirrorBufferToDistUploadsIfPresent(path.basename(filePath), outBuffer);
-      void prewarmSingleImageFile(filePath);
+      if (!backgroundAutoFixWorkerRunning) {
+        void prewarmSingleImageFile(filePath);
+      }
       mirroredAssetMetaByLocalUrl.set(localUrl, {
         sourceUrl: rawUrl,
         rawSha256,
@@ -25562,7 +25659,8 @@ function detectCatalogImageIssue(
     category: string;
     imageUrl: string;
   },
-  seenUrls: Map<string, { id: string; title: string; type: string }>
+  seenUrls: Map<string, { id: string; title: string; type: string }>,
+  opts?: { skipDiskStat?: boolean }
 ): {
   flagged: boolean;
   issueType?: 'DUPLICATE' | 'PLACEHOLDER_OR_MISSING' | 'MISMATCHED' | 'BROKEN_ASSET';
@@ -25594,7 +25692,7 @@ function detectCatalogImageIssue(
   }
 
   // 3. Broken or synthetic low-entropy SVG-text-card upload check
-  if (cleanUrl.startsWith('/assets/uploads/')) {
+  if (cleanUrl.startsWith('/assets/uploads/') && !opts?.skipDiskStat) {
     if (!isLocalUploadPresentOnDisk(cleanUrl)) {
       return {
         flagged: true,
@@ -25634,8 +25732,9 @@ function detectCatalogImageIssue(
   }
 
   if (
-    lowerUrl.includes('leather_belt') &&
-    !/(leather|belt|apparel|fashion|strap|wallet|accessory|hide)/i.test(targetJoined)
+    /(leather[_-]belt|cowhide|cowh-|verified-belt)/i.test(lowerUrl) &&
+    (!/(leather|cowhide|hide|apparel|fashion|strap|wallet|accessory|footwear|dress\s*belt|waist\s*belt|casual\s*belt)/i.test(targetJoined) ||
+      /(conveyor|timing\s*belt|v-belt|agriculture|food|grain|wheat|rice|scrap)/i.test(targetJoined))
   ) {
     return {
       flagged: true,
@@ -25852,10 +25951,12 @@ function findMatchingLocalMasterImageOnDisk(
   let bestTemplateScore = -1;
 
   const minRequiredScore = titleOnlyTokens.length <= 1 ? 5 : 7;
+  const targetJoinedLower = `${title || ''} ${category || ''}`.toLowerCase();
   const entries = preindexedFiles || buildPreindexedLocalUploadFiles();
   for (const item of entries) {
     // Fast O(1) exclusion before token scoring to avoid hashing unrelated files
     if (
+      recentlyDeletedUploadUrls.has(item.webUrl) ||
       usedUrls.has(item.webUrl) ||
       inFlightCatalogFixReservedUrls.has(item.webUrl) ||
       (registry && registry.usedLocalUrls.has(item.webUrl))
@@ -25879,11 +25980,13 @@ function findMatchingLocalMasterImageOnDisk(
     }
 
     if (titleHits === 0 || (score < minRequiredScore && score <= bestUnusedScore && score <= bestTemplateScore)) continue;
+    if (isExtremeCrossCategoryUploadUrl(item.webUrl.toLowerCase(), targetJoinedLower)) continue;
     // STRICT GLOBAL 1-TO-1 UNIQUENESS (URL hash + SHA-256 content hash) checked only on strong candidates
     if (registry && registry.isCandidateUsed(item.webUrl)) continue;
     const mismatchChk = detectCatalogImageIssue(
       { id: 'probe', type: 'PRODUCT', title, category, imageUrl: item.webUrl },
-      new Map()
+      new Map(),
+      { skipDiskStat: true }
     );
     if (mismatchChk.flagged) continue;
 
@@ -25963,6 +26066,12 @@ function getCategoryVisualSearchProfile(title: string, category: string): Catego
       matchTokens: ['denim', 'jeans', 'cloth', 'clothing', 'garment', 'apparel', 'textile', 'fabric', 'cotton', 'silk', 'saree', 'shirt', 'jacket', 'yarn', 'wool', 'linen', 'towel', 'carpet', 'rug', 'jute', 'leather', 'fashion']
     },
     {
+      sectorKey: 'irrigation_plumbing_valves',
+      test: /\b(irrigation|drip|sprinkler|solenoid|valve|valves|plumbing|faucet|brass\s+fitting|hose|piping)\b/i,
+      searchQueries: ['brass solenoid valve plumbing industrial', 'drip irrigation tubing garden agriculture'],
+      matchTokens: ['irrigation', 'drip', 'sprinkler', 'solenoid', 'valve', 'brass', 'plumbing', 'faucet', 'hose', 'pipe', 'tube', 'tubing', 'water', 'garden', 'steel', 'metal', 'fitting']
+    },
+    {
       sectorKey: 'generators_power_tanks',
       test: /\b(generator|genset|cummins|diesel power|power plant|turbine|transformer|switchgear|tank|tanks|fuel storage|silo|boiler|compressor|pump|pumps|valve|valves|hvac|chiller|cold storage|refrigeration|elevator|escalator)\b/i,
       searchQueries: ['industrial diesel generator power', 'industrial steel fuel storage tank', 'industrial pump compressor machinery'],
@@ -26036,6 +26145,16 @@ function getCategoryVisualSearchProfile(title: string, category: string): Catego
     }
   ];
 
+  const titleOnlyLower = String(title || '').toLowerCase();
+  for (const prof of profiles) {
+    if (prof.test.test(titleOnlyLower)) {
+      return {
+        sectorKey: prof.sectorKey,
+        searchQueries: prof.searchQueries,
+        matchTokens: prof.matchTokens
+      };
+    }
+  }
   for (const prof of profiles) {
     if (prof.test.test(combined)) {
       return {
@@ -26053,6 +26172,31 @@ function getCategoryVisualSearchProfile(title: string, category: string): Catego
   };
 }
 
+const sectorLivePoolCache = new Map<string, { fetchedAtMs: number; images: VisualImageCandidate[] }>();
+
+function isExtremeCrossCategoryUploadUrl(urlLower: string, targetJoinedLower: string): boolean {
+  if (urlLower.includes('en590-diesel') && !/(diesel|en590|fuel|oil|petroleum|energy|tank)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('gold-bullion') && !/(gold|bullion|bar|ingot|metal|jewelry)/i.test(targetJoinedLower)) return true;
+  if (
+    /(leather[_-]belt|cowhide|cowh-|verified-belt|genuine-leather|hand-stitched.*belt)/i.test(urlLower) &&
+    (!/(leather|cowhide|hide|footwear|shoe|handbag|wallet|saddle|dress\s*belt|casual\s*belt|waist\s*belt|fashion\s*belt)/i.test(targetJoinedLower) ||
+      /(conveyor|timing\s*belt|v-belt|agriculture|food|grain|wheat|rice|scrap)/i.test(targetJoinedLower))
+  ) return true;
+  if ((urlLower.includes('saree') || urlLower.includes('shree')) && !/(saree|textile|apparel|garment|silk|fabric|cloth)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('sidath-vimukthi') && !/(vanilla|pod|bean|spice|coffee|tea|food)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('whatsapp_image_') && !/(jade|gem|mineral|stone|crystal|jewelry|marble|granite)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('rice_husk') && !/(rice|husk|agri|grain|ash|biomass|farm)/i.test(targetJoinedLower)) return true;
+  if ((urlLower.includes('lithium-battery') || urlLower.includes('battery-storage')) && !/(lithium|lifepo4|battery|batteries|energy storage|solar|inverter|ess)/i.test(targetJoinedLower)) return true;
+  if ((urlLower.includes('mineral-coal') || urlLower.includes('anthracite')) && !/(coal|anthracite|coking|fuel|mineral|mining|carbon)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('stainless-steel') && !/(steel|metal|iron|alloy|coil|sheet|brass|pipe|tube|valve|hardware)/i.test(targetJoinedLower)) return true;
+  if ((urlLower.includes('image002_50ab7837') || urlLower.includes('image003_6c1f0619')) && !/(generator|genset|cummins|diesel|power|pump|engine)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('image004_fa37a57a') && !/(tank|storage|fuel|silo|drum|vessel|irrigation)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('image005_20fe3db0') && !/(excavator|construction|machinery|loader|bulldozer|equipment)/i.test(targetJoinedLower)) return true;
+  if (/(shrimp|lobster|crab|tuna|salmon|tilapia|seafood|fish)/i.test(urlLower) && !/(fish|tuna|shrimp|prawn|crab|lobster|seafood|salmon|marine)/i.test(targetJoinedLower)) return true;
+  if (/(avocado|strawberry|apricot|mango|banana|chicken|egg|coffee|tea|turmeric|cardamom|jasmine-rice)/i.test(urlLower) && !/(food|fruit|jam|spread|meat|poultry|chicken|egg|rice|grain|spice|tea|coffee|oil|agri|agriculture)/i.test(targetJoinedLower)) return true;
+  return false;
+}
+
 function findBestLocalCategoryImageOnDisk(params: {
   title: string;
   category: string;
@@ -26068,6 +26212,7 @@ function findBestLocalCategoryImageOnDisk(params: {
   const categoryTokens = extractMeaningfulAuditTokens(params.category);
   const profileTokenSet = new Set(params.profile.matchTokens.map(t => t.toLowerCase()));
   const excludeBase = params.excludeUrl ? normalizeAuditImageUrl(params.excludeUrl) : '';
+  const targetJoinedLower = `${params.title || ''} ${params.category || ''}`.toLowerCase();
 
   let bestEntry: IndexedUploadFileEntry | null = null;
   let bestScore = -1;
@@ -26075,7 +26220,11 @@ function findBestLocalCategoryImageOnDisk(params: {
 
   for (const item of params.preindexedFiles) {
     if (excludeBase && item.webUrl === excludeBase) continue;
+    if (recentlyDeletedUploadUrls.has(item.webUrl)) continue;
     if (isGenericOrPlaceholderServerUrl(item.webUrl)) continue;
+    const urlLower = item.webUrl.toLowerCase();
+    if (isExtremeCrossCategoryUploadUrl(urlLower, targetJoinedLower)) continue;
+
     if (params.requireUnused) {
       if (
         params.usedUrls.has(item.webUrl) ||
@@ -26097,30 +26246,23 @@ function findBestLocalCategoryImageOnDisk(params: {
         score += 4;
       }
       if (profileTokenSet.has(ft)) {
-        score += 3;
+        score += 5;
       } else if (ft.length >= 4 && params.profile.matchTokens.some(pt => pt.length >= 4 && (ft.includes(pt) || pt.includes(ft)))) {
-        score += 2;
+        score += 3;
       }
     }
 
     if (score <= 0) continue;
-
-    // Reject explicit cross-category mismatches
-    const mismatchChk = detectCatalogImageIssue(
-      { id: 'probe-cat', type: 'PRODUCT', title: params.title, category: params.category, imageUrl: item.webUrl },
-      new Map()
-    );
-    if (mismatchChk.flagged) continue;
 
     if (params.requireUnused && params.registry && params.registry.isCandidateUsed(item.webUrl)) {
       continue;
     }
 
     const usageCount = categoryFallbackUsageCounts.get(item.webUrl) || 0;
-    // Prefer higher relevance; among similarly relevant candidates (within 3 pts), prefer least-used for visual variety
+    // Prefer higher relevance; among similarly relevant candidates (within 4 pts), prefer least-used for visual variety
     if (
-      score > bestScore + 3 ||
-      (score >= bestScore - 3 && usageCount < bestUsage) ||
+      score > bestScore + 4 ||
+      (score >= bestScore - 4 && usageCount < bestUsage) ||
       (score > bestScore && usageCount <= bestUsage)
     ) {
       bestScore = score;
@@ -26129,17 +26271,22 @@ function findBestLocalCategoryImageOnDisk(params: {
     }
   }
 
-  // If requiring unused returned nothing, or even relaxed pass had 0 token hits, pick least-used valid real photo on disk when !requireUnused
+  // When !requireUnused (PASS 4 materialization), if no category token overlapped directly, prefer broad industrial/warehouse/cat templates over niche unrelated assets
   if (!bestEntry && !params.requireUnused) {
     for (const item of params.preindexedFiles) {
       if (excludeBase && item.webUrl === excludeBase) continue;
+      if (recentlyDeletedUploadUrls.has(item.webUrl)) continue;
       if (isGenericOrPlaceholderServerUrl(item.webUrl)) continue;
-      const mismatchChk = detectCatalogImageIssue(
-        { id: 'probe-any', type: 'PRODUCT', title: params.title, category: params.category, imageUrl: item.webUrl },
-        new Map()
-      );
-      if (mismatchChk.flagged) continue;
-      const usageCount = categoryFallbackUsageCounts.get(item.webUrl) || 0;
+      const urlLower = item.webUrl.toLowerCase();
+      if (isExtremeCrossCategoryUploadUrl(urlLower, targetJoinedLower)) continue;
+      const preferCatalogBonus = item.fname.startsWith('cat-')
+        ? 0
+        : item.fname.startsWith('trade-heaven-')
+          ? 20
+          : item.fname.startsWith('auto-')
+            ? 40
+            : 1000;
+      const usageCount = (categoryFallbackUsageCounts.get(item.webUrl) || 0) + preferCatalogBonus;
       if (usageCount < bestUsage) {
         bestUsage = usageCount;
         bestEntry = item;
@@ -26169,13 +26316,10 @@ async function materializeUniqueCategoryRealPhoto(params: {
         .slice(0, 34) || 'catalog-item';
     const uniqSeed = `${params.recordId}::${Date.now()}::${Math.random().toString(36).slice(2, 8)}`;
     const shortHash = crypto.createHash('sha1').update(uniqSeed).digest('hex').slice(0, 12);
-    const outFileName = `cat-${slug}-${shortHash}.webp`;
-    const outFilePath = path.join(UPLOADS_DIR, outFileName);
-    const localUrl = `/assets/uploads/${outFileName}`;
 
-    // Re-encode the real verified photograph as a crisp optimized WebP (quality 83-87 varies subtly per record so each file is a valid standalone WebP asset)
     const qualityVariant = 82 + (parseInt(shortHash.slice(0, 2), 16) % 7);
-    let outBuf: Buffer;
+    let outBuf: Buffer | null = null;
+    let outExt = 'webp';
     try {
       outBuf = await sharp(params.templateEntry.fullPath, { failOn: 'none' })
         .rotate()
@@ -26183,16 +26327,26 @@ async function materializeUniqueCategoryRealPhoto(params: {
         .webp({ quality: qualityVariant })
         .toBuffer();
     } catch {
-      outBuf = fs.readFileSync(params.templateEntry.fullPath);
+      outBuf = null;
     }
 
-    if (!outBuf || outBuf.length < 1500) return null;
+    if (!outBuf || outBuf.length < 1500) {
+      outBuf = await fs.promises.readFile(params.templateEntry.fullPath);
+      const rawExt = path.extname(params.templateEntry.fullPath).replace('.', '').toLowerCase();
+      outExt = rawExt === 'png' || rawExt === 'jpg' || rawExt === 'jpeg' || rawExt === 'webp' ? rawExt : 'jpg';
+    }
 
-    fs.writeFileSync(outFilePath, outBuf);
+    if (!outBuf || outBuf.length < 500) return null;
+
+    const outFileName = `cat-${slug}-${shortHash}.${outExt}`;
+    const outFilePath = path.join(UPLOADS_DIR, outFileName);
+    const localUrl = `/assets/uploads/${outFileName}`;
+
+    await fs.promises.writeFile(outFilePath, outBuf);
     const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
     if (fs.existsSync(distUpDir)) {
       try {
-        fs.writeFileSync(path.join(distUpDir, outFileName), outBuf);
+        await fs.promises.writeFile(path.join(distUpDir, outFileName), outBuf);
       } catch {}
     }
     const contentHash = crypto.createHash('sha256').update(outBuf).digest('hex');
@@ -26259,12 +26413,12 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const framedRfqHint = extractRfqProductFramingHint(params.specifications);
   const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, framedRfqHint);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
-  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 7000);
+  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 5500);
   const timeoutMs =
     typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0
-      ? Math.min(params.geminiTimeoutMs, 5500)
-      : 4200;
-  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 3;
+      ? Math.min(params.geminiTimeoutMs, 4200)
+      : 3200;
+  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 2;
   const withinNetworkDeadline = () => Date.now() < effectiveWallDeadline;
 
   // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
@@ -26272,14 +26426,14 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
 
   const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
-    const remainingMs = Math.max(1500, Math.min(timeoutMs, effectiveWallDeadline - Date.now()));
-    if (Date.now() >= effectiveWallDeadline) return [];
+    const remainingMs = Math.min(timeoutMs, effectiveWallDeadline - Date.now());
+    if (remainingMs <= 350) return [];
     try {
       const searchPromise = handleVisualProductImageSearch({
         productName: searchName,
         category: cleanCategory,
         specifications: searchSpecs,
-        count: 36,
+        count: 24,
         forceRefresh,
         fastMode: true,
         preindexedFiles: sharedPreindexedFiles
@@ -26380,7 +26534,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         if (!allowExternalMirror || params.allowLiveGeminiNetwork === false) {
           continue;
         }
-        if (totalMirrorAttempts >= maxMirrors || !withinNetworkDeadline()) {
+        const mirrorBudgetMs = Math.min(2400, effectiveWallDeadline - Date.now());
+        if (totalMirrorAttempts >= maxMirrors || mirrorBudgetMs <= 400) {
           continue;
         }
         totalMirrorAttempts++;
@@ -26394,7 +26549,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
             skipBind: true,
             rejectIfUsedByOther: globalRegistry
           }),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 3200))
+          new Promise<null>(resolve => setTimeout(() => resolve(null), mirrorBudgetMs))
         ]);
         if (!mirrored) continue;
         resolvedLocal = normalizeAuditImageUrl(mirrored);
@@ -26443,40 +26598,43 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   };
 
   // PASS 1A: Instant zero-network sequential check across headingQueue against local master photos on disk & already-mirrored cache entries
-  for (const headingChip of headingQueue) {
-    const localMatch = findMatchingLocalMasterImageOnDisk(
-      headingChip,
-      cleanCategory,
-      params.usedUrls,
-      sharedPreindexedFiles,
-      globalRegistry
-    );
-    if (
-      localMatch.exactUnusedUrl &&
-      isLocalUploadPresentOnDisk(localMatch.exactUnusedUrl) &&
-      !params.usedUrls.has(localMatch.exactUnusedUrl) &&
-      !inFlightCatalogFixReservedUrls.has(localMatch.exactUnusedUrl) &&
-      !globalRegistry.isCandidateUsed(localMatch.exactUnusedUrl)
-    ) {
-      const contentHash = getLocalUploadFileSha256(localMatch.exactUnusedUrl) || undefined;
-      params.usedUrls.add(localMatch.exactUnusedUrl);
-      inFlightCatalogFixReservedUrls.add(localMatch.exactUnusedUrl);
-      globalRegistry.claim({ localUrl: localMatch.exactUnusedUrl, contentHash });
-      bindAutoSavedImageOverride({
-        localUrl: localMatch.exactUnusedUrl,
-        productId: params.recordId,
-        productName: cleanName,
-        gallery: [localMatch.exactUnusedUrl],
-        flushNow: false,
-        forceOverwrite: true,
-        bindByTitle: false
-      });
-      return {
-        newImageUrl: localMatch.exactUnusedUrl,
-        queryUsed: headingChip,
-        source: 'verified_local_catalog_pool',
-        imageContentHash: contentHash
-      };
+  for (let hIdx = 0; hIdx < headingQueue.length; hIdx++) {
+    const headingChip = headingQueue[hIdx];
+    if (hIdx < 4) {
+      const localMatch = findMatchingLocalMasterImageOnDisk(
+        headingChip,
+        cleanCategory,
+        params.usedUrls,
+        sharedPreindexedFiles,
+        globalRegistry
+      );
+      if (
+        localMatch.exactUnusedUrl &&
+        isLocalUploadPresentOnDisk(localMatch.exactUnusedUrl) &&
+        !params.usedUrls.has(localMatch.exactUnusedUrl) &&
+        !inFlightCatalogFixReservedUrls.has(localMatch.exactUnusedUrl) &&
+        !globalRegistry.isCandidateUsed(localMatch.exactUnusedUrl)
+      ) {
+        const contentHash = getLocalUploadFileSha256(localMatch.exactUnusedUrl) || undefined;
+        params.usedUrls.add(localMatch.exactUnusedUrl);
+        inFlightCatalogFixReservedUrls.add(localMatch.exactUnusedUrl);
+        globalRegistry.claim({ localUrl: localMatch.exactUnusedUrl, contentHash });
+        bindAutoSavedImageOverride({
+          localUrl: localMatch.exactUnusedUrl,
+          productId: params.recordId,
+          productName: cleanName,
+          gallery: [localMatch.exactUnusedUrl],
+          flushNow: false,
+          forceOverwrite: true,
+          bindByTitle: false
+        });
+        return {
+          newImageUrl: localMatch.exactUnusedUrl,
+          queryUsed: headingChip,
+          source: 'verified_local_catalog_pool',
+          imageContentHash: contentHash
+        };
+      }
     }
 
     const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
@@ -26497,6 +26655,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
       }
     }
   }
+  await new Promise<void>(resolve => setImmediate(resolve));
 
   // PASS 1B: Check cached external candidates across headingQueue (bounded by totalMirrorAttempts & wallDeadline)
   for (const headingChip of headingQueue) {
@@ -26590,30 +26749,48 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   }
 
   // PASS 3B: Live Category / Similar-Category Search (cached across items in the same sector so subsequent items resolve instantly!)
-  if (params.allowLiveGeminiNetwork !== false && withinNetworkDeadline() && totalMirrorAttempts < maxMirrors) {
+  const sectorLiveCached = sectorLivePoolCache.get(categoryProfile.sectorKey);
+  const sectorCacheFresh = Boolean(sectorLiveCached && Date.now() - sectorLiveCached.fetchedAtMs < 15 * 60 * 1000);
+  if (params.allowLiveGeminiNetwork !== false && (sectorCacheFresh || (withinNetworkDeadline() && totalMirrorAttempts < maxMirrors))) {
     const catQueryIdx =
       parseInt(crypto.createHash('sha1').update(params.recordId).digest('hex').slice(0, 2), 16) %
       Math.max(1, categoryProfile.searchQueries.length);
     const selectedCatQuery = categoryProfile.searchQueries[catQueryIdx] || cleanCategory || 'industrial wholesale product';
 
-    // Check cached category pool first (0ms), otherwise run one bounded live search for the category
-    const catCacheKey = normalizeVisualSearchKeyword(selectedCatQuery, cleanCategory);
-    const catCacheKeyPlain = normalizeVisualSearchKeyword(selectedCatQuery, '');
+    // Check sector cache & cached category pool first (0ms), otherwise run one bounded live search for the category
     let catPool: VisualImageCandidate[] = [];
-    for (const ck of [catCacheKey, catCacheKeyPlain]) {
-      const hit = serverProductImageCacheMap.get(ck);
-      if (hit && Array.isArray(hit.images) && hit.images.length > 0) {
-        catPool = fisherYatesShuffle(
-          hit.images.filter(c => {
-            const u = String(c?.url || '').trim();
-            return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-          })
-        );
-        if (catPool.length > 0) break;
+    if (sectorCacheFresh && sectorLiveCached) {
+      catPool = fisherYatesShuffle(
+        sectorLiveCached.images.filter(c => {
+          const u = String(c?.url || '').trim();
+          return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+        })
+      );
+    }
+    if (catPool.length === 0) {
+      const catCacheKey = normalizeVisualSearchKeyword(selectedCatQuery, cleanCategory);
+      const catCacheKeyPlain = normalizeVisualSearchKeyword(selectedCatQuery, '');
+      for (const ck of [catCacheKey, catCacheKeyPlain]) {
+        const hit = serverProductImageCacheMap.get(ck);
+        if (hit && Array.isArray(hit.images) && hit.images.length > 0) {
+          catPool = fisherYatesShuffle(
+            hit.images.filter(c => {
+              const u = String(c?.url || '').trim();
+              return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+            })
+          );
+          if (catPool.length > 0) break;
+        }
       }
     }
     if (catPool.length === 0 && withinNetworkDeadline()) {
       const liveCatPool = await runLiveSearchBounded(selectedCatQuery, undefined, false);
+      if (liveCatPool.length > 0) {
+        sectorLivePoolCache.set(categoryProfile.sectorKey, {
+          fetchedAtMs: Date.now(),
+          images: liveCatPool.slice(0, 60)
+        });
+      }
       catPool = liveCatPool.filter(c => {
         const u = String(c?.url || '').trim();
         return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
@@ -27770,7 +27947,7 @@ async function fixSingleCatalogImageRecord(params: {
         preindexedFiles: params.preindexedFiles,
         allowLiveGeminiNetwork: true,
         ...(params.batchMode
-          ? { wallDeadlineMs: Date.now() + 6500, geminiTimeoutMs: 4200, maxMirrorAttempts: 3 }
+          ? { wallDeadlineMs: Date.now() + 4500, geminiTimeoutMs: 2800, maxMirrorAttempts: 2 }
           : {})
       });
       finalImageUrl = resolved.newImageUrl;
@@ -27911,25 +28088,26 @@ async function fixSingleCatalogImageRecord(params: {
       }
     }
 
-    invalidatePublicProductImagesCache();
+    if (!params.batchMode) {
+      invalidatePublicProductImagesCache();
+    }
 
     let diskCheck = { verified: true, diskPrimary: finalImageUrl, checkedFiles: [] as string[], assetFileExists: true };
     let liveSynced = false;
 
     if (params.batchMode) {
-      // In batch mode, keep memory + public cache updated immediately and let the batch worker flush disk in chunks
-      scheduleSaveOverridesState(false);
+      // In batch mode, keep memory updated immediately; the batch worker flushes disk & live sync cleanly without blocking event loop
       if (finalImageUrl) {
-        void replicateImageOverrideToLiveServer({
+        enqueuePendingLiveImageSync({
           productId: cleanId,
           primaryUrl: finalImageUrl,
           galleryUrls: [finalImageUrl],
           format: finalImageUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'WEBP'
-        }).catch(() => {});
+        });
       }
     } else {
-      saveServerProductsToDisk();
-      saveRfqMarketStoreToDisk();
+      if (matchedListing || matchedProduct) saveServerProductsToDisk();
+      if (matchedRfq) saveRfqMarketStoreToDisk();
       scheduleSaveOverridesState(true);
 
       // Synchronous Disk Read-Back Guarantee: verify the exact override is physically written on disk before returning success!
@@ -28696,6 +28874,195 @@ function normalizeSiteImageAutoFixInputItem(item: any): SiteImageAutoFixInputIte
   };
 }
 
+async function assignZeroSkipCategoryFallback(
+  item: SiteImageAutoFixInputItem,
+  opts?: {
+    batchMode?: boolean;
+    preindexedFiles?: IndexedUploadFileEntry[];
+    sharedRegistry?: GlobalAttachedImageRegistry;
+  }
+): Promise<SiteImageAutoFixResultRow | null> {
+  const { id, type, title, category, currentUrl, fieldPath } = item;
+  if (!id || id === 'site-brand-logo') return null;
+
+  try {
+    const preindexedFiles = opts?.preindexedFiles || buildPreindexedLocalUploadFiles();
+    if (preindexedFiles.length === 0) return null;
+    const registry = opts?.sharedRegistry || buildGlobalAttachedImageRegistry(id);
+    const usedUrls = new Set<string>([...registry.usedLocalUrls]);
+    const cleanOld = currentUrl ? stripUrlQueryBase(currentUrl) : '';
+    if (cleanOld) usedUrls.add(cleanOld);
+
+    const profile = getCategoryVisualSearchProfile(title, category);
+    let chosenUrl = '';
+    let contentHash = '';
+
+    // 1. Prefer an unused local real photo in the same or similar category
+    const unusedCat = findBestLocalCategoryImageOnDisk({
+      title,
+      category,
+      profile,
+      preindexedFiles,
+      usedUrls,
+      registry,
+      requireUnused: true,
+      excludeUrl: cleanOld
+    });
+    if (
+      unusedCat &&
+      isLocalUploadPresentOnDisk(unusedCat.webUrl) &&
+      !usedUrls.has(unusedCat.webUrl) &&
+      !inFlightCatalogFixReservedUrls.has(unusedCat.webUrl) &&
+      !registry.isCandidateUsed(unusedCat.webUrl)
+    ) {
+      chosenUrl = unusedCat.webUrl;
+      contentHash = getLocalUploadFileSha256(chosenUrl) || '';
+      usedUrls.add(chosenUrl);
+      inFlightCatalogFixReservedUrls.add(chosenUrl);
+      registry.claim({ localUrl: chosenUrl, contentHash: contentHash || undefined });
+    } else {
+      // 2. Otherwise materialize a dedicated unique WebP/image copy from the best-matched same/similar category real photo
+      const templateEntry =
+        findBestLocalCategoryImageOnDisk({
+          title,
+          category,
+          profile,
+          preindexedFiles,
+          usedUrls,
+          registry,
+          requireUnused: false,
+          excludeUrl: cleanOld
+        }) || preindexedFiles[0];
+
+      if (templateEntry) {
+        const mat = await materializeUniqueCategoryRealPhoto({
+          recordId: id,
+          title,
+          category,
+          templateEntry,
+          usedUrls,
+          registry
+        });
+        if (mat?.localUrl) {
+          chosenUrl = mat.localUrl;
+          contentHash = mat.contentHash || '';
+        }
+      }
+    }
+
+    if (!chosenUrl) return null;
+
+    const activityMs = Date.now();
+    const nowIso = new Date(activityMs).toISOString();
+    const existingOverride = serverProductImageState?.overrides?.[id] as any;
+    const updatedReplacedOldUrls = mergeReplacedOldUrls(
+      existingOverride?.replacedOldUrls,
+      cleanOld,
+      existingOverride?.primary
+    ).filter(u => u && u !== chosenUrl);
+
+    ensureUploadedUrlInMediaLibrary(chosenUrl);
+    clearConflictingTitleOverridesForProductId(id, chosenUrl);
+
+    (serverProductImageState.overrides[id] as any) = {
+      ...(serverProductImageState.overrides[id] || {}),
+      primary: chosenUrl,
+      gallery: [chosenUrl],
+      format: (path.extname(chosenUrl.split('?')[0]).replace('.', '') || 'WEBP').toUpperCase(),
+      updatedAt: nowIso,
+      imageUpdatedAt: activityMs,
+      updatedBy: 'catalog-image-auditor',
+      locked: true,
+      serverVerified: true,
+      verifiedAt: nowIso,
+      replacedOldUrls: updatedReplacedOldUrls,
+      ...(contentHash ? { imageContentHash: contentHash } : {})
+    };
+    delete (serverProductImageState.overrides[id] as any).previousPrimary;
+
+    recordServerProductActivityTimestamp(id, activityMs);
+    recordCurrentServerImageEdit(id, activityMs);
+
+    const matchedListing = serverListingsStore.find(
+      (l: any) => l && (`prod-db-${l.id}` === id || String(l.id) === id)
+    );
+    const matchedProduct = serverProductsStore.find((p: any) => p && p.id === id);
+    const matchedRfq = serverRfqsStore.find((r: any) => {
+      if (!r) return false;
+      const rid = typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`;
+      return rid === id || String(r.id) === id;
+    });
+    if (matchedListing) {
+      matchedListing.image_url = chosenUrl;
+      matchedListing.images = [chosenUrl];
+      matchedListing.updatedAt = activityMs;
+      matchedListing.imageUpdatedAt = activityMs;
+    }
+    if (matchedProduct) {
+      matchedProduct.image = chosenUrl;
+      matchedProduct.image_url = chosenUrl;
+      matchedProduct.images = [chosenUrl];
+      matchedProduct.updatedAt = activityMs;
+      matchedProduct.imageUpdatedAt = activityMs;
+    }
+    if (matchedRfq) {
+      matchedRfq.image = chosenUrl;
+      matchedRfq.image_url = chosenUrl;
+      matchedRfq.images = [chosenUrl];
+      matchedRfq.persisted = true;
+      matchedRfq.updatedAt = activityMs;
+      matchedRfq.imageUpdatedAt = activityMs;
+    }
+
+    if (type === 'CATEGORY' || id.startsWith('cat-')) {
+      syncCategoryHeaderUrlIntoSiteContent(id, title, chosenUrl);
+    } else if (type === 'HERO_SLIDE' && Array.isArray(serverSiteContent?.homepage?.heroSlides)) {
+      let dirty = false;
+      for (const slide of serverSiteContent.homepage.heroSlides) {
+        if (String(slide?.id || '') === id) {
+          slide.image = chosenUrl;
+          dirty = true;
+        }
+      }
+      if (dirty) {
+        (serverSiteContent as any).siteContentUpdatedAt = activityMs;
+        invalidateSiteContentResponseCache();
+        saveServerSiteContentToDisk();
+      }
+    } else if (fieldPath) {
+      setNestedSiteContentValue(serverSiteContent, fieldPath, chosenUrl);
+      (serverSiteContent as any).siteContentUpdatedAt = activityMs;
+      invalidateSiteContentResponseCache();
+      saveServerSiteContentToDisk();
+    }
+
+    let deletedOldUrls: string[] = [];
+    if (cleanOld && cleanOld !== chosenUrl) {
+      deletedOldUrls = permanentlyDeleteReplacedUploadFiles([cleanOld], [chosenUrl], new Set([id]));
+    }
+    if (!opts?.batchMode) {
+      invalidatePublicProductImagesCache();
+      if (matchedListing || matchedProduct) saveServerProductsToDisk();
+      if (matchedRfq) saveRfqMarketStoreToDisk();
+      scheduleSaveOverridesState(true);
+      updateFullCatalogSnapshotRecords([{ id, imageUrl: chosenUrl, gallery: [chosenUrl] }]);
+    }
+
+    return {
+      id,
+      type,
+      success: true,
+      newUrl: chosenUrl,
+      oldUrl: currentUrl,
+      deletedOldUrls,
+      updatedAt: nowIso,
+      imageUpdatedAt: activityMs
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function processSingleSiteImageAutoFix(
   item: SiteImageAutoFixInputItem,
   opts?: {
@@ -28780,6 +29147,11 @@ async function processSingleSiteImageAutoFix(
       imageUpdatedAt: fixed.imageUpdatedAt
     };
   } catch (err: any) {
+    // Never skip a non-protected item: immediately fall back to same/similar-category real photo
+    const categoryFallbackRow = await assignZeroSkipCategoryFallback(item, opts);
+    if (categoryFallbackRow) {
+      return categoryFallbackRow;
+    }
     return {
       id,
       type,
@@ -28810,31 +29182,110 @@ function serializeBackgroundAutoFixJob(job: BackgroundAutoFixJobState) {
   };
 }
 
+let pendingChunkStartTimer: ReturnType<typeof setTimeout> | null = null;
+
 async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
-  if (backgroundAutoFixWorkerRunning) return;
+  // If a prior worker is cancelling, wait cleanly for it to exit before launching the new worker
+  if (backgroundAutoFixWorkerRunning) {
+    for (let waitIdx = 0; waitIdx < 180; waitIdx++) {
+      if (!backgroundAutoFixWorkerRunning || job.cancelRequested || activeBackgroundAutoFixJob?.jobId !== job.jobId) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (backgroundAutoFixWorkerRunning || job.cancelRequested || activeBackgroundAutoFixJob?.jobId !== job.jobId) {
+      return;
+    }
+  }
   backgroundAutoFixWorkerRunning = true;
-  const CONCURRENCY = 4;
-  const PER_ITEM_TIMEOUT_MS = 12000;
+  const CONCURRENCY = 2;
+  const PER_ITEM_TIMEOUT_MS = 14000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
   let fixedSinceLastFlush = 0;
+  let lastFlushAtMs = Date.now();
+  let flushInFlight = false;
 
   // Load state, preindex local upload files, and build ONE shared live uniqueness registry for all concurrent workers
   serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
   const preindexedFiles = buildPreindexedLocalUploadFiles();
   const sharedRegistry = buildGlobalAttachedImageRegistry();
 
-  const flushBatchStoresToDisk = () => {
+  const yieldToEventLoop = () => new Promise<void>(resolve => setImmediate(resolve));
+
+  const flushBatchStoresToDiskAsync = async (isFinalFlush: boolean) => {
+    if (flushInFlight && !isFinalFlush) return;
+    flushInFlight = true;
     try {
-      saveServerProductImageState();
-      saveServerProductsToDisk();
-      saveRfqMarketStoreToDisk();
-      if (pendingSnapshotUpdates.length > 0) {
-        const chunk = pendingSnapshotUpdates.splice(0, pendingSnapshotUpdates.length);
-        updateFullCatalogSnapshotRecords(chunk);
+      ensureUploadsDir();
+      const stateJson = isFinalFlush
+        ? JSON.stringify(serverProductImageState, null, 2)
+        : JSON.stringify(serverProductImageState);
+      await atomicWriteTextFileAsync(IMAGE_OVERRIDES_FILE, stateJson);
+      await yieldToEventLoop();
+      await atomicWriteTextFileAsync(PUBLIC_DATA_OVERRIDES_FILE, stateJson);
+      await yieldToEventLoop();
+
+      const distDir = path.join(process.cwd(), 'dist');
+      if (fs.existsSync(distDir)) {
+        try {
+          await atomicWriteTextFileAsync(path.join(distDir, 'assets', 'uploads', 'product-image-overrides.json'), stateJson);
+          await atomicWriteTextFileAsync(path.join(distDir, 'data', 'productImageSystemState.json'), stateJson);
+        } catch {}
       }
+      lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
+      invalidatePublicProductImagesCache();
+
+      if (isFinalFlush) {
+        await yieldToEventLoop();
+        saveServerProductsToDisk();
+        await yieldToEventLoop();
+        saveRfqMarketStoreToDisk();
+      }
+
+      if (pendingSnapshotUpdates.length > 0) {
+        await yieldToEventLoop();
+        const chunk = pendingSnapshotUpdates.splice(0, pendingSnapshotUpdates.length);
+        try {
+          if (fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) {
+            const rawSnap = await fs.promises.readFile(FULL_CATALOG_SNAPSHOT_PATH, 'utf8');
+            const parsedSnap = JSON.parse(rawSnap);
+            if (Array.isArray(parsedSnap) && parsedSnap.length > 0) {
+              const updMap = new Map<string, { imageUrl: string; gallery?: string[] }>();
+              for (const u of chunk) updMap.set(String(u.id).trim(), { imageUrl: u.imageUrl, gallery: u.gallery });
+              let snapChanged = false;
+              const nextSnap = parsedSnap.map((row: any) => {
+                if (!row?.id) return row;
+                const hit = updMap.get(String(row.id).trim());
+                if (!hit) return row;
+                const gl = Array.isArray(hit.gallery) && hit.gallery.length > 0 ? hit.gallery : [hit.imageUrl];
+                if (row.image_url !== hit.imageUrl || row.image !== hit.imageUrl) {
+                  snapChanged = true;
+                  return { ...row, image_url: hit.imageUrl, image: hit.imageUrl, images: gl };
+                }
+                return row;
+              });
+              if (snapChanged) {
+                const snapSerialized = JSON.stringify(nextSnap);
+                await atomicWriteTextFileAsync(FULL_CATALOG_SNAPSHOT_PATH, snapSerialized);
+                if (fs.existsSync(distDir)) {
+                  try {
+                    await atomicWriteTextFileAsync(path.join(distDir, 'data', 'fullCatalogSnapshot.json'), snapSerialized);
+                  } catch {}
+                }
+                cachedSnapshotImageEntries = null;
+              }
+            }
+          }
+        } catch (snapErr) {
+          console.warn('[AutoFixJob] Async snapshot sync warning:', snapErr);
+        }
+      }
+      lastFlushAtMs = Date.now();
     } catch (err) {
       console.warn('[AutoFixJob] Batch disk flush warning:', err);
+    } finally {
+      flushInFlight = false;
     }
   };
 
@@ -28860,23 +29311,36 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       job.updatedAtMs = Date.now();
 
       let timeoutHandle: NodeJS.Timeout | null = null;
-      const timeoutPromise = new Promise<SiteImageAutoFixResultRow>(resolve => {
-        timeoutHandle = setTimeout(() => {
-          resolve({
-            id: nextItem.id,
-            type: nextItem.type,
-            success: false,
-            oldUrl: nextItem.currentUrl,
-            error: 'Timed out after 6s searching external photo sources (skipped to keep batch moving).'
-          });
-        }, PER_ITEM_TIMEOUT_MS);
+      const TIMEOUT_SENTINEL = { __timedOut: true as const };
+      const timeoutPromise = new Promise<typeof TIMEOUT_SENTINEL>(resolve => {
+        timeoutHandle = setTimeout(() => resolve(TIMEOUT_SENTINEL), PER_ITEM_TIMEOUT_MS);
       });
 
-      const resRow = await Promise.race([
+      const raceOut = await Promise.race([
         processSingleSiteImageAutoFix(nextItem, { batchMode: true, preindexedFiles, sharedRegistry }),
         timeoutPromise
       ]);
       if (timeoutHandle) clearTimeout(timeoutHandle);
+
+      let resRow: SiteImageAutoFixResultRow;
+      if ((raceOut as any)?.__timedOut || (!raceOut || (!(raceOut as SiteImageAutoFixResultRow).success && nextItem.id !== 'site-brand-logo'))) {
+        // Zero-Skip Guarantee: assign an instant same/similar-category real photo instead of ever skipping!
+        const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
+          batchMode: true,
+          preindexedFiles,
+          sharedRegistry
+        });
+        resRow = fallbackRow || {
+          id: nextItem.id,
+          type: nextItem.type,
+          success: false,
+          oldUrl: nextItem.currentUrl,
+          error: 'Could not resolve category fallback photo.'
+        };
+      } else {
+        resRow = raceOut as SiteImageAutoFixResultRow;
+      }
+
       activeSlotItems.delete(slotIdx);
       syncCurrentActiveSlotLabel();
 
@@ -28896,10 +29360,12 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       }
       job.updatedAtMs = Date.now();
 
-      if (fixedSinceLastFlush >= 8) {
+      if (fixedSinceLastFlush >= 20 || (fixedSinceLastFlush > 0 && Date.now() - lastFlushAtMs >= 5000)) {
         fixedSinceLastFlush = 0;
-        flushBatchStoresToDisk();
+        await flushBatchStoresToDiskAsync(false);
       }
+      // Yield cleanly between items so Express polls and UI updates respond in <20ms
+      await yieldToEventLoop();
     }
   };
 
@@ -28907,9 +29373,10 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     const workerCount = Math.min(CONCURRENCY, Math.max(1, job.queue.length));
     await Promise.all(Array.from({ length: workerCount }, (_, idx) => runWorkerSlot(idx)));
   } finally {
-    if (fixedSinceLastFlush > 0 || pendingSnapshotUpdates.length > 0) {
-      flushBatchStoresToDisk();
+    if (fixedSinceLastFlush > 0 || pendingSnapshotUpdates.length > 0 || job.fixed > 0) {
+      await flushBatchStoresToDiskAsync(true);
     }
+    void saveProductImageCacheToDiskAsync();
     invalidatePublicProductImagesCache();
     job.active = false;
     job.currentItemId = '';
@@ -28917,6 +29384,14 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     job.finishedAt = new Date().toISOString();
     job.updatedAtMs = Date.now();
     backgroundAutoFixWorkerRunning = false;
+    const nextJob = activeBackgroundAutoFixJob;
+    if (nextJob && nextJob.jobId !== job.jobId && nextJob.active && !nextJob.cancelRequested && !pendingChunkStartTimer) {
+      setImmediate(() => {
+        if (!backgroundAutoFixWorkerRunning && activeBackgroundAutoFixJob?.jobId === nextJob.jobId && nextJob.active && !nextJob.cancelRequested) {
+          void runBackgroundAutoFixJobWorker(nextJob);
+        }
+      });
+    }
   }
 }
 
@@ -28939,7 +29414,19 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
       return res.status(400).json({ success: false, message: 'No items provided for background Auto-Fix.' });
     }
 
+    const replaceExisting = Boolean(req.body?.replaceExisting);
+    const deferStart = Boolean(req.body?.deferStart);
+
+    if (replaceExisting && activeBackgroundAutoFixJob && activeBackgroundAutoFixJob.active) {
+      activeBackgroundAutoFixJob.cancelRequested = true;
+      activeBackgroundAutoFixJob.active = false;
+      activeBackgroundAutoFixJob.queue = [];
+      activeBackgroundAutoFixJob.finishedAt = new Date().toISOString();
+      activeBackgroundAutoFixJob.updatedAtMs = Date.now();
+    }
+
     if (
+      !replaceExisting &&
       activeBackgroundAutoFixJob &&
       activeBackgroundAutoFixJob.active &&
       !activeBackgroundAutoFixJob.cancelRequested
@@ -28958,6 +29445,15 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
         }
       }
       activeBackgroundAutoFixJob.updatedAtMs = Date.now();
+      if (!deferStart) {
+        if (pendingChunkStartTimer) {
+          clearTimeout(pendingChunkStartTimer);
+          pendingChunkStartTimer = null;
+        }
+        if (!backgroundAutoFixWorkerRunning) {
+          void runBackgroundAutoFixJobWorker(activeBackgroundAutoFixJob);
+        }
+      }
       return res.json({
         success: true,
         appended: addedCount,
@@ -28982,7 +29478,23 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
       updatedAtMs: Date.now()
     };
     activeBackgroundAutoFixJob = job;
-    void runBackgroundAutoFixJobWorker(job);
+
+    if (pendingChunkStartTimer) {
+      clearTimeout(pendingChunkStartTimer);
+      pendingChunkStartTimer = null;
+    }
+
+    if (deferStart) {
+      // Wait briefly for remaining chunks in this batch to append cleanly before worker begins
+      pendingChunkStartTimer = setTimeout(() => {
+        pendingChunkStartTimer = null;
+        if (activeBackgroundAutoFixJob?.jobId === job.jobId && job.active && !job.cancelRequested) {
+          void runBackgroundAutoFixJobWorker(job);
+        }
+      }, 2500);
+    } else {
+      void runBackgroundAutoFixJobWorker(job);
+    }
 
     return res.json({
       success: true,
@@ -29007,6 +29519,10 @@ app.get('/api/v1/admin/site-images/auto-fix-jobs/current', (_req, res) => {
 
 app.post('/api/v1/admin/site-images/auto-fix-jobs/stop', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  if (pendingChunkStartTimer) {
+    clearTimeout(pendingChunkStartTimer);
+    pendingChunkStartTimer = null;
+  }
   if (activeBackgroundAutoFixJob && activeBackgroundAutoFixJob.active) {
     activeBackgroundAutoFixJob.cancelRequested = true;
     activeBackgroundAutoFixJob.queue = [];
@@ -29044,7 +29560,11 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
     let failedCount = 0;
 
     for (const item of batchItems) {
-      const rowRes = await processSingleSiteImageAutoFix(item);
+      let rowRes = await processSingleSiteImageAutoFix(item);
+      if (!rowRes.success && item.id !== 'site-brand-logo') {
+        const fb = await assignZeroSkipCategoryFallback(item);
+        if (fb) rowRes = fb;
+      }
       if (rowRes.success) {
         fixedCount++;
         if (Array.isArray(rowRes.deletedOldUrls)) {

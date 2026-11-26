@@ -402,7 +402,7 @@ class BackgroundAutoFixService {
     if (this.inFlightPoll) return;
     this.inFlightPoll = true;
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 6500) : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
     try {
       const res = await fetch(`/api/v1/admin/site-images/auto-fix-jobs/current?_t=${Date.now()}`, {
         cache: 'no-store',
@@ -456,44 +456,55 @@ class BackgroundAutoFixService {
     }
 
     // 1. Try submitting to the persistent server-side background job queue first (in 600-item chunks so large batches never hit body-size or proxy timeouts)
+    let latestServerJob: ServerJobPayload | null = null;
+    let serverAccepted = false;
     try {
       const CHUNK_SIZE = 600;
-      let latestServerJob: ServerJobPayload | null = null;
-      let serverAccepted = false;
+      const isIdleFreshStart = !this.state.active || this.state.mode !== 'server-job';
 
       for (let i = 0; i < items.length; i += CHUNK_SIZE) {
         const chunk = items.slice(i, i + CHUNK_SIZE);
-        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timer = ctrl ? setTimeout(() => ctrl.abort(), 10000) : null;
-        try {
-          const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs', {
-            method: 'POST',
-            cache: 'no-store',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ items: chunk }),
-            ...(ctrl ? { signal: ctrl.signal } : {})
-          });
-          const json = await res.json().catch(() => null);
-          if (res.ok && json?.success && json.job) {
-            latestServerJob = json.job;
-            serverAccepted = true;
-            if (i === 0) {
-              this.applyServerJobPayload(json.job);
-            }
-          } else {
-            break;
-          }
-        } finally {
-          if (timer) clearTimeout(timer);
-        }
-      }
+        const replaceExisting = isIdleFreshStart && i === 0;
+        const deferStart = i + CHUNK_SIZE < items.length;
 
-      if (serverAccepted && latestServerJob) {
-        this.applyServerJobPayload(latestServerJob);
-        return;
+        let chunkDone = false;
+        for (let attempt = 0; attempt < 2 && !chunkDone; attempt++) {
+          const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 20000) : null;
+          try {
+            const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs', {
+              method: 'POST',
+              cache: 'no-store',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({ items: chunk, replaceExisting, deferStart }),
+              ...(ctrl ? { signal: ctrl.signal } : {})
+            });
+            const json = await res.json().catch(() => null);
+            if (res.ok && json?.success && json.job) {
+              latestServerJob = json.job;
+              serverAccepted = true;
+              chunkDone = true;
+              if (i === 0) {
+                this.applyServerJobPayload(json.job);
+              }
+            } else {
+              break;
+            }
+          } catch {
+            if (attempt === 1) break;
+          } finally {
+            if (timer) clearTimeout(timer);
+          }
+        }
+        if (!chunkDone) break;
       }
     } catch {
-      // Fall back to module-level browser background runner below
+      // Fall back to module-level browser background runner ONLY if server never accepted the job
+    }
+
+    if (serverAccepted && latestServerJob) {
+      this.applyServerJobPayload(latestServerJob);
+      return;
     }
 
     // 2. Resilient fallback: module-level SPA background runner (never tied to React component unmount!)
@@ -538,8 +549,8 @@ class BackgroundAutoFixService {
   private async runLocalBackgroundWorker() {
     if (this.localWorkerRunning) return;
     this.localWorkerRunning = true;
-    const LOCAL_CONCURRENCY = 4;
-    const PER_ITEM_TIMEOUT_MS = 13000;
+    const LOCAL_CONCURRENCY = 2;
+    const PER_ITEM_TIMEOUT_MS = 18000;
     const activeSlots = new Map<number, BackgroundAutoFixItem>();
 
     const updateCurrentActiveSlot = () => {
@@ -577,7 +588,7 @@ class BackgroundAutoFixService {
                     id: target.id,
                     type: target.type,
                     success: false,
-                    error: 'Timed out after 13s (skipped to keep batch moving).'
+                    error: 'Timed out after 18s (skipped to keep batch moving).'
                   }
                 ]
               });
