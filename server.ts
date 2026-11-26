@@ -29,12 +29,18 @@ function isCompiledServerFresh(): boolean {
 }
 
 async function bootstrapServer() {
+  // In dev / tsx mode, always boot serverApp.ts directly to mount live Vite middlewares
+  if (isTsxRuntime || process.env.NODE_ENV === 'development') {
+    await import('./serverApp.ts');
+    return;
+  }
+
   if (isCompiledServerFresh()) {
     require(distServerPath);
     return;
   }
 
-  if (!isTsxRuntime && fs.existsSync(distServerPath)) {
+  if (fs.existsSync(distServerPath)) {
     require(distServerPath);
     return;
   }

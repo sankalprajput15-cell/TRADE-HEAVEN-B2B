@@ -652,6 +652,25 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       }
     }
 
+    const isClientCrossCategoryMismatch = (url: string, title: string, category: string): boolean => {
+      if (!url) return false;
+      const ul = url.toLowerCase();
+      const tj = `${title || ''} ${category || ''}`.toLowerCase();
+      if (/(automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|industrial-ball-bearings-frozen-shri)/i.test(ul)) return true;
+      if (ul.includes('monocrystalli') && !/(solar|photovoltaic|\bpv\b|monocrystalline|panel|germanium|wafer|infrared)/i.test(tj)) return true;
+      if ((ul.includes('black-jade') || ul.includes('raw-stone')) && (!/(jade|cabochon|nephrite|gem|gemstone|crystal)/i.test(tj) || /(quartz|slab|tile|building|construction|cement)/i.test(tj))) return true;
+      if ((ul.includes('5-axis-cnc') || ul.includes('cnc-milling')) && !/(cnc|milling|lathe|machining|tooling)/i.test(tj)) return true;
+      if ((ul.includes('medical-ipl') || ul.includes('photorejuvenation')) && !/(ipl|photorejuvenation|laser\s*machine|aesthetic\s*machine|hair\s*removal)/i.test(tj)) return true;
+      if (/(leather[_-]belt|cowhide|cowh-|verified-belt)/i.test(ul) && (!/(leather|cowhide|hide|footwear|shoe|handbag|wallet|saddle|waist\s*belt|dress\s*belt)/i.test(tj) || /(conveyor|abaya|agriculture|grain|wheat|rice|scrap)/i.test(tj))) return true;
+      if (/(used-shoes|clothing-bales|winter-coat|vintage-denim|summer-clothing)/i.test(ul) && !/(cloth|apparel|garment|shoe|footwear|denim|coat|fashion|textile|fabric|bale|secondhand|used\s*cloth)/i.test(tj)) return true;
+      if (/(tyre-scraps|rubber-offcut)/i.test(ul) && !/(scrap|tyre|tire|rubber|waste|recycl|polymer|plastic|crumb)/i.test(tj)) return true;
+      if (/(deformed-reinforcing-steel-rebar|deformed-steel-rebar|steel-rebar)/i.test(ul) && !/(rebar|steel|iron|metal|billet|coil|bar|rod|building|construction|cement|hardware|elevator|escalator|scaffold)/i.test(tj)) return true;
+      if (/(paper-shredder|paper-trimmers|a4-copy-paper)/i.test(ul) && !/(paper|stationery|office|print|book|packaging|carton|box|notebook|pulp|shredder|envelope)/i.test(tj)) return true;
+      if (/(copper-wire|copper-cathode|copper-powder)/i.test(ul) && !/(copper|wire|cable|metal|scrap|cathode|ingot|mining|mineral|alloy|brass|aluminum)/i.test(tj)) return true;
+      if (/(avocado|strawberry|apricot|mango|banana|chicken|egg|coffee|tea|turmeric|cardamom|jasmine-rice|basmati|cashew|sunflower|soybean|corn-maize|sugar-free|fruit-jam|vanilla|broccoli|asparagus)/i.test(ul) && !/(food|fruit|jam|spread|meat|poultry|chicken|egg|rice|grain|spice|tea|coffee|oil|agri|agriculture|nut|cashew|corn|maize|soy|sugar|vegetable|produce|seed|bean)/i.test(tj)) return true;
+      return false;
+    };
+
     return rawList.map(item => {
       const u = item.currentUrl;
       const ov = overrides[item.id];
@@ -663,10 +682,15 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
       const isThumbMarkedBroken = Boolean(u && brokenThumbUrls[item.id] === u);
       const isOptionalEmptySiteAsset = item.type === 'SITE_ASSET' && !u;
+      const isMismatched =
+        item.type !== 'SITE_ASSET' &&
+        item.type !== 'HERO_SLIDE' &&
+        isClientCrossCategoryMismatch(u, item.title, item.category);
       if (
         !isOptionalEmptySiteAsset &&
         (!u ||
           isThumbMarkedBroken ||
+          isMismatched ||
           isGenericOrPlaceholderImageUrl(u) ||
           isSyntheticSpecCardOrPlaceholder(u) ||
           /^https?:\/\//i.test(u))
@@ -678,9 +702,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             ? 'Missing image'
             : isThumbMarkedBroken
               ? 'Broken / missing file on server'
-              : isGenericOrPlaceholderImageUrl(u) || isSyntheticSpecCardOrPlaceholder(u)
-                ? 'Placeholder / synthetic card image'
-                : 'External URL (not stored on server)'
+              : isMismatched
+                ? 'Cross-category subject mismatch'
+                : isGenericOrPlaceholderImageUrl(u) || isSyntheticSpecCardOrPlaceholder(u)
+                  ? 'Placeholder / synthetic card image'
+                  : 'External URL (not stored on server)'
         };
       }
 
@@ -1432,6 +1458,24 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     });
   };
 
+  const unusedOrFlaggedList = useMemo(
+    () => allItems.filter(it => (it.status === 'NEEDS_FIX' || it.status === 'DUPLICATE') && it.id !== 'site-brand-logo'),
+    [allItems]
+  );
+
+  const handleSelectUnusedOrFlagged = () => {
+    setSelectedIds(prev => {
+      const next = { ...prev };
+      const allSelected = unusedOrFlaggedList.length > 0 && unusedOrFlaggedList.every(it => next[it.id]);
+      if (allSelected) {
+        for (const it of unusedOrFlaggedList) delete next[it.id];
+      } else {
+        for (const it of unusedOrFlaggedList) next[it.id] = true;
+      }
+      return next;
+    });
+  };
+
   const flaggedItems = useMemo(
     () =>
       allItems
@@ -1630,6 +1674,32 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 <Square className="w-3.5 h-3.5 text-slate-400" />
               )}
               <span>Page ({pageItems.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSelectUnusedOrFlagged}
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+              title="Select all flagged, broken, or duplicate items not in clean verified state"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-amber-600" />
+              <span>Select Unused ({unusedOrFlaggedList.length})</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isBulkDeleting || Boolean(batchProgress?.active) || unusedOrFlaggedList.length === 0}
+              onClick={() => {
+                const next: Record<string, boolean> = {};
+                for (const it of unusedOrFlaggedList) next[it.id] = true;
+                setSelectedIds(next);
+                setBulkDeleteConfirm(true);
+              }}
+              className="px-2.5 py-1.5 rounded-md bg-red-700 hover:bg-red-800 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+              title="Select and permanently delete all unused, flagged, or duplicate data from the site in bulk completely"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Unused ({unusedOrFlaggedList.length})</span>
             </button>
 
             <div className="relative flex-1 min-w-[180px] max-w-md">

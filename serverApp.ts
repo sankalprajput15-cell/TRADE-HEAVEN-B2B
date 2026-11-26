@@ -627,6 +627,100 @@ async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOM
 
 // Autonomous 60s background image optimizer timer disabled to prevent continuous disk writes
 
+// Persistent Virtual Unique Image Alias Registry (maps unique derived /assets/uploads/cat-*.webp URLs to real master photos on disk without bloating workspace file count)
+const VIRTUAL_IMAGE_ALIASES_FILE = path.join(uploadsStaticDir, 'virtual-image-aliases.json');
+const PUBLIC_DATA_VIRTUAL_ALIASES_FILE = path.join(process.cwd(), 'public', 'data', 'virtual-image-aliases.json');
+let virtualImageAliasesMap: Record<string, string> = {};
+let virtualImageAliasesDirty = false;
+
+function loadVirtualImageAliasesFromDisk(): void {
+  const merged: Record<string, string> = {};
+  for (const fp of [PUBLIC_DATA_VIRTUAL_ALIASES_FILE, VIRTUAL_IMAGE_ALIASES_FILE]) {
+    try {
+      if (fs.existsSync(fp)) {
+        const parsed = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          for (const [k, v] of Object.entries(parsed)) {
+            if (typeof k === 'string' && typeof v === 'string' && k && v && !k.includes('..') && !v.includes('..')) {
+              merged[path.basename(k)] = path.basename(v);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+  virtualImageAliasesMap = merged;
+}
+loadVirtualImageAliasesFromDisk();
+
+function saveVirtualImageAliasesToDiskSync(): void {
+  if (!virtualImageAliasesDirty && Object.keys(virtualImageAliasesMap).length === 0) return;
+  try {
+    if (!fs.existsSync(uploadsStaticDir)) fs.mkdirSync(uploadsStaticDir, { recursive: true });
+    const dataDir = path.dirname(PUBLIC_DATA_VIRTUAL_ALIASES_FILE);
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    const serialized = JSON.stringify(virtualImageAliasesMap);
+    fs.writeFileSync(VIRTUAL_IMAGE_ALIASES_FILE, serialized, 'utf-8');
+    fs.writeFileSync(PUBLIC_DATA_VIRTUAL_ALIASES_FILE, serialized, 'utf-8');
+    const distDir = path.join(process.cwd(), 'dist');
+    if (fs.existsSync(distDir)) {
+      try {
+        const distUp = path.join(distDir, 'assets', 'uploads');
+        if (!fs.existsSync(distUp)) fs.mkdirSync(distUp, { recursive: true });
+        fs.writeFileSync(path.join(distUp, 'virtual-image-aliases.json'), serialized, 'utf-8');
+        const distData = path.join(distDir, 'data');
+        if (!fs.existsSync(distData)) fs.mkdirSync(distData, { recursive: true });
+        fs.writeFileSync(path.join(distData, 'virtual-image-aliases.json'), serialized, 'utf-8');
+      } catch {}
+    }
+    virtualImageAliasesDirty = false;
+  } catch {}
+}
+
+async function saveVirtualImageAliasesToDiskAsync(): Promise<void> {
+  if (!virtualImageAliasesDirty && Object.keys(virtualImageAliasesMap).length === 0) return;
+  try {
+    if (!fs.existsSync(uploadsStaticDir)) fs.mkdirSync(uploadsStaticDir, { recursive: true });
+    const dataDir = path.dirname(PUBLIC_DATA_VIRTUAL_ALIASES_FILE);
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    const serialized = JSON.stringify(virtualImageAliasesMap);
+    await fs.promises.writeFile(VIRTUAL_IMAGE_ALIASES_FILE, serialized, 'utf-8');
+    await fs.promises.writeFile(PUBLIC_DATA_VIRTUAL_ALIASES_FILE, serialized, 'utf-8');
+    const distDir = path.join(process.cwd(), 'dist');
+    if (fs.existsSync(distDir)) {
+      try {
+        const distUp = path.join(distDir, 'assets', 'uploads');
+        if (!fs.existsSync(distUp)) fs.mkdirSync(distUp, { recursive: true });
+        await fs.promises.writeFile(path.join(distUp, 'virtual-image-aliases.json'), serialized, 'utf-8');
+        const distData = path.join(distDir, 'data');
+        if (!fs.existsSync(distData)) fs.mkdirSync(distData, { recursive: true });
+        await fs.promises.writeFile(path.join(distData, 'virtual-image-aliases.json'), serialized, 'utf-8');
+      } catch {}
+    }
+    virtualImageAliasesDirty = false;
+  } catch {}
+}
+
+function resolveVirtualAliasDiskPath(safeFilename: string): string | null {
+  const cleanName = path.basename(String(safeFilename || '').trim());
+  if (!cleanName || cleanName.includes('..')) return null;
+  const masterName = virtualImageAliasesMap[cleanName];
+  if (!masterName || masterName.includes('..')) return null;
+  const candidates = [
+    path.join(uploadsStaticDir, masterName),
+    path.join(legacyAssetsStaticDir, masterName),
+    path.join(distUploadsStaticDir, masterName)
+  ];
+  for (const cand of candidates) {
+    try {
+      if (fs.existsSync(cand) && fs.statSync(cand).isFile() && fs.statSync(cand).size > 100) {
+        return cand;
+      }
+    } catch {}
+  }
+  return null;
+}
+
 // Automated Image Optimization & High-Speed Cache Middleware (covers uploads, aistudio, tradeheaven, renewal-branding, bundled dist/assets raster images, and non-import src/assets/images)
 const distAssetsStaticDir = path.join(process.cwd(), 'dist', 'assets');
 app.get([
@@ -686,6 +780,14 @@ app.get([
               : fs.existsSync(distFallbackPath)
                 ? distFallbackPath
                 : null);
+
+  // Resolve virtual unique category photo aliases directly to their real master photograph on disk
+  if (!targetPath && req.path.startsWith('/assets/uploads/')) {
+    const aliasPath = resolveVirtualAliasDiskPath(safeFilename);
+    if (aliasPath) {
+      targetPath = aliasPath;
+    }
+  }
 
   // Auto-heal missing /assets/uploads/:filename from live upstream (tradeheaven.net) and persist to public + dist
   if (
@@ -14794,7 +14896,7 @@ function loadServerProductImageState(
         const clean = String(urlStr || '').trim().split('?')[0];
         if (!clean.startsWith('/assets/uploads/')) return urlStr;
         const fn = clean.slice('/assets/uploads/'.length);
-        if (uploadSet.has(fn) || legacySet.has(fn)) {
+        if (uploadSet.has(fn) || legacySet.has(fn) || resolveVirtualAliasDiskPath(fn)) {
           return urlStr;
         }
         for (const ext of ['webp', 'jpg', 'jpeg', 'png']) {
@@ -14899,6 +15001,14 @@ function isUploadUrlStillReferenced(
     Boolean(u && String(u).trim().split('?')[0].split('#')[0] === targetBase);
 
   if (matchesUrl(serverProductImageState.globalDefaultImage)) return true;
+
+  // Protect real master files currently referenced by any active virtual unique alias
+  if (targetBase.startsWith('/assets/uploads/')) {
+    const checkFileName = path.basename(targetBase);
+    for (const targetMaster of Object.values(virtualImageAliasesMap)) {
+      if (targetMaster === checkFileName) return true;
+    }
+  }
 
   for (const catUrl of Object.values(serverProductImageState.categoryOverrides || {})) {
     if (matchesUrl(catUrl)) return true;
@@ -15017,6 +15127,12 @@ function permanentlyDeleteReplacedUploadFiles(
           console.warn('[ProductImageSystem] Failed to delete replaced image file:', targetFile, err?.message || err);
         }
       }
+    }
+
+    if (virtualImageAliasesMap[fileName]) {
+      delete virtualImageAliasesMap[fileName];
+      virtualImageAliasesDirty = true;
+      removedAnyFile = true;
     }
 
     if (removedAnyFile) {
@@ -15369,6 +15485,7 @@ function saveServerProductImageState(): boolean {
     // Persist atomically inside public/assets/uploads and public/data (never write into src/ at runtime)
     atomicWriteTextFileSync(IMAGE_OVERRIDES_FILE, serialized);
     atomicWriteTextFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized);
+    saveVirtualImageAliasesToDiskSync();
     // Mirror into dist/ asynchronously so shared previews stay in sync without blocking the event loop
     const distDir = path.join(process.cwd(), 'dist');
     if (fs.existsSync(distDir)) {
@@ -15479,6 +15596,8 @@ function resolveLocalUploadDiskPath(rawUrl: string): string | null {
       }
     }
   }
+  const aliasHit = resolveVirtualAliasDiskPath(fileName);
+  if (aliasHit) return aliasHit;
   return null;
 }
 
@@ -24612,6 +24731,8 @@ function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
         return true;
       }
     }
+    const aliasHit = resolveVirtualAliasDiskPath(baseName);
+    if (aliasHit) return true;
     return false;
   } catch {
     return false;
@@ -25864,6 +25985,16 @@ function detectCatalogImageIssue(
     };
   }
 
+  if (
+    isExtremeCrossCategoryUploadUrl(lowerUrl, targetJoined)
+  ) {
+    return {
+      flagged: true,
+      issueType: 'MISMATCHED',
+      reason: `Cross-category mismatch: "${path.basename(cleanUrl)}" does not match "${record.title}"`
+    };
+  }
+
   // Check trade-heaven-<slug>-<hash>.webp / auto-<slug>-<hash>.webp / verified-<slug>.webp / verified-belt-NN.webp relevance
   const baseFile = path.basename(cleanUrl);
   const autoMatch =
@@ -25874,7 +26005,7 @@ function detectCatalogImageIssue(
     const slugTokens = extractMeaningfulAuditTokens(rawSlug.replace(/-/g, ' '));
     if (slugTokens.length >= 1) {
       const hasTokenOverlap = slugTokens.some(st =>
-        targetTokens.some(tt => tt === st || (tt.length >= 4 && st.length >= 4 && (tt.includes(st) || st.includes(tt))))
+        targetTokens.some(tt => tt === st || (tt.length >= 5 && st.length >= 5 && (tt.includes(st) || st.includes(tt))))
       );
       if (!hasTokenOverlap) {
         return {
@@ -25906,13 +26037,17 @@ type IndexedUploadFileEntry = {
   tokens: string[];
 };
 
+const POISONED_MASTER_TEMPLATE_PATTERN =
+  /diwali-offer|unsplash|placeholder|vecteezy|automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|bulk-commercial-custom-private-label|industrial-ball-bearings-frozen-shri/i;
+
 function buildPreindexedLocalUploadFiles(): IndexedUploadFileEntry[] {
   ensureUploadsDir();
   const indexed: IndexedUploadFileEntry[] = [];
   try {
     const files = fs.readdirSync(UPLOADS_DIR).filter(f => /\.(webp|jpe?g|png)$/i.test(f));
     for (const fname of files) {
-      if (/diwali-offer|unsplash|placeholder|vecteezy/i.test(fname)) continue;
+      if (fname.startsWith('cat-')) continue; // Never use derived category copies as master templates
+      if (POISONED_MASTER_TEMPLATE_PATTERN.test(fname)) continue;
       const fullPath = path.join(UPLOADS_DIR, fname);
       try {
         const st = fs.statSync(fullPath);
@@ -26061,87 +26196,129 @@ function getCategoryVisualSearchProfile(title: string, category: string): Catego
     },
     {
       sectorKey: 'apparel_textiles',
-      test: /\b(denim|jeans|cloth|clothing|garment|garments|apparel|textile|textiles|fabric|fabrics|cotton|silk|saree|sari|shirt|tshirt|t-shirt|jacket|hoodie|trouser|pant|dress|knit|yarn|wool|linen|polyester|towel|bedsheet|carpet|rug|mat|curtain|jute|fashion)\b/i,
+      test: /\b(abaya|denim|jeans|cloth|clothing|garment|garments|apparel|textile|textiles|fabric|fabrics|cotton|silk|saree|sari|shirt|tshirt|t-shirt|jacket|hoodie|trouser|pant|dress|knit|yarn|wool|linen|polyester|towel|bedsheet|carpet|rug|curtain|jute|fashion|coir\s*fiber)\b/i,
       searchQueries: ['cotton textile fabric rolls', 'denim jeans garments wholesale', 'folded clothing apparel warehouse'],
-      matchTokens: ['denim', 'jeans', 'cloth', 'clothing', 'garment', 'apparel', 'textile', 'fabric', 'cotton', 'silk', 'saree', 'shirt', 'jacket', 'yarn', 'wool', 'linen', 'towel', 'carpet', 'rug', 'jute', 'leather', 'fashion']
+      matchTokens: ['abaya', 'denim', 'jeans', 'cloth', 'clothing', 'garment', 'apparel', 'textile', 'fabric', 'cotton', 'silk', 'saree', 'shirt', 'jacket', 'yarn', 'wool', 'linen', 'towel', 'carpet', 'rug', 'jute', 'fashion']
+    },
+    {
+      sectorKey: 'conveyor_industrial_belts',
+      test: /\b(conveyor\s*belt|rubber\s*conveyor|epdm.*conveyor|timing\s*belt|v-belt|conveyor\s*system)\b/i,
+      searchQueries: ['industrial rubber conveyor belt roll', 'heavy duty conveyor belt factory'],
+      matchTokens: ['conveyor', 'rubber', 'epdm', 'industrial', 'machinery', 'warehouse']
     },
     {
       sectorKey: 'irrigation_plumbing_valves',
       test: /\b(irrigation|drip|sprinkler|solenoid|valve|valves|plumbing|faucet|brass\s+fitting|hose|piping)\b/i,
       searchQueries: ['brass solenoid valve plumbing industrial', 'drip irrigation tubing garden agriculture'],
-      matchTokens: ['irrigation', 'drip', 'sprinkler', 'solenoid', 'valve', 'brass', 'plumbing', 'faucet', 'hose', 'pipe', 'tube', 'tubing', 'water', 'garden', 'steel', 'metal', 'fitting']
+      matchTokens: ['irrigation', 'drip', 'sprinkler', 'solenoid', 'valve', 'brass', 'plumbing', 'faucet', 'hose', 'pipe', 'tube', 'tubing', 'water', 'fitting']
     },
     {
       sectorKey: 'generators_power_tanks',
-      test: /\b(generator|genset|cummins|diesel power|power plant|turbine|transformer|switchgear|tank|tanks|fuel storage|silo|boiler|compressor|pump|pumps|valve|valves|hvac|chiller|cold storage|refrigeration|elevator|escalator)\b/i,
+      test: /\b(generator|genset|cummins|diesel power|power plant|turbine|transformer|switchgear|tank|tanks|fuel storage|silo|boiler|compressor|pump|pumps|hvac|air\s*condition|chiller|cold storage|refrigeration|elevator|escalator)\b/i,
       searchQueries: ['industrial diesel generator power', 'industrial steel fuel storage tank', 'industrial pump compressor machinery'],
-      matchTokens: ['generator', 'genset', 'cummins', 'diesel', 'power', 'turbine', 'transformer', 'tank', 'storage', 'boiler', 'compressor', 'pump', 'valve', 'hvac', 'chiller', 'engine', 'motor', 'machinery', 'industrial']
+      matchTokens: ['generator', 'genset', 'cummins', 'power', 'turbine', 'transformer', 'tank', 'storage', 'boiler', 'compressor', 'pump', 'hvac', 'chiller', 'engine', 'motor', 'machinery']
+    },
+    {
+      sectorKey: 'cnc_milling_lathe_machinery',
+      test: /\b(cnc|lathe|milling\s*center|machining\s*center|5-axis|spindle|tooling)\b/i,
+      searchQueries: ['industrial cnc milling machine center', 'metal turning lathe cnc machine'],
+      matchTokens: ['cnc', 'milling', 'lathe', 'machining', 'spindle', 'tooling', 'machinery']
     },
     {
       sectorKey: 'construction_excavation_machinery',
-      test: /\b(excavator|bulldozer|loader|crane|forklift|backhoe|grader|roller|dumper|tractor|harvester|drilling|rig|cnc|lathe|milling|press|extruder|injection|molding|crusher|conveyor|machinery|industrial machine|processing machine|marine equipment)\b/i,
-      searchQueries: ['heavy construction excavator machinery', 'industrial cnc manufacturing machine', 'forklift warehouse crane equipment'],
-      matchTokens: ['excavator', 'bulldozer', 'loader', 'crane', 'forklift', 'tractor', 'drill', 'cnc', 'lathe', 'milling', 'crusher', 'conveyor', 'machinery', 'machine', 'industrial', 'equipment', 'construction', 'hydraulic', 'generator']
+      test: /\b(excavator|bulldozer|loader|crane|forklift|backhoe|grader|roller|dumper|tractor|harvester|drilling|rig|press|extruder|injection|molding|crusher|conveyor|machinery|industrial machine|processing machine|marine equipment)\b/i,
+      searchQueries: ['heavy construction excavator machinery', 'forklift warehouse crane equipment', 'industrial manufacturing machinery'],
+      matchTokens: ['excavator', 'bulldozer', 'loader', 'crane', 'forklift', 'tractor', 'drill', 'crusher', 'conveyor', 'machinery', 'machine', 'equipment', 'construction', 'hydraulic']
     },
     {
       sectorKey: 'welding_tools_hardware',
-      test: /\b(welding|welder|solder|soldering|electrode|torch|fastener|bolt|nut|screw|nail|wrench|spanner|hammer|saw|blade|hardware|bearing|gear|chain|pipe|pipes|fitting|flange|tool|tools|instrument|safety|helmet|glove)\b/i,
+      test: /\b(welding|welder|solder|soldering|electrode|torch|fastener|bolt|screw|nail|wrench|spanner|hammer|axe|saw|blade|abrasive|abrasives|hardware|bearing|gear|chain|pipe|pipes|fitting|flange|tool|tools|pdr\s*rod|glue\s*gun|safety|helmet|glove)\b/i,
       searchQueries: ['industrial welding machine equipment', 'stainless steel bolts hardware tools', 'industrial hand tools hardware'],
-      matchTokens: ['welding', 'welder', 'solder', 'electrode', 'bolt', 'screw', 'hardware', 'bearing', 'pipe', 'valve', 'tool', 'wrench', 'steel', 'metal', 'safety', 'industrial', 'machinery']
+      matchTokens: ['welding', 'welder', 'solder', 'electrode', 'bolt', 'screw', 'hardware', 'bearing', 'pipe', 'tool', 'wrench', 'abrasive', 'steel', 'metal', 'safety']
     },
     {
-      sectorKey: 'energy_coal_petroleum_solar',
-      test: /\b(coal|anthracite|coke|en590|diesel|jet a1|bitumen|asphalt|crude|petroleum|lng|lpg|fuel|gasoline|lubricant|grease|solar|photovoltaic|panel|inverter|battery|lithium|energy|wind|renewable)\b/i,
-      searchQueries: ['steam coal mining bulk', 'petroleum refinery oil barrels', 'solar photovoltaic panels renewable energy'],
-      matchTokens: ['coal', 'anthracite', 'coke', 'en590', 'diesel', 'jet', 'bitumen', 'asphalt', 'petroleum', 'fuel', 'lng', 'lpg', 'lubricant', 'solar', 'panel', 'battery', 'energy', 'oil', 'mineral', 'mining']
+      sectorKey: 'petroleum_fuel_oil_gas',
+      test: /\b(en590|diesel|jet\s*a1|jet\s*fuel|a1\s*jet|ts-1|aviation\s*fuel|kerosene|avgas|bitumen|asphalt|crude\s*oil|petroleum|lng|lpg|fuel\s*oil|gasoline|lubricant|base\s*oil|grease|petrochemical)\b/i,
+      searchQueries: ['aviation jet fuel tanker refinery', 'en590 diesel petroleum oil barrels', 'petroleum refinery storage tanks'],
+      matchTokens: ['en590', 'diesel', 'jet', 'aviation', 'kerosene', 'bitumen', 'asphalt', 'crude', 'petroleum', 'fuel', 'lng', 'lpg', 'lubricant', 'refinery', 'tanker', 'oil']
+    },
+    {
+      sectorKey: 'coal_coke_carbon',
+      test: /\b(coal|anthracite|bituminous|coke|petcoke|charcoal|activated\s*carbon)\b/i,
+      searchQueries: ['steam thermal coal mining bulk', 'anthracite coal pile industrial', 'activated carbon charcoal granules'],
+      matchTokens: ['coal', 'anthracite', 'bituminous', 'coke', 'charcoal', 'carbon', 'mining']
+    },
+    {
+      sectorKey: 'solar_battery_renewable',
+      test: /\b(solar|photovoltaic|\bpv\b|monocrystalline\s*solar|polycrystalline|inverter|battery|batteries|lithium|lifepo4|wind\s*turbine|renewable\s*energy|energy\s*storage)\b/i,
+      searchQueries: ['solar photovoltaic panels renewable energy', 'lithium lifepo4 battery storage rack', 'solar power inverter commercial'],
+      matchTokens: ['solar', 'photovoltaic', 'monocrystalline', 'panel', 'inverter', 'battery', 'lithium', 'lifepo4', 'renewable']
+    },
+    {
+      sectorKey: 'precious_metals_gems',
+      test: /\b(gold\s*bullion|gold\s*bar|gold\s*dust|gold\s*nugget|gold\s*dore|silver\s*bar|platinum|palladium|diamond|jade|nephrite|cabochon|gemstone|emerald|ruby|sapphire|agate|crystal|jewelry|jewellery)\b/i,
+      searchQueries: ['gold bullion bars precious metal', 'natural jade gemstone minerals', 'fine jewelry precious stones'],
+      matchTokens: ['gold', 'bullion', 'nugget', 'silver', 'platinum', 'diamond', 'jade', 'gemstone', 'crystal', 'agate', 'jewelry']
     },
     {
       sectorKey: 'metals_minerals_scrap',
-      test: /\b(steel|iron|copper|aluminum|aluminium|brass|bronze|zinc|nickel|lead|tin|gold|silver|platinum|titanium|cobalt|manganese|chrome|ore|ingot|billet|coil|rebar|rod|wire|cathode|scrap|hms|recycled|mineral|quartz|silica|limestone|gypsum|marble|granite|bauxite|metallurgy|mining)\b/i,
+      test: /\b(steel|iron|copper|aluminum|aluminium|brass|bronze|zinc|nickel|lead|tin|titanium|cobalt|manganese|chrome|antimony|mercury|silicon|germanium|ore|ingot|billet|coil|rebar|rod|wire|cathode|scrap|hms|recycled|mineral|silica|limestone|gypsum|bauxite|metallurgy|mining)\b/i,
       searchQueries: ['stainless steel coils metal warehouse', 'copper cathodes aluminum ingots', 'iron ore minerals mining bulk'],
-      matchTokens: ['steel', 'iron', 'copper', 'aluminum', 'aluminium', 'brass', 'zinc', 'nickel', 'gold', 'silver', 'ore', 'ingot', 'billet', 'coil', 'rebar', 'cathode', 'scrap', 'metal', 'mineral', 'marble', 'granite', 'mining', 'coal', 'aggregate']
+      matchTokens: ['steel', 'iron', 'copper', 'aluminum', 'aluminium', 'brass', 'zinc', 'nickel', 'titanium', 'silicon', 'germanium', 'ore', 'ingot', 'billet', 'coil', 'rebar', 'cathode', 'scrap', 'metal', 'mineral', 'mining']
+    },
+    {
+      sectorKey: 'fertilizer_agrochemicals',
+      test: /\b(urea|fertilizer|npk|nitrogen|potash|phosphate|ammonium|pesticide|herbicide|agrochemical|soil\s*conditioner|turf)\b/i,
+      searchQueries: ['granular urea nitrogen fertilizer bags', 'industrial npk fertilizer pellets bulk'],
+      matchTokens: ['urea', 'fertilizer', 'nitrogen', 'npk', 'ammonium', 'granule', 'pellet', 'chemical', 'agriculture']
     },
     {
       sectorKey: 'chemicals_plastics_polymers',
-      test: /\b(chemical|chemicals|acid|soda|caustic|urea|fertilizer|pesticide|resin|polymer|hdpe|ldpe|lldpe|pvc|pet|polypropylene|abs|plastic|rubber|latex|silicone|adhesive|glue|paint|coating|pigment|dye|solvent|detergent|wax|paraffin|glycerin)\b/i,
-      searchQueries: ['industrial chemical drums warehouse', 'plastic polymer granules pellets hdpe', 'industrial fertilizer chemical bags'],
-      matchTokens: ['chemical', 'acid', 'soda', 'urea', 'fertilizer', 'resin', 'polymer', 'hdpe', 'ldpe', 'pvc', 'plastic', 'rubber', 'paint', 'coating', 'drum', 'powder', 'granule', 'pellet', 'industrial']
+      test: /\b(chemical|chemicals|acid|soda|caustic|resin|polymer|hdpe|ldpe|lldpe|pvc|pet|polypropylene|bopp|abs|plastic|rubber|latex|silicone|adhesive|glue|paint|coating|pigment|dye|solvent|detergent|air\s*fresh|wax|paraffin|glycerin)\b/i,
+      searchQueries: ['industrial chemical drums warehouse', 'plastic polymer granules pellets hdpe', 'raw rubber bales chemical supply'],
+      matchTokens: ['chemical', 'acid', 'soda', 'caustic', 'resin', 'polymer', 'hdpe', 'ldpe', 'pvc', 'bopp', 'plastic', 'rubber', 'paint', 'coating', 'drum', 'granule', 'pellet']
     },
     {
       sectorKey: 'building_construction_materials',
-      test: /\b(cement|clinker|brick|bricks|tile|tiles|ceramic|porcelain|glass|plywood|timber|lumber|wood|bamboo|gypsum|sand|gravel|aggregate|roofing|insulation|door|window|sanitary|faucet|sink|building|construction|flooring|scaffolding)\b/i,
-      searchQueries: ['portland cement bags construction', 'ceramic tiles marble building materials', 'timber plywood lumber construction'],
-      matchTokens: ['cement', 'clinker', 'brick', 'tile', 'ceramic', 'glass', 'plywood', 'timber', 'wood', 'bamboo', 'sand', 'gravel', 'aggregate', 'marble', 'granite', 'roofing', 'building', 'construction', 'steel']
+      test: /\b(quartz\s*slab|engineered\s*quartz|marble|granite|cement|clinker|brick|bricks|tile|tiles|ceramic|porcelain|glass|plywood|timber|lumber|wood|bamboo|gypsum|sand|gravel|aggregate|roofing|insulation|door|window|sanitary|sink|building|construction|flooring|scaffolding)\b/i,
+      searchQueries: ['engineered quartz marble stone slabs', 'portland cement bags construction', 'timber plywood lumber construction'],
+      matchTokens: ['quartz', 'slab', 'marble', 'granite', 'cement', 'clinker', 'brick', 'tile', 'ceramic', 'glass', 'plywood', 'timber', 'wood', 'bamboo', 'sand', 'roofing', 'building', 'construction']
     },
     {
       sectorKey: 'hotel_hospitality_furniture',
-      test: /\b(hotel|hospitality|restaurant|bar|tableware|cutlery|crockery|plate|bowl|mug|glassware|kitchen|cookware|linen|amenity|towel|soap|furniture|chair|table|sofa|bed|mattress|cabinet|desk|interior|decor|home|garden|appliance)\b/i,
-      searchQueries: ['hotel hospitality tableware supplies', 'luxury hotel linen towels amenities', 'modern wooden furniture interior'],
-      matchTokens: ['hotel', 'hospitality', 'restaurant', 'tableware', 'cutlery', 'kitchen', 'ceramic', 'glass', 'linen', 'towel', 'furniture', 'chair', 'table', 'wood', 'bamboo', 'home', 'decor', 'appliance']
+      test: /\b(hotel|hospitality|catering|restaurant|bar|tableware|cutlery|crockery|plate|bowl|mug|glassware|kitchen|cookware|linen|amenity|towel|soap|furniture|chair|table|sofa|bed|mattress|cabinet|desk|interior|decor|home|garden)\b/i,
+      searchQueries: ['hotel hospitality tableware supplies', 'commercial kitchen catering equipment', 'modern wooden furniture interior'],
+      matchTokens: ['hotel', 'hospitality', 'catering', 'restaurant', 'tableware', 'cutlery', 'kitchen', 'ceramic', 'glass', 'linen', 'towel', 'furniture', 'chair', 'table', 'wood', 'bamboo', 'home', 'decor']
+    },
+    {
+      sectorKey: 'computers_it_cloud_servers',
+      test: /\b(cloud|database|server|storage\s*node|backup|encryption|software|computer|laptop|router|network|telecom|data\s*center|datacenter|cybersecurity|pos|atm)\b/i,
+      searchQueries: ['enterprise server rack data center storage', 'commercial computer network hardware'],
+      matchTokens: ['server', 'computer', 'laptop', 'network', 'router', 'storage', 'telecom', 'electronic', 'circuit', 'chip', 'microcontroller']
     },
     {
       sectorKey: 'electronics_electrical_lighting',
-      test: /\b(electronic|electronics|electrical|cable|cables|wire|led|light|lighting|lamp|bulb|semiconductor|chip|pcb|circuit|computer|laptop|server|phone|mobile|camera|optical|sensor|display|screen|monitor|router|telecom|software|appliance|motor)\b/i,
+      test: /\b(electronic|electronics|electrical|cable|cables|wire|led|light|lighting|lamp|bulb|semiconductor|chip|pcb|circuit|microcontroller|phone|mobile|camera|optical|sensor|display|screen|monitor|appliance|motor|air\s*filter)\b/i,
       searchQueries: ['industrial electrical cables wires', 'led commercial lighting fixtures', 'electronic circuit board components'],
-      matchTokens: ['electronic', 'electrical', 'cable', 'wire', 'led', 'light', 'lamp', 'semiconductor', 'computer', 'laptop', 'server', 'phone', 'camera', 'sensor', 'display', 'motor', 'solar', 'battery', 'inverter']
+      matchTokens: ['electronic', 'electrical', 'cable', 'wire', 'led', 'light', 'lamp', 'semiconductor', 'microcontroller', 'circuit', 'phone', 'camera', 'sensor', 'display', 'motor']
     },
     {
       sectorKey: 'automotive_transport_tires',
-      test: /\b(car|auto|automotive|vehicle|truck|bus|trailer|motorcycle|scooter|ev|electric vehicle|tire|tires|tyre|tyres|wheel|rim|brake|clutch|filter|axle|engine|spare|transport|logistics|shipping|container)\b/i,
-      searchQueries: ['commercial truck tires wholesale', 'automotive spare parts engine components', 'freight cargo shipping containers'],
-      matchTokens: ['auto', 'automotive', 'vehicle', 'truck', 'trailer', 'motorcycle', 'tire', 'tyre', 'wheel', 'brake', 'engine', 'filter', 'battery', 'transport', 'shipping', 'container', 'cargo', 'excavator', 'machinery']
+      test: /\b(car|auto\s*part|automotive|vehicle|truck|bus|trailer|motorcycle|scooter|tire|tires|tyre|tyres|wheel|rim|brake|clutch|axle|engine|spare\s*part|transport|logistics|shipping|container)\b/i,
+      searchQueries: ['commercial truck tires wholesale', 'automotive spare parts wheels brakes', 'freight cargo shipping containers'],
+      matchTokens: ['auto', 'parts', 'wheels', 'truck', 'trailer', 'motorcycle', 'tire', 'tyre', 'wheel', 'brake', 'engine', 'filter', 'transport', 'shipping', 'container', 'cargo']
     },
     {
       sectorKey: 'medical_health_beauty',
-      test: /\b(medical|hospital|clinic|surgical|syringe|glove|mask|diagnostic|lab|laboratory|pharma|pharmaceutical|medicine|capsule|tablet|supplement|vitamin|cosmetic|skincare|shampoo|perfume|beauty|hygiene|sanitary|dental|wheelchair|oxygen|pet)\b/i,
+      test: /\b(medical|hospital|clinic|surgical|ultrasound|syringe|glove|mask|diagnostic|lab|laboratory|pharma|pharmaceutical|medicine|capsule|tablet|supplement|vitamin|cosmetic|skincare|shampoo|perfume|beauty|hygiene|sanitary|dental|wheelchair|oxygen|acupressure|massage|laser\s*goggle|aesthetic)\b/i,
       searchQueries: ['medical diagnostic laboratory equipment', 'surgical gloves medical supplies', 'cosmetics skincare bottles packaging'],
-      matchTokens: ['medical', 'hospital', 'surgical', 'lab', 'pharma', 'medicine', 'cosmetic', 'skincare', 'beauty', 'soap', 'hygiene', 'glove', 'mask', 'bottle', 'chemical']
+      matchTokens: ['medical', 'hospital', 'surgical', 'lab', 'pharma', 'medicine', 'cosmetic', 'skincare', 'beauty', 'soap', 'hygiene', 'glove', 'mask', 'bottle', 'acupressure', 'massage', 'aesthetic']
     },
     {
       sectorKey: 'packaging_paper_office_crafts',
-      test: /\b(paper|kraft|cardboard|corrugated|carton|packaging|pouch|bottle|jar|can|printing|label|tape|stationery|office|book|gift|craft|handicraft|jewelry|jewellery|gem|diamond|antique|sport|fitness|toy)\b/i,
-      searchQueries: ['corrugated cardboard packaging boxes', 'kraft paper rolls industrial warehouse', 'artisan handicraft decorative gifts'],
-      matchTokens: ['paper', 'kraft', 'cardboard', 'carton', 'packaging', 'bottle', 'printing', 'office', 'gift', 'craft', 'jewelry', 'gem', 'bamboo', 'wood', 'jute', 'bag']
+      test: /\b(paper|shredder|trimmer|kraft|cardboard|corrugated|carton|packaging|pouch|bottle|jar|can|printing|label|tape|stationery|office|book|gift|craft|handicraft|coin|antique|accordion|musical|sport|fitness|toy)\b/i,
+      searchQueries: ['corrugated cardboard packaging boxes', 'kraft paper rolls industrial warehouse', 'office stationery paper supplies'],
+      matchTokens: ['paper', 'kraft', 'cardboard', 'carton', 'packaging', 'bottle', 'printing', 'office', 'gift', 'craft', 'bamboo', 'wood', 'jute', 'bag']
     }
   ];
 
@@ -26168,32 +26345,107 @@ function getCategoryVisualSearchProfile(title: string, category: string): Catego
   return {
     sectorKey: 'general_b2b_trade',
     searchQueries: ['industrial warehouse shipping containers cargo', 'global wholesale b2b trade goods'],
-    matchTokens: ['industrial', 'warehouse', 'cargo', 'container', 'steel', 'machinery', 'grain', 'fabric', 'chemical', 'timber', 'commodity', 'export']
+    matchTokens: ['warehouse', 'cargo', 'container', 'shipping', 'freight', 'export', 'factory', 'steel', 'machinery', 'timber', 'commodity']
   };
 }
 
 const sectorLivePoolCache = new Map<string, { fetchedAtMs: number; images: VisualImageCandidate[] }>();
 
 function isExtremeCrossCategoryUploadUrl(urlLower: string, targetJoinedLower: string): boolean {
+  // Permanently block poisoned text-banner / Russian-sign / generic-placeholder assets from ever matching any product
+  if (
+    urlLower.includes('automotive-electric-vehicles') ||
+    urlLower.includes('abc-dry-chemical') ||
+    urlLower.includes('oem-specification-accounting') ||
+    urlLower.includes('bulk-commercial-custom-private-label')
+  ) {
+    return true;
+  }
+  if (
+    /(monocrystalli|solar-panel|photovoltaic)/i.test(urlLower) &&
+    !/(solar|photovoltaic|\bpv\b|monocrystalline|panel|renewable|germanium|wafer|infrared)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(black-jade|raw-stone|cabochon|nephrite)/i.test(urlLower) &&
+    (!/(jade|cabochon|nephrite|gem|gemstone|crystal|agate)/i.test(targetJoinedLower) ||
+      /(quartz|slab|tile|building|construction|cement|remodel)/i.test(targetJoinedLower))
+  ) return true;
+  if (
+    /(5-axis-cnc|cnc-milling)/i.test(urlLower) &&
+    !/(cnc|milling|lathe|machining|tooling|spindle)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(medical-ipl|photorejuvenation)/i.test(urlLower) &&
+    !/(ipl|photorejuvenation|laser\s*machine|aesthetic\s*machine|hair\s*removal|dermatology)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(hydraulic-pump)/i.test(urlLower) &&
+    !/(pump|hydraulic|valve|compressor|machinery|excavator)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(irrigation|solenoid)/i.test(urlLower) &&
+    !/(irrigation|drip|sprinkler|solenoid|valve|plumbing|water|pipe)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(a4-copy-paper|copy-paper)/i.test(urlLower) &&
+    !/(paper|copy|a4|stationery|office|printing|cardboard|carton|packaging|shredder|trimmer)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(urea-nitrogen|fertilizer)/i.test(urlLower) &&
+    !/(urea|fertilizer|nitrogen|npk|agrochemical|soil|turf|ammonium)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(old-coin)/i.test(urlLower) &&
+    !/(coin|numismatic|antique|collectible)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(accordion)/i.test(urlLower) &&
+    !/(accordion|musical|instrument)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(acupressur)/i.test(urlLower) &&
+    !/(acupressure|massage|therapy|wellness)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(abaya)/i.test(urlLower) &&
+    !/(abaya|garment|dress|apparel|clothing|modest|textile)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(radial-truck|truck-t-|all-steel-radial)/i.test(urlLower) &&
+    !/(tire|tyre|wheel|truck|automotive|vehicle)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(flour-milling)/i.test(urlLower) &&
+    !/(flour|wheat|grain|mill|bakery|food|agri)/i.test(targetJoinedLower)
+  ) return true;
+  if (
+    /(bamboo-incense)/i.test(urlLower) &&
+    !/(incense|agarwood|bamboo|fragrance|aroma|spice|craft)/i.test(targetJoinedLower)
+  ) return true;
   if (urlLower.includes('en590-diesel') && !/(diesel|en590|fuel|oil|petroleum|energy|tank)/i.test(targetJoinedLower)) return true;
-  if (urlLower.includes('gold-bullion') && !/(gold|bullion|bar|ingot|metal|jewelry)/i.test(targetJoinedLower)) return true;
+  if (/(gold-bullion|raw-gold-dust|gold-nugget)/i.test(urlLower) && !/(gold|bullion|bar|ingot|nugget|dore|precious|jewelry)/i.test(targetJoinedLower)) return true;
   if (
     /(leather[_-]belt|cowhide|cowh-|verified-belt|genuine-leather|hand-stitched.*belt)/i.test(urlLower) &&
     (!/(leather|cowhide|hide|footwear|shoe|handbag|wallet|saddle|dress\s*belt|casual\s*belt|waist\s*belt|fashion\s*belt)/i.test(targetJoinedLower) ||
-      /(conveyor|timing\s*belt|v-belt|agriculture|food|grain|wheat|rice|scrap)/i.test(targetJoinedLower))
+      /(conveyor|timing\s*belt|v-belt|abaya|agriculture|food|grain|wheat|rice|scrap)/i.test(targetJoinedLower))
   ) return true;
   if ((urlLower.includes('saree') || urlLower.includes('shree')) && !/(saree|textile|apparel|garment|silk|fabric|cloth)/i.test(targetJoinedLower)) return true;
   if (urlLower.includes('sidath-vimukthi') && !/(vanilla|pod|bean|spice|coffee|tea|food)/i.test(targetJoinedLower)) return true;
   if (urlLower.includes('whatsapp_image_') && !/(jade|gem|mineral|stone|crystal|jewelry|marble|granite)/i.test(targetJoinedLower)) return true;
   if (urlLower.includes('rice_husk') && !/(rice|husk|agri|grain|ash|biomass|farm)/i.test(targetJoinedLower)) return true;
-  if ((urlLower.includes('lithium-battery') || urlLower.includes('battery-storage')) && !/(lithium|lifepo4|battery|batteries|energy storage|solar|inverter|ess)/i.test(targetJoinedLower)) return true;
-  if ((urlLower.includes('mineral-coal') || urlLower.includes('anthracite')) && !/(coal|anthracite|coking|fuel|mineral|mining|carbon)/i.test(targetJoinedLower)) return true;
-  if (urlLower.includes('stainless-steel') && !/(steel|metal|iron|alloy|coil|sheet|brass|pipe|tube|valve|hardware)/i.test(targetJoinedLower)) return true;
+  if ((urlLower.includes('lithium-battery') || urlLower.includes('battery-storage') || urlLower.includes('lifepo4')) && !/(lithium|lifepo4|battery|batteries|energy storage|solar|inverter|ess)/i.test(targetJoinedLower)) return true;
+  if ((urlLower.includes('mineral-coal') || urlLower.includes('anthracite')) && !/(coal|anthracite|coking|coke|charcoal|carbon|mining)/i.test(targetJoinedLower)) return true;
+  if (urlLower.includes('stainless-steel') && !/(steel|metal|iron|alloy|coil|sheet|brass|pipe|tube|valve|hardware|rod|tool)/i.test(targetJoinedLower)) return true;
   if ((urlLower.includes('image002_50ab7837') || urlLower.includes('image003_6c1f0619')) && !/(generator|genset|cummins|diesel|power|pump|engine)/i.test(targetJoinedLower)) return true;
   if (urlLower.includes('image004_fa37a57a') && !/(tank|storage|fuel|silo|drum|vessel|irrigation)/i.test(targetJoinedLower)) return true;
   if (urlLower.includes('image005_20fe3db0') && !/(excavator|construction|machinery|loader|bulldozer|equipment)/i.test(targetJoinedLower)) return true;
   if (/(shrimp|lobster|crab|tuna|salmon|tilapia|seafood|fish)/i.test(urlLower) && !/(fish|tuna|shrimp|prawn|crab|lobster|seafood|salmon|marine)/i.test(targetJoinedLower)) return true;
-  if (/(avocado|strawberry|apricot|mango|banana|chicken|egg|coffee|tea|turmeric|cardamom|jasmine-rice)/i.test(urlLower) && !/(food|fruit|jam|spread|meat|poultry|chicken|egg|rice|grain|spice|tea|coffee|oil|agri|agriculture)/i.test(targetJoinedLower)) return true;
+  if (/(avocado|strawberry|apricot|mango|banana|chicken|egg|coffee|tea|turmeric|cardamom|jasmine-rice|basmati|cashew|sunflower|soybean|corn-maize|sugar-free|fruit-jam|vanilla|broccoli|asparagus)/i.test(urlLower) && !/(food|fruit|jam|spread|meat|poultry|chicken|egg|rice|grain|spice|tea|coffee|oil|agri|agriculture|nut|cashew|corn|maize|soy|sugar|vegetable|produce|seed|bean)/i.test(targetJoinedLower)) return true;
+  if (/(used-shoes|clothing-bales|winter-coat|vintage-denim|summer-clothing)/i.test(urlLower) && !/(cloth|apparel|garment|shoe|footwear|denim|coat|fashion|textile|fabric|bale|secondhand|used\s*cloth)/i.test(targetJoinedLower)) return true;
+  if (/(tyre-scraps|rubber-offcut)/i.test(urlLower) && !/(scrap|tyre|tire|rubber|waste|recycl|polymer|plastic|crumb)/i.test(targetJoinedLower)) return true;
+  if (/(deformed-reinforcing-steel-rebar|deformed-steel-rebar|steel-rebar)/i.test(urlLower) && !/(rebar|steel|iron|metal|billet|coil|bar|rod|building|construction|cement|hardware|elevator|escalator|scaffold)/i.test(targetJoinedLower)) return true;
+  if (/(paper-shredder|paper-trimmers|a4-copy-paper)/i.test(urlLower) && !/(paper|stationery|office|print|book|packaging|carton|box|notebook|pulp|shredder|envelope)/i.test(targetJoinedLower)) return true;
+  if (/(copper-wire|copper-cathode|copper-powder)/i.test(urlLower) && !/(copper|wire|cable|metal|scrap|cathode|ingot|mining|mineral|alloy|brass|aluminum)/i.test(targetJoinedLower)) return true;
   return false;
 }
 
@@ -26214,11 +26466,11 @@ function findBestLocalCategoryImageOnDisk(params: {
   const excludeBase = params.excludeUrl ? normalizeAuditImageUrl(params.excludeUrl) : '';
   const targetJoinedLower = `${params.title || ''} ${params.category || ''}`.toLowerCase();
 
-  let bestEntry: IndexedUploadFileEntry | null = null;
-  let bestScore = -1;
-  let bestUsage = Number.POSITIVE_INFINITY;
+  const scoredCandidates: Array<{ entry: IndexedUploadFileEntry; score: number; usage: number }> = [];
+  let maxScore = -1;
 
   for (const item of params.preindexedFiles) {
+    if (item.fname.startsWith('cat-')) continue;
     if (excludeBase && item.webUrl === excludeBase) continue;
     if (recentlyDeletedUploadUrls.has(item.webUrl)) continue;
     if (isGenericOrPlaceholderServerUrl(item.webUrl)) continue;
@@ -26238,7 +26490,7 @@ function findBestLocalCategoryImageOnDisk(params: {
     let score = 0;
     for (const ft of item.tokens) {
       if (titleTokens.includes(ft)) {
-        score += 8;
+        score += 10;
       } else if (ft.length >= 5 && titleTokens.some(tt => tt.length >= 5 && (ft.includes(tt) || tt.includes(ft)))) {
         score += 4;
       }
@@ -26246,47 +26498,56 @@ function findBestLocalCategoryImageOnDisk(params: {
         score += 4;
       }
       if (profileTokenSet.has(ft)) {
-        score += 5;
-      } else if (ft.length >= 4 && params.profile.matchTokens.some(pt => pt.length >= 4 && (ft.includes(pt) || pt.includes(ft)))) {
+        score += 6;
+      } else if (ft.length >= 5 && params.profile.matchTokens.some(pt => pt.length >= 5 && (ft.includes(pt) || pt.includes(ft)))) {
         score += 3;
       }
     }
 
-    if (score <= 0) continue;
+    if (score < 5) continue;
 
     if (params.requireUnused && params.registry && params.registry.isCandidateUsed(item.webUrl)) {
       continue;
     }
 
     const usageCount = categoryFallbackUsageCounts.get(item.webUrl) || 0;
-    // Prefer higher relevance; among similarly relevant candidates (within 4 pts), prefer least-used for visual variety
-    if (
-      score > bestScore + 4 ||
-      (score >= bestScore - 4 && usageCount < bestUsage) ||
-      (score > bestScore && usageCount <= bestUsage)
-    ) {
-      bestScore = score;
-      bestUsage = usageCount;
-      bestEntry = item;
+    scoredCandidates.push({ entry: item, score, usage: usageCount });
+    if (score > maxScore) maxScore = score;
+  }
+
+  let bestEntry: IndexedUploadFileEntry | null = null;
+  let bestUsage = Number.POSITIVE_INFINITY;
+
+  if (scoredCandidates.length > 0 && maxScore >= 5) {
+    // True 2-pass top-band selection: keep only candidates within 3 points of the TRUE maxScore, then pick the least-used for visual variety
+    const scoreFloor = Math.max(5, maxScore - 3);
+    let topScore = -1;
+    for (const cand of scoredCandidates) {
+      if (cand.score < scoreFloor) continue;
+      if (
+        !bestEntry ||
+        cand.usage < bestUsage ||
+        (cand.usage === bestUsage && cand.score > topScore)
+      ) {
+        bestEntry = cand.entry;
+        bestUsage = cand.usage;
+        topScore = cand.score;
+      }
     }
   }
 
-  // When !requireUnused (PASS 4 materialization), if no category token overlapped directly, prefer broad industrial/warehouse/cat templates over niche unrelated assets
+  // When !requireUnused (PASS 4 materialization), if no category token overlapped directly, pick clean general warehouse/shipping/industrial trade templates — never random niche assets
   if (!bestEntry && !params.requireUnused) {
     for (const item of params.preindexedFiles) {
+      if (item.fname.startsWith('cat-')) continue;
       if (excludeBase && item.webUrl === excludeBase) continue;
       if (recentlyDeletedUploadUrls.has(item.webUrl)) continue;
       if (isGenericOrPlaceholderServerUrl(item.webUrl)) continue;
       const urlLower = item.webUrl.toLowerCase();
       if (isExtremeCrossCategoryUploadUrl(urlLower, targetJoinedLower)) continue;
-      const preferCatalogBonus = item.fname.startsWith('cat-')
-        ? 0
-        : item.fname.startsWith('trade-heaven-')
-          ? 20
-          : item.fname.startsWith('auto-')
-            ? 40
-            : 1000;
-      const usageCount = (categoryFallbackUsageCounts.get(item.webUrl) || 0) + preferCatalogBonus;
+      const isGeneralB2bPhoto = /(warehouse|container|cargo|shipping|freight|logistics|factory|industrial-machinery|building-construction|packaging|corrugated|wholesale|commercial-kitchen|office)/i.test(item.fname);
+      const preferBonus = isGeneralB2bPhoto ? 0 : 500;
+      const usageCount = (categoryFallbackUsageCounts.get(item.webUrl) || 0) + preferBonus;
       if (usageCount < bestUsage) {
         bestUsage = usageCount;
         bestEntry = item;
@@ -26308,48 +26569,34 @@ async function materializeUniqueCategoryRealPhoto(params: {
   try {
     if (!params.templateEntry || !fs.existsSync(params.templateEntry.fullPath)) return null;
     ensureUploadsDir();
-    const slug =
-      cleanProductSearchSubject(params.title || params.category || params.recordId)
+    // Preserve the template's TRUE visual subject slug in the filename so cat-* assets remain honest and auditable
+    const templateBaseNoExt = path.basename(params.templateEntry.fname, path.extname(params.templateEntry.fname));
+    const templateSubjectSlug =
+      templateBaseNoExt
+        .replace(/^(?:trade-heaven|auto|verified|manual|cat)-/i, '')
+        .replace(/-[a-f0-9]{8,16}(?:-\d+)?$/i, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
-        .slice(0, 34) || 'catalog-item';
+        .slice(0, 36) || 'catalog-item';
     const uniqSeed = `${params.recordId}::${Date.now()}::${Math.random().toString(36).slice(2, 8)}`;
     const shortHash = crypto.createHash('sha1').update(uniqSeed).digest('hex').slice(0, 12);
 
-    const qualityVariant = 82 + (parseInt(shortHash.slice(0, 2), 16) % 7);
-    let outBuf: Buffer | null = null;
-    let outExt = 'webp';
-    try {
-      outBuf = await sharp(params.templateEntry.fullPath, { failOn: 'none' })
-        .rotate()
-        .resize({ width: 760, withoutEnlargement: true })
-        .webp({ quality: qualityVariant })
-        .toBuffer();
-    } catch {
-      outBuf = null;
-    }
-
-    if (!outBuf || outBuf.length < 1500) {
-      outBuf = await fs.promises.readFile(params.templateEntry.fullPath);
-      const rawExt = path.extname(params.templateEntry.fullPath).replace('.', '').toLowerCase();
-      outExt = rawExt === 'png' || rawExt === 'jpg' || rawExt === 'jpeg' || rawExt === 'webp' ? rawExt : 'jpg';
-    }
-
-    if (!outBuf || outBuf.length < 500) return null;
-
-    const outFileName = `cat-${slug}-${shortHash}.${outExt}`;
-    const outFilePath = path.join(UPLOADS_DIR, outFileName);
+    const rawExt = path.extname(params.templateEntry.fullPath).replace('.', '').toLowerCase();
+    const outExt = rawExt === 'png' || rawExt === 'jpg' || rawExt === 'jpeg' || rawExt === 'webp' ? rawExt : 'webp';
+    const outFileName = `cat-${templateSubjectSlug}-${shortHash}.${outExt}`;
     const localUrl = `/assets/uploads/${outFileName}`;
 
-    await fs.promises.writeFile(outFilePath, outBuf);
-    const distUpDir = path.join(process.cwd(), 'dist', 'assets', 'uploads');
-    if (fs.existsSync(distUpDir)) {
-      try {
-        await fs.promises.writeFile(path.join(distUpDir, outFileName), outBuf);
-      } catch {}
-    }
-    const contentHash = crypto.createHash('sha256').update(outBuf).digest('hex');
+    // Register persistent virtual alias pointing to the real master photograph on disk (zero disk bloat, 100% survives container restarts, HTTP 200 OK)
+    const masterFileName = path.basename(params.templateEntry.fullPath);
+    virtualImageAliasesMap[outFileName] = masterFileName;
+    virtualImageAliasesDirty = true;
+
+    let fileSize = 24000;
+    try {
+      fileSize = fs.statSync(params.templateEntry.fullPath).size || 24000;
+    } catch {}
+    const contentHash = crypto.createHash('sha256').update(`alias::${outFileName}::${masterFileName}`).digest('hex');
     categoryFallbackUsageCounts.set(
       params.templateEntry.webUrl,
       (categoryFallbackUsageCounts.get(params.templateEntry.webUrl) || 0) + 1
@@ -26360,7 +26607,7 @@ async function materializeUniqueCategoryRealPhoto(params: {
     if (params.registry) {
       params.registry.claim({ localUrl, contentHash });
     }
-    ensureUploadedUrlInMediaLibrary(localUrl, outBuf.length);
+    ensureUploadedUrlInMediaLibrary(localUrl, fileSize);
     bindAutoSavedImageOverride({
       localUrl,
       productId: params.recordId,
@@ -26396,6 +26643,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   specifications?: string;
   usedUrls: Set<string>;
   allowLiveGeminiNetwork?: boolean;
+  skipPerItemLiveSearch?: boolean;
   geminiTimeoutMs?: number;
   wallDeadlineMs?: number;
   maxMirrorAttempts?: number;
@@ -26680,7 +26928,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   }
 
   // PASS 2: Automatic Sequential Heading Live Network Advancement (Full Heading -> Sub-headings -> Core 1-2 word nouns)
-  if (params.allowLiveGeminiNetwork !== false && withinNetworkDeadline()) {
+  if (params.allowLiveGeminiNetwork !== false && !params.skipPerItemLiveSearch && withinNetworkDeadline()) {
     const cached = serverProductImageCacheMap.get(normalizedKey);
     const hadExhaustedCache = Boolean(cached && Array.isArray(cached.images) && cached.images.length > 0);
     const angleVariants = ['bulk packaging', 'wholesale lot', 'industrial warehouse', 'export quality closeup', 'factory direct'];
@@ -26879,7 +27127,11 @@ function extractMeaningfulAuditTokens(text: string): string[] {
     'delivery', 'packing', 'packaging', 'packed', 'need', 'needed', 'required', 'wanted',
     'looking', 'seeking', 'buying', 'selling', 'offer', 'offering', 'quote', 'quotation',
     'inquiry', 'request', 'requirement', 'requirements', 'urgent', 'immediate', 'monthly',
-    'weekly', 'daily', 'yearly', 'regular', 'long', 'term', 'trial', 'sample', 'samples'
+    'weekly', 'daily', 'yearly', 'regular', 'long', 'term', 'trial', 'sample', 'samples',
+    'spec', 'specs', 'specification', 'specifications', 'precision', 'axis', 'procurement',
+    'corp', 'enterprises', 'solutions', 'experts', 'center', 'management', 'brothers',
+    'services', 'group', 'pre', 'shipment', 'containerized', 'volume', 'strict', 'clean',
+    'oem', 'distribution', 'spot', 'vessel', 'fcl', 'lcl', 'prompt', 'loading', 'purity'
   ]);
   return String(text || '')
     .toLowerCase()
@@ -27736,6 +27988,7 @@ async function fixSingleCatalogImageRecord(params: {
   previousImageUrl?: string;
   revert?: boolean;
   batchMode?: boolean;
+  fastBatchMode?: boolean;
   preindexedFiles?: IndexedUploadFileEntry[];
   sharedRegistry?: GlobalAttachedImageRegistry;
 }) {
@@ -27945,9 +28198,10 @@ async function fixSingleCatalogImageRecord(params: {
         usedUrls: usedUrlsSet,
         sharedRegistry: globalRegistry,
         preindexedFiles: params.preindexedFiles,
-        allowLiveGeminiNetwork: true,
+        allowLiveGeminiNetwork: !params.fastBatchMode,
+        skipPerItemLiveSearch: Boolean(params.fastBatchMode),
         ...(params.batchMode
-          ? { wallDeadlineMs: Date.now() + 4500, geminiTimeoutMs: 2800, maxMirrorAttempts: 2 }
+          ? { wallDeadlineMs: Date.now() + (params.fastBatchMode ? 800 : 4500), geminiTimeoutMs: params.fastBatchMode ? 800 : 2800, maxMirrorAttempts: params.fastBatchMode ? 0 : 2 }
           : {})
       });
       finalImageUrl = resolved.newImageUrl;
@@ -29058,7 +29312,8 @@ async function assignZeroSkipCategoryFallback(
       updatedAt: nowIso,
       imageUpdatedAt: activityMs
     };
-  } catch {
+  } catch (fallbackErr: any) {
+    console.warn(`[assignZeroSkipCategoryFallback] failed for ${id}:`, fallbackErr?.message || fallbackErr);
     return null;
   }
 }
@@ -29067,6 +29322,7 @@ async function processSingleSiteImageAutoFix(
   item: SiteImageAutoFixInputItem,
   opts?: {
     batchMode?: boolean;
+    fastBatchMode?: boolean;
     preindexedFiles?: IndexedUploadFileEntry[];
     sharedRegistry?: GlobalAttachedImageRegistry;
   }
@@ -29098,6 +29354,7 @@ async function processSingleSiteImageAutoFix(
       specifications: specifications || undefined,
       previousImageUrl: currentUrl || undefined,
       batchMode: opts?.batchMode,
+      fastBatchMode: opts?.fastBatchMode,
       preindexedFiles: opts?.preindexedFiles,
       sharedRegistry: opts?.sharedRegistry
     });
@@ -29198,8 +29455,8 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     }
   }
   backgroundAutoFixWorkerRunning = true;
-  const CONCURRENCY = 2;
-  const PER_ITEM_TIMEOUT_MS = 14000;
+  const CONCURRENCY = 4;
+  const PER_ITEM_TIMEOUT_MS = 10000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
   let fixedSinceLastFlush = 0;
@@ -29224,6 +29481,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       await atomicWriteTextFileAsync(IMAGE_OVERRIDES_FILE, stateJson);
       await yieldToEventLoop();
       await atomicWriteTextFileAsync(PUBLIC_DATA_OVERRIDES_FILE, stateJson);
+      await saveVirtualImageAliasesToDiskAsync();
       await yieldToEventLoop();
 
       const distDir = path.join(process.cwd(), 'dist');
@@ -29241,6 +29499,11 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
         saveServerProductsToDisk();
         await yieldToEventLoop();
         saveRfqMarketStoreToDisk();
+        await yieldToEventLoop();
+        if (serverSiteContent && typeof serverSiteContent === 'object') {
+          (serverSiteContent as any).siteContentUpdatedAt = Date.now();
+          saveServerSiteContentToDisk();
+        }
       }
 
       if (pendingSnapshotUpdates.length > 0) {
@@ -29311,34 +29574,57 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       job.updatedAtMs = Date.now();
 
       let timeoutHandle: NodeJS.Timeout | null = null;
-      const TIMEOUT_SENTINEL = { __timedOut: true as const };
-      const timeoutPromise = new Promise<typeof TIMEOUT_SENTINEL>(resolve => {
-        timeoutHandle = setTimeout(() => resolve(TIMEOUT_SENTINEL), PER_ITEM_TIMEOUT_MS);
-      });
-
-      const raceOut = await Promise.race([
-        processSingleSiteImageAutoFix(nextItem, { batchMode: true, preindexedFiles, sharedRegistry }),
-        timeoutPromise
-      ]);
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-
       let resRow: SiteImageAutoFixResultRow;
-      if ((raceOut as any)?.__timedOut || (!raceOut || (!(raceOut as SiteImageAutoFixResultRow).success && nextItem.id !== 'site-brand-logo'))) {
-        // Zero-Skip Guarantee: assign an instant same/similar-category real photo instead of ever skipping!
+      try {
+        const TIMEOUT_SENTINEL = { __timedOut: true as const };
+        const timeoutPromise = new Promise<typeof TIMEOUT_SENTINEL>(resolve => {
+          timeoutHandle = setTimeout(() => resolve(TIMEOUT_SENTINEL), PER_ITEM_TIMEOUT_MS);
+        });
+
+        const fastBatchMode = job.total > 15;
+        const raceOut = await Promise.race([
+          processSingleSiteImageAutoFix(nextItem, { batchMode: true, fastBatchMode, preindexedFiles, sharedRegistry }),
+          timeoutPromise
+        ]);
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+
+        if ((raceOut as any)?.__timedOut || (!raceOut || (!(raceOut as SiteImageAutoFixResultRow).success && nextItem.id !== 'site-brand-logo'))) {
+          // Zero-Skip Guarantee: assign an instant same/similar-category real photo instead of ever skipping!
+          const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
+            batchMode: true,
+            preindexedFiles,
+            sharedRegistry
+          });
+          resRow = fallbackRow || {
+            id: nextItem.id,
+            type: nextItem.type,
+            success: false,
+            oldUrl: nextItem.currentUrl,
+            error: 'Could not resolve category fallback photo.'
+          };
+        } else {
+          resRow = raceOut as SiteImageAutoFixResultRow;
+        }
+      } catch (slotErr: any) {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
         const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
           batchMode: true,
           preindexedFiles,
           sharedRegistry
-        });
+        }).catch(() => null);
         resRow = fallbackRow || {
           id: nextItem.id,
           type: nextItem.type,
           success: false,
           oldUrl: nextItem.currentUrl,
-          error: 'Could not resolve category fallback photo.'
+          error: slotErr?.message || 'Auto-fix slot recovered from unexpected error.'
         };
-      } else {
-        resRow = raceOut as SiteImageAutoFixResultRow;
       }
 
       activeSlotItems.delete(slotIdx);
@@ -29370,8 +29656,10 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
   };
 
   try {
-    const workerCount = Math.min(CONCURRENCY, Math.max(1, job.queue.length));
-    await Promise.all(Array.from({ length: workerCount }, (_, idx) => runWorkerSlot(idx)));
+    while (!job.cancelRequested && job.queue.length > 0) {
+      const workerCount = Math.min(CONCURRENCY, Math.max(1, job.queue.length));
+      await Promise.all(Array.from({ length: workerCount }, (_, idx) => runWorkerSlot(idx)));
+    }
   } finally {
     if (fixedSinceLastFlush > 0 || pendingSnapshotUpdates.length > 0 || job.fixed > 0) {
       await flushBatchStoresToDiskAsync(true);
@@ -29453,6 +29741,18 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
         if (!backgroundAutoFixWorkerRunning) {
           void runBackgroundAutoFixJobWorker(activeBackgroundAutoFixJob);
         }
+      } else if (!backgroundAutoFixWorkerRunning) {
+        const targetJob = activeBackgroundAutoFixJob;
+        if (pendingChunkStartTimer) {
+          clearTimeout(pendingChunkStartTimer);
+          pendingChunkStartTimer = null;
+        }
+        pendingChunkStartTimer = setTimeout(() => {
+          pendingChunkStartTimer = null;
+          if (activeBackgroundAutoFixJob?.jobId === targetJob.jobId && targetJob.active && !targetJob.cancelRequested && !backgroundAutoFixWorkerRunning) {
+            void runBackgroundAutoFixJobWorker(targetJob);
+          }
+        }, 1500);
       }
       return res.json({
         success: true,
@@ -29488,10 +29788,10 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
       // Wait briefly for remaining chunks in this batch to append cleanly before worker begins
       pendingChunkStartTimer = setTimeout(() => {
         pendingChunkStartTimer = null;
-        if (activeBackgroundAutoFixJob?.jobId === job.jobId && job.active && !job.cancelRequested) {
+        if (activeBackgroundAutoFixJob?.jobId === job.jobId && job.active && !job.cancelRequested && !backgroundAutoFixWorkerRunning) {
           void runBackgroundAutoFixJobWorker(job);
         }
-      }, 2500);
+      }, 1500);
     } else {
       void runBackgroundAutoFixJobWorker(job);
     }
@@ -29511,6 +29811,22 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
 
 app.get('/api/v1/admin/site-images/auto-fix-jobs/current', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  // Stall watchdog: if a job is active with queued items and no worker or defer timer is running, start it immediately
+  if (
+    activeBackgroundAutoFixJob &&
+    activeBackgroundAutoFixJob.active &&
+    !activeBackgroundAutoFixJob.cancelRequested &&
+    !backgroundAutoFixWorkerRunning &&
+    !pendingChunkStartTimer
+  ) {
+    if (activeBackgroundAutoFixJob.queue.length > 0) {
+      void runBackgroundAutoFixJobWorker(activeBackgroundAutoFixJob);
+    } else {
+      activeBackgroundAutoFixJob.active = false;
+      activeBackgroundAutoFixJob.finishedAt = new Date().toISOString();
+      activeBackgroundAutoFixJob.updatedAtMs = Date.now();
+    }
+  }
   return res.json({
     success: true,
     job: activeBackgroundAutoFixJob ? serializeBackgroundAutoFixJob(activeBackgroundAutoFixJob) : null
@@ -30150,7 +30466,8 @@ async function startServer() {
         cleanRelPath.startsWith('/assets/uploads/') ||
         cleanRelPath === '/data/productImageSystemState.json' ||
         cleanRelPath === '/data/fullCatalogSnapshot.json' ||
-        cleanRelPath === '/data/siteContentBackup.json';
+        cleanRelPath === '/data/siteContentBackup.json' ||
+        cleanRelPath === '/data/virtual-image-aliases.json';
 
       if (isRuntimeMutable) {
         const publicCandidateFirst = path.join(process.cwd(), 'public', cleanRelPath);

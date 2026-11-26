@@ -93,7 +93,7 @@
         "name": "Automotive & Electric Vehicles",
         "description": "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         "iconName": "Car",
-        "image": "/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp",
+        "image": "/assets/uploads/cat-automotive-motorcycle-parts-prod-3c1aacf43334.webp",
         "badge": "High Growth",
         "productCount": "32,900+ Products"
       },
@@ -206,7 +206,7 @@
         "category": "Agro Commodities"
       }
     ],
-    "onboardingBannerImage": "/assets/uploads/auto-banner-7ef6e7caa09a.jpg"
+    "onboardingBannerImage": "/assets/uploads/trade-heaven-homepage-partner-onboarding-banner-s-72ac574fd31a.webp"
   },
   "productsPage": {
     "title": "Global Wholesale Product Catalog",
@@ -355,7 +355,7 @@
     "pinnedCategoryIds": [],
     "sectionLayouts": {}
   },
-  "siteContentUpdatedAt": 1795634295860,
+  "siteContentUpdatedAt": 1795688843826,
   "escrow": {
     "bannerImage": ""
   },

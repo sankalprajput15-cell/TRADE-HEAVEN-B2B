@@ -76,6 +76,8 @@ class BackgroundAutoFixService {
   private bootHydrated = false;
   private lastServerOverridesSyncAt = 0;
   private lastSyncedFixedCount = 0;
+  private lastServerProgressAtMs = 0;
+  private lastServerCompletedCount = -1;
 
   private state: BackgroundAutoFixSnapshot = {
     active: false,
@@ -306,6 +308,11 @@ class BackgroundAutoFixService {
     if (this.state.jobId !== job.jobId) {
       this.processedServerResultKeys.clear();
       this.lastSyncedFixedCount = 0;
+      this.lastServerProgressAtMs = Date.now();
+      this.lastServerCompletedCount = Number(job.completed || 0);
+    } else if (Number(job.completed || 0) !== this.lastServerCompletedCount) {
+      this.lastServerProgressAtMs = Date.now();
+      this.lastServerCompletedCount = Number(job.completed || 0);
     }
 
     this.state.jobId = job.jobId;
@@ -413,6 +420,19 @@ class BackgroundAutoFixService {
       const json = await res.json().catch(() => null);
       if (json?.success && json.job) {
         this.applyServerJobPayload(json.job);
+      } else if (json?.success && !json.job && this.state.active && this.state.mode === 'server-job') {
+        // Server has no active job (e.g., server restarted or job completed & cleared); immediately clear client ghost state so Chrome never stays stuck
+        this.state.active = false;
+        this.state.stopping = false;
+        this.state.mode = 'idle';
+        this.state.currentItemId = '';
+        this.state.currentLabel = '';
+        this.state.queuedIds = [];
+        this.stopPollingServerJob();
+        this.emit();
+        void productImageManagerService
+          .syncFromServer(true, false, { bypassCooldown: true, emitEvenIfUnchanged: true })
+          .catch(() => {});
       }
     } catch {
       // Transient network error while navigating; keep polling cleanly
@@ -458,9 +478,15 @@ class BackgroundAutoFixService {
     // 1. Try submitting to the persistent server-side background job queue first (in 600-item chunks so large batches never hit body-size or proxy timeouts)
     let latestServerJob: ServerJobPayload | null = null;
     let serverAccepted = false;
+    let sentFinalChunk = false;
     try {
       const CHUNK_SIZE = 600;
-      const isIdleFreshStart = !this.state.active || this.state.mode !== 'server-job';
+      const isStalledJob =
+        this.state.active &&
+        this.state.mode === 'server-job' &&
+        Date.now() - (this.lastServerProgressAtMs || 0) > 10000;
+      const isIdleFreshStart =
+        !this.state.active || this.state.mode !== 'server-job' || isStalledJob || items.length >= 25;
 
       for (let i = 0; i < items.length; i += CHUNK_SIZE) {
         const chunk = items.slice(i, i + CHUNK_SIZE);
@@ -484,6 +510,7 @@ class BackgroundAutoFixService {
               latestServerJob = json.job;
               serverAccepted = true;
               chunkDone = true;
+              if (!deferStart) sentFinalChunk = true;
               if (i === 0) {
                 this.applyServerJobPayload(json.job);
               }
@@ -497,6 +524,24 @@ class BackgroundAutoFixService {
           }
         }
         if (!chunkDone) break;
+      }
+
+      // If an intermediate chunk failed after chunk 0 was accepted with deferStart=true, immediately nudge the server with deferStart=false so the worker starts right away
+      if (serverAccepted && !sentFinalChunk && items.length > 0) {
+        try {
+          const res = await fetch('/api/v1/admin/site-images/auto-fix-jobs', {
+            method: 'POST',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ items: [items[0]], replaceExisting: false, deferStart: false })
+          });
+          const json = await res.json().catch(() => null);
+          if (res.ok && json?.success && json.job) {
+            latestServerJob = json.job;
+          }
+        } catch {
+          // Server pendingChunkStartTimer will auto-start within 1.5s regardless
+        }
       }
     } catch {
       // Fall back to module-level browser background runner ONLY if server never accepted the job
