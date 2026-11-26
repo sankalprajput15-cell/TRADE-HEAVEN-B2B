@@ -395,7 +395,7 @@ class BackgroundAutoFixService {
     if (typeof window === 'undefined' || this.pollTimer !== null) return;
     this.pollTimer = window.setInterval(() => {
       void this.pollServerJobOnce();
-    }, 1300);
+    }, 3000);
   }
 
   private stopPollingServerJob() {

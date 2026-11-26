@@ -442,7 +442,7 @@ class ProductImageManagerService {
         ) {
           this.syncFromServer(true).catch(() => {});
         }
-      }, 12000);
+      }, 35000);
 
       // Immediately refresh authoritative server image state on login/logout so guests never see stale pre-upload images
       window.addEventListener('tradeheaven_auth_changed', () => {
