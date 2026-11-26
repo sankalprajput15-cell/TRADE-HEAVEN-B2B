@@ -3958,6 +3958,60 @@ switch ($action) {
     // -------------------------------------------------------------
     // Product Image Overrides & Upload Persistence (PHP / cPanel)
     // -------------------------------------------------------------
+    case 'serve_image':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        $req_file = basename(trim((string)($_GET['file'] ?? '')));
+        if ($req_file === '') {
+            http_response_code(404);
+            exit;
+        }
+        $target_path = $uploads_dir . '/' . $req_file;
+        if (!file_exists($target_path)) {
+            $aliases = [];
+            foreach ([$uploads_dir . '/virtual-image-aliases.json', __DIR__ . '/data/virtual-image-aliases.json', __DIR__ . '/public/data/virtual-image-aliases.json'] as $af) {
+                if (file_exists($af)) {
+                    $parsed_a = json_decode(@file_get_contents($af), true);
+                    if (is_array($parsed_a)) {
+                        $aliases = $parsed_a;
+                        break;
+                    }
+                }
+            }
+            $cur = $req_file;
+            $hops = 0;
+            while (isset($aliases[$cur]) && $hops < 8) {
+                $cur = basename((string)$aliases[$cur]);
+                $hops++;
+                if (file_exists($uploads_dir . '/' . $cur)) {
+                    $target_path = $uploads_dir . '/' . $cur;
+                    break;
+                }
+            }
+        }
+        if (!file_exists($target_path) || !is_file($target_path)) {
+            http_response_code(404);
+            exit;
+        }
+        $ext = strtolower(pathinfo($target_path, PATHINFO_EXTENSION));
+        $mime_map = [
+            'webp' => 'image/webp',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'avif' => 'image/avif',
+            'svg'  => 'image/svg+xml'
+        ];
+        $mime = $mime_map[$ext] ?? 'image/webp';
+        header("Content-Type: " . $mime);
+        header("Cache-Control: public, max-age=31536000, immutable");
+        header("Content-Length: " . filesize($target_path));
+        readfile($target_path);
+        exit;
+
     case 'get_product_images':
     case 'product_images':
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -3970,16 +4024,50 @@ switch ($action) {
         if (!is_dir($uploads_dir)) {
             @mkdir($uploads_dir, 0775, true);
         }
+        $include_media = !empty($_GET['includeMedia']) || (strpos((string)($_GET['__route'] ?? $_SERVER['REQUEST_URI'] ?? ''), 'admin/') !== false);
+        $aliases = [];
+        foreach ([$uploads_dir . '/virtual-image-aliases.json', __DIR__ . '/data/virtual-image-aliases.json', __DIR__ . '/public/data/virtual-image-aliases.json'] as $af) {
+            if (file_exists($af)) {
+                $parsed_a = json_decode(@file_get_contents($af), true);
+                if (is_array($parsed_a)) {
+                    $aliases = $parsed_a;
+                    break;
+                }
+            }
+        }
+        $resolve_upload_url = function($raw_url) use ($uploads_dir, $aliases) {
+            $u = trim((string)$raw_url);
+            if ($u === '') return '';
+            $q_pos = strpos($u, '?');
+            $clean_u = ($q_pos !== false) ? substr($u, 0, $q_pos) : $u;
+            $qs = ($q_pos !== false) ? substr($u, $q_pos) : '';
+            if (strpos($clean_u, '/assets/uploads/') !== 0) {
+                return $u;
+            }
+            $fname = basename(substr($clean_u, strlen('/assets/uploads/')));
+            if (file_exists($uploads_dir . '/' . $fname)) {
+                return '/assets/uploads/' . $fname . $qs;
+            }
+            $cur = $fname;
+            $hops = 0;
+            while (isset($aliases[$cur]) && $hops < 8) {
+                $cur = basename((string)$aliases[$cur]);
+                $hops++;
+                if (file_exists($uploads_dir . '/' . $cur)) {
+                    return '/assets/uploads/' . $cur . $qs;
+                }
+            }
+            return '';
+        };
         $state = th_load_merged_image_state($uploads_dir);
-        // Filter out broken local /assets/uploads/* paths missing on disk and resolve verified-<id> if present
         $clean_overrides = [];
         foreach ($state['overrides'] as $ov_pid => $ov_entry) {
             if (!is_array($ov_entry) || empty($ov_entry['primary'])) continue;
             $prim = (string)$ov_entry['primary'];
             $clean_prim = strtok($prim, '?');
             if (strpos($clean_prim, '/assets/uploads/') === 0) {
-                $fname = basename(substr($clean_prim, strlen('/assets/uploads/')));
-                if (!file_exists($uploads_dir . '/' . $fname)) {
+                $resolved_prim = $resolve_upload_url($prim);
+                if ($resolved_prim === '') {
                     $found_verified = null;
                     foreach (['webp', 'jpg', 'jpeg', 'png'] as $ext) {
                         if (file_exists($uploads_dir . '/verified-' . basename((string)$ov_pid) . '.' . $ext)) {
@@ -3988,23 +4076,45 @@ switch ($action) {
                         }
                     }
                     if ($found_verified) {
-                        $ov_entry['primary'] = $found_verified;
-                        $ov_entry['gallery'] = [$found_verified];
+                        $resolved_prim = $found_verified;
                     } else {
                         continue;
                     }
                 }
+                if (!$include_media) {
+                    // For public visitors, return the direct physical file URL on disk so Apache serves it in 1 hop with 0 PHP overhead
+                    $ov_entry['primary'] = strtok($resolved_prim, '?');
+                }
             }
-            $clean_overrides[$ov_pid] = $ov_entry;
+            if (!$include_media) {
+                // Ultra-lean public payload (~90% smaller than full admin state)
+                $slim_entry = ['primary' => $ov_entry['primary']];
+                if (!empty($ov_entry['gallery']) && is_array($ov_entry['gallery']) && count($ov_entry['gallery']) > 1) {
+                    $slim_gal = [];
+                    foreach (array_slice($ov_entry['gallery'], 0, 4) as $g_url) {
+                        $rg = $resolve_upload_url($g_url);
+                        if ($rg !== '') $slim_gal[] = strtok($rg, '?');
+                    }
+                    if (count($slim_gal) > 1) $slim_entry['gallery'] = $slim_gal;
+                }
+                if (!empty($ov_entry['locked'])) $slim_entry['locked'] = true;
+                if (!empty($ov_entry['imageUpdatedAt'])) $slim_entry['imageUpdatedAt'] = $ov_entry['imageUpdatedAt'];
+                $clean_overrides[$ov_pid] = $slim_entry;
+            } else {
+                $clean_overrides[$ov_pid] = $ov_entry;
+            }
         }
         $state['overrides'] = $clean_overrides;
-        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-        header("Pragma: no-cache");
+        if (!$include_media) {
+            $state['mediaLibrary'] = [];
+            $state['urlReplacements'] = [];
+            $state['productActivityTimestamps'] = [];
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
             "data" => $state
-        ]);
+        ], JSON_UNESCAPED_SLASHES);
         break;
 
     case 'upload_product_image':

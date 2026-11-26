@@ -42,12 +42,12 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
     <span className={`inline-flex items-center gap-1.5 shrink-0 ${className}`}>
       {!imgFailed && info.code !== 'UN' ? (
         <img
-          src={info.flagUrl}
+          src={info.flagUrl.replace('/w80/', '/w40/')}
           alt={`${info.name} flag`}
           title={`${info.name} (${info.code})`}
           width={dims.w}
           height={dims.h}
-          loading="lazy"
+          loading="eager"
           decoding="async"
           onError={() => setImgFailed(true)}
           className={`${SIZE_CLASSES[size]} object-cover border border-slate-300/80 shrink-0 bg-slate-100 ${flagClassName}`}

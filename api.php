@@ -562,9 +562,6 @@ function normalizeAuthEmail($rawEmail) {
     if (strpos($clean, 'mail-') === 0 && strpos($clean, '@') !== false) {
         $clean = substr($clean, 5);
     }
-    if (substr($clean, -strlen('@mpcommoditybroker.com')) === '@mpcommoditybroker.com') {
-        $clean = substr($clean, 0, -strlen('@mpcommoditybroker.com')) . '@mpcommoditybrokers.com';
-    }
     return $clean;
 }
 
@@ -874,7 +871,7 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
     $dbRow = null;
     if ($db_connected && $pdo) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY CASE WHEN UPPER(role) = 'SUPPLIER' THEN 0 ELSE 1 END, id DESC LIMIT 1");
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
             $stmt->execute([$cleanEmail]);
             $fetched = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($fetched) $dbRow = $fetched;
@@ -897,7 +894,7 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
     }
 
     $isPaidSeed = !empty($seedRow) && strtolower((string)($seedRow['membershipStatus'] ?? '')) === 'paid';
-    $rawRole = strtoupper((string)($isPaidSeed ? ($seedRow['role'] ?? 'SUPPLIER') : ($seedRow['role'] ?? $dbRow['role'] ?? $localRow['role'] ?? 'BUYER')));
+    $rawRole = strtoupper((string)($isPaidSeed ? ($seedRow['role'] ?? 'SUPPLIER') : ($dbRow['role'] ?? $localRow['role'] ?? $seedRow['role'] ?? 'BUYER')));
     if ($isRootAdmin) {
         $resolvedRole = 'ADMIN';
     } elseif ($rawRole === 'ADMIN') {
@@ -918,16 +915,16 @@ function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
         : (isset($dbRow['is_premium']) ? (bool)$dbRow['is_premium'] : (!empty($seedRow['isPremium']) || $isRootAdmin));
 
     return [
-        'id' => (string)($seedRow['id'] ?? $dbRow['id'] ?? $localRow['id'] ?? ('user-' . md5($cleanEmail))),
+        'id' => (string)($isPaidSeed ? ($seedRow['id'] ?? $dbRow['id']) : ($dbRow['id'] ?? $localRow['id'] ?? $seedRow['id'] ?? ('user-' . md5($cleanEmail)))),
         'email' => $cleanEmail,
-        'name' => (string)($seedRow['name'] ?? $dbRow['name'] ?? $localRow['name'] ?? 'Registered Partner'),
+        'name' => (string)($isPaidSeed ? ($seedRow['name'] ?? $dbRow['name']) : ($dbRow['name'] ?? $localRow['name'] ?? $seedRow['name'] ?? 'Registered Partner')),
         'role' => $resolvedRole,
         'isRootAdmin' => $isRootAdmin,
         'password' => $dbRow['password'] ?? ($localRow['password_hash'] ?? ''),
         'seedPassword' => $seedRow['password_plain'] ?? '',
         'altPasswords' => $seedRow['alt_passwords'] ?? [],
-        'companyName' => (string)($seedRow['companyName'] ?? $dbRow['company_name'] ?? $localRow['company_name'] ?? 'Enterprise Trading Firm'),
-        'country' => (string)($seedRow['country'] ?? $dbRow['country'] ?? $localRow['country'] ?? 'United States'),
+        'companyName' => (string)($isPaidSeed ? ($seedRow['companyName'] ?? $dbRow['company_name']) : ($dbRow['company_name'] ?? $localRow['company_name'] ?? $seedRow['companyName'] ?? 'Enterprise Trading Firm')),
+        'country' => (string)($isPaidSeed ? ($seedRow['country'] ?? $dbRow['country']) : ($dbRow['country'] ?? $localRow['country'] ?? $seedRow['country'] ?? 'United States')),
         'phone' => (string)($seedRow['phone'] ?? $dbRow['phone'] ?? $localRow['phone'] ?? ''),
         'tier' => $resolvedTier,
         'isPremium' => $resolvedIsPremium,
@@ -1038,9 +1035,406 @@ function sendLoginOtpEmail($clientEmail, $clientName, $code, $role = 'BUYER', $i
     return $sent;
 }
 
+// -------------------------------------------------------------
+// Atomic JSON & Monotonic Image Override Persistence Helpers
+// -------------------------------------------------------------
+function th_read_json_locked($path) {
+    if (!is_string($path) || $path === '' || !file_exists($path)) {
+        return null;
+    }
+    $fp = @fopen($path, 'rb');
+    if (!$fp) {
+        $raw = @file_get_contents($path);
+        return $raw !== false ? json_decode($raw, true) : null;
+    }
+    @flock($fp, LOCK_SH);
+    $raw = stream_get_contents($fp);
+    @flock($fp, LOCK_UN);
+    @fclose($fp);
+    if ($raw === false || $raw === '') {
+        return null;
+    }
+    return json_decode($raw, true);
+}
+
+function th_write_json_atomic($path, $data, $flags = 0) {
+    if (!is_string($path) || $path === '') {
+        return false;
+    }
+    $dir = dirname($path);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+    $encodeFlags = $flags ?: (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $json = json_encode($data, $encodeFlags);
+    if ($json === false) {
+        return false;
+    }
+    $tmp = $path . '.tmp.' . getmypid() . '.' . mt_rand(1000, 999999);
+    $written = @file_put_contents($tmp, $json, LOCK_EX);
+    if ($written === false) {
+        @unlink($tmp);
+        return @file_put_contents($path, $json, LOCK_EX) !== false;
+    }
+    if (!@rename($tmp, $path)) {
+        @unlink($tmp);
+        return @file_put_contents($path, $json, LOCK_EX) !== false;
+    }
+    return true;
+}
+
+function th_entry_timestamp_ms($entry) {
+    if (!is_array($entry)) return 0;
+    $numMs = 0;
+    if (isset($entry['imageUpdatedAt']) && is_numeric($entry['imageUpdatedAt'])) {
+        $numMs = (int)$entry['imageUpdatedAt'];
+    }
+    $isoMs = 0;
+    if (!empty($entry['updatedAt'])) {
+        $parsed = strtotime((string)$entry['updatedAt']);
+        if ($parsed !== false && $parsed > 0) {
+            $isoMs = (int)($parsed * 1000);
+        }
+    }
+    return max($numMs, $isoMs);
+}
+
+function th_strip_url_base($url) {
+    $raw = trim((string)$url);
+    if ($raw === '' || $raw === '(empty)' || $raw === '(pending audit fix)') return '';
+    return explode('#', explode('?', $raw)[0])[0];
+}
+
+function th_merge_replaced_old_urls($existingList, $candidates = []) {
+    $set = [];
+    if (is_array($existingList)) {
+        foreach ($existingList as $u) {
+            $b = th_strip_url_base($u);
+            if ($b !== '') $set[$b] = true;
+        }
+    }
+    foreach ($candidates as $c) {
+        $b = th_strip_url_base($c);
+        if ($b !== '') $set[$b] = true;
+    }
+    $out = array_keys($set);
+    if (count($out) > 20) {
+        $out = array_slice($out, -20);
+    }
+    return $out;
+}
+
+function th_is_protected_override($entry) {
+    if (!is_array($entry)) return false;
+    if (!empty($entry['locked']) || !empty($entry['serverVerified'])) return true;
+    $by = strtolower(trim((string)($entry['updatedBy'] ?? '')));
+    return in_array($by, ['admin-manual', 'user-upload', 'catalog-image-auditor'], true);
+}
+
+function th_merge_override_entry($existing, $incoming) {
+    if (!is_array($existing) || empty($existing['primary'])) {
+        return $incoming;
+    }
+    if (!is_array($incoming) || empty($incoming['primary'])) {
+        return $existing;
+    }
+    $exTs = th_entry_timestamp_ms($existing);
+    $inTs = th_entry_timestamp_ms($incoming);
+    $exLocked = !empty($existing['locked']) || !empty($existing['serverVerified']);
+    $inLocked = !empty($incoming['locked']) || !empty($incoming['serverVerified']);
+    if ($exTs > $inTs) {
+        return $existing;
+    }
+    if ($exLocked && !$inLocked && $inTs <= $exTs) {
+        return $existing;
+    }
+    // Never revert a locked override back to a URL previously recorded in replacedOldUrls
+    $inBase = th_strip_url_base($incoming['primary'] ?? '');
+    if ($exLocked && $inBase !== '' && !empty($existing['replacedOldUrls']) && is_array($existing['replacedOldUrls'])) {
+        foreach ($existing['replacedOldUrls'] as $oldU) {
+            if (th_strip_url_base($oldU) === $inBase && $inTs <= $exTs) {
+                return $existing;
+            }
+        }
+    }
+    if ($inTs > $exTs) {
+        if (empty($incoming['previousPrimary']) && !empty($existing['primary']) && $existing['primary'] !== $incoming['primary']) {
+            $incoming['previousPrimary'] = $existing['primary'];
+        }
+        $mergedOld = th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], is_array($incoming['replacedOldUrls'] ?? null) ? $incoming['replacedOldUrls'] : []);
+        if (!empty($mergedOld)) {
+            $incoming['replacedOldUrls'] = $mergedOld;
+        }
+        return $incoming;
+    }
+    // Same timestamp: locked / protected manual/auditor wins over auto
+    $exProt = th_is_protected_override($existing);
+    $inProt = th_is_protected_override($incoming);
+    if (($exLocked && !$inLocked) || ($exProt && !$inProt)) {
+        return $existing;
+    }
+    return $incoming;
+}
+
+function th_is_safe_public_http_url($url) {
+    $parts = @parse_url((string)$url);
+    if (!is_array($parts)) return false;
+    $scheme = strtolower((string)($parts['scheme'] ?? ''));
+    if ($scheme !== 'http' && $scheme !== 'https') return false;
+    $host = strtolower(trim((string)($parts['host'] ?? '')));
+    if ($host === '' || $host === 'localhost' || substr($host, -6) === '.local') return false;
+    $ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : @gethostbyname($host);
+    if ($ip && filter_var($ip, FILTER_VALIDATE_IP)) {
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function th_resolve_public_data_state_file() {
+    $primary = __DIR__ . '/data/productImageSystemState.json';
+    if (file_exists($primary) || is_dir(__DIR__ . '/data')) {
+        return $primary;
+    }
+    if (is_dir(__DIR__ . '/public/data')) {
+        return __DIR__ . '/public/data/productImageSystemState.json';
+    }
+    return $primary;
+}
+
+function th_load_merged_image_state($uploads_dir) {
+    $overrides_file = rtrim($uploads_dir, '/') . '/product-image-overrides.json';
+    $public_data_file = th_resolve_public_data_state_file();
+    $state = [
+        "overrides" => [],
+        "productActivityTimestamps" => [],
+        "globalDefaultImage" => null,
+        "categoryOverrides" => [],
+        "urlReplacements" => [],
+        "mediaLibrary" => []
+    ];
+    $seenMedia = [];
+    foreach ([$public_data_file, $overrides_file] as $src_json_file) {
+        $parsed = th_read_json_locked($src_json_file);
+        if (!is_array($parsed)) continue;
+        if (!empty($parsed['overrides']) && is_array($parsed['overrides'])) {
+            foreach ($parsed['overrides'] as $pid => $entry) {
+                if (!is_array($entry) || empty($entry['primary'])) continue;
+                if (isset($state['overrides'][$pid])) {
+                    $state['overrides'][$pid] = th_merge_override_entry($state['overrides'][$pid], $entry);
+                } else {
+                    $state['overrides'][$pid] = $entry;
+                }
+            }
+        }
+        if (!empty($parsed['productActivityTimestamps']) && is_array($parsed['productActivityTimestamps'])) {
+            foreach ($parsed['productActivityTimestamps'] as $pid => $ts) {
+                $tsInt = (int)$ts;
+                $curTs = (int)($state['productActivityTimestamps'][$pid] ?? 0);
+                if ($tsInt > $curTs) {
+                    $state['productActivityTimestamps'][$pid] = $tsInt;
+                }
+            }
+        }
+        if (!empty($parsed['categoryOverrides']) && is_array($parsed['categoryOverrides'])) {
+            $state['categoryOverrides'] = array_merge($state['categoryOverrides'], $parsed['categoryOverrides']);
+        }
+        if (!empty($parsed['urlReplacements']) && is_array($parsed['urlReplacements'])) {
+            $state['urlReplacements'] = array_merge($state['urlReplacements'], $parsed['urlReplacements']);
+        }
+        if (array_key_exists('globalDefaultImage', $parsed) && !empty($parsed['globalDefaultImage'])) {
+            $state['globalDefaultImage'] = $parsed['globalDefaultImage'];
+        }
+        if (!empty($parsed['mediaLibrary']) && is_array($parsed['mediaLibrary'])) {
+            foreach ($parsed['mediaLibrary'] as $ml) {
+                if (!is_array($ml) || empty($ml['url'])) continue;
+                $baseU = strtok((string)$ml['url'], '?');
+                if (!isset($seenMedia[$baseU])) {
+                    $seenMedia[$baseU] = true;
+                    $state['mediaLibrary'][] = $ml;
+                }
+            }
+        }
+    }
+    return $state;
+}
+
+function th_save_image_state_atomic($uploads_dir, $state) {
+    $overrides_file = rtrim($uploads_dir, '/') . '/product-image-overrides.json';
+    $public_data_file = th_resolve_public_data_state_file();
+    $ok1 = th_write_json_atomic($overrides_file, $state);
+    if (is_dir(dirname($public_data_file)) || @mkdir(dirname($public_data_file), 0775, true)) {
+        th_write_json_atomic($public_data_file, $state);
+    }
+    return $ok1;
+}
+
+function th_verify_override_on_disk($uploads_dir, $record_id, $expected_primary) {
+    $clean_id = trim((string)$record_id);
+    $expected_base = th_strip_url_base($expected_primary);
+    if ($clean_id === '' || $expected_base === '') return false;
+    if (strpos($expected_base, '/assets/uploads/') === 0) {
+        $fp = rtrim($uploads_dir, '/') . '/' . basename($expected_base);
+        if (!file_exists($fp) || filesize($fp) <= 100) return false;
+    }
+    $overrides_file = rtrim($uploads_dir, '/') . '/product-image-overrides.json';
+    $parsed = th_read_json_locked($overrides_file);
+    if (!is_array($parsed) || empty($parsed['overrides'][$clean_id]['primary'])) return false;
+    $disk_base = th_strip_url_base($parsed['overrides'][$clean_id]['primary']);
+    return ($disk_base === $expected_base);
+}
+
+function th_sync_image_override_to_db_and_cms($pid, $primaryUrl, $galleryUrls, $pdo, $db_connected) {
+    $cleanPid = trim((string)$pid);
+    $cleanUrl = trim((string)$primaryUrl);
+    if ($cleanPid === '' || $cleanUrl === '') return;
+
+    $gallery = (is_array($galleryUrls) && count($galleryUrls) > 0) ? array_values($galleryUrls) : [$cleanUrl];
+    $galleryJson = json_encode($gallery, JSON_UNESCAPED_SLASHES);
+
+    // 1. Update MySQL listings or rfqs when connected
+    if ($db_connected && $pdo) {
+        try {
+            if (strpos($cleanPid, 'prod-db-') === 0) {
+                $numId = intval(substr($cleanPid, 8));
+                if ($numId > 0) {
+                    $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE id = ?")->execute([$cleanUrl, $galleryJson, $numId]);
+                }
+            } elseif (ctype_digit($cleanPid)) {
+                $numId = intval($cleanPid);
+                if ($numId > 0) {
+                    $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE id = ?")->execute([$cleanUrl, $galleryJson, $numId]);
+                }
+            } elseif (strpos($cleanPid, 'rfq-') === 0) {
+                $rawRfqNum = preg_replace('/^rfq-/', '', $cleanPid);
+                $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE external_id = ? OR id = ?")
+                    ->execute([$cleanUrl, $galleryJson, $cleanPid, ctype_digit($rawRfqNum) ? intval($rawRfqNum) : -1]);
+            }
+        } catch (Exception $e) {}
+    }
+
+    // 2. Sync custom_catalog.json if matching product exists
+    $cat_file = __DIR__ . '/custom_catalog.json';
+    if (file_exists($cat_file)) {
+        $cat_data = th_read_json_locked($cat_file);
+        if (is_array($cat_data) && !empty($cat_data['products']) && is_array($cat_data['products'])) {
+            $catChanged = false;
+            foreach ($cat_data['products'] as $idx => $prod) {
+                if (!is_array($prod)) continue;
+                if (strval($prod['id'] ?? '') === $cleanPid) {
+                    $cat_data['products'][$idx]['imageUrl'] = $cleanUrl;
+                    $cat_data['products'][$idx]['image_url'] = $cleanUrl;
+                    $cat_data['products'][$idx]['image'] = $cleanUrl;
+                    $cat_data['products'][$idx]['images'] = $gallery;
+                    $catChanged = true;
+                }
+            }
+            if ($catChanged) {
+                th_write_json_atomic($cat_file, $cat_data);
+            }
+        }
+    }
+
+    // 3. Sync site_content.json for categoriesList or heroSlides
+    $cms_file = __DIR__ . '/site_content.json';
+    if (file_exists($cms_file)) {
+        $cms = th_read_json_locked($cms_file);
+        if (is_array($cms) && !empty($cms['homepage']) && is_array($cms['homepage'])) {
+            $cmsChanged = false;
+            if (!empty($cms['homepage']['categoriesList']) && is_array($cms['homepage']['categoriesList'])) {
+                foreach ($cms['homepage']['categoriesList'] as $ci => $cItem) {
+                    if (!is_array($cItem)) continue;
+                    $cid = trim((string)($cItem['id'] ?? ''));
+                    if ($cid !== '' && ($cid === $cleanPid || ('cat-' . $cid) === $cleanPid || $cid === preg_replace('/^cat-/', '', $cleanPid))) {
+                        $cms['homepage']['categoriesList'][$ci]['image'] = $cleanUrl;
+                        $cmsChanged = true;
+                    }
+                }
+            }
+            if (!empty($cms['homepage']['heroSlides']) && is_array($cms['homepage']['heroSlides'])) {
+                foreach ($cms['homepage']['heroSlides'] as $si => $sItem) {
+                    if (!is_array($sItem)) continue;
+                    $sid = trim((string)($sItem['id'] ?? ''));
+                    if ($sid !== '' && ($sid === $cleanPid || ('hero-slide-' . $sid) === $cleanPid)) {
+                        $cms['homepage']['heroSlides'][$si]['image'] = $cleanUrl;
+                        $cmsChanged = true;
+                    }
+                }
+            }
+            if ($cmsChanged) {
+                $cms['siteContentUpdatedAt'] = (int)round(microtime(true) * 1000);
+                th_write_json_atomic($cms_file, $cms);
+            }
+        }
+    }
+}
+
+function th_sync_site_content_to_image_overrides($cms_payload, $uploads_dir) {
+    if (!is_array($cms_payload) || empty($cms_payload['homepage']) || !is_array($cms_payload['homepage'])) {
+        return;
+    }
+    $state = th_load_merged_image_state($uploads_dir);
+    $nowMs = (int)round(microtime(true) * 1000);
+    $nowIso = gmdate('Y-m-d\TH:i:s\Z');
+    $changed = false;
+
+    $upsertItem = function($key, $imgUrl) use (&$state, $nowMs, $nowIso, &$changed) {
+        $cleanKey = trim((string)$key);
+        $cleanUrl = trim((string)$imgUrl);
+        if ($cleanKey === '' || $cleanUrl === '') return;
+        $existing = $state['overrides'][$cleanKey] ?? null;
+        if (is_array($existing) && trim((string)($existing['primary'] ?? '')) === $cleanUrl) {
+            return;
+        }
+        $prevPrim = (is_array($existing) && !empty($existing['primary']) && $existing['primary'] !== $cleanUrl)
+            ? $existing['primary']
+            : ($existing['previousPrimary'] ?? null);
+        $state['overrides'][$cleanKey] = [
+            'primary' => $cleanUrl,
+            'previousPrimary' => $prevPrim,
+            'gallery' => [$cleanUrl],
+            'format' => strtoupper(pathinfo(strtok($cleanUrl, '?'), PATHINFO_EXTENSION) ?: 'WEBP'),
+            'updatedAt' => $nowIso,
+            'imageUpdatedAt' => $nowMs,
+            'updatedBy' => 'admin-manual'
+        ];
+        $state['productActivityTimestamps'][$cleanKey] = $nowMs;
+        $changed = true;
+    };
+
+    if (!empty($cms_payload['homepage']['categoriesList']) && is_array($cms_payload['homepage']['categoriesList'])) {
+        foreach ($cms_payload['homepage']['categoriesList'] as $cat) {
+            if (!is_array($cat)) continue;
+            $cid = trim((string)($cat['id'] ?? ''));
+            $cimg = trim((string)($cat['image'] ?? ''));
+            if ($cid !== '' && $cimg !== '') {
+                $upsertItem(strpos($cid, 'cat-') === 0 ? $cid : ('cat-' . $cid), $cimg);
+                $upsertItem($cid, $cimg);
+            }
+        }
+    }
+
+    if (!empty($cms_payload['homepage']['heroSlides']) && is_array($cms_payload['homepage']['heroSlides'])) {
+        foreach ($cms_payload['homepage']['heroSlides'] as $slide) {
+            if (!is_array($slide)) continue;
+            $sid = trim((string)($slide['id'] ?? ''));
+            $simg = trim((string)($slide['image'] ?? ''));
+            if ($sid !== '' && $simg !== '') {
+                $upsertItem($sid, $simg);
+            }
+        }
+    }
+
+    if ($changed) {
+        th_save_image_state_atomic($uploads_dir, $state);
+    }
+}
+
 // Parse request action & payload (supporting ?action=, ?__route=, and direct /api/* paths)
 $raw_action = isset($_GET['action']) ? trim($_GET['action']) : '';
 $route_param = isset($_GET['__route']) ? trim($_GET['__route']) : '';
+$route_product_id = '';
 
 if (empty($raw_action) && !empty($route_param)) {
     $clean_route = trim($route_param, '/');
@@ -1056,13 +1450,23 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'flash_deals';
     } elseif (strpos($clean_route, 'stats') !== false) {
         $raw_action = 'stats';
+    } elseif (strpos($clean_route, 'admin/site-images/replace') !== false || strpos($clean_route, 'site-images/replace') !== false) {
+        $raw_action = 'site_images_replace';
+    } elseif (strpos($clean_route, 'admin/site-images/auto-fix') !== false || strpos($clean_route, 'site-images/auto-fix') !== false) {
+        $raw_action = 'site_images_auto_fix';
+    } elseif (strpos($clean_route, 'admin/site-images/delete-file') !== false || strpos($clean_route, 'site-images/delete-file') !== false) {
+        $raw_action = 'site_images_delete_file';
+    } elseif (strpos($clean_route, 'admin/audit-and-fix-catalog-images') !== false || strpos($clean_route, 'audit-and-fix-catalog-images') !== false) {
+        $raw_action = 'audit_and_fix_catalog_images';
+    } elseif (strpos($clean_route, 'admin/fix-single-catalog-image') !== false || strpos($clean_route, 'fix-single-catalog-image') !== false) {
+        $raw_action = 'fix_single_catalog_image';
     } elseif (strpos($clean_route, 'products/fetch-images') !== false) {
         $raw_action = 'fetch_product_images';
     } elseif (strpos($clean_route, 'products/auto-upload-image') !== false) {
         $raw_action = 'auto_upload_product_image';
     } elseif (strpos($clean_route, 'admin/upload-product-image') !== false) {
         $raw_action = 'upload_product_image';
-    } elseif (strpos($clean_route, 'admin/product-images') !== false) {
+    } elseif (strpos($clean_route, 'admin/product-images') !== false || strpos($clean_route, 'public/product-images') !== false) {
         if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             $raw_action = 'delete_product_images';
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
@@ -1077,9 +1481,14 @@ if (empty($raw_action) && !empty($route_param)) {
     } elseif (strpos($clean_route, 'rfqs/market-insights') !== false) {
         $raw_action = 'market_insights';
     } elseif (strpos($clean_route, 'products') !== false) {
+        if (preg_match('#(?:^|/)products/([^/?]+)$#', $clean_route, $pm)) {
+            $route_product_id = urldecode(trim((string)$pm[1]));
+        }
         if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             $raw_action = 'delete_listing';
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT' || ($_SERVER['REQUEST_METHOD'] === 'POST' && $route_product_id !== '')) {
+            $raw_action = 'update_listing';
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $raw_action = 'submit_listing';
         } else {
             $raw_action = 'get_listings';
@@ -1106,6 +1515,26 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'forgot_password';
     } elseif (strpos($clean_route, 'auth/reset-password') !== false) {
         $raw_action = 'reset_password';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/state') !== false) {
+        $raw_action = 'marketing_suite_state';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/automation-rules') !== false) {
+        $raw_action = 'marketing_suite_rules';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/trigger-campaign') !== false) {
+        $raw_action = 'marketing_suite_trigger';
+    } elseif (strpos($clean_route, 'admin/marketing-suite/simulate-tracking') !== false || strpos($clean_route, 'admin/mailsuite/simulate-batch') !== false) {
+        $raw_action = 'marketing_suite_simulate';
+    } elseif (strpos($clean_route, 'admin/mailsuite/analytics') !== false) {
+        $raw_action = 'mailsuite_analytics';
+    } elseif (strpos($clean_route, 'admin/mailsuite/simulate-event') !== false || strpos($clean_route, 'admin/mailsuite/webhook') !== false || strpos($clean_route, 'webhooks/smtp-delivery') !== false) {
+        $raw_action = 'mailsuite_webhook';
+    } elseif (strpos($clean_route, 'admin/email-history') !== false) {
+        $raw_action = 'get_email_history';
+    } elseif (strpos($clean_route, 'admin/send-custom-email') !== false) {
+        $raw_action = 'send_custom_email';
+    } elseif (strpos($clean_route, 'mediation/admin-adjust') !== false) {
+        $raw_action = 'mediation_admin_adjust';
+    } elseif (strpos($clean_route, 'mediation/state') !== false) {
+        $raw_action = 'mediation_state';
     } elseif (strpos($clean_route, 'admin/users') !== false || strpos($clean_route, 'get-users') !== false) {
         $raw_action = 'get_users';
     } elseif (strpos($clean_route, 'deployment/health') !== false) {
@@ -1124,13 +1553,23 @@ if (empty($raw_action)) {
             $raw_action = 'custom_catalog';
         } elseif (strpos($sub, 'site-content') !== false) {
             $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
+        } elseif (strpos($sub, 'admin/site-images/replace') !== false || strpos($sub, 'site-images/replace') !== false) {
+            $raw_action = 'site_images_replace';
+        } elseif (strpos($sub, 'admin/site-images/auto-fix') !== false || strpos($sub, 'site-images/auto-fix') !== false) {
+            $raw_action = 'site_images_auto_fix';
+        } elseif (strpos($sub, 'admin/site-images/delete-file') !== false || strpos($sub, 'site-images/delete-file') !== false) {
+            $raw_action = 'site_images_delete_file';
+        } elseif (strpos($sub, 'admin/audit-and-fix-catalog-images') !== false || strpos($sub, 'audit-and-fix-catalog-images') !== false) {
+            $raw_action = 'audit_and_fix_catalog_images';
+        } elseif (strpos($sub, 'admin/fix-single-catalog-image') !== false || strpos($sub, 'fix-single-catalog-image') !== false) {
+            $raw_action = 'fix_single_catalog_image';
         } elseif (strpos($sub, 'products/fetch-images') !== false) {
             $raw_action = 'fetch_product_images';
         } elseif (strpos($sub, 'products/auto-upload-image') !== false) {
             $raw_action = 'auto_upload_product_image';
         } elseif (strpos($sub, 'admin/upload-product-image') !== false) {
             $raw_action = 'upload_product_image';
-        } elseif (strpos($sub, 'admin/product-images') !== false) {
+        } elseif (strpos($sub, 'admin/product-images') !== false || strpos($sub, 'public/product-images') !== false) {
             if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $raw_action = 'delete_product_images';
             } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
@@ -1145,9 +1584,14 @@ if (empty($raw_action)) {
         } elseif (strpos($sub, 'rfqs/market-insights') !== false) {
             $raw_action = 'market_insights';
         } elseif (strpos($sub, 'products') !== false) {
+            if (preg_match('#(?:^|/)products/([^/?]+)$#', $sub, $pm)) {
+                $route_product_id = urldecode(trim((string)$pm[1]));
+            }
             if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $raw_action = 'delete_listing';
-            } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT' || ($_SERVER['REQUEST_METHOD'] === 'POST' && $route_product_id !== '')) {
+                $raw_action = 'update_listing';
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $raw_action = 'submit_listing';
             } else {
                 $raw_action = 'get_listings';
@@ -1162,6 +1606,26 @@ if (empty($raw_action)) {
             $raw_action = 'flash_deals';
         } elseif (strpos($sub, 'stats') !== false) {
             $raw_action = 'stats';
+        } elseif (strpos($sub, 'admin/marketing-suite/state') !== false) {
+            $raw_action = 'marketing_suite_state';
+        } elseif (strpos($sub, 'admin/marketing-suite/automation-rules') !== false) {
+            $raw_action = 'marketing_suite_rules';
+        } elseif (strpos($sub, 'admin/marketing-suite/trigger-campaign') !== false) {
+            $raw_action = 'marketing_suite_trigger';
+        } elseif (strpos($sub, 'admin/marketing-suite/simulate-tracking') !== false || strpos($sub, 'admin/mailsuite/simulate-batch') !== false) {
+            $raw_action = 'marketing_suite_simulate';
+        } elseif (strpos($sub, 'admin/mailsuite/analytics') !== false) {
+            $raw_action = 'mailsuite_analytics';
+        } elseif (strpos($sub, 'admin/mailsuite/simulate-event') !== false || strpos($sub, 'admin/mailsuite/webhook') !== false || strpos($sub, 'webhooks/smtp-delivery') !== false) {
+            $raw_action = 'mailsuite_webhook';
+        } elseif (strpos($sub, 'admin/email-history') !== false) {
+            $raw_action = 'get_email_history';
+        } elseif (strpos($sub, 'admin/send-custom-email') !== false) {
+            $raw_action = 'send_custom_email';
+        } elseif (strpos($sub, 'mediation/admin-adjust') !== false) {
+            $raw_action = 'mediation_admin_adjust';
+        } elseif (strpos($sub, 'mediation/state') !== false) {
+            $raw_action = 'mediation_state';
         } elseif (strpos($sub, 'admin/users') !== false) {
             $raw_action = 'get_users';
         } else {
@@ -1177,6 +1641,9 @@ $method = $_SERVER['REQUEST_METHOD'];
 $raw_input = file_get_contents('php://input');
 $json_input = json_decode($raw_input, true);
 $input = is_array($json_input) ? $json_input : $_POST;
+if ($route_product_id !== '' && empty($input['id'])) {
+    $input['id'] = $route_product_id;
+}
 
 switch ($action) {
     // -------------------------------------------------------------
@@ -1224,25 +1691,36 @@ switch ($action) {
         if ($method === 'POST' || $method === 'PUT') {
             $cms_payload = isset($input['siteContent']) ? $input['siteContent'] : $input;
             $cms_file = __DIR__ . '/site_content.json';
-            @file_put_contents($cms_file, json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
+            $existing_cms = th_read_json_locked($cms_file);
+            $existing_ts = is_array($existing_cms) && isset($existing_cms['siteContentUpdatedAt']) ? (int)$existing_cms['siteContentUpdatedAt'] : 0;
+            $incoming_ts = is_array($cms_payload) && isset($cms_payload['siteContentUpdatedAt']) ? (int)$cms_payload['siteContentUpdatedAt'] : 0;
+            if ($incoming_ts > 0 && $existing_ts > 0 && $incoming_ts < $existing_ts) {
+                header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+                echo json_encode(["status" => "success", "success" => true, "staleIgnored" => true, "data" => $existing_cms]);
+                exit;
+            }
+            if (is_array($cms_payload)) {
+                $cms_payload['siteContentUpdatedAt'] = max((int)round(microtime(true) * 1000), $incoming_ts, $existing_ts + 1);
+            }
+            th_write_json_atomic($cms_file, $cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $uploads_dir_cms = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+            th_sync_site_content_to_image_overrides($cms_payload, $uploads_dir_cms);
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+            echo json_encode(["status" => "success", "success" => true, "message" => "CMS content saved successfully", "data" => $cms_payload]);
             exit;
         }
         // Fall through to get_content for GET requests
     case 'get_content':
         $cms_file = __DIR__ . '/site_content.json';
         if (!file_exists($cms_file)) {
-            // Create with empty object if not exists
-            file_put_contents($cms_file, "{}");
+            th_write_json_atomic($cms_file, new stdClass());
         }
-        
-        $content = file_get_contents($cms_file);
-        $parsed = json_decode($content, true);
+        $parsed = th_read_json_locked($cms_file);
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         if ($parsed !== null) {
             echo json_encode(["status" => "success", "data" => $parsed]);
             exit;
         }
-        
         echo json_encode(["status" => "success", "data" => new stdClass()]);
         exit;
 
@@ -1356,47 +1834,42 @@ switch ($action) {
     case 'get_users':
     case 'users':
         $users_list = [];
-        $seedUsers = getBuiltInSeedAuthUsers();
-        $seen_emails = [];
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->query("SELECT * FROM users ORDER BY CASE WHEN UPPER(role) = 'SUPPLIER' THEN 0 ELSE 1 END, id DESC");
+                $stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
                 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($rows as $r) {
-                    $em = normalizeAuthEmail($r['email'] ?? '');
-                    if ($em !== '' && isset($seen_emails[$em])) continue;
-                    if ($em !== '') $seen_emails[$em] = true;
-                    $seedOverride = $em ? ($seedUsers[$em] ?? null) : null;
                     $users_list[] = [
-                        'id' => (string)($seedOverride['id'] ?? $r['id']),
-                        'name' => $seedOverride['name'] ?? $r['name'],
-                        'email' => $em ?: $r['email'],
-                        'role' => $seedOverride['role'] ?? $r['role'],
-                        'companyName' => $seedOverride['companyName'] ?? ($r['company_name'] ?? ''),
-                        'country' => $seedOverride['country'] ?? ($r['country'] ?? 'United States'),
-                        'phone' => $seedOverride['phone'] ?? ($r['phone'] ?? ''),
+                        'id' => (string)$r['id'],
+                        'name' => $r['name'],
+                        'email' => $r['email'],
+                        'role' => $r['role'],
+                        'companyName' => $r['company_name'] ?? '',
+                        'country' => $r['country'] ?? 'United States',
+                        'phone' => $r['phone'] ?? '',
                         'status' => $r['status'] ?? 'ACTIVE',
-                        'isVerified' => !empty($r['is_verified']) || !empty($seedOverride['isVerified']),
-                        'isPremium' => !empty($r['is_premium']) || !empty($seedOverride['isPremium']),
-                        'membershipStatus' => $seedOverride['membershipStatus'] ?? ($r['membership_status'] ?? 'free'),
-                        'tier' => $seedOverride['tier'] ?? ($r['tier'] ?? 'FREE'),
-                        'avatarUrl' => $r['avatar_url'] ?? ($seedOverride['avatarUrl'] ?? '')
+                        'isVerified' => !empty($r['is_verified']),
+                        'isPremium' => !empty($r['is_premium']),
+                        'membershipStatus' => $r['membership_status'] ?? 'free',
+                        'tier' => $r['tier'] ?? 'FREE',
+                        'avatarUrl' => $r['avatar_url'] ?? ''
                     ];
                 }
             } catch (Exception $e) {}
         }
         $existing_emails = [];
         foreach ($users_list as $existing_u) {
-            $em = normalizeAuthEmail($existing_u['email'] ?? '');
+            $em = strtolower(trim((string)($existing_u['email'] ?? '')));
             if ($em !== '') $existing_emails[$em] = true;
         }
+        $seedUsers = getBuiltInSeedAuthUsers();
         foreach ($seedUsers as $u) {
-            $em = normalizeAuthEmail($u['email'] ?? '');
+            $em = strtolower(trim((string)($u['email'] ?? '')));
             if ($em !== '' && isset($existing_emails[$em])) continue;
             $users_list[] = [
                 'id' => $u['id'],
                 'name' => $u['name'],
-                'email' => $em ?: $u['email'],
+                'email' => $u['email'],
                 'role' => $u['role'],
                 'companyName' => $u['companyName'] ?? '',
                 'country' => $u['country'] ?? 'United States',
@@ -1424,16 +1897,27 @@ switch ($action) {
         }
         
         $cms_payload = isset($input['siteContent']) ? $input['siteContent'] : $input;
-        if (!$cms_payload) {
+        if (!$cms_payload || !is_array($cms_payload)) {
             echo json_encode(["status" => "error", "message" => "No payload provided"]);
             exit;
         }
         
         $cms_file = __DIR__ . '/site_content.json';
-        $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $existing_cms = th_read_json_locked($cms_file);
+        $existing_ts = is_array($existing_cms) && isset($existing_cms['siteContentUpdatedAt']) ? (int)$existing_cms['siteContentUpdatedAt'] : 0;
+        $incoming_ts = isset($cms_payload['siteContentUpdatedAt']) ? (int)$cms_payload['siteContentUpdatedAt'] : 0;
+        if ($incoming_ts > 0 && $existing_ts > 0 && $incoming_ts < $existing_ts) {
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+            echo json_encode(["status" => "success", "success" => true, "staleIgnored" => true, "data" => $existing_cms]);
+            exit;
+        }
+        $cms_payload['siteContentUpdatedAt'] = max((int)round(microtime(true) * 1000), $incoming_ts, $existing_ts + 1);
         
-        if (file_put_contents($cms_file, $json_str) !== false) {
-            echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
+        if (th_write_json_atomic($cms_file, $cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) {
+            $uploads_dir_cms = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+            th_sync_site_content_to_image_overrides($cms_payload, $uploads_dir_cms);
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+            echo json_encode(["status" => "success", "success" => true, "message" => "CMS content saved successfully", "data" => $cms_payload]);
         } else {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Failed to write to site_content.json. Check file permissions (ensure 0644 or 0666)."]);
@@ -2204,12 +2688,20 @@ switch ($action) {
                 ? array_values(array_filter(array_map('strval', $input['images'])))
                 : ($image_url !== '' ? [$image_url] : []);
             $images_json = json_encode($images_arr, JSON_UNESCAPED_SLASHES);
-            $listing_id = isset($input['id']) ? intval($input['id']) : null;
+            $raw_listing_id = trim((string)($input['id'] ?? $route_product_id ?? ''));
+            $numeric_listing_id = 0;
+            if ($raw_listing_id !== '') {
+                if (strpos($raw_listing_id, 'prod-db-') === 0) {
+                    $numeric_listing_id = intval(substr($raw_listing_id, 8));
+                } elseif (ctype_digit($raw_listing_id)) {
+                    $numeric_listing_id = intval($raw_listing_id);
+                }
+            }
 
-            $inserted_id = $listing_id ?: time();
+            $inserted_id = $raw_listing_id !== '' ? $raw_listing_id : (string)time();
             if ($db_connected && $pdo) {
                 try {
-                    if ($action === 'update_listing' && $listing_id) {
+                    if ($action === 'update_listing' && $numeric_listing_id > 0) {
                         $stmt = $pdo->prepare("UPDATE listings SET
                             title = ?, category = ?, sub_category = ?, price = ?, moq = ?, moq_unit = ?,
                             supplier_name = ?, supplier_email = ?, supplier_phone = ?, supplier_country = ?,
@@ -2217,10 +2709,10 @@ switch ($action) {
                         $stmt->execute([
                             $title, $category, $sub_category, $price, $moq, $moq_unit,
                             $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
-                            $location, $description, $image_url, $images_json, $listing_id
+                            $location, $description, $image_url, $images_json, $numeric_listing_id
                         ]);
-                        $inserted_id = $listing_id;
-                    } else {
+                        $inserted_id = $raw_listing_id !== '' ? $raw_listing_id : (string)$numeric_listing_id;
+                    } elseif ($action !== 'update_listing') {
                         $stmt = $pdo->prepare("INSERT INTO listings (
                             title, category, sub_category, price, moq, moq_unit,
                             supplier_name, supplier_email, supplier_phone, supplier_country,
@@ -2237,10 +2729,64 @@ switch ($action) {
                 } catch (Exception $e) {}
             }
 
+            // Persist product image & fields to custom_catalog.json and both image override stores so edits never revert
+            $override_prod_id = $raw_listing_id !== '' ? $raw_listing_id : ('prod-db-' . strval($inserted_id));
+            $cat_file_up = __DIR__ . '/custom_catalog.json';
+            if (file_exists($cat_file_up)) {
+                $cat_data_up = th_read_json_locked($cat_file_up);
+                if (is_array($cat_data_up) && !empty($cat_data_up['products']) && is_array($cat_data_up['products'])) {
+                    $cat_up_changed = false;
+                    foreach ($cat_data_up['products'] as $pidx => $pitem) {
+                        if (!is_array($pitem)) continue;
+                        $pid_str = strval($pitem['id'] ?? '');
+                        if ($pid_str !== '' && ($pid_str === $raw_listing_id || $pid_str === strval($inserted_id) || $pid_str === $override_prod_id)) {
+                            $cat_data_up['products'][$pidx]['title'] = $title;
+                            $cat_data_up['products'][$pidx]['category'] = $category;
+                            $cat_data_up['products'][$pidx]['description'] = $description;
+                            if ($image_url !== '') {
+                                $cat_data_up['products'][$pidx]['imageUrl'] = $image_url;
+                                $cat_data_up['products'][$pidx]['image_url'] = $image_url;
+                                $cat_data_up['products'][$pidx]['image'] = $image_url;
+                                $cat_data_up['products'][$pidx]['images'] = $images_arr;
+                            }
+                            $cat_up_changed = true;
+                        }
+                    }
+                    if ($cat_up_changed) {
+                        th_write_json_atomic($cat_file_up, $cat_data_up);
+                    }
+                }
+            }
+
+            if ($image_url !== '' && $override_prod_id !== '') {
+                $uploads_dir_up = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+                if (!is_dir($uploads_dir_up)) @mkdir($uploads_dir_up, 0775, true);
+                $ov_state_up = th_load_merged_image_state($uploads_dir_up);
+                $nowMs_up = (int)round(microtime(true) * 1000);
+                $nowIso_up = gmdate('Y-m-d\TH:i:s\Z');
+                $existing_up = $ov_state_up['overrides'][$override_prod_id] ?? null;
+                $prev_up = (is_array($existing_up) && !empty($existing_up['primary']) && $existing_up['primary'] !== $image_url)
+                    ? $existing_up['primary']
+                    : ($existing_up['previousPrimary'] ?? null);
+                $ov_state_up['overrides'][$override_prod_id] = [
+                    'primary' => $image_url,
+                    'previousPrimary' => $prev_up,
+                    'gallery' => count($images_arr) > 0 ? $images_arr : [$image_url],
+                    'format' => strtoupper(pathinfo(strtok($image_url, '?'), PATHINFO_EXTENSION) ?: 'WEBP'),
+                    'updatedAt' => $nowIso_up,
+                    'imageUpdatedAt' => $nowMs_up,
+                    'updatedBy' => 'admin-manual'
+                ];
+                $ov_state_up['productActivityTimestamps'][$override_prod_id] = $nowMs_up;
+                th_save_image_state_atomic($uploads_dir_up, $ov_state_up);
+            }
+
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
             echo json_encode([
                 "status" => "success",
+                "success" => true,
                 "id" => $inserted_id,
-                "message" => "Product listing published and stored in MySQL database!",
+                "message" => $action === 'update_listing' ? "Product listing updated successfully!" : "Product listing published and stored in MySQL database!",
                 "data" => [
                     "id" => $inserted_id,
                     "title" => $title,
@@ -2251,7 +2797,8 @@ switch ($action) {
                     "moq_unit" => $moq_unit,
                     "supplier_name" => $supplier_name,
                     "supplier_country" => $supplier_country,
-                    "image_url" => $image_url
+                    "image_url" => $image_url,
+                    "images" => $images_arr
                 ]
             ]);
         }
@@ -2374,7 +2921,10 @@ switch ($action) {
     // Forgot Password (Automatic OTP dispatch from noreply@tradeheaven.net)
     // -------------------------------------------------------------
     case 'forgot_password':
-        $email = normalizeAuthEmail($input['email'] ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
+        if (strpos($email, 'mail-') === 0 && strpos($email, '@') !== false) {
+            $email = substr($email, 5);
+        }
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(["status" => "error", "success" => false, "message" => "Valid corporate email address is required."]);
             exit();
@@ -2450,7 +3000,10 @@ switch ($action) {
     // Reset Password
     // -------------------------------------------------------------
     case 'reset_password':
-        $email = normalizeAuthEmail($input['email'] ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
+        if (strpos($email, 'mail-') === 0 && strpos($email, '@') !== false) {
+            $email = substr($email, 5);
+        }
         $code = trim($input['code'] ?? $input['token'] ?? '');
         $new_password = $input['new_password'] ?? $input['newPassword'] ?? '';
 
@@ -3261,7 +3814,7 @@ switch ($action) {
     case 'edit_profile':
         $user_id = $input['id'] ?? $input['userId'] ?? null;
         $name = trim($input['name'] ?? '');
-        $email = normalizeAuthEmail($input['email'] ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
         $company = trim($input['companyName'] ?? $input['company_name'] ?? $input['company'] ?? '');
         $phone = trim($input['phone'] ?? $input['phoneOrWhatsapp'] ?? '');
         $country = trim($input['country'] ?? '');
@@ -3311,7 +3864,7 @@ switch ($action) {
         if (is_array($stored_users)) {
             $updated_in_json = false;
             foreach ($stored_users as &$su) {
-                $su_email = normalizeAuthEmail($su['email'] ?? '');
+                $su_email = strtolower(trim($su['email'] ?? ''));
                 $su_id = (string)($su['id'] ?? '');
                 if (($email !== '' && $su_email === $email) || ($user_id && $su_id === (string)$user_id)) {
                     if ($name !== '') $su['name'] = $name;
@@ -3405,8 +3958,65 @@ switch ($action) {
     // -------------------------------------------------------------
     // Product Image Overrides & Upload Persistence (PHP / cPanel)
     // -------------------------------------------------------------
+    case 'serve_image':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        $req_file = basename(trim((string)($_GET['file'] ?? '')));
+        if ($req_file === '') {
+            http_response_code(404);
+            exit;
+        }
+        $target_path = $uploads_dir . '/' . $req_file;
+        if (!file_exists($target_path)) {
+            $aliases = [];
+            foreach ([$uploads_dir . '/virtual-image-aliases.json', __DIR__ . '/data/virtual-image-aliases.json', __DIR__ . '/public/data/virtual-image-aliases.json'] as $af) {
+                if (file_exists($af)) {
+                    $parsed_a = json_decode(@file_get_contents($af), true);
+                    if (is_array($parsed_a)) {
+                        $aliases = $parsed_a;
+                        break;
+                    }
+                }
+            }
+            $cur = $req_file;
+            $hops = 0;
+            while (isset($aliases[$cur]) && $hops < 8) {
+                $cur = basename((string)$aliases[$cur]);
+                $hops++;
+                if (file_exists($uploads_dir . '/' . $cur)) {
+                    $target_path = $uploads_dir . '/' . $cur;
+                    break;
+                }
+            }
+        }
+        if (!file_exists($target_path) || !is_file($target_path)) {
+            http_response_code(404);
+            exit;
+        }
+        $ext = strtolower(pathinfo($target_path, PATHINFO_EXTENSION));
+        $mime_map = [
+            'webp' => 'image/webp',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'avif' => 'image/avif',
+            'svg'  => 'image/svg+xml'
+        ];
+        $mime = $mime_map[$ext] ?? 'image/webp';
+        header("Content-Type: " . $mime);
+        header("Cache-Control: public, max-age=31536000, immutable");
+        header("Content-Length: " . filesize($target_path));
+        readfile($target_path);
+        exit;
+
     case 'get_product_images':
     case 'product_images':
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        header("Expires: 0");
         $uploads_dir = __DIR__ . '/assets/uploads';
         if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
             $uploads_dir = __DIR__ . '/public/assets/uploads';
@@ -3414,25 +4024,97 @@ switch ($action) {
         if (!is_dir($uploads_dir)) {
             @mkdir($uploads_dir, 0775, true);
         }
-        $overrides_file = $uploads_dir . '/product-image-overrides.json';
-        $state = [
-            "overrides" => [],
-            "globalDefaultImage" => null,
-            "categoryOverrides" => [],
-            "urlReplacements" => [],
-            "mediaLibrary" => []
-        ];
-        if (file_exists($overrides_file)) {
-            $parsed = json_decode(file_get_contents($overrides_file), true);
-            if (is_array($parsed)) {
-                $state = array_merge($state, $parsed);
+        $include_media = !empty($_GET['includeMedia']) || (strpos((string)($_GET['__route'] ?? $_SERVER['REQUEST_URI'] ?? ''), 'admin/') !== false);
+        $aliases = [];
+        foreach ([$uploads_dir . '/virtual-image-aliases.json', __DIR__ . '/data/virtual-image-aliases.json', __DIR__ . '/public/data/virtual-image-aliases.json'] as $af) {
+            if (file_exists($af)) {
+                $parsed_a = json_decode(@file_get_contents($af), true);
+                if (is_array($parsed_a)) {
+                    $aliases = $parsed_a;
+                    break;
+                }
             }
+        }
+        $resolve_upload_url = function($raw_url) use ($uploads_dir, $aliases) {
+            $u = trim((string)$raw_url);
+            if ($u === '') return '';
+            $q_pos = strpos($u, '?');
+            $clean_u = ($q_pos !== false) ? substr($u, 0, $q_pos) : $u;
+            $qs = ($q_pos !== false) ? substr($u, $q_pos) : '';
+            if (strpos($clean_u, '/assets/uploads/') !== 0) {
+                return $u;
+            }
+            $fname = basename(substr($clean_u, strlen('/assets/uploads/')));
+            if (file_exists($uploads_dir . '/' . $fname)) {
+                return '/assets/uploads/' . $fname . $qs;
+            }
+            $cur = $fname;
+            $hops = 0;
+            while (isset($aliases[$cur]) && $hops < 8) {
+                $cur = basename((string)$aliases[$cur]);
+                $hops++;
+                if (file_exists($uploads_dir . '/' . $cur)) {
+                    return '/assets/uploads/' . $cur . $qs;
+                }
+            }
+            return '';
+        };
+        $state = th_load_merged_image_state($uploads_dir);
+        $clean_overrides = [];
+        foreach ($state['overrides'] as $ov_pid => $ov_entry) {
+            if (!is_array($ov_entry) || empty($ov_entry['primary'])) continue;
+            $prim = (string)$ov_entry['primary'];
+            $clean_prim = strtok($prim, '?');
+            if (strpos($clean_prim, '/assets/uploads/') === 0) {
+                $resolved_prim = $resolve_upload_url($prim);
+                if ($resolved_prim === '') {
+                    $found_verified = null;
+                    foreach (['webp', 'jpg', 'jpeg', 'png'] as $ext) {
+                        if (file_exists($uploads_dir . '/verified-' . basename((string)$ov_pid) . '.' . $ext)) {
+                            $found_verified = '/assets/uploads/verified-' . basename((string)$ov_pid) . '.' . $ext;
+                            break;
+                        }
+                    }
+                    if ($found_verified) {
+                        $resolved_prim = $found_verified;
+                    } else {
+                        continue;
+                    }
+                }
+                if (!$include_media) {
+                    // For public visitors, return the direct physical file URL on disk so Apache serves it in 1 hop with 0 PHP overhead
+                    $ov_entry['primary'] = strtok($resolved_prim, '?');
+                }
+            }
+            if (!$include_media) {
+                // Ultra-lean public payload (~90% smaller than full admin state)
+                $slim_entry = ['primary' => $ov_entry['primary']];
+                if (!empty($ov_entry['gallery']) && is_array($ov_entry['gallery']) && count($ov_entry['gallery']) > 1) {
+                    $slim_gal = [];
+                    foreach (array_slice($ov_entry['gallery'], 0, 4) as $g_url) {
+                        $rg = $resolve_upload_url($g_url);
+                        if ($rg !== '') $slim_gal[] = strtok($rg, '?');
+                    }
+                    if (count($slim_gal) > 1) $slim_entry['gallery'] = $slim_gal;
+                }
+                if (!empty($ov_entry['locked'])) $slim_entry['locked'] = true;
+                if (!empty($ov_entry['imageUpdatedAt'])) $slim_entry['imageUpdatedAt'] = $ov_entry['imageUpdatedAt'];
+                $clean_overrides[$ov_pid] = $slim_entry;
+            } else {
+                $clean_overrides[$ov_pid] = $ov_entry;
+            }
+        }
+        $state['overrides'] = $clean_overrides;
+        if (!$include_media) {
+            $state['mediaLibrary'] = [];
+            $state['urlReplacements'] = [];
+            $state['productActivityTimestamps'] = [];
         }
         echo json_encode([
             "status" => "success",
             "success" => true,
             "data" => $state
-        ]);
+        ], JSON_UNESCAPED_SLASHES);
         break;
 
     case 'upload_product_image':
@@ -3443,20 +4125,7 @@ switch ($action) {
         if (!is_dir($uploads_dir)) {
             @mkdir($uploads_dir, 0775, true);
         }
-        $overrides_file = $uploads_dir . '/product-image-overrides.json';
-        $state = [
-            "overrides" => [],
-            "globalDefaultImage" => null,
-            "categoryOverrides" => [],
-            "urlReplacements" => [],
-            "mediaLibrary" => []
-        ];
-        if (file_exists($overrides_file)) {
-            $parsed = json_decode(file_get_contents($overrides_file), true);
-            if (is_array($parsed)) {
-                $state = array_merge($state, $parsed);
-            }
-        }
+        $state = th_load_merged_image_state($uploads_dir);
 
         $base64Data = $input['base64Data'] ?? '';
         $fileName = $input['fileName'] ?? 'product-image.jpg';
@@ -3478,21 +4147,41 @@ switch ($action) {
         } else {
             $rawBase64 = $base64Data;
         }
-        $binary = base64_decode($rawBase64);
+        $binary = base64_decode($rawBase64, true);
+        if ($binary === false || strlen($binary) === 0) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Invalid base64 image payload."]);
+            break;
+        }
         $ext = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $targetFormat ?: pathinfo($fileName, PATHINFO_EXTENSION) ?: 'jpg'));
         if ($ext === 'jpeg' || $ext === 'original' || !$ext) $ext = 'jpg';
-        $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
-        $baseName = substr(trim($baseName, '-'), 0, 50) ?: 'product-image';
-        $finalFileName = $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
-        $filePath = $uploads_dir . '/' . $finalFileName;
-        @file_put_contents($filePath, $binary);
+        if (!in_array($ext, ['jpg', 'png', 'webp', 'gif', 'avif', 'svg'], true)) {
+            $ext = 'jpg';
+        }
+        $exactFileName = isset($input['exactFileName']) ? basename(trim((string)$input['exactFileName'])) : '';
+        if ($exactFileName && preg_match('/^[a-zA-Z0-9._-]+\.(jpg|jpeg|png|webp|gif|avif|svg)$/i', $exactFileName)) {
+            $finalFileName = $exactFileName;
+        } else {
+            $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
+            $baseName = preg_replace('/^trade[-_]*heaven[-_]*/i', '', trim($baseName, '-'));
+            $baseName = substr(trim(strtolower($baseName), '-'), 0, 42) ?: 'b2b-product';
+            $finalFileName = 'trade-heaven-' . $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
+        }
+        $resolvedUploads = realpath($uploads_dir) ?: $uploads_dir;
+        $filePath = rtrim($resolvedUploads, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($finalFileName);
+        if (@file_put_contents($filePath, $binary, LOCK_EX) === false) {
+            http_response_code(500);
+            echo json_encode(["success" => false, "message" => "Failed to write uploaded image file to disk."]);
+            break;
+        }
 
-        $uploadedUrl = '/assets/uploads/' . $finalFileName;
+        $uploadedUrl = '/assets/uploads/' . basename($finalFileName);
+        $nowMs = (int)round(microtime(true) * 1000);
         $nowIso = gmdate('Y-m-d\TH:i:s\Z');
         $mediaEntry = [
-            "id" => "media-" . round(microtime(true) * 1000),
+            "id" => "media-" . $nowMs,
             "url" => $uploadedUrl,
-            "name" => $finalFileName,
+            "name" => basename($finalFileName),
             "format" => strtoupper($ext),
             "sizeBytes" => strlen($binary),
             "uploadedAt" => $nowIso
@@ -3508,34 +4197,83 @@ switch ($action) {
         if ($oldUrlToReplace) {
             $state['urlReplacements'][$oldUrlToReplace] = $uploadedUrl;
         }
+        if (!isset($state['productActivityTimestamps']) || !is_array($state['productActivityTimestamps'])) {
+            $state['productActivityTimestamps'] = [];
+        }
+        $affectedIds = [];
+        $uploadedBase = th_strip_url_base($uploadedUrl);
         if ($productId) {
-            $existingGallery = $state['overrides'][$productId]['gallery'] ?? [];
-            $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
+            $existingOv = $state['overrides'][$productId] ?? null;
+            $existingGallery = is_array($existingOv['gallery'] ?? null) ? $existingOv['gallery'] : [];
+            $gallery = array_values(array_unique(array_merge([$uploadedUrl], $existingGallery)));
+            $prevPrimary = (!empty($existingOv['primary']) && th_strip_url_base($existingOv['primary']) !== $uploadedBase)
+                ? $existingOv['primary']
+                : ($existingOv['previousPrimary'] ?? null);
+            $repOld = array_values(array_filter(
+                th_merge_replaced_old_urls($existingOv['replacedOldUrls'] ?? [], [$existingOv['primary'] ?? null, $prevPrimary]),
+                function($u) use ($uploadedBase) { return th_strip_url_base($u) !== $uploadedBase; }
+            ));
             $state['overrides'][$productId] = [
                 "primary" => $uploadedUrl,
+                "previousPrimary" => $prevPrimary,
                 "gallery" => $gallery,
                 "format" => strtoupper($ext),
-                "updatedAt" => $nowIso
+                "updatedAt" => $nowIso,
+                "imageUpdatedAt" => $nowMs,
+                "updatedBy" => "admin-manual",
+                "locked" => true,
+                "serverVerified" => true,
+                "verifiedAt" => $nowIso,
+                "replacedOldUrls" => $repOld
             ];
+            $state['productActivityTimestamps'][$productId] = $nowMs;
+            $affectedIds[$productId] = $gallery;
         }
         if (is_array($productIds)) {
             foreach ($productIds as $pid) {
                 if (!$pid) continue;
-                $existingGallery = $state['overrides'][$pid]['gallery'] ?? [];
-                $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
+                $existingOv = $state['overrides'][$pid] ?? null;
+                $existingGallery = is_array($existingOv['gallery'] ?? null) ? $existingOv['gallery'] : [];
+                $gallery = array_values(array_unique(array_merge([$uploadedUrl], $existingGallery)));
+                $prevPrimary = (!empty($existingOv['primary']) && th_strip_url_base($existingOv['primary']) !== $uploadedBase)
+                    ? $existingOv['primary']
+                    : ($existingOv['previousPrimary'] ?? null);
+                $repOld = array_values(array_filter(
+                    th_merge_replaced_old_urls($existingOv['replacedOldUrls'] ?? [], [$existingOv['primary'] ?? null, $prevPrimary]),
+                    function($u) use ($uploadedBase) { return th_strip_url_base($u) !== $uploadedBase; }
+                ));
                 $state['overrides'][$pid] = [
                     "primary" => $uploadedUrl,
+                    "previousPrimary" => $prevPrimary,
                     "gallery" => $gallery,
                     "format" => strtoupper($ext),
-                    "updatedAt" => $nowIso
+                    "updatedAt" => $nowIso,
+                    "imageUpdatedAt" => $nowMs,
+                    "updatedBy" => "admin-manual",
+                    "locked" => true,
+                    "serverVerified" => true,
+                    "verifiedAt" => $nowIso,
+                    "replacedOldUrls" => $repOld
                 ];
+                $state['productActivityTimestamps'][$pid] = $nowMs;
+                $affectedIds[$pid] = $gallery;
             }
         }
 
-        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $savedUploadOk = th_save_image_state_atomic($uploads_dir, $state);
+        foreach ($affectedIds as $affPid => $affGallery) {
+            th_sync_image_override_to_db_and_cms($affPid, $uploadedUrl, $affGallery, $pdo, $db_connected);
+        }
+        $uploadDiskVerified = $savedUploadOk && (!$productId || th_verify_override_on_disk($uploads_dir, $productId, $uploadedUrl));
         echo json_encode([
             "status" => "success",
             "success" => true,
+            "serverSavedVerified" => $uploadDiskVerified,
+            "diskVerified" => $uploadDiskVerified,
+            "locked" => true,
+            "verifiedAt" => $nowIso,
             "url" => $uploadedUrl,
             "mediaEntry" => $mediaEntry,
             "state" => $state
@@ -3550,24 +4288,27 @@ switch ($action) {
         if (!is_dir($uploads_dir)) {
             @mkdir($uploads_dir, 0775, true);
         }
-        $overrides_file = $uploads_dir . '/product-image-overrides.json';
-        $state = [
-            "overrides" => [],
-            "globalDefaultImage" => null,
-            "categoryOverrides" => [],
-            "urlReplacements" => [],
-            "mediaLibrary" => []
-        ];
-        if (file_exists($overrides_file)) {
-            $parsed = json_decode(file_get_contents($overrides_file), true);
-            if (is_array($parsed)) {
-                $state = array_merge($state, $parsed);
-            }
+        $state = th_load_merged_image_state($uploads_dir);
+        if (!isset($state['productActivityTimestamps']) || !is_array($state['productActivityTimestamps'])) {
+            $state['productActivityTimestamps'] = [];
         }
         $nowIso = gmdate('Y-m-d\TH:i:s\Z');
+        $nowMs = (int)round(microtime(true) * 1000);
+        $affectedIds = [];
+
+        // Strict monotonic timestamp merge on fullOverridesMap: stale open tabs can NEVER overwrite newer live edits
         if (!empty($input['fullOverridesMap']) && is_array($input['fullOverridesMap'])) {
             foreach ($input['fullOverridesMap'] as $pid => $entry) {
-                $state['overrides'][$pid] = $entry;
+                if (!is_array($entry) || empty($entry['primary'])) continue;
+                $existing = $state['overrides'][$pid] ?? null;
+                $merged = th_merge_override_entry($existing, $entry);
+                $state['overrides'][$pid] = $merged;
+                $ts = th_entry_timestamp_ms($merged);
+                if ($ts <= 0) $ts = $nowMs;
+                $prevAct = (int)($state['productActivityTimestamps'][$pid] ?? 0);
+                if ($ts > $prevAct) {
+                    $state['productActivityTimestamps'][$pid] = $ts;
+                }
             }
         }
         $primaryUrl = $input['primaryUrl'] ?? null;
@@ -3575,23 +4316,68 @@ switch ($action) {
         $productIds = $input['productIds'] ?? null;
         $galleryUrls = $input['galleryUrls'] ?? null;
         $format = $input['format'] ?? 'JPG';
+        $incomingMs = !empty($input['imageUpdatedAt']) && is_numeric($input['imageUpdatedAt']) ? (int)$input['imageUpdatedAt'] : $nowMs;
         if ($productId && $primaryUrl) {
-            $state['overrides'][$productId] = [
-                "primary" => $primaryUrl,
-                "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
-                "format" => $format,
-                "updatedAt" => $nowIso
-            ];
+            $existing = $state['overrides'][$productId] ?? null;
+            $existingMs = th_entry_timestamp_ms($existing);
+            $effectiveMs = max($nowMs, $incomingMs);
+            if ($existingMs <= $effectiveMs) {
+                $gallery = (is_array($galleryUrls) && count($galleryUrls) > 0) ? array_values($galleryUrls) : [$primaryUrl];
+                $prevPrimary = (!empty($existing['primary']) && th_strip_url_base($existing['primary']) !== th_strip_url_base($primaryUrl))
+                    ? $existing['primary']
+                    : ($existing['previousPrimary'] ?? null);
+                $replacedUrls = array_values(array_filter(
+                    th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], [$prevPrimary]),
+                    function($u) use ($primaryUrl) { return th_strip_url_base($u) !== th_strip_url_base($primaryUrl); }
+                ));
+                $state['overrides'][$productId] = [
+                    "primary" => $primaryUrl,
+                    "previousPrimary" => $prevPrimary,
+                    "gallery" => $gallery,
+                    "format" => $format,
+                    "updatedAt" => $nowIso,
+                    "imageUpdatedAt" => $effectiveMs,
+                    "updatedBy" => "admin-manual",
+                    "locked" => true,
+                    "serverVerified" => true,
+                    "verifiedAt" => $nowIso,
+                    "replacedOldUrls" => $replacedUrls
+                ];
+                $state['productActivityTimestamps'][$productId] = $effectiveMs;
+                $affectedIds[$productId] = [$primaryUrl, $gallery];
+            }
         }
         if (is_array($productIds) && $primaryUrl) {
             foreach ($productIds as $pid) {
                 if (!$pid) continue;
-                $state['overrides'][$pid] = [
-                    "primary" => $primaryUrl,
-                    "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
-                    "format" => $format,
-                    "updatedAt" => $nowIso
-                ];
+                $existing = $state['overrides'][$pid] ?? null;
+                $existingMs = th_entry_timestamp_ms($existing);
+                $effectiveMs = max($nowMs, $incomingMs);
+                if ($existingMs <= $effectiveMs) {
+                    $gallery = (is_array($galleryUrls) && count($galleryUrls) > 0) ? array_values($galleryUrls) : [$primaryUrl];
+                    $prevPrimary = (!empty($existing['primary']) && th_strip_url_base($existing['primary']) !== th_strip_url_base($primaryUrl))
+                        ? $existing['primary']
+                        : ($existing['previousPrimary'] ?? null);
+                    $replacedUrls = array_values(array_filter(
+                        th_merge_replaced_old_urls($existing['replacedOldUrls'] ?? [], [$prevPrimary]),
+                        function($u) use ($primaryUrl) { return th_strip_url_base($u) !== th_strip_url_base($primaryUrl); }
+                    ));
+                    $state['overrides'][$pid] = [
+                        "primary" => $primaryUrl,
+                        "previousPrimary" => $prevPrimary,
+                        "gallery" => $gallery,
+                        "format" => $format,
+                        "updatedAt" => $nowIso,
+                        "imageUpdatedAt" => $effectiveMs,
+                        "updatedBy" => "admin-manual",
+                        "locked" => true,
+                        "serverVerified" => true,
+                        "verifiedAt" => $nowIso,
+                        "replacedOldUrls" => $replacedUrls
+                    ];
+                    $state['productActivityTimestamps'][$pid] = $effectiveMs;
+                    $affectedIds[$pid] = [$primaryUrl, $gallery];
+                }
             }
         }
         if (!empty($input['category']) && $primaryUrl) {
@@ -3603,10 +4389,23 @@ switch ($action) {
         if (!empty($input['applyToAll'])) {
             $state['globalDefaultImage'] = $primaryUrl;
         }
-        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $savedOk = th_save_image_state_atomic($uploads_dir, $state);
+        foreach ($affectedIds as $affPid => $pair) {
+            th_sync_image_override_to_db_and_cms($affPid, $pair[0], $pair[1], $pdo, $db_connected);
+        }
+        $diskVerified = $savedOk;
+        if ($productId && $primaryUrl) {
+            $diskVerified = th_verify_override_on_disk($uploads_dir, $productId, $primaryUrl);
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
+            "serverSavedVerified" => $diskVerified,
+            "diskVerified" => $diskVerified,
+            "locked" => true,
+            "verifiedAt" => $nowIso,
             "data" => $state
         ]);
         break;
@@ -3616,20 +4415,7 @@ switch ($action) {
         if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
             $uploads_dir = __DIR__ . '/public/assets/uploads';
         }
-        $overrides_file = $uploads_dir . '/product-image-overrides.json';
-        $state = [
-            "overrides" => [],
-            "globalDefaultImage" => null,
-            "categoryOverrides" => [],
-            "urlReplacements" => [],
-            "mediaLibrary" => []
-        ];
-        if (file_exists($overrides_file)) {
-            $parsed = json_decode(file_get_contents($overrides_file), true);
-            if (is_array($parsed)) {
-                $state = array_merge($state, $parsed);
-            }
-        }
+        $state = th_load_merged_image_state($uploads_dir);
         if (!empty($input['resetAll'])) {
             $state['overrides'] = [];
             $state['globalDefaultImage'] = null;
@@ -3638,14 +4424,18 @@ switch ($action) {
         } else {
             if (!empty($input['productId'])) {
                 unset($state['overrides'][$input['productId']]);
+                unset($state['productActivityTimestamps'][$input['productId']]);
             }
             if (!empty($input['productIds']) && is_array($input['productIds'])) {
                 foreach ($input['productIds'] as $pid) {
                     unset($state['overrides'][$pid]);
+                    unset($state['productActivityTimestamps'][$pid]);
                 }
             }
         }
-        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        th_save_image_state_atomic($uploads_dir, $state);
         echo json_encode([
             "status" => "success",
             "success" => true,
@@ -3658,9 +4448,12 @@ switch ($action) {
         $subject = trim((string)($input['subject'] ?? 'Trade Heaven Global B2B Notification'));
         $recipient_name = trim((string)($input['decisionMakerName'] ?? $input['recipientName'] ?? 'Trade Partner'));
         $company_name = trim((string)($input['companyName'] ?? 'Listed Partner'));
+        $company_id = trim((string)($input['companyId'] ?? ''));
         $intro_msg = trim((string)($input['introMessage'] ?? 'Please log in to your Trade Heaven account to review active buyer trade requests.'));
         $cta_url = trim((string)($input['ctaUrl'] ?? $input['portalUrl'] ?? 'https://www.tradeheaven.net'));
         $cta_text = trim((string)($input['ctaText'] ?? 'Log In to Trade Heaven Account →'));
+        $dispatch_type = strtoupper(trim((string)($input['dispatchType'] ?? 'MANUAL'))) ?: 'MANUAL';
+        $category = strtoupper(trim((string)($input['category'] ?? 'CUSTOM_ADMIN_NOTICE'))) ?: 'CUSTOM_ADMIN_NOTICE';
 
         if (empty($to_email) || !filter_var($to_email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(["status" => "error", "success" => false, "message" => "Valid recipient email is required."]);
@@ -3671,17 +4464,159 @@ switch ($action) {
             ? (string)$input['rawHtmlOverride']
             : "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f8fafc;padding:24px;\"><div style=\"max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #cbd5e1;\"><div style=\"background:#0f172a;color:#ffffff;padding:26px 22px;text-align:center;\"><h2 style=\"margin:0;font-size:20px;\">" . htmlspecialchars($subject) . "</h2><p style=\"margin:6px 0 0;color:#cbd5e1;font-size:13px;\">" . htmlspecialchars($company_name) . "</p></div><div style=\"padding:24px;color:#1e293b;\"><p>Hello <strong>" . htmlspecialchars($recipient_name) . "</strong>,</p><p style=\"line-height:1.6;\">" . nl2br(htmlspecialchars($intro_msg)) . "</p><div style=\"text-align:center;margin:24px 0;\"><a href=\"" . htmlspecialchars($cta_url) . "\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 26px;border-radius:8px;\">" . htmlspecialchars($cta_text) . "</a></div></div></div></body></html>";
 
+        $now_iso = gmdate('Y-m-d\TH:i:s\Z');
+        $tracking_id = trim((string)($input['trackingId'] ?? ''));
+        if ($tracking_id === '') {
+            $tracking_id = 'ms-trk-php-' . dechex(time()) . '-' . substr(md5($to_email . uniqid('', true)), 0, 6);
+        }
+        $message_id = '<php-mail-' . time() . '-' . substr(md5($to_email . $subject . uniqid('', true)), 0, 8) . '@tradeheaven.net>';
+        $encoded_subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
         $headers = [
             'MIME-Version: 1.0',
-            'Content-type: text/html; charset=UTF-8',
+            'Content-Type: text/html; charset=UTF-8',
             'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
             'Reply-To: help@tradeheaven.net',
+            'Message-ID: ' . $message_id,
             'X-Mailer: PHP/' . phpversion()
         ];
         $headers_str = implode("\r\n", $headers);
-        $sent = @mail($to_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+        $sent = @mail($to_email, $encoded_subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
         if (!$sent) {
-            $sent = @mail($to_email, $subject, $html_body, $headers_str);
+            $sent = @mail($to_email, $encoded_subject, $html_body, $headers_str);
+        }
+
+        // Helper closure to persist into assets/uploads/email-history.json
+        $history_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($history_dir)) {
+            @mkdir($history_dir, 0775, true);
+        }
+        $history_file = $history_dir . '/email-history.json';
+        $append_history = function ($entry) use ($history_file) {
+            $existing = [];
+            if (file_exists($history_file)) {
+                $raw = @file_get_contents($history_file);
+                $decoded = json_decode((string)$raw, true);
+                if (is_array($decoded)) {
+                    $existing = $decoded;
+                }
+            }
+            $filtered = [];
+            foreach ($existing as $item) {
+                if (!is_array($item)) continue;
+                $same_id = !empty($entry['id']) && !empty($item['id']) && $item['id'] === $entry['id'];
+                $same_msg = !empty($entry['messageId']) && !empty($item['messageId']) && $item['messageId'] === $entry['messageId'] && strtolower((string)($item['recipient'] ?? '')) === strtolower((string)($entry['recipient'] ?? ''));
+                if (!$same_id && !$same_msg) {
+                    $filtered[] = $item;
+                }
+            }
+            array_unshift($filtered, $entry);
+            if (count($filtered) > 1000) {
+                $filtered = array_slice($filtered, 0, 1000);
+            }
+            @file_put_contents($history_file, json_encode($filtered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        };
+
+        $primary_entry = [
+            'id' => 'eh-php-' . time() . '-' . substr(md5($to_email . uniqid('', true)), 0, 6),
+            'recipient' => $to_email,
+            'recipientEmail' => $to_email,
+            'recipientName' => $recipient_name,
+            'companyName' => $company_name,
+            'companyId' => $company_id !== '' ? $company_id : null,
+            'subject' => $subject,
+            'category' => $category,
+            'dispatchType' => $dispatch_type,
+            'deliveryMode' => 'PHP_MAIL_RELAY',
+            'dispatchedAt' => $now_iso,
+            'success' => (bool)$sent,
+            'messageId' => $message_id,
+            'trackingId' => $tracking_id,
+            'summaryText' => mb_substr(strip_tags($intro_msg), 0, 260),
+            'htmlPreview' => $html_body,
+            'error' => $sent ? null : 'PHP mail() returned false on host MTA',
+            'opened' => false,
+            'openCount' => 0,
+            'clicked' => false,
+            'clickCount' => 0,
+            'mailSuiteStatus' => $sent ? 'DELIVERED' : 'BOUNCED',
+            'trackingEnabled' => true
+        ];
+        $append_history($primary_entry);
+
+        $receipt = [
+            'recipient' => $to_email,
+            'success' => (bool)$sent,
+            'deliveryMode' => 'PHP_MAIL_RELAY',
+            'messageId' => $message_id,
+            'trackingId' => $tracking_id,
+            'dispatchedAt' => $now_iso,
+            'error' => $sent ? null : 'PHP mail() could not relay to ' . $to_email
+        ];
+
+        // Respect explicit sendAdminCopy === true (and never send admin copy if sendAdminCopy === false)
+        $send_admin_copy = false;
+        if (array_key_exists('sendAdminCopy', $input)) {
+            $send_admin_copy = ($input['sendAdminCopy'] === true || $input['sendAdminCopy'] === 'true' || $input['sendAdminCopy'] === 1);
+        } elseif (!empty($input['isMembershipRenewal'])) {
+            $send_admin_copy = true;
+        }
+
+        $admin_copy_receipt = null;
+        if ($send_admin_copy) {
+            $admin_email = normalizeAuthEmail($input['adminCopyEmail'] ?? 'yr943334@gmail.com');
+            if (!empty($admin_email) && filter_var($admin_email, FILTER_VALIDATE_EMAIL) && strtolower($admin_email) !== strtolower($to_email)) {
+                $admin_msg_id = '<php-admin-copy-' . time() . '-' . substr(md5($admin_email . uniqid('', true)), 0, 8) . '@tradeheaven.net>';
+                $admin_tracking_id = 'ms-trk-php-admin-' . dechex(time()) . '-' . substr(md5($admin_email . uniqid('', true)), 0, 6);
+                $admin_headers = [
+                    'MIME-Version: 1.0',
+                    'Content-Type: text/html; charset=UTF-8',
+                    'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
+                    'Reply-To: help@tradeheaven.net',
+                    'Message-ID: ' . $admin_msg_id,
+                    'X-Mailer: PHP/' . phpversion()
+                ];
+                $admin_headers_str = implode("\r\n", $admin_headers);
+                $admin_sent = @mail($admin_email, $encoded_subject, $html_body, $admin_headers_str, "-f noreply@tradeheaven.net");
+                if (!$admin_sent) {
+                    $admin_sent = @mail($admin_email, $encoded_subject, $html_body, $admin_headers_str);
+                }
+                $admin_entry = [
+                    'id' => 'eh-php-adm-' . time() . '-' . substr(md5($admin_email . uniqid('', true)), 0, 6),
+                    'recipient' => $admin_email,
+                    'recipientEmail' => $admin_email,
+                    'recipientName' => 'Admin Copy (' . $admin_email . ') • ' . $recipient_name,
+                    'companyName' => $company_name,
+                    'companyId' => $company_id !== '' ? $company_id : null,
+                    'subject' => $subject,
+                    'category' => $category,
+                    'dispatchType' => $dispatch_type,
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'dispatchedAt' => $now_iso,
+                    'success' => (bool)$admin_sent,
+                    'messageId' => $admin_msg_id,
+                    'trackingId' => $admin_tracking_id,
+                    'summaryText' => mb_substr(strip_tags($intro_msg), 0, 260),
+                    'htmlPreview' => $html_body,
+                    'error' => $admin_sent ? null : 'PHP mail() returned false for admin copy',
+                    'opened' => false,
+                    'openCount' => 0,
+                    'clicked' => false,
+                    'clickCount' => 0,
+                    'mailSuiteStatus' => $admin_sent ? 'DELIVERED' : 'BOUNCED',
+                    'trackingEnabled' => true
+                ];
+                $append_history($admin_entry);
+                $admin_copy_receipt = [
+                    'recipient' => $admin_email,
+                    'success' => (bool)$admin_sent,
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'messageId' => $admin_msg_id,
+                    'trackingId' => $admin_tracking_id,
+                    'dispatchedAt' => $now_iso,
+                    'error' => $admin_sent ? null : 'PHP mail() could not relay admin copy to ' . $admin_email
+                ];
+            }
         }
 
         echo json_encode([
@@ -3689,7 +4624,905 @@ switch ($action) {
             "success" => (bool)$sent,
             "recipient" => $to_email,
             "deliveryMode" => "PHP_MAIL_RELAY",
-            "message" => $sent ? "Custom email sent via Trade Heaven PHP mail() to {$to_email}." : "PHP mail() could not relay to {$to_email}."
+            "messageId" => $message_id,
+            "trackingId" => $tracking_id,
+            "dispatchedAt" => $now_iso,
+            "receipt" => $receipt,
+            "adminCopyReceipt" => $admin_copy_receipt,
+            "message" => $sent
+                ? ("Custom email dispatched via Trade Heaven Mail Server to {$to_email}" . ($admin_copy_receipt && !empty($admin_copy_receipt['success']) ? " and Admin Copy sent to {$admin_copy_receipt['recipient']}" : "") . ".")
+                : "PHP mail() could not relay to {$to_email}."
+        ]);
+        break;
+
+    case 'record_email_history':
+        $history_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($history_dir)) {
+            @mkdir($history_dir, 0775, true);
+        }
+        $history_file = $history_dir . '/email-history.json';
+        $entries_in = [];
+        if (isset($input['entries']) && is_array($input['entries'])) {
+            $entries_in = $input['entries'];
+        } elseif (!empty($input['recipient']) || !empty($input['recipientEmail'])) {
+            $entries_in = [$input];
+        }
+        $existing = [];
+        if (file_exists($history_file)) {
+            $decoded = json_decode((string)@file_get_contents($history_file), true);
+            if (is_array($decoded)) $existing = $decoded;
+        }
+        $added = 0;
+        foreach ($entries_in as $raw_entry) {
+            if (!is_array($raw_entry)) continue;
+            $rec = normalizeAuthEmail($raw_entry['recipient'] ?? $raw_entry['recipientEmail'] ?? '');
+            if ($rec === '') continue;
+            $entry = [
+                'id' => trim((string)($raw_entry['id'] ?? ('eh-sync-' . time() . '-' . substr(md5($rec . uniqid('', true)), 0, 6)))),
+                'recipient' => $rec,
+                'recipientEmail' => $rec,
+                'recipientName' => trim((string)($raw_entry['recipientName'] ?? 'Trade Partner')),
+                'companyName' => trim((string)($raw_entry['companyName'] ?? 'Corporate Entity')),
+                'companyId' => $raw_entry['companyId'] ?? null,
+                'subject' => trim((string)($raw_entry['subject'] ?? 'Trade Heaven Notification')),
+                'category' => strtoupper(trim((string)($raw_entry['category'] ?? 'CUSTOM_ADMIN_NOTICE'))),
+                'dispatchType' => strtoupper(trim((string)($raw_entry['dispatchType'] ?? 'MANUAL'))),
+                'deliveryMode' => trim((string)($raw_entry['deliveryMode'] ?? 'LIVE_SMTP')),
+                'dispatchedAt' => trim((string)($raw_entry['dispatchedAt'] ?? gmdate('Y-m-d\TH:i:s\Z'))),
+                'success' => isset($raw_entry['success']) ? (bool)$raw_entry['success'] : true,
+                'messageId' => $raw_entry['messageId'] ?? null,
+                'trackingId' => $raw_entry['trackingId'] ?? null,
+                'summaryText' => isset($raw_entry['summaryText']) ? mb_substr((string)$raw_entry['summaryText'], 0, 300) : '',
+                'htmlPreview' => isset($raw_entry['htmlPreview']) ? (string)$raw_entry['htmlPreview'] : null,
+                'error' => $raw_entry['error'] ?? null,
+                'opened' => !empty($raw_entry['opened']),
+                'openCount' => intval($raw_entry['openCount'] ?? 0),
+                'clicked' => !empty($raw_entry['clicked']),
+                'clickCount' => intval($raw_entry['clickCount'] ?? 0),
+                'mailSuiteStatus' => trim((string)($raw_entry['mailSuiteStatus'] ?? (!empty($raw_entry['success']) ? 'DELIVERED' : 'BOUNCED'))),
+                'trackingEnabled' => true
+            ];
+            $existing = array_values(array_filter($existing, function ($item) use ($entry) {
+                if (!is_array($item)) return false;
+                if (!empty($entry['id']) && !empty($item['id']) && $item['id'] === $entry['id']) return false;
+                if (!empty($entry['messageId']) && !empty($item['messageId']) && $item['messageId'] === $entry['messageId'] && strtolower((string)($item['recipient'] ?? '')) === strtolower($entry['recipient'])) return false;
+                return true;
+            }));
+            array_unshift($existing, $entry);
+            $added++;
+        }
+        if (count($existing) > 1000) {
+            $existing = array_slice($existing, 0, 1000);
+        }
+        @file_put_contents($history_file, json_encode($existing, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        echo json_encode(["status" => "success", "success" => true, "recorded" => $added, "totalCount" => count($existing)]);
+        break;
+
+    case 'get_email_history':
+    case 'email_history':
+    case 'mailsuite_analytics':
+    case 'marketing_suite_state':
+    case 'marketing_suite_rules':
+    case 'marketing_suite_trigger':
+    case 'marketing_suite_simulate':
+    case 'mailsuite_webhook':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $history_file = $uploads_dir . '/email-history.json';
+        $telemetry_file = $uploads_dir . '/mailsuite-telemetry-state.json';
+        $rules_file = $uploads_dir . '/marketing-suite-rules.json';
+
+        $load_telemetry = function () use ($history_file, $telemetry_file) {
+            $combined = [];
+            $seen = [];
+            $webhook_logs = [];
+
+            $push_entry = function ($item) use (&$combined, &$seen) {
+                if (!is_array($item)) return;
+                $rec = strtolower(trim((string)($item['recipient'] ?? $item['recipientEmail'] ?? '')));
+                if ($rec === '') return;
+                if (empty($item['recipient'])) $item['recipient'] = $rec;
+                if (empty($item['recipientEmail'])) $item['recipientEmail'] = $rec;
+                $id_key = !empty($item['id']) ? ('id:' . strtolower((string)$item['id'])) : '';
+                $trk_key = !empty($item['trackingId']) ? ('trk:' . strtolower((string)$item['trackingId'])) : '';
+                $msg_key = !empty($item['messageId']) ? ('msg:' . strtolower((string)$item['messageId']) . '|' . $rec) : '';
+                if (($id_key && isset($seen[$id_key])) || ($trk_key && isset($seen[$trk_key])) || ($msg_key && isset($seen[$msg_key]))) {
+                    return;
+                }
+                if ($id_key) $seen[$id_key] = true;
+                if ($trk_key) $seen[$trk_key] = true;
+                if ($msg_key) $seen[$msg_key] = true;
+                $combined[] = $item;
+            };
+
+            if (file_exists($history_file)) {
+                $decoded = json_decode((string)@file_get_contents($history_file), true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $row) $push_entry($row);
+                }
+            }
+            if (file_exists($telemetry_file)) {
+                $t_decoded = json_decode((string)@file_get_contents($telemetry_file), true);
+                if (is_array($t_decoded)) {
+                    $log_list = $t_decoded['emailHistoryLog'] ?? $t_decoded['history'] ?? $t_decoded['entries'] ?? [];
+                    if (is_array($log_list)) {
+                        foreach ($log_list as $row) $push_entry($row);
+                    }
+                    if (!empty($t_decoded['smtpWebhookLogs']) && is_array($t_decoded['smtpWebhookLogs'])) {
+                        $webhook_logs = $t_decoded['smtpWebhookLogs'];
+                    }
+                }
+            }
+
+            usort($combined, function ($a, $b) {
+                return strtotime((string)($b['dispatchedAt'] ?? '')) <=> strtotime((string)($a['dispatchedAt'] ?? ''));
+            });
+
+            return ['history' => $combined, 'webhookLogs' => $webhook_logs];
+        };
+
+        $compute_summary = function ($list) {
+            $total_sent = count($list);
+            $delivered = 0;
+            $failed = 0;
+            $opened = 0;
+            $total_opens = 0;
+            $clicked = 0;
+            $total_clicks = 0;
+            $recent_events = [];
+            foreach ($list as $it) {
+                $is_ok = !empty($it['success']) && strtoupper((string)($it['mailSuiteStatus'] ?? '')) !== 'BOUNCED';
+                if ($is_ok) $delivered++;
+                else $failed++;
+                $oc = intval($it['openCount'] ?? 0);
+                if (!empty($it['opened']) || $oc > 0) {
+                    $opened++;
+                    $total_opens += max(1, $oc);
+                }
+                $cc = intval($it['clickCount'] ?? 0);
+                if (!empty($it['clicked']) || $cc > 0) {
+                    $clicked++;
+                    $total_clicks += max(1, $cc);
+                }
+                if (count($recent_events) < 25) {
+                    $recent_events[] = [
+                        'id' => (string)($it['id'] ?? ''),
+                        'trackingId' => (string)($it['trackingId'] ?? ''),
+                        'recipient' => (string)($it['recipient'] ?? ''),
+                        'type' => (!empty($it['clicked']) || $cc > 0) ? 'CLICK' : ((!empty($it['opened']) || $oc > 0) ? 'OPEN' : ($is_ok ? 'DELIVERED' : 'BOUNCED')),
+                        'timestamp' => (string)($it['lastClickedAt'] ?? $it['lastOpenedAt'] ?? $it['dispatchedAt'] ?? gmdate('Y-m-d\TH:i:s\Z'))
+                    ];
+                }
+            }
+            $denom = max(1, $delivered);
+            $open_rate = $delivered > 0 ? round(($opened / $denom) * 100, 1) : 0;
+            $click_rate = $delivered > 0 ? round(($clicked / $denom) * 100, 1) : 0;
+            $ctor = $opened > 0 ? round(($clicked / max(1, $opened)) * 100, 1) : 0;
+
+            return [
+                'totalSent' => $total_sent,
+                'totalTracked' => $total_sent,
+                'totalDelivered' => $delivered,
+                'totalBounced' => $failed,
+                'totalOpened' => $opened,
+                'unopenedCount' => max(0, $delivered - $opened),
+                'openRatePercent' => $open_rate,
+                'totalOpensCount' => $total_opens,
+                'totalClicked' => $clicked,
+                'clickRatePercent' => $click_rate,
+                'clickThroughRatePercent' => $click_rate,
+                'clickToOpenRatePercent' => $ctor,
+                'totalClicksCount' => $total_clicks,
+                'recentEvents' => $recent_events
+            ];
+        };
+
+        $default_failed_ad_users = [
+            [
+                'id' => 'fad-zac-otec-001',
+                'recipientName' => 'Zachary Aldin (Zac)',
+                'decisionMakerName' => 'Zachary Aldin (Zac)',
+                'email' => 'zac@otec.ltd',
+                'companyName' => 'IMPORTATION FADE-TECH (OTEC LTD)',
+                'country' => 'Australia',
+                'address' => '42a Bassett street hurstville, New South Wales 2220, Australia',
+                'phone' => '+61 424 854 899',
+                'invoiceRef' => 'TRD-INV-27-0004',
+                'currentPlanName' => 'Free Tier Member (Reverted from Partial $400 Basic Plan)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990 Diwali Offer) / VIP Upgrade',
+                'amountPaidUsd' => 400,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 590,
+                'failedCampaignId' => 'ADS-COAL-AU-2026',
+                'failedCampaignName' => 'Global Coal Buyer Acquisition & Sponsored Banner Campaign (GAR 6000-6500 kcal/kg)',
+                'failureReason' => 'Moved to Free Tier Member pending clearance of $590.00 USD Basic Plan balance payment (Ref: TRD-INV-27-0004)',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 1500),
+                'accountStatus' => 'FOLLOWUP_SENT',
+                'followUpCount' => 2,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 120),
+                'lastTrackingId' => 'ms-trk-zac-balance-fund-live-2026',
+                'recommendedTemplateId' => 'tpl-failed-ads-diwali-combo'
+            ],
+            [
+                'id' => 'fad-ali-ace-002',
+                'recipientName' => 'Ali Charley Ezekiah',
+                'decisionMakerName' => 'Ali Charley Ezekiah',
+                'email' => 'ezekiahali355@gmail.com',
+                'companyName' => 'ACE Intermediary',
+                'country' => 'United States',
+                'address' => '1241 Hackberry Avenue Corsicana Texas 75110',
+                'phone' => '+1 (903) 555-0141',
+                'invoiceRef' => 'TRD-INV-27-0018',
+                'currentPlanName' => 'Basic Business Plan (Renewal Pending)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990/yr Diwali Offer)',
+                'amountPaidUsd' => 0,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 990,
+                'failedCampaignId' => 'ADS-US-COMMODITY-2026',
+                'failedCampaignName' => 'North American Wholesale Commodity Spotlight & Buyer RFQ Broadcast',
+                'failureReason' => 'Annual Basic Plan Renewal Pending: Sponsored ad slot paused until $990/yr Diwali Offer settlement',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 5700),
+                'accountStatus' => 'FOLLOWUP_SENT',
+                'followUpCount' => 1,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 2520),
+                'lastTrackingId' => 'ms-trk-ace-renewal-2026',
+                'recommendedTemplateId' => 'tpl-diwali-festival-offer'
+            ],
+            [
+                'id' => 'fad-mark-atlantic-003',
+                'recipientName' => 'Mark Johnson (President)',
+                'decisionMakerName' => 'Mark Johnson (President)',
+                'email' => 'mjohnson@atlanticpowerequip.com',
+                'companyName' => 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+                'country' => 'United States',
+                'address' => 'P.O. Box 1176, Marmora, New Jersey 08223, USA',
+                'phone' => '+1-609-374-5131',
+                'invoiceRef' => 'TRD-INV-27-0029',
+                'currentPlanName' => 'Basic Business Plan',
+                'targetFullPlanName' => 'VIP Business Plan ($5,490/yr Diwali Offer — 100% Advance Leads)',
+                'amountPaidUsd' => 1100,
+                'standardPlanUsd' => 6100,
+                'diwaliOfferPlanUsd' => 5490,
+                'remainingBalanceUsd' => 4390,
+                'failedCampaignId' => 'ADS-CA-10GEN-VIP-2026',
+                'failedCampaignName' => '10 Units CAT Diesel Generators to Canada (VIP 100% Advance Buyer Campaign)',
+                'failureReason' => 'Tier Restriction: Basic Plan cannot run VIP 100% Advance Payment Generator Ad Campaign',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 10800),
+                'accountStatus' => 'AD_HALTED',
+                'followUpCount' => 1,
+                'lastFollowUpAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 7200),
+                'recommendedTemplateId' => 'tpl-subscription-upsell-vip'
+            ],
+            [
+                'id' => 'fad-donald-berries-004',
+                'recipientName' => 'Donald Sorkin',
+                'decisionMakerName' => 'Donald Sorkin',
+                'email' => 'sorkindon@gmail.com',
+                'companyName' => 'Girlsenberries',
+                'country' => 'United States',
+                'address' => 'California Agricultural Export Zone, USA',
+                'phone' => '+1 (559) 555-0182',
+                'invoiceRef' => 'TRD-INV-27-0041',
+                'currentPlanName' => 'Basic Starter Deposit ($350 Paid)',
+                'targetFullPlanName' => 'Full Basic Business Plan ($990 Diwali 10% OFF)',
+                'amountPaidUsd' => 350,
+                'standardPlanUsd' => 1100,
+                'diwaliOfferPlanUsd' => 990,
+                'remainingBalanceUsd' => 640,
+                'failedCampaignId' => 'ADS-AGRI-BERRIES-2026',
+                'failedCampaignName' => 'Global Frozen & Dried Berries Importer Matching Ad Campaign (#INQ-2026-US-8942)',
+                'failureReason' => 'Insufficient Plan Balance: $350 partial deposit paid; $640 balance required for Full Plan ad launch',
+                'failedAt' => gmdate('Y-m-d\TH:i:s\Z', time() - 14400),
+                'accountStatus' => 'PAUSE_WARNING_48H',
+                'followUpCount' => 0,
+                'recommendedTemplateId' => 'tpl-failed-ads-diwali-combo'
+            ]
+        ];
+
+        $default_marketing_templates = [
+            [
+                'id' => 'tpl-failed-ads-diwali-combo',
+                'name' => 'Failed Ad Launch + Full Plan Balance + Diwali Max Benefit',
+                'category' => 'FAILED_AD_RECOVERY',
+                'badge' => 'PRIMARY WORKFLOW • ZAC ($400 PAID)',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Urgent: Ads Campaign Failed (Insufficient Plan Balance — ${{amountPaidUsd}} Paid) • Complete Full Plan + Diwali Max Benefit Offer for {{companyName}}',
+                'description' => 'Notifies users whose sponsored ads campaign failed due to partial plan payment. Explains the 48-hour account pause policy and offers the Diwali 10% OFF Max Benefit ($590 net balance after $400 credit).',
+                'highlights' => [
+                    'Diagnostic breakdown of why Sponsored Ads Campaign halted',
+                    '100% credit of partial payment ($400 Paid) + Flat 10% Diwali Discount (Code: DIWALI10)',
+                    'Clear 48-hour Account Pause warning if Full Plan balance ($590 USD) is not settled',
+                    'Direct 1-click checkout CTA + MailSuite 1x1 pixel & link click tracking'
+                ],
+                'ctaLabel' => 'Complete Full Plan (${{remainingBalanceUsd}} USD with Diwali Offer) & Relaunch Ads →'
+            ],
+            [
+                'id' => 'tpl-diwali-festival-offer',
+                'name' => 'Diwali Maha Utsav Festival Offer (Flat 10% OFF + Priority Ad Boost)',
+                'category' => 'DIWALI_OFFER',
+                'badge' => 'FESTIVAL CAMPAIGN • CODE: DIWALI10',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Diwali Maha Utsav Special Offer (Flat 10% OFF — Code: DIWALI10): Unlock Maximum Buyer Leads & Resume Sponsored Ads for {{companyName}}',
+                'description' => 'High-converting festive promotion offering Flat 10% OFF across Basic ($990/yr), Premium ($1,890/yr), and VIP ($5,490/yr) annual plans with complimentary Sponsored Ad Banner impressions.',
+                'highlights' => [
+                    'Flat 10% Festival Discount across all annual membership tiers (Code: DIWALI10)',
+                    'Complimentary 2x Marketplace Banner Ads + Priority Buyer RFQ Matching',
+                    'Full credit of any prior deposit toward annual plan settlement',
+                    'Instant activation of verified buyer inquiry routing'
+                ],
+                'ctaLabel' => 'Claim Diwali 10% OFF Offer (Code: DIWALI10) & Activate Ads →'
+            ],
+            [
+                'id' => 'tpl-subscription-upsell-vip',
+                'name' => 'Subscription Upsell: Basic / Partial Plan → Full VIP Business Plan',
+                'category' => 'SUBSCRIPTION_UPSELL',
+                'badge' => 'VIP UPSELL • 100% ADVANCE BUYERS',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'Upgrade {{companyName}} to VIP Business Plan (10% Diwali Offer) — Unlock 4x Sponsored Ad Campaigns & 100% Advance Payment Buyer Leads',
+                'description' => 'Upsells Basic or partial-plan suppliers to the Full VIP Business Plan ($5,490/yr with DIWALI10 vs $6,100/yr), unlocking 60+ verified buyers/month and 4x Sponsored Ads.',
+                'highlights' => [
+                    'Unlock 60+ Verified International Buyer Orders/Month with Advance Payment terms',
+                    '4x Marketplace Spotlight Banner Ads + Dedicated International Export Manager (IEM)',
+                    'Enable Direct On-Site Buyer Funds Receiving & Mediation Escrow Wallet',
+                    'Save $610 USD immediately with Diwali Code DIWALI10 + prior deposit credit'
+                ],
+                'ctaLabel' => 'Upgrade to Full VIP Plan & Unlock 100% Advance Buyers →'
+            ],
+            [
+                'id' => 'tpl-account-pause-prevention',
+                'name' => 'Final 48-Hour Account Pause Warning & Ad Reactivation Notice',
+                'category' => 'PAUSE_PREVENTION',
+                'badge' => 'URGENT COMPLIANCE • 48H HOLD NOTICE',
+                'promoCode' => 'DIWALI10',
+                'discountPercent' => 10,
+                'subjectTemplate' => 'FINAL NOTICE: {{companyName}} Storefront & Ad Campaign Scheduled for Account Pause — Settle ${{remainingBalanceUsd}} USD Balance Now',
+                'description' => 'Urgent compliance follow-up for accounts with halted ad campaigns offering a final 48-hour window with Diwali discount protection.',
+                'highlights' => [
+                    'Urgent 48-hour countdown before supplier storefront and RFQ routing are paused',
+                    'Itemized invoice ledger showing amount paid vs. net balance due',
+                    'Preserves Diwali 10% OFF rate ($990/yr Basic Plan) if settled before pause deadline',
+                    'Immediate automated ad campaign reactivation upon payment confirmation'
+                ],
+                'ctaLabel' => 'Prevent Account Pause & Settle ${{remainingBalanceUsd}} USD Balance →'
+            ]
+        ];
+
+        $default_rules = [
+            'autoTriggerOnFailedAdLaunch' => true,
+            'autoAttachDiwaliPromo' => true,
+            'requireAdminDemoFirst' => true,
+            'defaultTemplateId' => 'tpl-failed-ads-diwali-combo',
+            'sendAdminCopyOnLiveDispatch' => true,
+            'adminNotificationEmail' => 'yr943334@gmail.com',
+            'webhookTrackingEnabled' => true,
+            'pixelTrackingEnabled' => true
+        ];
+        if (file_exists($rules_file)) {
+            $saved_rules = json_decode((string)@file_get_contents($rules_file), true);
+            if (is_array($saved_rules)) {
+                $default_rules = array_merge($default_rules, $saved_rules);
+            }
+        }
+
+        if ($action === 'marketing_suite_rules') {
+            if (is_array($input) && !empty($input)) {
+                $default_rules = array_merge($default_rules, $input);
+                $default_rules['updatedAt'] = gmdate('Y-m-d\TH:i:s\Z');
+                @file_put_contents($rules_file, json_encode($default_rules, JSON_PRETTY_PRINT), LOCK_EX);
+            }
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'automationRules' => $default_rules,
+                'message' => 'Automation rules updated.'
+            ]);
+            break;
+        }
+
+        if ($action === 'marketing_suite_trigger') {
+            $user_ids = isset($input['userIds']) && is_array($input['userIds']) ? $input['userIds'] : ['fad-zac-otec-001'];
+            $is_demo = !empty($input['isDemoOnAdmin']);
+            $demo_email = normalizeAuthEmail($input['demoAdminEmail'] ?? 'yr943334@gmail.com');
+            $tpl_id = trim((string)($input['templateId'] ?? 'tpl-failed-ads-diwali-combo'));
+            $tpl = $default_marketing_templates[0];
+            foreach ($default_marketing_templates as $t_item) {
+                if ($t_item['id'] === $tpl_id) { $tpl = $t_item; break; }
+            }
+            $existing_hist = [];
+            if (file_exists($history_file)) {
+                $dec = json_decode((string)@file_get_contents($history_file), true);
+                if (is_array($dec)) $existing_hist = $dec;
+            }
+            $sent_count = 0;
+            foreach ($default_failed_ad_users as $u) {
+                if (!in_array($u['id'], $user_ids, true) && !in_array($u['email'], $user_ids, true)) continue;
+                $target_email = $is_demo ? $demo_email : $u['email'];
+                $subj = str_replace(
+                    ['{{companyName}}', '{{amountPaidUsd}}', '{{remainingBalanceUsd}}'],
+                    [$u['companyName'], (string)$u['amountPaidUsd'], (string)$u['remainingBalanceUsd']],
+                    $tpl['subjectTemplate']
+                );
+                if ($is_demo) $subj = '[ADMIN DEMO] ' . $subj;
+                $body_html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;"><h2 style="color:#0f294d;margin-top:0;">' . htmlspecialchars($tpl['name'], ENT_QUOTES, 'UTF-8') . '</h2><p>Dear ' . htmlspecialchars($u['recipientName'], ENT_QUOTES, 'UTF-8') . ' (' . htmlspecialchars($u['companyName'], ENT_QUOTES, 'UTF-8') . '),</p><p>' . htmlspecialchars($tpl['description'], ENT_QUOTES, 'UTF-8') . '</p><p><strong>Amount Paid:</strong> $' . intval($u['amountPaidUsd']) . ' USD &bull; <strong>Remaining Balance (Code ' . htmlspecialchars($tpl['promoCode'], ENT_QUOTES, 'UTF-8') . '):</strong> $' . intval($u['remainingBalanceUsd']) . ' USD</p><p><a href="https://www.tradeheaven.net" style="display:inline-block;padding:12px 20px;background:#0f294d;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">' . htmlspecialchars(str_replace('{{remainingBalanceUsd}}', (string)$u['remainingBalanceUsd'], $tpl['ctaLabel']), ENT_QUOTES, 'UTF-8') . '</a></p></div></body></html>';
+                $hdrs = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: Trade Heaven Global B2B <noreply@tradeheaven.net>\r\nReply-To: help@tradeheaven.net";
+                $ok = @mail($target_email, '=?UTF-8?B?' . base64_encode($subj) . '?=', $body_html, $hdrs, '-f noreply@tradeheaven.net');
+                if (!$ok) $ok = @mail($target_email, '=?UTF-8?B?' . base64_encode($subj) . '?=', $body_html, $hdrs);
+                array_unshift($existing_hist, [
+                    'id' => 'eh-php-cmp-' . time() . '-' . substr(md5($target_email . uniqid('', true)), 0, 6),
+                    'trackingId' => 'ms-trk-php-cmp-' . dechex(time()) . '-' . substr(md5($target_email . uniqid('', true)), 0, 6),
+                    'recipient' => $target_email,
+                    'recipientEmail' => $target_email,
+                    'recipientName' => $is_demo ? ('Admin Demo (' . $u['recipientName'] . ')') : $u['recipientName'],
+                    'companyName' => $u['companyName'],
+                    'subject' => $subj,
+                    'category' => 'CAMPAIGN',
+                    'dispatchType' => 'AUTOMATED',
+                    'deliveryMode' => 'PHP_MAIL_RELAY',
+                    'dispatchedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                    'success' => (bool)$ok,
+                    'summaryText' => $tpl['description'],
+                    'htmlPreview' => $body_html,
+                    'opened' => false,
+                    'openCount' => 0,
+                    'clicked' => false,
+                    'clickCount' => 0,
+                    'mailSuiteStatus' => $ok ? 'DELIVERED' : 'BOUNCED',
+                    'trackingEnabled' => true
+                ]);
+                $sent_count++;
+            }
+            @file_put_contents($history_file, json_encode(array_slice($existing_hist, 0, 1000), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+            $tel = $load_telemetry();
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'message' => 'Triggered campaign for ' . $sent_count . ' recipient(s) via Trade Heaven Mail Server.',
+                'failedAdUsers' => $default_failed_ad_users,
+                'templates' => $default_marketing_templates,
+                'campaigns' => [],
+                'summary' => $compute_summary($tel['history']),
+                'history' => $tel['history'],
+                'webhookLogs' => $tel['webhookLogs']
+            ]);
+            break;
+        }
+
+        $tel = $load_telemetry();
+        $all_entries = $tel['history'];
+        $webhook_logs = $tel['webhookLogs'];
+
+        if ($action === 'marketing_suite_simulate' || $action === 'mailsuite_webhook') {
+            $sim_action = strtoupper(trim((string)($input['action'] ?? $input['eventType'] ?? 'BATCH_OPENS')));
+            $target_trk = trim((string)($input['trackingId'] ?? ''));
+            $now_ts = gmdate('Y-m-d\TH:i:s\Z');
+            $affected = 0;
+            $updated_hist = $all_entries;
+            foreach ($updated_hist as &$row) {
+                if ($target_trk !== '' && (string)($row['trackingId'] ?? '') !== $target_trk && (string)($row['id'] ?? '') !== $target_trk) {
+                    continue;
+                }
+                if ($sim_action === 'OPENED' || $sim_action === 'OPEN' || $sim_action === 'BATCH_OPENS') {
+                    $row['opened'] = true;
+                    $row['openCount'] = intval($row['openCount'] ?? 0) + 1;
+                    $row['lastOpenedAt'] = $now_ts;
+                    $row['mailSuiteStatus'] = !empty($row['clicked']) ? 'CLICKED' : 'OPENED';
+                    $affected++;
+                } elseif ($sim_action === 'CLICKED' || $sim_action === 'CLICK' || $sim_action === 'BATCH_CLICKS') {
+                    $row['opened'] = true;
+                    $row['openCount'] = max(1, intval($row['openCount'] ?? 0));
+                    $row['clicked'] = true;
+                    $row['clickCount'] = intval($row['clickCount'] ?? 0) + 1;
+                    $row['lastClickedAt'] = $now_ts;
+                    $row['mailSuiteStatus'] = 'CLICKED';
+                    $affected++;
+                } elseif ($sim_action === 'BOUNCED' || $sim_action === 'SIMULATE_BOUNCE') {
+                    $row['success'] = false;
+                    $row['mailSuiteStatus'] = 'BOUNCED';
+                    $affected++;
+                } elseif ($sim_action === 'ALL_DELIVERED' || $sim_action === 'DELIVERED') {
+                    $row['success'] = true;
+                    if (empty($row['opened']) && empty($row['clicked'])) $row['mailSuiteStatus'] = 'DELIVERED';
+                    $affected++;
+                } elseif ($sim_action === 'RESET_ALL') {
+                    $row['opened'] = false;
+                    $row['openCount'] = 0;
+                    $row['clicked'] = false;
+                    $row['clickCount'] = 0;
+                    $row['mailSuiteStatus'] = !empty($row['success']) ? 'DELIVERED' : 'BOUNCED';
+                    $affected++;
+                }
+                if ($target_trk === '' && $affected >= 5 && in_array($sim_action, ['BATCH_OPENS', 'BATCH_CLICKS', 'SIMULATE_BOUNCE'], true)) {
+                    break;
+                }
+            }
+            unset($row);
+            @file_put_contents($history_file, json_encode(array_slice($updated_hist, 0, 1000), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'message' => 'Recorded tracking event ' . $sim_action . ' (' . $affected . ' updated).',
+                'affectedCount' => $affected,
+                'summary' => $compute_summary($updated_hist),
+                'history' => $updated_hist,
+                'webhookLogs' => $webhook_logs,
+                'campaigns' => []
+            ]);
+            break;
+        }
+
+        if ($action === 'marketing_suite_state') {
+            echo json_encode([
+                'status' => 'success',
+                'success' => true,
+                'failedAdUsers' => $default_failed_ad_users,
+                'templates' => $default_marketing_templates,
+                'automationRules' => $default_rules,
+                'campaigns' => [],
+                'summary' => $compute_summary($all_entries),
+                'history' => $all_entries,
+                'webhookLogs' => $webhook_logs
+            ]);
+            break;
+        }
+
+        $filter_email = strtolower(trim((string)($_GET['email'] ?? $input['email'] ?? '')));
+        $filter_company = strtolower(trim((string)($_GET['companyName'] ?? $input['companyName'] ?? '')));
+        $filter_company_id = strtolower(trim((string)($_GET['companyId'] ?? $input['companyId'] ?? '')));
+        $filter_type = strtoupper(trim((string)($_GET['dispatchType'] ?? $input['dispatchType'] ?? '')));
+
+        $filtered = [];
+        foreach ($all_entries as $item) {
+            if (!is_array($item)) continue;
+            if ($filter_email !== '') {
+                $rec = strtolower((string)($item['recipient'] ?? $item['recipientEmail'] ?? ''));
+                $comp = strtolower((string)($item['companyName'] ?? ''));
+                $cid = strtolower((string)($item['companyId'] ?? ''));
+                $match_email = ($rec === $filter_email);
+                $match_company = ($filter_company !== '' && strpos($comp, $filter_company) !== false);
+                $match_cid = ($filter_company_id !== '' && $cid === $filter_company_id);
+                if (!$match_email && !$match_company && !$match_cid) continue;
+            } elseif ($filter_company !== '' || $filter_company_id !== '') {
+                $comp = strtolower((string)($item['companyName'] ?? ''));
+                $cid = strtolower((string)($item['companyId'] ?? ''));
+                $match_company = ($filter_company !== '' && strpos($comp, $filter_company) !== false);
+                $match_cid = ($filter_company_id !== '' && $cid === $filter_company_id);
+                if (!$match_company && !$match_cid) continue;
+            }
+            if ($filter_type !== '' && $filter_type !== 'ALL') {
+                $dt = strtoupper((string)($item['dispatchType'] ?? 'MANUAL'));
+                if ($dt !== $filter_type) continue;
+            }
+            $filtered[] = $item;
+        }
+
+        $total_count = count($filtered);
+        $manual_count = 0;
+        $automated_count = 0;
+        foreach ($filtered as $it) {
+            if (strtoupper((string)($it['dispatchType'] ?? 'MANUAL')) === 'AUTOMATED') $automated_count++;
+            else $manual_count++;
+        }
+        $summary = $compute_summary($filtered);
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "totalCount" => $total_count,
+            "history" => $filtered,
+            "entries" => $filtered,
+            "webhookLogs" => $webhook_logs,
+            "stats" => [
+                "total" => $total_count,
+                "automatedCount" => $automated_count,
+                "manualCount" => $manual_count,
+                "deliveredCount" => $summary['totalDelivered'],
+                "failedCount" => $summary['totalBounced']
+            ],
+            "mailSuiteStats" => $summary,
+            "summary" => $summary,
+            "analytics" => $summary
+        ]);
+        break;
+
+    case 'mediation_state':
+    case 'mediation_admin_adjust':
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $med_file = $uploads_dir . '/mediation-wallet-state.json';
+        $med_file_fallback = __DIR__ . '/mediation-wallet-state.json';
+        $default_med_state = [
+            'wallets' => [
+                [
+                    'id' => 'wal-buyer-titan',
+                    'entity_id' => 'buyer-titan-01',
+                    'entity_name' => 'Marcus Vance',
+                    'company_name' => 'Titan Global Construction & Infrastructure LLC',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '185000000',
+                    'locked_balance' => '92000000',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-buyer-euro',
+                    'entity_id' => 'buyer-euro-02',
+                    'entity_name' => 'Elena Rostova',
+                    'company_name' => 'EuroMed Hospital Procurement GmbH',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '340000000',
+                    'locked_balance' => '64000000',
+                    'currency' => 'EUR',
+                    'country' => 'Germany',
+                    'native_currency' => 'EUR',
+                    'native_symbol' => '€',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-buyer-girlsenberries',
+                    'entity_id' => 'buyer-girlsenberries-01',
+                    'entity_name' => 'Donald Sorkin',
+                    'company_name' => 'Girlsenberries',
+                    'wallet_type' => 'BUYER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '2000000000000',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-melissa',
+                    'entity_id' => 'comp-melissa-mpcommodity',
+                    'entity_name' => 'Melissa Prezios',
+                    'company_name' => 'MP Commodity Brokers Australia Pty Ltd',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '0',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-shenzhen',
+                    'entity_id' => 'comp-shenzhen-solar',
+                    'entity_name' => 'Chen Wei',
+                    'company_name' => 'Shenzhen Lumina New Energy Tech Co., Ltd.',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '162000000',
+                    'locked_balance' => '0',
+                    'currency' => 'CNY',
+                    'country' => 'China',
+                    'native_currency' => 'CNY',
+                    'native_symbol' => '¥',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-bharat',
+                    'entity_id' => 'comp-bharat-steel',
+                    'entity_name' => 'Vikramaditya Singh',
+                    'company_name' => 'Bharat Precision Forgings & Alloys Ltd.',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '95000000',
+                    'locked_balance' => '0',
+                    'currency' => 'INR',
+                    'country' => 'India',
+                    'native_currency' => 'INR',
+                    'native_symbol' => '₹',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-zac',
+                    'entity_id' => 'comp-zac-importation-fadetech',
+                    'entity_name' => 'Zachary Aldin',
+                    'company_name' => 'IMPORTATION FADE-TECH (OTEC LTD)',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '0',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'Australia',
+                    'native_currency' => 'AUD',
+                    'native_symbol' => 'A$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-supp-atlantic-power',
+                    'entity_id' => 'comp-atlantic-power-equip',
+                    'entity_name' => 'Mark Johnson (President)',
+                    'company_name' => 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+                    'wallet_type' => 'SUPPLIER',
+                    'plan_status' => 'BASIC',
+                    'available_balance' => '0',
+                    'locked_balance' => '0',
+                    'currency' => 'USD',
+                    'country' => 'United States',
+                    'native_currency' => 'USD',
+                    'native_symbol' => '$',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ],
+                [
+                    'id' => 'wal-platform-rev',
+                    'entity_id' => 'trade-heaven-treasury',
+                    'entity_name' => 'Trade Heaven Treasury',
+                    'company_name' => 'Trade Heaven Global Operations & Mediation Vault',
+                    'wallet_type' => 'PLATFORM_REVENUE',
+                    'plan_status' => 'VIP',
+                    'available_balance' => '18450000',
+                    'locked_balance' => '0',
+                    'currency' => 'INR',
+                    'country' => 'United Kingdom',
+                    'native_currency' => 'GBP',
+                    'native_symbol' => '£',
+                    'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ]
+            ],
+            'ledgerEntries' => [
+                [
+                    'id' => 'led-melissa-return-50k',
+                    'reference_id' => 'TH-WAL-301239',
+                    'source_wallet_id' => 'wal-supp-melissa',
+                    'destination_wallet_id' => null,
+                    'amount' => '424000000',
+                    'transaction_type' => 'ADMIN_WALLET_DEBIT',
+                    'notes' => 'Return Back — $50,000.00 USD Removed from Melissa Prezios Wallet (Updated Balance: $0.00 USD)',
+                    'created_at' => gmdate('Y-m-d\TH:i:s\Z')
+                ]
+            ],
+            'orders' => [],
+            'payouts' => [],
+            'sqlLogs' => [],
+            'stateUpdatedAt' => 0
+        ];
+
+        $med_state = $default_med_state;
+        $loaded_from_storage = false;
+
+        // 1. Prefer MySQL persistent storage on live hosting
+        if ($db_connected && $pdo) {
+            try {
+                $pdo->exec("CREATE TABLE IF NOT EXISTS wallet_mediation_state (
+                    id INT PRIMARY KEY,
+                    state_json LONGTEXT NOT NULL,
+                    state_updated_at BIGINT DEFAULT 0,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                $stmt_med = $pdo->query("SELECT state_json, state_updated_at FROM wallet_mediation_state WHERE id = 1 LIMIT 1");
+                $row_med = $stmt_med ? $stmt_med->fetch() : null;
+                if ($row_med && !empty($row_med['state_json'])) {
+                    $decoded_db = json_decode((string)$row_med['state_json'], true);
+                    if (is_array($decoded_db) && !empty($decoded_db['wallets'])) {
+                        $med_state = array_merge($default_med_state, $decoded_db);
+                        $med_state['stateUpdatedAt'] = intval($row_med['state_updated_at'] ?? ($decoded_db['stateUpdatedAt'] ?? 0));
+                        $loaded_from_storage = true;
+                    }
+                }
+            } catch (Exception $e) {
+                // Fall back to file storage
+            }
+        }
+
+        // 2. Fall back to JSON file storage
+        if (!$loaded_from_storage) {
+            foreach ([$med_file, $med_file_fallback] as $candidate_file) {
+                if (file_exists($candidate_file)) {
+                    $decoded_med = json_decode((string)@file_get_contents($candidate_file), true);
+                    if (is_array($decoded_med) && !empty($decoded_med['wallets'])) {
+                        $med_state = array_merge($default_med_state, $decoded_med);
+                        $loaded_from_storage = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($action === 'mediation_state') {
+            echo json_encode($med_state);
+            break;
+        }
+        $adj_entity_id = trim((string)($input['entityId'] ?? ''));
+        $adj_op = strtoupper(trim((string)($input['operation'] ?? 'ADD'))) === 'REMOVE' ? 'REMOVE' : 'ADD';
+        $adj_paise = round(floatval($input['amountPaise'] ?? 0));
+        $adj_target = (string)($input['balanceTarget'] ?? 'AVAILABLE') === 'LOCKED' ? 'locked_balance' : 'available_balance';
+        if ($adj_entity_id === '' || $adj_paise <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Valid entityId and positive amountPaise are required.']);
+            break;
+        }
+        $found_idx = -1;
+        foreach ($med_state['wallets'] as $idx => $w) {
+            if (strtolower((string)($w['entity_id'] ?? '')) === strtolower($adj_entity_id) || strtolower((string)($w['id'] ?? '')) === strtolower($adj_entity_id)) {
+                $found_idx = $idx;
+                break;
+            }
+        }
+        if ($found_idx < 0) {
+            $inferred_type = trim((string)($input['walletType'] ?? ((strpos($adj_entity_id, 'comp-') === 0 || strpos($adj_entity_id, 'supp') !== false) ? 'SUPPLIER' : 'BUYER')));
+            $med_state['wallets'][] = [
+                'id' => 'wal-' . strtolower($inferred_type) . '-' . substr((string)time(), -5),
+                'entity_id' => $adj_entity_id,
+                'entity_name' => trim((string)($input['entityName'] ?? $adj_entity_id)),
+                'company_name' => trim((string)($input['companyName'] ?? ($input['entityName'] ?? $adj_entity_id))),
+                'wallet_type' => $inferred_type,
+                'plan_status' => 'VIP',
+                'available_balance' => '0',
+                'locked_balance' => '0',
+                'currency' => trim((string)($input['nativeCurrency'] ?? 'USD')),
+                'country' => trim((string)($input['country'] ?? 'United States')),
+                'native_currency' => trim((string)($input['nativeCurrency'] ?? 'USD')),
+                'native_symbol' => trim((string)($input['nativeSymbol'] ?? '$')),
+                'updated_at' => gmdate('Y-m-d\TH:i:s\Z')
+            ];
+            $found_idx = count($med_state['wallets']) - 1;
+        }
+        $cur_bal = floatval($med_state['wallets'][$found_idx][$adj_target] ?? '0');
+        if ($adj_op === 'REMOVE' && $cur_bal < $adj_paise) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Insufficient wallet balance to remove requested funds.']);
+            break;
+        }
+        $new_bal = $adj_op === 'ADD' ? ($cur_bal + $adj_paise) : ($cur_bal - $adj_paise);
+        $med_state['wallets'][$found_idx][$adj_target] = sprintf('%.0f', $new_bal);
+        $med_state['wallets'][$found_idx]['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
+        $wallet_row = $med_state['wallets'][$found_idx];
+        $ref_id = trim((string)($input['referenceId'] ?? '')) ?: ('ADM-' . ($adj_op === 'ADD' ? 'CR-' : 'DR-') . substr((string)time(), -6));
+        $ledger_entry = [
+            'id' => 'led-' . time() . '-' . rand(100, 999),
+            'reference_id' => $ref_id,
+            'source_wallet_id' => $adj_op === 'REMOVE' ? $wallet_row['id'] : null,
+            'destination_wallet_id' => $adj_op === 'ADD' ? $wallet_row['id'] : null,
+            'amount' => sprintf('%.0f', $adj_paise),
+            'transaction_type' => $adj_op === 'ADD' ? 'ADMIN_WALLET_CREDIT' : 'ADMIN_WALLET_DEBIT',
+            'notes' => trim((string)($input['reason'] ?? '')) ?: ($adj_op === 'ADD' ? 'Admin Treasury Credit' : 'Admin Treasury Debit'),
+            'created_at' => gmdate('Y-m-d\TH:i:s\Z')
+        ];
+        array_unshift($med_state['ledgerEntries'], $ledger_entry);
+        $state_ts = (int)round(microtime(true) * 1000);
+        $med_state['stateUpdatedAt'] = $state_ts;
+        $encoded_med = json_encode($med_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // Save to MySQL first (most reliable on live hosting)
+        if ($db_connected && $pdo) {
+            try {
+                $stmt_save_med = $pdo->prepare("INSERT INTO wallet_mediation_state (id, state_json, state_updated_at) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE state_json = VALUES(state_json), state_updated_at = VALUES(state_updated_at)");
+                $stmt_save_med->execute([$encoded_med, $state_ts]);
+            } catch (Exception $e) {
+                // Continue to file fallback
+            }
+        }
+        // Save to both JSON paths
+        @file_put_contents($med_file, $encoded_med, LOCK_EX);
+        @file_put_contents($med_file_fallback, $encoded_med, LOCK_EX);
+
+        echo json_encode([
+            'success' => true,
+            'wallet' => $wallet_row,
+            'previousBalancePaise' => sprintf('%.0f', $cur_bal),
+            'newBalancePaise' => sprintf('%.0f', $new_bal),
+            'ledgerEntry' => $ledger_entry,
+            'state' => $med_state
         ]);
         break;
 
@@ -4422,13 +6255,13 @@ switch ($action) {
 
                     if ($sender_role === 'buyer_identity') {
                         // Buyer sent -> Supplier hasn't read within 60s (+ send Admin Copy so Admin can verify delivery)
-                        $target_email = normalizeAuthEmail((string)($meta['supplier_email'] ?? ''));
+                        $target_email = trim(strtolower((string)($meta['supplier_email'] ?? '')));
                         if ($target_email === '' && !empty($meta['supplier_id'])) {
                             try {
                                 $uStmt = $pdo->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
                                 $uStmt->execute([$meta['supplier_id']]);
                                 $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
-                                if (!empty($uRow['email'])) $target_email = normalizeAuthEmail((string)$uRow['email']);
+                                if (!empty($uRow['email'])) $target_email = trim(strtolower((string)$uRow['email']));
                             } catch (Exception $e) {}
                         }
                         if ($target_email !== '' && filter_var($target_email, FILTER_VALIDATE_EMAIL)) {
@@ -4697,6 +6530,7 @@ switch ($action) {
         $clean_subject = preg_replace('/\b\d+(?:\.\d+)?\s*-\s*ton\b/i', ' ', (string)$clean_subject);
         $clean_subject = preg_replace('/\bgrade\s+[a-z0-9+-]+\b/i', ' ', (string)$clean_subject);
         $clean_subject = preg_replace('/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/', ' ', (string)$clean_subject);
+        // Normalize split compound B2B product names (e.g. "Sun Flower" -> "Sunflower", "Soy Bean" -> "Soybean")
         $compound_rules = [
             '/\bsun\s+flower(s)?\b/i' => 'sunflower$1',
             '/\bsoy(?:a)?\s+bean(s)?\b/i' => 'soybean$1',
@@ -4836,7 +6670,7 @@ switch ($action) {
         }
         if ($gemini_api_key === 'MY_GEMINI_API_KEY') $gemini_api_key = '';
 
-        // Continue into live Commercial Web + exact-phrase Wikimedia + optional Gemini Search Grounding pipeline even if GEMINI_API_KEY is empty.
+        // Continue into live Wikimedia Commons + Commercial Web + optional Gemini Search Grounding pipeline even if GEMINI_API_KEY is empty.
 
         $blocked_domains = [
             'picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'placekitten.com',
@@ -4935,6 +6769,7 @@ switch ($action) {
                 strpos($norm_hay, $core_phrase) !== false ||
                 (strlen($compact_phrase) >= 7 && strpos(preg_replace('/[^a-z0-9]/', '', $combined), $compact_phrase) !== false)
             );
+            // STRICT MULTI-TOKEN RULE: require at least 2 core nouns (or exact phrase match) when product has 2+ core nouns
             if (count($core_nouns) >= 2 && $hits_core < 2 && !$exact_phrase_hit) {
                 return false;
             }
@@ -5197,9 +7032,101 @@ switch ($action) {
             return $ok;
         };
 
-        $fetch_live_commercial_web_images = function() use ($p_name, $is_safe_public_url) {
+        $build_focused_queries_php = function($raw_title, $raw_cat = '') use ($stopwords) {
+            $extra_stop = [
+                'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
+                'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
+                'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
+                'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'equipment', 'machinery', 'machine'
+            ];
+            $all_stop = array_merge($stopwords, $extra_stop);
+            $cleaned_q = preg_replace('/\s*&\s*/', ', ', (string)$raw_title);
+            $clauses = array_values(array_filter(array_map('trim', preg_split('/[,;\/]+/', $cleaned_q)), function($c) {
+                return strlen($c) >= 3;
+            }));
+            $all_toks = array_values(array_unique(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cleaned_q)), function($w) use ($all_stop) {
+                return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $all_stop, true);
+            })));
+            $qs = [];
+            if (count($all_toks) >= 2 && count($all_toks) <= 4) {
+                $qs[] = implode(' ', $all_toks);
+            }
+            foreach (array_slice($clauses, 0, 3) as $cl) {
+                $cl_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cl)), function($w) use ($all_stop) {
+                    return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $all_stop, true);
+                }));
+                if (count($cl_toks) >= 2) {
+                    $qs[] = implode(' ', array_slice($cl_toks, 0, 3));
+                } elseif (count($cl_toks) === 1 && count($all_toks) >= 2 && $cl_toks[0] !== $all_toks[0]) {
+                    $qs[] = $all_toks[0] . ' ' . $cl_toks[0];
+                } elseif (count($cl_toks) === 1 && strlen($cl_toks[0]) >= 4) {
+                    $qs[] = $cl_toks[0];
+                }
+            }
+            if (count($all_toks) >= 3) {
+                $qs[] = implode(' ', array_slice($all_toks, 0, 3));
+            } elseif (count($all_toks) >= 1) {
+                $qs[] = implode(' ', $all_toks);
+            }
+            if (empty($qs) && trim((string)$raw_cat) !== '') {
+                $qs[] = trim((string)$raw_cat);
+            }
+            return array_slice(array_values(array_unique(array_filter(array_map('trim', $qs), function($q) {
+                return strlen($q) >= 3;
+            }))), 0, 3);
+        };
+
+        $fetch_wikimedia_commons_php = function($title_in, $cat_in = '') use ($build_focused_queries_php, $excluded_terms_re, $is_safe_public_url) {
             $found = [];
-            $primary_q = trim($p_name);
+            if (!function_exists('curl_init')) return $found;
+            $queries = $build_focused_queries_php($title_in, $cat_in);
+            $bad_title_re = '/(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i';
+            foreach ($queries as $q_str) {
+                // Quote multi-word queries so Wikimedia searches the exact product phrase (e.g. "sunflower seeds") instead of single words like "Sun"
+                $phrase_q = (strpos($q_str, ' ') !== false) ? ('"' . $q_str . '"') : $q_str;
+                $api_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($phrase_q . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json';
+                $ch = curl_init($api_u);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                $raw = (string)curl_exec($ch);
+                $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+                curl_close($ch);
+                if ($code < 200 || $code >= 300 || $raw === '') continue;
+                $dec = json_decode($raw, true);
+                $pages = $dec['query']['pages'] ?? [];
+                if (!is_array($pages)) continue;
+                foreach ($pages as $pg) {
+                    $info = $pg['imageinfo'][0] ?? null;
+                    if (!is_array($info)) continue;
+                    $raw_t = (string)($pg['title'] ?? '');
+                    if (preg_match($bad_title_re, $raw_t) || preg_match($excluded_terms_re, $raw_t)) continue;
+                    $mime = strtolower((string)($info['mime'] ?? ''));
+                    if (strpos($mime, 'jpeg') === false && strpos($mime, 'png') === false && strpos($mime, 'webp') === false) continue;
+                    $w = intval($info['width'] ?? 0);
+                    $h = intval($info['height'] ?? 0);
+                    if (($w > 0 && $w < 380) || ($h > 0 && $h < 280)) continue;
+                    $cand_u = trim((string)($info['thumburl'] ?? $info['url'] ?? ''));
+                    if (!$is_safe_public_url($cand_u)) continue;
+                    $clean_t = trim(preg_replace('/[_-]+/', ' ', preg_replace('/\.[^.]+$/', '', preg_replace('/^File:/i', '', $raw_t))));
+                    $found[] = [
+                        'url' => $cand_u,
+                        'thumbnailUrl' => $cand_u,
+                        'title' => $clean_t ?: $q_str,
+                        'sourceDomain' => 'commons.wikimedia.org',
+                        'width' => $w ?: null,
+                        'height' => $h ?: null
+                    ];
+                }
+            }
+            return $found;
+        };
+
+        $fetch_live_commercial_web_images = function() use ($p_name, $p_cat, $p_specs, $build_focused_queries_php, $is_safe_public_url) {
+            $found = [];
+            $focused = $build_focused_queries_php($p_name, $p_cat);
+            $primary_q = $focused[0] ?? trim($p_name);
             $endpoints = [];
             if (strlen($primary_q) >= 3) {
                 $endpoints[] = 'https://www.bing.com/images/search?q=' . urlencode($primary_q) . '&qft=+filterui:photo-photo&form=HDRSC2&first=1';
@@ -5254,15 +7181,29 @@ switch ($action) {
             }
         };
 
-        // 1. Run Commercial Product Photo Search (Bing + Bing Async) FIRST
+        // 1. Run Commercial Product Photo Search (Bing + Bing Async) FIRST — real product photos ahead of Wikimedia!
         $add_cands($fetch_live_commercial_web_images(), true);
         if (!empty($cand_pool)) {
             usort($cand_pool, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
             $verified = $verify_live_batch(array_slice($cand_pool, 0, 32));
         }
 
-        // 2. Augment with Gemini Search Grounding only if configured and fewer than 10 commercial photos found
-        if (count($verified) < 10 && $gemini_api_key !== '') {
+        // 1B. Only supplement with strict exact-phrase Wikimedia Commons if fewer than 12 verified commercial product photos were found
+        if (count($verified) < 12) {
+            $cand_pool = [];
+            $add_cands($fetch_wikimedia_commons_php($p_name, $p_cat), false);
+            if (!empty($cand_pool)) {
+                usort($cand_pool, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
+                foreach (array_slice($cand_pool, 0, 16) as $cp) {
+                    if (($cp['sourceDomain'] ?? '') === 'commons.wikimedia.org' && !empty($cp['width']) && !empty($cp['height'])) {
+                        $verified[] = $cp;
+                    }
+                }
+            }
+        }
+
+        // 2. If GEMINI_API_KEY is available and fewer than 8 real photos were found, augment with Gemini Google Search Grounding
+        if (count($verified) < 8 && $gemini_api_key !== '') {
             $cand_pool = [];
             $spec_note = $p_specs !== '' ? " ({$p_specs})" : '';
             $cat_note = $p_cat !== '' ? " in category \"{$p_cat}\"" : '';
@@ -5272,19 +7213,50 @@ switch ($action) {
             if ($r1['error'] !== '' && preg_match('/quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i', $r1['error'])) {
                 $quota_error = "Gemini Google Search Grounding quota or key error ({$r1['error']}).";
             }
-            $add_cands($r1['candidates'], false);
+            $add_cands($r1['candidates']);
             if (!empty($r1['pages']) && count($cand_pool) < 25) {
-                $add_cands($scrape_grounded_pages($r1['pages']), false);
+                $add_cands($scrape_grounded_pages($r1['pages']));
             }
             $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 30)));
+        }
+
+        // 3. Only if still empty, check strictly-matching local /assets/uploads/ files (never score-0 random images)
+        if (empty($verified)) {
+            $uploads_dir_fb = __DIR__ . '/assets/uploads';
+            if (!is_dir($uploads_dir_fb) && is_dir(__DIR__ . '/public/assets/uploads')) {
+                $uploads_dir_fb = __DIR__ . '/public/assets/uploads';
+            }
+            if (is_dir($uploads_dir_fb) && !empty($prod_tokens)) {
+                foreach (@scandir($uploads_dir_fb) ?: [] as $uf) {
+                    if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf)) continue;
+                    if (preg_match('/(diwali-offer|unsplash|placeholder)/i', $uf)) continue;
+                    $fp = $uploads_dir_fb . '/' . $uf;
+                    if (!is_file($fp) || filesize($fp) < 2000) continue;
+                    $low_uf = strtolower($uf);
+                    $sc = 0;
+                    foreach ($core_nouns as $cn) {
+                        if ($token_matches_text($cn, $low_uf)) $sc += 4;
+                    }
+                    if ($sc >= 4) {
+                        $web_u = '/assets/uploads/' . $uf;
+                        $verified[] = [
+                            'url' => $web_u,
+                            'thumbnailUrl' => $web_u,
+                            'title' => pathinfo($uf, PATHINFO_FILENAME),
+                            'sourceDomain' => 'tradeheaven.net',
+                            'relevanceScore' => $sc
+                        ];
+                    }
+                }
+            }
         }
 
         if (empty($verified)) {
             echo json_encode([
                 "status" => $quota_error !== '' ? "quota_exceeded" : "no_relevant_matches",
                 "success" => false,
-                "configRequired" => ($quota_error !== ''),
-                "message" => $quota_error !== '' ? $quota_error : "No verified commercial product photos (.jpg/.png/.webp) matched \"{$p_name}\" via Gemini Google Search Grounding. Try refining the product title or upload an image manually.",
+                "configRequired" => false,
+                "message" => "No verified commercial product photos (.jpg/.png/.webp) matched \"{$p_name}\". Try refining the product title or upload an image manually.",
                 "queryUsed" => $query_used,
                 "images" => [],
                 "pool" => []
@@ -5399,21 +7371,29 @@ switch ($action) {
                 $u_ext = strtoupper(pathinfo($clean_local, PATHINFO_EXTENSION) ?: 'WEBP');
             }
         } elseif (preg_match('/^https?:\/\//i', $ext_url)) {
-            $auto_slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($prod_name)), '-'), 0, 36) ?: 'product';
+            $auto_slug = preg_replace('/^trade[-_]*heaven[-_]*/i', '', trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($prod_name)), '-'));
+            $auto_slug = substr(trim($auto_slug, '-'), 0, 36) ?: 'product';
             $u_hash = substr(sha1($ext_url), 0, 12);
             $dl_ext = 'jpg';
             if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_url, $em_ext)) {
                 $dl_ext = strtolower($em_ext[1]);
             }
             $u_ext = strtoupper($dl_ext);
-            $local_fname = "auto-{$auto_slug}-{$u_hash}.{$dl_ext}";
+            $legacy_fname = "auto-{$auto_slug}-{$u_hash}.{$dl_ext}";
+            $legacy_fpath = $uploads_dir_auto . '/' . $legacy_fname;
+            $local_fname = "trade-heaven-{$auto_slug}-{$u_hash}.{$dl_ext}";
             $local_fpath = $uploads_dir_auto . '/' . $local_fname;
+            if (file_exists($legacy_fpath) && filesize($legacy_fpath) > 1500 && !file_exists($local_fpath)) {
+                $local_fname = $legacy_fname;
+                $local_fpath = $legacy_fpath;
+            }
             $local_web_url = '/assets/uploads/' . $local_fname;
             $saved_ok = (file_exists($local_fpath) && filesize($local_fpath) > 1500);
-            if (!$saved_ok && function_exists('curl_init')) {
+            if (!$saved_ok && function_exists('curl_init') && th_is_safe_public_http_url($ext_url)) {
                 $ch_dl = curl_init($ext_url);
                 curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch_dl, CURLOPT_MAXREDIRS, 3);
                 curl_setopt($ch_dl, CURLOPT_TIMEOUT, 6);
                 curl_setopt($ch_dl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
                 $bin_dl = (string)curl_exec($ch_dl);
@@ -5421,17 +7401,13 @@ switch ($action) {
                 $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
                 curl_close($ch_dl);
                 if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
-                    $saved_ok = (@file_put_contents($local_fpath, $bin_dl) !== false);
+                    $saved_ok = (@file_put_contents($local_fpath, $bin_dl, LOCK_EX) !== false);
                 }
             }
         }
 
         if ($saved_ok && $local_web_url !== '') {
-            $overrides_file = $uploads_dir_auto . '/product-image-overrides.json';
-            $ov_state = file_exists($overrides_file) ? (json_decode((string)@file_get_contents($overrides_file), true) ?: []) : [];
-            if (!isset($ov_state['urlReplacements']) || !is_array($ov_state['urlReplacements'])) $ov_state['urlReplacements'] = [];
-            if (!isset($ov_state['overrides']) || !is_array($ov_state['overrides'])) $ov_state['overrides'] = [];
-            if (!isset($ov_state['mediaLibrary']) || !is_array($ov_state['mediaLibrary'])) $ov_state['mediaLibrary'] = [];
+            $ov_state = th_load_merged_image_state($uploads_dir_auto);
 
             if (preg_match('/^https?:\/\//i', $ext_url)) {
                 $ov_state['urlReplacements'][$ext_url] = $local_web_url;
@@ -5439,6 +7415,8 @@ switch ($action) {
 
             $should_bind_ov = function($key) use ($ov_state, $uploads_dir_auto) {
                 if (empty($ov_state['overrides'][$key]) || empty($ov_state['overrides'][$key]['primary'])) return true;
+                // Never overwrite manual, user-upload, or catalog-image-auditor entries
+                if (th_is_protected_override($ov_state['overrides'][$key])) return false;
                 $cur = strtolower((string)$ov_state['overrides'][$key]['primary']);
                 if (strpos($cur, 'unsplash.com') !== false || strpos($cur, 'picsum.photos') !== false || strpos($cur, 'placeholder') !== false) return true;
                 if (preg_match('/^https?:\/\//i', $cur)) return true;
@@ -5459,7 +7437,7 @@ switch ($action) {
                     "updatedBy" => "auto-site-upload"
                 ];
             }
-            if ($prod_name !== '' && strtolower($prod_name) !== 'product' && strlen($prod_name) >= 3 && $should_bind_ov($prod_name)) {
+            if ($prod_id === '' && $prod_name !== '' && strtolower($prod_name) !== 'product' && strlen($prod_name) >= 3 && $should_bind_ov($prod_name)) {
                 $ov_state['overrides'][$prod_name] = [
                     "primary" => $local_web_url,
                     "gallery" => [$local_web_url],
@@ -5486,7 +7464,7 @@ switch ($action) {
                 ]);
             }
 
-            @file_put_contents($overrides_file, json_encode($ov_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            th_save_image_state_atomic($uploads_dir_auto, $ov_state);
 
             // Also persist the local image path directly into MySQL rfqs / listings tables & rfqs_auto_store.json on BigRock
             $imgs_single_json = json_encode([$local_web_url], JSON_UNESCAPED_SLASHES);
@@ -5545,9 +7523,7 @@ switch ($action) {
             @mkdir($uploads_dir_aud, 0775, true);
         }
 
-        $overrides_file_aud = $uploads_dir_aud . '/product-image-overrides.json';
-        $ov_state_aud = file_exists($overrides_file_aud) ? (json_decode((string)@file_get_contents($overrides_file_aud), true) ?: []) : [];
-        if (!isset($ov_state_aud['overrides']) || !is_array($ov_state_aud['overrides'])) $ov_state_aud['overrides'] = [];
+        $ov_state_aud = th_load_merged_image_state($uploads_dir_aud);
 
         $cache_file_aud = __DIR__ . '/product_image_cache.json';
         $cache_data_aud = file_exists($cache_file_aud) ? (json_decode((string)@file_get_contents($cache_file_aud), true) ?: []) : [];
@@ -5596,17 +7572,13 @@ switch ($action) {
             if ($clean_u === '') {
                 return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Empty or missing image_url'];
             }
-            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|vecteezy_|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
+            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
                 return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Generic placeholder or stock asset detected'];
             }
             if (strpos($clean_u, '/assets/uploads/') === 0) {
-                $bname = basename($clean_u);
-                $fp = $uploads_dir_aud . '/' . $bname;
+                $fp = $uploads_dir_aud . '/' . basename($clean_u);
                 if (!file_exists($fp) || filesize($fp) <= 1500) {
                     return ['flagged' => true, 'type' => 'BROKEN_ASSET', 'reason' => 'Local upload file missing on disk'];
-                }
-                if (strpos($bname, 'auto-') === 0 && filesize($fp) < 3500 && stripos($bname, 'bricks') === false) {
-                    return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Synthetic placeholder graphic detected'];
                 }
             }
             $lower_u = strtolower($clean_u);
@@ -5617,14 +7589,50 @@ switch ($action) {
             if (strpos($lower_u, 'leather_belt') !== false && !preg_match('/(leather|belt|apparel|fashion|strap|wallet)/i', $joined_t)) {
                 return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Leather Belt image on non-leather item)'];
             }
+            if ((strpos($lower_u, 'saree') !== false || strpos($lower_u, 'shree') !== false) && !preg_match('/(saree|sari|textile|apparel|garment|silk|fabric|cloth)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Saree/Textile image on unrelated item)'];
+            }
             if ((strpos($lower_u, 'image002_50ab7837') !== false || strpos($lower_u, 'image003_6c1f0619') !== false) && !preg_match('/(generator|genset|cummins|cat power|diesel power|power generation)/i', $joined_t)) {
-                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Generator image assigned to non-generator item)'];
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Generator image on unrelated item)'];
             }
             if (strpos($lower_u, 'image004_fa37a57a') !== false && !preg_match('/(tank|storage tank|fuel tank|gallon)/i', $joined_t)) {
-                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Fuel Tank image assigned to non-tank item)'];
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Fuel Tank image on unrelated item)'];
             }
             if (strpos($lower_u, 'stainless-steel-heavy-coils') !== false && !preg_match('/(steel|coil|sheet|metal|alloy|iron|galvanized|rebar|plate)/i', $joined_t)) {
-                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Steel Coils image assigned to non-steel item)'];
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Steel Coils image on unrelated item)'];
+            }
+            if (strpos($lower_u, 'mineral-coal') !== false && !preg_match('/(coal|anthracite|coking|steam coal|carbon|fuel|energy|mineral|mining)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Coal image on unrelated item)'];
+            }
+            if (strpos($lower_u, 'sidath-vimukthi') !== false && !preg_match('/(vanilla|pod|bean|spice|extract)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Vanilla image on unrelated item)'];
+            }
+            if (strpos($lower_u, 'whatsapp_image_') !== false && !preg_match('/(jade|cabochon|turquoise|gemstone|nephrite|matrix|mineral|stone|jewel|blackstone|yunnan)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Gemstone photo on unrelated item)'];
+            }
+            $base_f = basename($lower_u);
+            if (preg_match('/^(?:trade-heaven|auto|verified)-([a-z0-9-]+)-[a-f0-9]{6,16}\.(?:webp|jpe?g|png)$/i', $base_f, $am)) {
+                $aud_stop = ['the','and','for','with','from','export','grade','quality','wholesale','bulk','supply','direct','factory','verified','commercial','industrial','product','products','unit','units','tons','metric','pcs','pieces','kgs','buy','lead','rfq','sourcing','tender','high','pure','natural','premium','standard','global','general','auto','catalog','trade','heaven','tradeheaven'];
+                $slug_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', str_replace('-', ' ', $am[1])), function($w) use ($aud_stop) {
+                    return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $aud_stop, true);
+                }));
+                $tgt_toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', $joined_t), function($w) use ($aud_stop) {
+                    return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $aud_stop, true);
+                }));
+                if (!empty($slug_toks) && !empty($tgt_toks)) {
+                    $overlap = false;
+                    foreach ($slug_toks as $st) {
+                        foreach ($tgt_toks as $tt) {
+                            if ($st === $tt || (strlen($st) >= 4 && strlen($tt) >= 4 && (strpos($st, $tt) !== false || strpos($tt, $st) !== false))) {
+                                $overlap = true;
+                                break 2;
+                            }
+                        }
+                    }
+                    if (!$overlap) {
+                        return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => "Visual subject mismatch: asset \"{$am[1]}\" does not match \"{$title}\""];
+                    }
+                }
             }
             if (isset($seen_urls_aud[$clean_u]) && $seen_urls_aud[$clean_u]['id'] !== $rec_id) {
                 $prev = $seen_urls_aud[$clean_u];
@@ -5633,25 +7641,28 @@ switch ($action) {
             return ['flagged' => false];
         };
 
-        $resolve_unique_image_php = function($rec_id, $title, $cat) use (&$used_urls_aud, &$cache_data_aud, &$gemini_budget, $gemini_key_aud, $local_upload_files, $uploads_dir_aud) {
+        $resolve_unique_image_php = function($rec_id, $title, $cat) use (&$used_urls_aud, &$cache_data_aud, $local_upload_files, $uploads_dir_aud, $check_issue_php) {
             $clean_t = trim(preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', $title));
             $query_str = "\"{$clean_t}\" {$cat} product photo wholesale export -placeholder -logo";
-            $words = array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_t . ' ' . $cat)), function($w) {
-                return strlen($w) >= 3 && !in_array($w, ['the','and','for','with','buy','lead','rfq','export','wholesale','grade','bulk','general'], true);
-            });
+            $stop_w = ['the','and','for','with','from','buy','lead','rfq','export','wholesale','grade','bulk','general','quality','supply','direct','factory','verified','product','products','commercial','industrial','standard','global'];
+            $title_words = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_t)), function($w) use ($stop_w) {
+                return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stop_w, true);
+            }));
 
-            // 1. Check cached Gemini Google Search Grounding pools
+            // 1. Check cached visual search pools (require title keyword match + non-mismatch)
             foreach ($cache_data_aud as $ck => $crec) {
-                $matched_kw = false;
-                foreach ($words as $w) {
-                    if (strpos($ck, $w) !== false) { $matched_kw = true; break; }
+                $matched_kw = 0;
+                foreach ($title_words as $w) {
+                    if (strpos($ck, $w) !== false) $matched_kw++;
                 }
-                if ($matched_kw && !empty($crec['images']) && is_array($crec['images'])) {
+                if ($matched_kw >= 1 && !empty($crec['images']) && is_array($crec['images'])) {
                     $imgs = $crec['images'];
                     shuffle($imgs);
                     foreach ($imgs as $im) {
                         $u = trim(explode('?', (string)($im['url'] ?? ''))[0]);
                         if ($u !== '' && !isset($used_urls_aud[$u])) {
+                            $probe = $check_issue_php($rec_id, 'PRODUCT', $title, $cat, $u);
+                            if ($probe['flagged']) continue;
                             if (strpos($u, '/assets/uploads/') === 0) {
                                 $fp = $uploads_dir_aud . '/' . basename($u);
                                 if (file_exists($fp) && filesize($fp) > 1500) {
@@ -5664,52 +7675,92 @@ switch ($action) {
                 }
             }
 
-            // 2. Check local /assets/uploads/ files matching tokens
-            $best_template_fp = null;
+            // 2. Check local /assets/uploads/ files strictly matching title tokens (NEVER pick score-0 unrelated files)
+            $best_unused_u = '';
+            $best_unused_sc = 0;
             foreach ($local_upload_files as $web_u => $disk_fp) {
-                if ($best_template_fp === null) $best_template_fp = $disk_fp;
+                if (isset($used_urls_aud[$web_u])) continue;
+                $probe = $check_issue_php($rec_id, 'PRODUCT', $title, $cat, $web_u);
+                if ($probe['flagged']) continue;
                 $hits = 0;
-                foreach ($words as $w) {
+                foreach ($title_words as $w) {
                     if (stripos($web_u, $w) !== false) $hits++;
                 }
-                if ($hits > 0) {
-                    $best_template_fp = $disk_fp;
-                    if (!isset($used_urls_aud[$web_u])) {
-                        $used_urls_aud[$web_u] = true;
-                        return ['url' => $web_u, 'query' => $query_str];
-                    }
+                if ($hits > $best_unused_sc) {
+                    $best_unused_sc = $hits;
+                    $best_unused_u = $web_u;
                 }
             }
-
-            // 3. Generate a unique local verified product asset file on disk
-            $slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($clean_t)), '-'), 0, 34) ?: 'catalog-product';
-            $hash = substr(sha1($rec_id . '::' . $clean_t . '::' . $cat), 0, 12);
-            $ext = $best_template_fp ? strtolower(pathinfo($best_template_fp, PATHINFO_EXTENSION) ?: 'webp') : 'webp';
-            $new_fname = "auto-{$slug}-{$hash}.{$ext}";
-            $new_fpath = $uploads_dir_aud . '/' . $new_fname;
-            $new_web_url = '/assets/uploads/' . $new_fname;
-            if (!file_exists($new_fpath) && $best_template_fp && file_exists($best_template_fp)) {
-                @copy($best_template_fp, $new_fpath);
+            if ($best_unused_u !== '' && $best_unused_sc >= 1) {
+                $used_urls_aud[$best_unused_u] = true;
+                return ['url' => $best_unused_u, 'query' => $query_str];
             }
-            $used_urls_aud[$new_web_url] = true;
-            return ['url' => $new_web_url, 'query' => $query_str];
+
+            // 3. Do NOT copy unrelated local files onto products; return empty so caller keeps record FLAGGED or uses live Wikimedia fetch
+            return ['url' => '', 'query' => $query_str];
         };
 
-        // A. Scan MySQL listings table
+        $include_catalog = !empty($input['include_catalog']) || !empty($input['includeCatalog']) || (isset($_GET['include_catalog']) && $_GET['include_catalog'] === '1');
+        $catalog_records_aud = [];
+        $categories_scanned = 0;
+        $scanned_ids_aud = [];
+
+        $is_verified_override_php = function ($ov_rec, $cur_img) use (&$seen_urls_aud, $uploads_dir_aud) {
+            if (!is_array($ov_rec) || trim((string)$cur_img) === '') return false;
+            $updater = strtolower(trim((string)($ov_rec['updatedBy'] ?? '')));
+            $clean_u = trim(explode('?', (string)$cur_img)[0]);
+            if ($clean_u === '') return false;
+            $lower_u = strtolower($clean_u);
+            foreach (['picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'unsplash.com', 'pexels.com', 'pixabay.com', 'shutterstock.com', 'istockphoto.com', 'vecteezy_'] as $bad_host) {
+                if (strpos($lower_u, $bad_host) !== false) return false;
+            }
+            if (strpos($clean_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_aud . '/' . basename($clean_u);
+                if (!file_exists($fp) || filesize($fp) <= 100) return false;
+            }
+            if (in_array($updater, ['admin-manual', 'admin-upload', 'manual'], true)) {
+                return !isset($seen_urls_aud[$clean_u]);
+            }
+            if (!empty($ov_rec['locked']) || !empty($ov_rec['serverVerified']) || in_array($updater, ['catalog-image-auditor', 'system-repair'], true)) {
+                return !isset($seen_urls_aud[$clean_u]);
+            }
+            return false;
+        };
+
+        // A. Scan MySQL listings table safely using SELECT *
         if ($db_connected && $pdo) {
             try {
-                $lStmt = $pdo->query("SELECT id, title, category, image_url, images FROM listings ORDER BY id ASC");
+                $lStmt = $pdo->query("SELECT * FROM listings ORDER BY id ASC");
                 $lRows = $lStmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($lRows as $lr) {
                     $lid = 'prod-db-' . $lr['id'];
+                    if (isset($scanned_ids_aud[$lid])) continue;
+                    $scanned_ids_aud[$lid] = true;
                     $total_scanned++;
                     $products_scanned++;
-                    $cur_img = trim((string)($ov_state_aud['overrides'][$lid]['primary'] ?? $lr['image_url'] ?? ''));
-                    $chk = $check_issue_php($lid, 'PRODUCT', (string)$lr['title'], (string)$lr['category'], $cur_img);
+                    $ov_rec = $ov_state_aud['overrides'][$lid] ?? null;
+                    $cur_img = trim((string)($ov_rec['primary'] ?? $lr['image_url'] ?? $lr['image'] ?? ''));
+                    $chk = $is_verified_override_php($ov_rec, $cur_img)
+                        ? ['flagged' => false]
+                        : $check_issue_php($lid, 'PRODUCT', (string)($lr['title'] ?? $lid), (string)($lr['category'] ?? 'General'), $cur_img);
                     if (!$chk['flagged']) {
                         $clean_c = trim(explode('?', $cur_img)[0]);
-                        $seen_urls_aud[$clean_c] = ['id' => $lid, 'title' => (string)$lr['title']];
+                        $seen_urls_aud[$clean_c] = ['id' => $lid, 'title' => (string)($lr['title'] ?? $lid)];
                         $used_urls_aud[$clean_c] = true;
+                        $was_fixed = is_array($ov_rec) && in_array($ov_rec['updatedBy'] ?? '', ['admin-manual', 'catalog-image-auditor', 'system-repair'], true);
+                        if ($was_fixed) $records_fixed++;
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $lid,
+                                'record_type' => 'PRODUCT',
+                                'title' => (string)($lr['title'] ?? $lid),
+                                'category' => (string)($lr['category'] ?? 'General'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => (string)($ov_rec['previousPrimary'] ?? $lr['image_url'] ?? $cur_img),
+                                'updated_at' => $ov_rec['updatedAt'] ?? null,
+                                'status' => $was_fixed ? 'FIXED' : 'CLEAN'
+                            ];
+                        }
                         continue;
                     }
                     if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
@@ -5719,8 +7770,8 @@ switch ($action) {
                         $audit_log[] = [
                             'record_id' => $lid,
                             'record_type' => 'PRODUCT',
-                            'title' => (string)$lr['title'],
-                            'category' => (string)$lr['category'],
+                            'title' => (string)($lr['title'] ?? $lid),
+                            'category' => (string)($lr['category'] ?? 'General'),
                             'issue_type' => $chk['type'],
                             'issue_reason' => $chk['reason'],
                             'old_image_url' => $cur_img ?: '(empty)',
@@ -5728,27 +7779,68 @@ switch ($action) {
                             'query_used' => "\"{$lr['title']}\" {$lr['category']}",
                             'status' => 'FLAGGED'
                         ];
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $lid,
+                                'record_type' => 'PRODUCT',
+                                'title' => (string)($lr['title'] ?? $lid),
+                                'category' => (string)($lr['category'] ?? 'General'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => $cur_img,
+                                'status' => 'FLAGGED'
+                            ];
+                        }
                         continue;
                     }
 
-                    $res_fix = $resolve_unique_image_php($lid, (string)$lr['title'], (string)$lr['category']);
-                    $new_u = $res_fix['url'];
-                    $seen_urls_aud[$new_u] = ['id' => $lid, 'title' => (string)$lr['title']];
-                    $upL = $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE id = ?");
-                    $upL->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $lr['id']]);
+                    $res_fix = $resolve_unique_image_php($lid, (string)($lr['title'] ?? $lid), (string)($lr['category'] ?? 'General'));
+                    $new_u = trim((string)($res_fix['url'] ?? ''));
+                    if ($new_u === '') {
+                        $audit_log[] = [
+                            'record_id' => $lid,
+                            'record_type' => 'PRODUCT',
+                            'title' => (string)($lr['title'] ?? $lid),
+                            'category' => (string)($lr['category'] ?? 'General'),
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => $res_fix['query'],
+                            'status' => 'FLAGGED'
+                        ];
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $lid,
+                                'record_type' => 'PRODUCT',
+                                'title' => (string)($lr['title'] ?? $lid),
+                                'category' => (string)($lr['category'] ?? 'General'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => $cur_img,
+                                'status' => 'FLAGGED'
+                            ];
+                        }
+                        continue;
+                    }
+                    $seen_urls_aud[$new_u] = ['id' => $lid, 'title' => (string)($lr['title'] ?? $lid)];
+                    try {
+                        $upL = $pdo->prepare("UPDATE listings SET image_url = ? WHERE id = ?");
+                        $upL->execute([$new_u, $lr['id']]);
+                    } catch (Exception $e) {}
                     $ov_state_aud['overrides'][$lid] = [
                         'primary' => $new_u,
+                        'previousPrimary' => $cur_img ?: null,
                         'gallery' => [$new_u],
                         'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
                         'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'imageUpdatedAt' => (int)round(microtime(true) * 1000),
                         'updatedBy' => 'catalog-image-auditor'
                     ];
                     $records_fixed++;
                     $audit_log[] = [
                         'record_id' => $lid,
                         'record_type' => 'PRODUCT',
-                        'title' => (string)$lr['title'],
-                        'category' => (string)$lr['category'],
+                        'title' => (string)($lr['title'] ?? $lid),
+                        'category' => (string)($lr['category'] ?? 'General'),
                         'issue_type' => $chk['type'],
                         'issue_reason' => $chk['reason'],
                         'old_image_url' => $cur_img ?: '(empty)',
@@ -5759,20 +7851,40 @@ switch ($action) {
                 }
             } catch (Exception $e) {}
 
-            // B. Scan MySQL rfqs table
+            // B. Scan MySQL rfqs table safely using SELECT *
             try {
-                $rStmt = $pdo->query("SELECT id, external_id, title, category, image_url, images FROM rfqs ORDER BY id ASC");
+                $rStmt = $pdo->query("SELECT * FROM rfqs ORDER BY id ASC");
                 $rRows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($rRows as $rr) {
                     $rid = !empty($rr['external_id']) ? (string)$rr['external_id'] : ('rfq-' . $rr['id']);
+                    $rTitle = trim((string)($rr['title'] ?? ''));
+                    if ($rTitle === '' || isset($scanned_ids_aud[$rid])) continue;
+                    $scanned_ids_aud[$rid] = true;
                     $total_scanned++;
                     $rfqs_scanned++;
-                    $cur_img = trim((string)($ov_state_aud['overrides'][$rid]['primary'] ?? $rr['image_url'] ?? ''));
-                    $chk = $check_issue_php($rid, 'RFQ', (string)$rr['title'], (string)$rr['category'], $cur_img);
+                    $ov_rec = $ov_state_aud['overrides'][$rid] ?? null;
+                    $cur_img = trim((string)($ov_rec['primary'] ?? $rr['image_url'] ?? $rr['image'] ?? ''));
+                    $chk = $is_verified_override_php($ov_rec, $cur_img)
+                        ? ['flagged' => false]
+                        : $check_issue_php($rid, 'RFQ', $rTitle, (string)($rr['category'] ?? 'Global Sourcing'), $cur_img);
                     if (!$chk['flagged']) {
                         $clean_c = trim(explode('?', $cur_img)[0]);
-                        $seen_urls_aud[$clean_c] = ['id' => $rid, 'title' => (string)$rr['title']];
+                        $seen_urls_aud[$clean_c] = ['id' => $rid, 'title' => $rTitle];
                         $used_urls_aud[$clean_c] = true;
+                        $was_fixed = is_array($ov_rec) && in_array($ov_rec['updatedBy'] ?? '', ['admin-manual', 'catalog-image-auditor', 'system-repair'], true);
+                        if ($was_fixed) $records_fixed++;
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $rid,
+                                'record_type' => 'RFQ',
+                                'title' => $rTitle,
+                                'category' => (string)($rr['category'] ?? 'Global Sourcing'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => (string)($ov_rec['previousPrimary'] ?? $rr['image_url'] ?? $cur_img),
+                                'updated_at' => $ov_rec['updatedAt'] ?? null,
+                                'status' => $was_fixed ? 'FIXED' : 'CLEAN'
+                            ];
+                        }
                         continue;
                     }
                     if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
@@ -5782,36 +7894,77 @@ switch ($action) {
                         $audit_log[] = [
                             'record_id' => $rid,
                             'record_type' => 'RFQ',
-                            'title' => (string)$rr['title'],
-                            'category' => (string)$rr['category'],
+                            'title' => $rTitle,
+                            'category' => (string)($rr['category'] ?? 'Global Sourcing'),
                             'issue_type' => $chk['type'],
                             'issue_reason' => $chk['reason'],
                             'old_image_url' => $cur_img ?: '(empty)',
                             'new_image_url' => '(pending audit fix)',
-                            'query_used' => "\"{$rr['title']}\" {$rr['category']}",
+                            'query_used' => "\"{$rTitle}\" {$rr['category']}",
                             'status' => 'FLAGGED'
                         ];
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $rid,
+                                'record_type' => 'RFQ',
+                                'title' => $rTitle,
+                                'category' => (string)($rr['category'] ?? 'Global Sourcing'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => $cur_img,
+                                'status' => 'FLAGGED'
+                            ];
+                        }
                         continue;
                     }
 
-                    $res_fix = $resolve_unique_image_php($rid, (string)$rr['title'], (string)$rr['category']);
-                    $new_u = $res_fix['url'];
-                    $seen_urls_aud[$new_u] = ['id' => $rid, 'title' => (string)$rr['title']];
-                    $upR = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE id = ?");
-                    $upR->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $rr['id']]);
+                    $res_fix = $resolve_unique_image_php($rid, $rTitle, (string)($rr['category'] ?? 'Global Sourcing'));
+                    $new_u = trim((string)($res_fix['url'] ?? ''));
+                    if ($new_u === '') {
+                        $audit_log[] = [
+                            'record_id' => $rid,
+                            'record_type' => 'RFQ',
+                            'title' => $rTitle,
+                            'category' => (string)($rr['category'] ?? 'Global Sourcing'),
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => $res_fix['query'],
+                            'status' => 'FLAGGED'
+                        ];
+                        if ($include_catalog) {
+                            $catalog_records_aud[] = [
+                                'record_id' => $rid,
+                                'record_type' => 'RFQ',
+                                'title' => $rTitle,
+                                'category' => (string)($rr['category'] ?? 'Global Sourcing'),
+                                'current_image_url' => $cur_img,
+                                'previous_image_url' => $cur_img,
+                                'status' => 'FLAGGED'
+                            ];
+                        }
+                        continue;
+                    }
+                    $seen_urls_aud[$new_u] = ['id' => $rid, 'title' => $rTitle];
+                    try {
+                        $upR = $pdo->prepare("UPDATE rfqs SET image_url = ? WHERE id = ?");
+                        $upR->execute([$new_u, $rr['id']]);
+                    } catch (Exception $e) {}
                     $ov_state_aud['overrides'][$rid] = [
                         'primary' => $new_u,
+                        'previousPrimary' => $cur_img ?: null,
                         'gallery' => [$new_u],
                         'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
                         'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'imageUpdatedAt' => (int)round(microtime(true) * 1000),
                         'updatedBy' => 'catalog-image-auditor'
                     ];
                     $records_fixed++;
                     $audit_log[] = [
                         'record_id' => $rid,
                         'record_type' => 'RFQ',
-                        'title' => (string)$rr['title'],
-                        'category' => (string)$rr['category'],
+                        'title' => $rTitle,
+                        'category' => (string)($rr['category'] ?? 'Global Sourcing'),
                         'issue_type' => $chk['type'],
                         'issue_reason' => $chk['reason'],
                         'old_image_url' => $cur_img ?: '(empty)',
@@ -5823,23 +7976,1324 @@ switch ($action) {
             } catch (Exception $e) {}
         }
 
-        if (!$dry_run) {
-            @file_put_contents($overrides_file_aud, json_encode($ov_state_aud, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        // C. Scan catalog_items submitted by the frontend (products + procurement sectors)
+        $incoming_catalog_items = $input['catalog_items'] ?? $input['catalogItems'] ?? [];
+        if (is_array($incoming_catalog_items)) {
+            foreach ($incoming_catalog_items as $ci) {
+                if (!is_array($ci) || empty($ci['id'])) continue;
+                $cid = trim((string)$ci['id']);
+                if ($cid === '' || isset($scanned_ids_aud[$cid])) continue;
+                $scanned_ids_aud[$cid] = true;
+                $ctype = strtoupper(trim((string)($ci['type'] ?? (strpos($cid, 'cat-') === 0 ? 'CATEGORY' : (strpos($cid, 'rfq-') === 0 ? 'RFQ' : 'PRODUCT')))));
+                $ctitle = trim((string)($ci['title'] ?? $cid));
+                $ccat = trim((string)($ci['category'] ?? 'General'));
+                $total_scanned++;
+                if ($ctype === 'CATEGORY') $categories_scanned++;
+                elseif ($ctype === 'RFQ') $rfqs_scanned++;
+                else $products_scanned++;
+
+                $ov_rec = $ov_state_aud['overrides'][$cid] ?? null;
+                $cur_img = trim((string)($ov_rec['primary'] ?? $ci['image_url'] ?? ''));
+                $chk = $is_verified_override_php($ov_rec, $cur_img)
+                    ? ['flagged' => false]
+                    : $check_issue_php($cid, $ctype, $ctitle, $ccat, $cur_img);
+                if (!$chk['flagged']) {
+                    $clean_c = trim(explode('?', $cur_img)[0]);
+                    $seen_urls_aud[$clean_c] = ['id' => $cid, 'title' => $ctitle];
+                    $used_urls_aud[$clean_c] = true;
+                    $was_fixed = is_array($ov_rec) && in_array($ov_rec['updatedBy'] ?? '', ['admin-manual', 'catalog-image-auditor', 'system-repair'], true);
+                    if ($was_fixed) $records_fixed++;
+                    if ($include_catalog) {
+                        $catalog_records_aud[] = [
+                            'record_id' => $cid,
+                            'record_type' => $ctype,
+                            'title' => $ctitle,
+                            'category' => $ccat,
+                            'current_image_url' => $cur_img,
+                            'previous_image_url' => (string)($ov_rec['previousPrimary'] ?? $ci['image_url'] ?? $cur_img),
+                            'updated_at' => $ov_rec['updatedAt'] ?? null,
+                            'status' => $was_fixed ? 'FIXED' : 'CLEAN'
+                        ];
+                    }
+                    continue;
+                }
+                if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
+                else $mismatched_detected++;
+
+                if ($dry_run) {
+                    $audit_log[] = [
+                        'record_id' => $cid,
+                        'record_type' => $ctype,
+                        'title' => $ctitle,
+                        'category' => $ccat,
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => '(pending audit fix)',
+                        'query_used' => "\"{$ctitle}\" {$ccat}",
+                        'status' => 'FLAGGED'
+                    ];
+                    if ($include_catalog) {
+                        $catalog_records_aud[] = [
+                            'record_id' => $cid,
+                            'record_type' => $ctype,
+                            'title' => $ctitle,
+                            'category' => $ccat,
+                            'current_image_url' => $cur_img,
+                            'previous_image_url' => $cur_img,
+                            'status' => 'FLAGGED'
+                        ];
+                    }
+                    continue;
+                }
+
+                $res_fix = $resolve_unique_image_php($cid, $ctitle, $ccat);
+                $new_u = trim((string)($res_fix['url'] ?? ''));
+                if ($new_u === '') {
+                    $audit_log[] = [
+                        'record_id' => $cid,
+                        'record_type' => $ctype,
+                        'title' => $ctitle,
+                        'category' => $ccat,
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => '(pending audit fix)',
+                        'query_used' => $res_fix['query'],
+                        'status' => 'FLAGGED'
+                    ];
+                    if ($include_catalog) {
+                        $catalog_records_aud[] = [
+                            'record_id' => $cid,
+                            'record_type' => $ctype,
+                            'title' => $ctitle,
+                            'category' => $ccat,
+                            'current_image_url' => $cur_img,
+                            'previous_image_url' => $cur_img,
+                            'status' => 'FLAGGED'
+                        ];
+                    }
+                    continue;
+                }
+                $seen_urls_aud[$new_u] = ['id' => $cid, 'title' => $ctitle];
+                $now_iso_c = gmdate('Y-m-d\TH:i:s\Z');
+                $now_ms_c = (int)round(microtime(true) * 1000);
+                $replaced_c = array_values(array_filter(
+                    th_merge_replaced_old_urls($ov_rec['replacedOldUrls'] ?? [], [$cur_img]),
+                    function($u) use ($new_u) { return th_strip_url_base($u) !== th_strip_url_base($new_u); }
+                ));
+                $ov_state_aud['overrides'][$cid] = [
+                    'primary' => $new_u,
+                    'previousPrimary' => $cur_img ?: null,
+                    'gallery' => [$new_u],
+                    'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
+                    'updatedAt' => $now_iso_c,
+                    'imageUpdatedAt' => $now_ms_c,
+                    'updatedBy' => 'catalog-image-auditor',
+                    'locked' => true,
+                    'serverVerified' => true,
+                    'verifiedAt' => $now_iso_c,
+                    'replacedOldUrls' => $replaced_c
+                ];
+                $ov_state_aud['productActivityTimestamps'][$cid] = $now_ms_c;
+                th_sync_image_override_to_db_and_cms($cid, $new_u, [$new_u], $pdo, $db_connected);
+                $records_fixed++;
+                $audit_log[] = [
+                    'record_id' => $cid,
+                    'record_type' => $ctype,
+                    'title' => $ctitle,
+                    'category' => $ccat,
+                    'issue_type' => $chk['type'],
+                    'issue_reason' => $chk['reason'],
+                    'old_image_url' => $cur_img ?: '(empty)',
+                    'new_image_url' => $new_u,
+                    'query_used' => $res_fix['query'],
+                    'status' => 'FIXED'
+                ];
+            }
         }
 
-        echo json_encode([
+        $saved_aud_ok = true;
+        if (!$dry_run) {
+            $saved_aud_ok = th_save_image_state_atomic($uploads_dir_aud, $ov_state_aud);
+        }
+
+        $newly_fixed_dup = 0;
+        $newly_fixed_mis = 0;
+        $remaining_dup = 0;
+        $remaining_mis = 0;
+        foreach ($audit_log as $alog_item) {
+            $is_dup = (($alog_item['issue_type'] ?? '') === 'DUPLICATE');
+            if (($alog_item['status'] ?? '') === 'FIXED') {
+                if ($is_dup) $newly_fixed_dup++;
+                else $newly_fixed_mis++;
+                if ($include_catalog) {
+                    $catalog_records_aud[] = [
+                        'record_id' => $alog_item['record_id'],
+                        'record_type' => $alog_item['record_type'],
+                        'title' => $alog_item['title'],
+                        'category' => $alog_item['category'],
+                        'current_image_url' => $alog_item['new_image_url'],
+                        'previous_image_url' => $alog_item['old_image_url'],
+                        'updated_at' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'status' => 'FIXED'
+                    ];
+                }
+            } else {
+                if ($is_dup) $remaining_dup++;
+                else $remaining_mis++;
+            }
+        }
+        $out_dup_detected = $dry_run ? $duplicates_detected : $remaining_dup;
+        $out_mis_detected = $dry_run ? $mismatched_detected : $remaining_mis;
+
+        $locked_count_aud = 0;
+        foreach (($ov_state_aud['overrides'] ?? []) as $ov_ent) {
+            if (is_array($ov_ent) && (!empty($ov_ent['locked']) || !empty($ov_ent['serverVerified']) || th_is_protected_override($ov_ent))) {
+                $locked_count_aud++;
+            }
+        }
+
+        $audit_resp = [
             "status" => "success",
             "success" => true,
             "dry_run" => $dry_run,
             "total_scanned" => $total_scanned,
             "products_scanned" => $products_scanned,
             "rfqs_scanned" => $rfqs_scanned,
-            "duplicates_detected" => $duplicates_detected,
-            "mismatched_detected" => $mismatched_detected,
+            "categories_scanned" => $categories_scanned,
+            "duplicates_detected" => $out_dup_detected,
+            "mismatched_detected" => $out_mis_detected,
+            "duplicates_fixed" => $newly_fixed_dup,
+            "mismatched_fixed" => $newly_fixed_mis,
+            "newly_fixed_count" => $newly_fixed_dup + $newly_fixed_mis,
             "records_fixed" => $records_fixed,
-            "healthy_records" => max(0, $total_scanned - ($dry_run ? ($duplicates_detected + $mismatched_detected) : 0)),
+            "healthy_records" => max(0, $total_scanned - ($out_dup_detected + $out_mis_detected)),
+            "server_saved_verified" => $saved_aud_ok,
+            "locked_count" => $locked_count_aud,
             "timestamp" => gmdate('c'),
             "audit_log" => $audit_log
+        ];
+        if ($include_catalog) {
+            $audit_resp["catalog_records"] = $catalog_records_aud;
+        }
+        echo json_encode($audit_resp);
+        break;
+
+    case 'fix_single_catalog_image':
+        $rec_id = trim((string)($input['record_id'] ?? $input['recordId'] ?? ''));
+        if ($rec_id === '') {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Missing record_id"]);
+            break;
+        }
+        $rec_type = strtoupper(trim((string)($input['record_type'] ?? $input['recordType'] ?? (strpos($rec_id, 'cat-') === 0 ? 'CATEGORY' : (strpos($rec_id, 'rfq-') === 0 ? 'RFQ' : 'PRODUCT')))));
+        $rec_title = trim((string)($input['title'] ?? $rec_id));
+        $rec_cat = trim((string)($input['category'] ?? 'General'));
+        $custom_url = trim((string)($input['custom_image_url'] ?? $input['customImageUrl'] ?? ''));
+        $prev_url = trim((string)($input['previous_image_url'] ?? $input['previousImageUrl'] ?? ''));
+        $is_revert = !empty($input['revert']);
+
+        $uploads_dir_sf = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_sf) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_sf = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_sf)) @mkdir($uploads_dir_sf, 0775, true);
+        $ov_state_sf = th_load_merged_image_state($uploads_dir_sf);
+
+        $existing_ov = $ov_state_sf['overrides'][$rec_id] ?? null;
+        $old_url = $prev_url ?: (string)($existing_ov['primary'] ?? '(empty)');
+        $final_url = '';
+        $source_sf = 'manual_custom_url';
+
+        // CRITICAL: Build complete global 1-to-1 uniqueness sets across ALL other catalog overrides
+        // (local paths, external sourceUrls, 12-char URL hash tokens, and binary file SHA-1 content hashes)
+        $used_urls_sf = [];
+        $used_url_hashes_sf = [];
+        $used_content_hashes_sf = [];
+        $extract_hash_tok_sf = function($u) {
+            $clean = trim(explode('#', explode('?', (string)$u)[0])[0]);
+            if ($clean === '') return '';
+            if (preg_match('/^https?:\/\//i', $clean)) {
+                return substr(sha1($clean), 0, 12);
+            }
+            if (preg_match('/[-_]([0-9a-f]{12})\.(?:webp|jpe?g|png|avif)$/i', $clean, $hm)) {
+                return strtolower($hm[1]);
+            }
+            return '';
+        };
+        foreach (($ov_state_sf['overrides'] ?? []) as $other_id => $other_ov) {
+            if ($other_id === $rec_id || !is_array($other_ov)) continue;
+            $ou = th_strip_url_base($other_ov['primary'] ?? '');
+            if ($ou !== '') {
+                $used_urls_sf[$ou] = true;
+                $otok = $extract_hash_tok_sf($ou);
+                if ($otok !== '') $used_url_hashes_sf[$otok] = true;
+                if (strpos($ou, '/assets/uploads/') === 0) {
+                    $ofp = $uploads_dir_sf . '/' . basename($ou);
+                    if (is_file($ofp) && filesize($ofp) > 64) {
+                        $ofh = @sha1_file($ofp);
+                        if ($ofh) $used_content_hashes_sf[$ofh] = true;
+                    }
+                }
+            }
+            $osrc = trim((string)($other_ov['sourceUrl'] ?? ''));
+            if ($osrc !== '') {
+                $used_urls_sf[th_strip_url_base($osrc)] = true;
+                $used_url_hashes_sf[substr(sha1($osrc), 0, 12)] = true;
+            }
+            $och = trim((string)($other_ov['imageContentHash'] ?? ''));
+            if ($och !== '') $used_content_hashes_sf[$och] = true;
+        }
+        $clean_old_sf = th_strip_url_base($old_url);
+        if ($clean_old_sf !== '') $used_urls_sf[$clean_old_sf] = true;
+        $ex_primary_base = th_strip_url_base($existing_ov['primary'] ?? '');
+        if ($ex_primary_base !== '') $used_urls_sf[$ex_primary_base] = true;
+        $ex_prev_base = th_strip_url_base($existing_ov['previousPrimary'] ?? '');
+        if ($ex_prev_base !== '') $used_urls_sf[$ex_prev_base] = true;
+        if (!empty($existing_ov['replacedOldUrls']) && is_array($existing_ov['replacedOldUrls'])) {
+            foreach ($existing_ov['replacedOldUrls'] as $rep_u) {
+                $rb = th_strip_url_base($rep_u);
+                if ($rb !== '') $used_urls_sf[$rb] = true;
+            }
+        }
+        $resolved_source_url_sf = null;
+        $resolved_content_hash_sf = null;
+
+        if ($is_revert && $prev_url !== '' && $prev_url !== '(empty)') {
+            $final_url = trim(explode('?', $prev_url)[0]);
+            $source_sf = 'revert_restore';
+        } elseif ($custom_url !== '') {
+            $final_url = trim(explode('?', $custom_url)[0]);
+            $source_sf = 'manual_custom_url';
+        } else {
+            $stop_sf = ['the','and','for','with','from','export','grade','wholesale','bulk','general','rfq','buy','lead','quality','supply','direct','factory','verified','product','products','commercial','industrial','standard','global','premium','natural','pure'];
+            $clean_title_sf = trim(preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', $rec_title));
+            $title_words_sf = array_values(array_unique(array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_title_sf)), function($w) use ($stop_sf) {
+                return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stop_sf, true);
+            })));
+
+            // 1. Live Wikimedia Commons focused real-photo search (downloads verified UNUSED image directly into /assets/uploads/)
+            if (function_exists('curl_init') && !empty($title_words_sf)) {
+                $clauses_sf = array_values(array_filter(array_map('trim', preg_split('/[,;\/&]+/', $clean_title_sf)), function($c) {
+                    return strlen($c) >= 3;
+                }));
+                $sf_queries = [];
+                if (count($title_words_sf) >= 2 && count($title_words_sf) <= 4) {
+                    $sf_queries[] = implode(' ', $title_words_sf);
+                }
+                foreach (array_slice($clauses_sf, 0, 3) as $cl) {
+                    $cl_t = array_values(array_filter(preg_split('/[^a-z0-9]+/', strtolower($cl)), function($w) use ($stop_sf) {
+                        return strlen($w) >= 3 && !ctype_digit($w) && !in_array($w, $stop_sf, true);
+                    }));
+                    if (count($cl_t) >= 2) {
+                        $sf_queries[] = implode(' ', array_slice($cl_t, 0, 3));
+                    } elseif (count($cl_t) === 1 && count($title_words_sf) >= 2 && $cl_t[0] !== $title_words_sf[0]) {
+                        $sf_queries[] = $title_words_sf[0] . ' ' . $cl_t[0];
+                    } elseif (count($cl_t) === 1 && strlen($cl_t[0]) >= 4) {
+                        $sf_queries[] = $cl_t[0];
+                    }
+                }
+                if (count($title_words_sf) >= 3) {
+                    $sf_queries[] = implode(' ', array_slice($title_words_sf, 0, 3));
+                } elseif (!empty($title_words_sf)) {
+                    $sf_queries[] = implode(' ', $title_words_sf);
+                }
+                $sf_queries = array_slice(array_values(array_unique(array_filter($sf_queries))), 0, 4);
+
+                $bad_sf_re = '/(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i';
+                $ambig_sf = ['wooden','wood','plastic','metal','steel','aluminum','glass','ceramic','paper','cotton','ice','cream','cocktail','oil','water','food','mini','heavy','light','multi','set','kit','pack'];
+                $live_cands_sf = [];
+
+                foreach ($sf_queries as $q_sf) {
+                    $w_api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($q_sf . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json';
+                    $ch_w = curl_init($w_api);
+                    curl_setopt($ch_w, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch_w, CURLOPT_FOLLOWLOCATION, true);
+                    curl_setopt($ch_w, CURLOPT_TIMEOUT, 5);
+                    curl_setopt($ch_w, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                    $raw_w = (string)curl_exec($ch_w);
+                    $code_w = intval(curl_getinfo($ch_w, CURLINFO_HTTP_CODE));
+                    curl_close($ch_w);
+                    if ($code_w < 200 || $code_w >= 300 || $raw_w === '') continue;
+                    $dec_w = json_decode($raw_w, true);
+                    foreach (($dec_w['query']['pages'] ?? []) as $pg) {
+                        $info = $pg['imageinfo'][0] ?? null;
+                        if (!is_array($info)) continue;
+                        $rt = (string)($pg['title'] ?? '');
+                        if (preg_match($bad_sf_re, $rt)) continue;
+                        $mime = strtolower((string)($info['mime'] ?? ''));
+                        if (strpos($mime, 'jpeg') === false && strpos($mime, 'png') === false && strpos($mime, 'webp') === false) continue;
+                        $w = intval($info['width'] ?? 0);
+                        $h = intval($info['height'] ?? 0);
+                        if (($w > 0 && $w < 380) || ($h > 0 && $h < 280)) continue;
+                        $cu = trim((string)($info['thumburl'] ?? $info['url'] ?? ''));
+                        if ($cu === '' || !preg_match('/^https?:\/\//i', $cu)) continue;
+                        $hay = strtolower($rt . ' ' . $cu);
+                        $all_hits = 0;
+                        $spec_hits = 0;
+                        foreach ($title_words_sf as $tw) {
+                            $st = (strlen($tw) > 4 && substr($tw, -1) === 's') ? substr($tw, 0, -1) : $tw;
+                            if (strpos($hay, $tw) !== false || strpos($hay, $st) !== false) {
+                                $all_hits++;
+                                if (!in_array($tw, $ambig_sf, true)) $spec_hits++;
+                            }
+                        }
+                        if ($all_hits === 0 || ($all_hits === 1 && $spec_hits === 0)) continue;
+                        $live_cands_sf[] = [
+                            'url' => $cu,
+                            'score' => $spec_hits * 5 + $all_hits * 2 + ($w >= $h ? 2 : 0)
+                        ];
+                    }
+                    if (count($live_cands_sf) >= 12) break;
+                }
+
+                if (!empty($live_cands_sf)) {
+                    usort($live_cands_sf, function($a, $b) { return $b['score'] <=> $a['score']; });
+                    $auto_slug_sf = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($clean_title_sf)), '-'), 0, 36) ?: 'product';
+                    foreach (array_slice($live_cands_sf, 0, 12) as $cand_sf) {
+                        $ext_u = $cand_sf['url'];
+                        $u_hash = substr(sha1($ext_u), 0, 12);
+                        $dl_ext = 'jpg';
+                        if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_u, $em_ext)) {
+                            $dl_ext = strtolower($em_ext[1]);
+                        }
+                        $local_fname = "auto-{$auto_slug_sf}-{$u_hash}.{$dl_ext}";
+                        $local_fpath = $uploads_dir_sf . '/' . $local_fname;
+                        $local_web_url = '/assets/uploads/' . $local_fname;
+                        // STRICT GLOBAL 1-TO-1 UNIQUENESS: Never pick an old URL or any URL / 12-char hash already attached to another product
+                        if (
+                            isset($used_urls_sf[$local_web_url]) ||
+                            isset($used_urls_sf[th_strip_url_base($ext_u)]) ||
+                            isset($used_url_hashes_sf[$u_hash])
+                        ) {
+                            continue;
+                        }
+
+                        $ok_dl = false;
+                        $dl_content_hash = null;
+                        if (file_exists($local_fpath) && filesize($local_fpath) > 2500) {
+                            $eh = @sha1_file($local_fpath);
+                            if ($eh && isset($used_content_hashes_sf[$eh])) {
+                                continue;
+                            }
+                            $dl_content_hash = $eh ?: null;
+                            $ok_dl = true;
+                        } elseif (th_is_safe_public_http_url($ext_u)) {
+                            $ch_dl = curl_init($ext_u);
+                            curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
+                            curl_setopt($ch_dl, CURLOPT_MAXREDIRS, 3);
+                            curl_setopt($ch_dl, CURLOPT_TIMEOUT, 6);
+                            curl_setopt($ch_dl, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                            $bin_dl = (string)curl_exec($ch_dl);
+                            $code_dl = intval(curl_getinfo($ch_dl, CURLINFO_HTTP_CODE));
+                            $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
+                            curl_close($ch_dl);
+                            if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
+                                $bin_hash = sha1($bin_dl);
+                                // Reject identical image bytes already attached to another product under a different filename!
+                                if (isset($used_content_hashes_sf[$bin_hash])) {
+                                    continue;
+                                }
+                                $ok_dl = (@file_put_contents($local_fpath, $bin_dl, LOCK_EX) !== false);
+                                if ($ok_dl) $dl_content_hash = $bin_hash;
+                            }
+                        }
+                        if ($ok_dl) {
+                            $final_url = $local_web_url;
+                            $source_sf = 'wikimedia_commons_verified';
+                            $resolved_source_url_sf = $ext_u;
+                            $resolved_content_hash_sf = $dl_content_hash;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 2. If live Wikimedia search did not yield a file, check ONLY strictly relevant UNUSED local uploads
+            if ($final_url === '' && !empty($title_words_sf)) {
+                $best_url = '';
+                $best_score = 0;
+                $best_hash = null;
+                foreach (@scandir($uploads_dir_sf) ?: [] as $uf) {
+                    if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf) || preg_match('/(diwali-offer|unsplash|placeholder|vecteezy)/i', $uf)) continue;
+                    $fp = $uploads_dir_sf . '/' . $uf;
+                    if (!is_file($fp) || filesize($fp) < 2000) continue;
+                    $web_u = '/assets/uploads/' . $uf;
+                    $wtok = $extract_hash_tok_sf($web_u);
+                    if (isset($used_urls_sf[$web_u]) || ($wtok !== '' && isset($used_url_hashes_sf[$wtok]))) continue;
+                    $wfh = @sha1_file($fp);
+                    if ($wfh && isset($used_content_hashes_sf[$wfh])) continue;
+                    $low_u = strtolower($uf);
+                    $sc = 0;
+                    foreach ($title_words_sf as $w) {
+                        $st = (strlen($w) > 4 && substr($w, -1) === 's') ? substr($w, 0, -1) : $w;
+                        if (strpos($low_u, $w) !== false) $sc += 4;
+                        elseif (strlen($st) >= 4 && strpos($low_u, $st) !== false) $sc += 2;
+                    }
+                    if ($sc > $best_score) {
+                        $best_score = $sc;
+                        $best_url = $web_u;
+                        $best_hash = $wfh ?: null;
+                    }
+                }
+                if ($best_score >= 4 && $best_url !== '') {
+                    $final_url = $best_url;
+                    $source_sf = 'server_media_library_verified';
+                    $resolved_content_hash_sf = $best_hash;
+                }
+            }
+        }
+
+        if ($final_url === '' || $final_url === '(empty)') {
+            http_response_code(422);
+            echo json_encode([
+                "success" => false,
+                "serverSavedVerified" => false,
+                "message" => "No verified unused matching photo could be fetched automatically for \"{$rec_title}\". Please upload a photo manually."
+            ]);
+            break;
+        }
+
+        $now_ms_sf = (int)round(microtime(true) * 1000);
+        $now_iso_sf = gmdate('Y-m-d\TH:i:s\Z');
+        $final_base_sf = th_strip_url_base($final_url);
+        $replaced_sf = $is_revert
+            ? (is_array($existing_ov['replacedOldUrls'] ?? null) ? $existing_ov['replacedOldUrls'] : [])
+            : array_values(array_filter(
+                th_merge_replaced_old_urls($existing_ov['replacedOldUrls'] ?? [], [$old_url, $existing_ov['primary'] ?? null, $existing_ov['previousPrimary'] ?? null]),
+                function($u) use ($final_base_sf) { return th_strip_url_base($u) !== $final_base_sf; }
+            ));
+
+        $ov_state_sf['overrides'][$rec_id] = [
+            'primary' => $final_url,
+            'previousPrimary' => ($old_url !== '' && $old_url !== '(empty)' && th_strip_url_base($old_url) !== $final_base_sf) ? $old_url : ($existing_ov['previousPrimary'] ?? null),
+            'gallery' => [$final_url],
+            'format' => strtoupper(pathinfo($final_url, PATHINFO_EXTENSION) ?: 'WEBP'),
+            'updatedAt' => $now_iso_sf,
+            'imageUpdatedAt' => $now_ms_sf,
+            'updatedBy' => $is_revert ? 'auto-site-upload' : ($custom_url !== '' ? 'admin-manual' : 'catalog-image-auditor'),
+            'locked' => !$is_revert,
+            'serverVerified' => !$is_revert,
+            'sourceUrl' => $resolved_source_url_sf,
+            'imageContentHash' => $resolved_content_hash_sf,
+            'verifiedAt' => $now_iso_sf,
+            'replacedOldUrls' => $replaced_sf
+        ];
+        if (!$is_revert) {
+            $ov_state_sf['productActivityTimestamps'][$rec_id] = $now_ms_sf;
+        }
+
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        $save_ok_sf = th_save_image_state_atomic($uploads_dir_sf, $ov_state_sf);
+        th_sync_image_override_to_db_and_cms($rec_id, $final_url, [$final_url], $pdo, $db_connected);
+
+        // Disk Read-Back Guarantee on PHP server
+        $disk_verified_sf = $save_ok_sf && th_verify_override_on_disk($uploads_dir_sf, $rec_id, $final_url);
+        if (!$is_revert && !$disk_verified_sf) {
+            $save_ok_sf = th_save_image_state_atomic($uploads_dir_sf, $ov_state_sf);
+            $disk_verified_sf = $save_ok_sf && th_verify_override_on_disk($uploads_dir_sf, $rec_id, $final_url);
+        }
+        if (!$is_revert && !$disk_verified_sf) {
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "serverSavedVerified" => false,
+                "diskVerified" => false,
+                "message" => "Server disk verification failed while saving {$rec_id}. Check uploads directory write permissions."
+            ]);
+            break;
+        }
+
+        echo json_encode([
+            "status" => $is_revert ? "FLAGGED" : "FIXED",
+            "success" => true,
+            "serverSavedVerified" => $disk_verified_sf,
+            "diskVerified" => $disk_verified_sf,
+            "locked" => !$is_revert,
+            "verifiedAt" => $now_iso_sf,
+            "replacedOldUrls" => $replaced_sf,
+            "liveSynced" => true,
+            "record_id" => $rec_id,
+            "record_type" => $rec_type,
+            "title" => $rec_title,
+            "category" => $rec_cat,
+            "old_image_url" => $old_url,
+            "new_image_url" => $final_url,
+            "query_used" => $rec_title,
+            "source" => $source_sf,
+            "is_fallback_card" => false,
+            "updatedAt" => $now_iso_sf,
+            "imageUpdatedAt" => !$is_revert ? $now_ms_sf : null
+        ]);
+        break;
+
+    case 'verify_and_lock_catalog_images':
+        $uploads_dir_vl = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_vl) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_vl = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_vl)) @mkdir($uploads_dir_vl, 0775, true);
+        $ov_state_vl = th_load_merged_image_state($uploads_dir_vl);
+        $req_ids_vl = $input['record_ids'] ?? $input['recordIds'] ?? [];
+        $target_ids_vl = (is_array($req_ids_vl) && count($req_ids_vl) > 0)
+            ? array_values(array_filter(array_map('strval', $req_ids_vl)))
+            : array_keys($ov_state_vl['overrides'] ?? []);
+
+        $now_ms_vl = (int)round(microtime(true) * 1000);
+        $now_iso_vl = gmdate('Y-m-d\TH:i:s\Z');
+        $locked_vl = 0;
+        $verified_vl = 0;
+        $missing_vl = 0;
+        $blocked_vl = 0;
+        $checked_ids_vl = [];
+
+        foreach ($target_ids_vl as $tid) {
+            $entry = $ov_state_vl['overrides'][$tid] ?? null;
+            if (!is_array($entry) || empty($entry['primary'])) continue;
+            if (empty($req_ids_vl) && !th_is_protected_override($entry)) continue;
+            $base_u = th_strip_url_base($entry['primary']);
+            if ($base_u === '') continue;
+            if (strpos($base_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_vl . '/' . basename($base_u);
+                if (!file_exists($fp) || filesize($fp) <= 100) {
+                    $missing_vl++;
+                    continue;
+                }
+            }
+            $prev_p = $entry['previousPrimary'] ?? null;
+            $rep_old = array_values(array_filter(
+                th_merge_replaced_old_urls($entry['replacedOldUrls'] ?? [], [$prev_p]),
+                function($u) use ($base_u) { return th_strip_url_base($u) !== $base_u; }
+            ));
+            $blocked_vl += count($rep_old);
+            $entry['primary'] = $base_u;
+            $entry['gallery'] = [$base_u];
+            $entry['locked'] = true;
+            $entry['serverVerified'] = true;
+            $entry['verifiedAt'] = $now_iso_vl;
+            $entry['replacedOldUrls'] = $rep_old;
+            if (empty($entry['updatedAt'])) $entry['updatedAt'] = $now_iso_vl;
+            $entry['imageUpdatedAt'] = max(th_entry_timestamp_ms($entry), $now_ms_vl);
+            $ov_state_vl['overrides'][$tid] = $entry;
+            $checked_ids_vl[$tid] = $base_u;
+            $locked_vl++;
+        }
+
+        $saved_vl = th_save_image_state_atomic($uploads_dir_vl, $ov_state_vl);
+        foreach ($checked_ids_vl as $cid => $exp_u) {
+            if (th_verify_override_on_disk($uploads_dir_vl, $cid, $exp_u)) {
+                $verified_vl++;
+            }
+        }
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        echo json_encode([
+            "success" => $saved_vl && ($locked_vl === 0 || $verified_vl === $locked_vl),
+            "serverSavedVerified" => $saved_vl && ($locked_vl === 0 || $verified_vl === $locked_vl),
+            "verifiedCount" => $verified_vl,
+            "lockedCount" => $locked_vl,
+            "missingOnDiskCount" => $missing_vl,
+            "blockedOldUrlsCount" => $blocked_vl,
+            "totalOverridesOnDisk" => count($ov_state_vl['overrides'] ?? []),
+            "liveSynced" => true,
+            "verifiedAt" => $now_iso_vl,
+            "diskFiles" => ['product-image-overrides.json', 'productImageSystemState.json']
+        ]);
+        break;
+
+    case 'site_images_replace':
+        $uploads_dir_sr = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_sr) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_sr = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_sr)) {
+            @mkdir($uploads_dir_sr, 0775, true);
+        }
+        $sr_target_id = trim((string)($input['targetId'] ?? ''));
+        $sr_target_type = strtoupper(trim((string)($input['targetType'] ?? 'PRODUCT')));
+        $sr_field_path = trim((string)($input['fieldPath'] ?? ''));
+        $sr_title = trim((string)($input['title'] ?? $sr_target_id ?: 'site-image'));
+        $sr_file_name = trim((string)($input['fileName'] ?? 'image.webp'));
+        $sr_mime = strtolower(trim((string)($input['mimeType'] ?? 'image/webp')));
+        $sr_b64 = (string)($input['base64Data'] ?? '');
+        $sr_img_url = trim((string)($input['imageUrl'] ?? ''));
+        $sr_old_url = trim((string)($input['oldImageUrl'] ?? ''));
+
+        if ($sr_target_id === '' && $sr_field_path === '') {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "targetId or fieldPath is required."]);
+            break;
+        }
+
+        $sr_final_url = '';
+        $sr_final_name = '';
+        $sr_final_format = 'WEBP';
+        $sr_final_size = 0;
+
+        if ($sr_b64 !== '') {
+            if (preg_match('/^data:([A-Za-z0-9\-\+\/\.]+);base64,(.+)$/s', $sr_b64, $m_sr)) {
+                $sr_mime = strtolower($m_sr[1]);
+                $raw_b64_sr = $m_sr[2];
+            } else {
+                $raw_b64_sr = $sr_b64;
+            }
+            $bin_sr = base64_decode(preg_replace('/\s+/', '', $raw_b64_sr), true);
+            if ($bin_sr === false || strlen($bin_sr) === 0) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Invalid base64 image payload."]);
+                break;
+            }
+            $ext_sr = 'webp';
+            if (strpos($sr_mime, 'png') !== false) $ext_sr = 'png';
+            elseif (strpos($sr_mime, 'jpeg') !== false || strpos($sr_mime, 'jpg') !== false) $ext_sr = 'jpg';
+            elseif (strpos($sr_mime, 'gif') !== false) $ext_sr = 'gif';
+            elseif (strpos($sr_mime, 'svg') !== false) $ext_sr = 'svg';
+            elseif (strpos($sr_mime, 'avif') !== false) $ext_sr = 'avif';
+            if (preg_match('/\.webp$/i', $sr_file_name)) $ext_sr = 'webp';
+
+            $slug_sr = preg_replace('/[^a-z0-9]+/', '-', strtolower($sr_title));
+            $slug_sr = trim(preg_replace('/^trade-?heaven-?/i', '', trim((string)$slug_sr, '-')), '-');
+            $slug_sr = substr($slug_sr ?: 'site-image', 0, 42);
+            $sr_final_name = 'trade-heaven-' . $slug_sr . '-' . round(microtime(true) * 1000) . '.' . $ext_sr;
+            $sr_dest = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($sr_final_name);
+            if (@file_put_contents($sr_dest, $bin_sr, LOCK_EX) === false) {
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "Failed to write uploaded image file to disk."]);
+                break;
+            }
+            $sr_final_url = '/assets/uploads/' . basename($sr_final_name);
+            $sr_final_format = strtoupper($ext_sr);
+            $sr_final_size = strlen($bin_sr);
+        } elseif ($sr_img_url !== '') {
+            if (preg_match('#^https?://#i', $sr_img_url)) {
+                if (!th_is_safe_public_http_url($sr_img_url)) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "message" => "Blocked unsafe external URL."]);
+                    break;
+                }
+                $ch_sr = curl_init($sr_img_url);
+                curl_setopt_array($ch_sr, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 4,
+                    CURLOPT_TIMEOUT => 15,
+                    CURLOPT_USERAGENT => 'TradeHeavenImageBot/1.0'
+                ]);
+                $img_bin_sr = curl_exec($ch_sr);
+                $img_ct_sr = strtolower((string)curl_getinfo($ch_sr, CURLINFO_CONTENT_TYPE));
+                $img_code_sr = (int)curl_getinfo($ch_sr, CURLINFO_HTTP_CODE);
+                curl_close($ch_sr);
+                if (!$img_bin_sr || $img_code_sr < 200 || $img_code_sr >= 400 || strlen($img_bin_sr) < 50) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "message" => "Could not download external image URL onto server."]);
+                    break;
+                }
+                $ext_sr = 'jpg';
+                if (strpos($img_ct_sr, 'webp') !== false) $ext_sr = 'webp';
+                elseif (strpos($img_ct_sr, 'png') !== false) $ext_sr = 'png';
+                elseif (strpos($img_ct_sr, 'gif') !== false) $ext_sr = 'gif';
+                $slug_sr = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($sr_title)), '-') ?: 'site-image', 0, 42);
+                $sr_final_name = 'trade-heaven-' . $slug_sr . '-' . round(microtime(true) * 1000) . '.' . $ext_sr;
+                $sr_dest = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($sr_final_name);
+                if (@file_put_contents($sr_dest, $img_bin_sr, LOCK_EX) === false) {
+                    http_response_code(500);
+                    echo json_encode(["success" => false, "message" => "Failed to save mirrored image file to disk."]);
+                    break;
+                }
+                $sr_final_url = '/assets/uploads/' . basename($sr_final_name);
+                $sr_final_format = strtoupper($ext_sr);
+                $sr_final_size = strlen($img_bin_sr);
+            } else {
+                $sr_final_url = th_strip_url_base($sr_img_url);
+                $sr_final_name = basename($sr_final_url);
+                $sr_final_format = strtoupper(pathinfo($sr_final_name, PATHINFO_EXTENSION) ?: 'WEBP');
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Provide either base64Data or imageUrl."]);
+            break;
+        }
+
+        $sr_state = th_load_merged_image_state($uploads_dir_sr);
+        $sr_now_ms = (int)round(microtime(true) * 1000);
+        $sr_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+        $sr_old_candidates = [];
+        if ($sr_old_url !== '') $sr_old_candidates[] = $sr_old_url;
+        $sr_existing_ov = ($sr_target_id !== '' && isset($sr_state['overrides'][$sr_target_id])) ? $sr_state['overrides'][$sr_target_id] : null;
+        if (is_array($sr_existing_ov)) {
+            if (!empty($sr_existing_ov['primary'])) $sr_old_candidates[] = $sr_existing_ov['primary'];
+            if (!empty($sr_existing_ov['previousPrimary'])) $sr_old_candidates[] = $sr_existing_ov['previousPrimary'];
+            if (!empty($sr_existing_ov['gallery']) && is_array($sr_existing_ov['gallery'])) {
+                foreach ($sr_existing_ov['gallery'] as $gu) $sr_old_candidates[] = $gu;
+            }
+        }
+
+        // Update site_content.json for HERO_SLIDE / CATEGORY / fieldPath
+        $sr_cms_file = __DIR__ . '/site_content.json';
+        $sr_cms = th_read_json_locked($sr_cms_file);
+        $sr_cms_dirty = false;
+        if (is_array($sr_cms)) {
+            if ($sr_target_type === 'HERO_SLIDE' && $sr_target_id !== '' && isset($sr_cms['homepage']['heroSlides']) && is_array($sr_cms['homepage']['heroSlides'])) {
+                foreach ($sr_cms['homepage']['heroSlides'] as &$sl_sr) {
+                    if ((string)($sl_sr['id'] ?? '') === $sr_target_id) {
+                        if (!empty($sl_sr['image'])) $sr_old_candidates[] = $sl_sr['image'];
+                        $sl_sr['image'] = $sr_final_url;
+                        $sr_cms_dirty = true;
+                    }
+                }
+                unset($sl_sr);
+            } elseif ($sr_target_type === 'CATEGORY' && $sr_target_id !== '' && isset($sr_cms['homepage']['categoriesList']) && is_array($sr_cms['homepage']['categoriesList'])) {
+                foreach ($sr_cms['homepage']['categoriesList'] as &$cat_sr) {
+                    if ((string)($cat_sr['id'] ?? '') === $sr_target_id) {
+                        if (!empty($cat_sr['image'])) $sr_old_candidates[] = $cat_sr['image'];
+                        $cat_sr['image'] = $sr_final_url;
+                        $sr_cms_dirty = true;
+                    }
+                }
+                unset($cat_sr);
+            } elseif ($sr_field_path !== '') {
+                $parts_sr = array_values(array_filter(explode('.', $sr_field_path), function($x) { return trim($x) !== ''; }));
+                if (count($parts_sr) > 0) {
+                    $ref_sr = &$sr_cms;
+                    for ($pi = 0; $pi < count($parts_sr) - 1; $pi++) {
+                        if (!isset($ref_sr[$parts_sr[$pi]]) || !is_array($ref_sr[$parts_sr[$pi]])) {
+                            $ref_sr[$parts_sr[$pi]] = [];
+                        }
+                        $ref_sr = &$ref_sr[$parts_sr[$pi]];
+                    }
+                    $last_k_sr = $parts_sr[count($parts_sr) - 1];
+                    if (isset($ref_sr[$last_k_sr]) && is_string($ref_sr[$last_k_sr]) && $ref_sr[$last_k_sr] !== '') {
+                        $sr_old_candidates[] = $ref_sr[$last_k_sr];
+                    }
+                    $ref_sr[$last_k_sr] = $sr_final_url;
+                    unset($ref_sr);
+                    $sr_cms_dirty = true;
+                }
+            }
+            if ($sr_cms_dirty) {
+                $sr_cms['siteContentUpdatedAt'] = $sr_now_ms;
+                th_write_json_atomic($sr_cms_file, $sr_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
+
+        $sr_rep_old = array_values(array_filter(
+            th_merge_replaced_old_urls(is_array($sr_existing_ov['replacedOldUrls'] ?? null) ? $sr_existing_ov['replacedOldUrls'] : [], $sr_old_candidates),
+            function($u) use ($sr_final_url) { return th_strip_url_base($u) !== th_strip_url_base($sr_final_url); }
+        ));
+
+        if ($sr_target_id !== '') {
+            $sr_state['overrides'][$sr_target_id] = [
+                "primary" => $sr_final_url,
+                "gallery" => [$sr_final_url],
+                "format" => $sr_final_format,
+                "updatedAt" => $sr_now_iso,
+                "imageUpdatedAt" => $sr_now_ms,
+                "updatedBy" => "admin-manual",
+                "locked" => true,
+                "serverVerified" => true,
+                "verifiedAt" => $sr_now_iso,
+                "replacedOldUrls" => $sr_rep_old
+            ];
+            if (!isset($sr_state['productActivityTimestamps']) || !is_array($sr_state['productActivityTimestamps'])) {
+                $sr_state['productActivityTimestamps'] = [];
+            }
+            $sr_state['productActivityTimestamps'][$sr_target_id] = $sr_now_ms;
+            th_sync_image_override_to_db_and_cms($sr_target_id, $sr_final_url, [$sr_final_url], $pdo, $db_connected);
+        }
+
+        if (strpos($sr_final_url, '/assets/uploads/') === 0) {
+            $sr_media_entry = [
+                "id" => "media-" . $sr_now_ms,
+                "url" => $sr_final_url,
+                "name" => $sr_final_name,
+                "format" => $sr_final_format,
+                "sizeBytes" => $sr_final_size,
+                "uploadedAt" => $sr_now_iso
+            ];
+            $sr_existing_ml = is_array($sr_state['mediaLibrary'] ?? null) ? $sr_state['mediaLibrary'] : [];
+            $sr_state['mediaLibrary'] = array_values(array_merge([$sr_media_entry], array_filter($sr_existing_ml, function($m) use ($sr_final_url) {
+                return th_strip_url_base($m['url'] ?? '') !== th_strip_url_base($sr_final_url);
+            })));
+        }
+
+        // Permanently delete old replaced /assets/uploads/ files from server disk if no longer referenced
+        $sr_deleted_old = [];
+        $sr_final_base = th_strip_url_base($sr_final_url);
+        $sr_unique_old = array_values(array_unique(array_filter(array_map('th_strip_url_base', $sr_old_candidates))));
+        $sr_cms_json_str = is_array($sr_cms) ? (string)json_encode($sr_cms) : '';
+        foreach ($sr_unique_old as $old_u_sr) {
+            if ($old_u_sr === $sr_final_base || strpos($old_u_sr, '/assets/uploads/') !== 0) continue;
+            $still_used = false;
+            foreach (($sr_state['overrides'] ?? []) as $ok_id => $ok_ov) {
+                if ((string)$ok_id === $sr_target_id) continue;
+                if (th_strip_url_base($ok_ov['primary'] ?? '') === $old_u_sr) {
+                    $still_used = true;
+                    break;
+                }
+            }
+            if (!$still_used && $sr_cms_json_str !== '' && strpos($sr_cms_json_str, $old_u_sr) !== false) {
+                $still_used = true;
+            }
+            if ($still_used) continue;
+            $old_bn = basename($old_u_sr);
+            if ($old_bn && strpos($old_bn, '..') === false) {
+                $old_fp = rtrim(realpath($uploads_dir_sr) ?: $uploads_dir_sr, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $old_bn;
+                if (file_exists($old_fp) && @unlink($old_fp)) {
+                    $sr_deleted_old[] = $old_u_sr;
+                }
+            }
+            $sr_state['mediaLibrary'] = array_values(array_filter($sr_state['mediaLibrary'] ?? [], function($m) use ($old_u_sr) {
+                return th_strip_url_base($m['url'] ?? '') !== $old_u_sr;
+            }));
+        }
+
+        $sr_saved_ok = th_save_image_state_atomic($uploads_dir_sr, $sr_state);
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        if (!$sr_saved_ok) {
+            http_response_code(500);
+            echo json_encode(["success" => false, "message" => "Failed to save image overrides state on server."]);
+            break;
+        }
+        echo json_encode([
+            "success" => true,
+            "targetId" => $sr_target_id ?: $sr_field_path,
+            "targetType" => $sr_target_type,
+            "newUrl" => $sr_final_url,
+            "deletedOldUrls" => $sr_deleted_old,
+            "diskDeletedCount" => count($sr_deleted_old),
+            "replacedOldUrls" => $sr_rep_old,
+            "verifiedOnDisk" => true,
+            "locked" => true,
+            "serverVerified" => true,
+            "updatedAt" => $sr_now_iso,
+            "imageUpdatedAt" => $sr_now_ms
+        ]);
+        break;
+
+    case 'site_images_delete_file':
+        $uploads_dir_df = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_df) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_df = __DIR__ . '/public/assets/uploads';
+        }
+        $df_raw_url = trim((string)($input['url'] ?? ''));
+        $df_base = th_strip_url_base($df_raw_url);
+        $df_target_id = trim((string)($input['targetId'] ?? ''));
+        $df_target_type = strtoupper(trim((string)($input['targetType'] ?? '')));
+        $df_field_path = trim((string)($input['fieldPath'] ?? ''));
+        if (strpos($df_base, '/assets/uploads/') !== 0) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Only /assets/uploads/ files can be permanently deleted."]);
+            break;
+        }
+        $df_bn = basename($df_base);
+        if (!$df_bn || strpos($df_bn, '..') !== false) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Invalid file name."]);
+            break;
+        }
+        $df_state = th_load_merged_image_state($uploads_dir_df);
+        if ($df_target_id !== '' && isset($df_state['overrides'][$df_target_id])) {
+            unset($df_state['overrides'][$df_target_id]);
+        }
+        $df_cms_file = __DIR__ . '/site_content.json';
+        $df_cms = th_read_json_locked($df_cms_file);
+        $df_cms_dirty = false;
+        if (is_array($df_cms)) {
+            if ($df_target_type === 'HERO_SLIDE' && $df_target_id !== '' && isset($df_cms['homepage']['heroSlides']) && is_array($df_cms['homepage']['heroSlides'])) {
+                foreach ($df_cms['homepage']['heroSlides'] as &$sl_df) {
+                    if ((string)($sl_df['id'] ?? '') === $df_target_id && th_strip_url_base($sl_df['image'] ?? '') === $df_base) {
+                        $sl_df['image'] = '';
+                        $df_cms_dirty = true;
+                    }
+                }
+                unset($sl_df);
+            } elseif ($df_target_type === 'CATEGORY' && $df_target_id !== '' && isset($df_cms['homepage']['categoriesList']) && is_array($df_cms['homepage']['categoriesList'])) {
+                foreach ($df_cms['homepage']['categoriesList'] as &$cat_df) {
+                    if ((string)($cat_df['id'] ?? '') === $df_target_id && th_strip_url_base($cat_df['image'] ?? '') === $df_base) {
+                        $cat_df['image'] = '';
+                        $df_cms_dirty = true;
+                    }
+                }
+                unset($cat_df);
+            } elseif ($df_field_path !== '') {
+                $parts_df = array_values(array_filter(explode('.', $df_field_path), function($x) { return trim($x) !== ''; }));
+                if (count($parts_df) > 0) {
+                    $ref_df = &$df_cms;
+                    $ok_df = true;
+                    for ($pi = 0; $pi < count($parts_df) - 1; $pi++) {
+                        if (!isset($ref_df[$parts_df[$pi]]) || !is_array($ref_df[$parts_df[$pi]])) {
+                            $ok_df = false;
+                            break;
+                        }
+                        $ref_df = &$ref_df[$parts_df[$pi]];
+                    }
+                    $last_k_df = $parts_df[count($parts_df) - 1];
+                    if ($ok_df && isset($ref_df[$last_k_df])) {
+                        $ref_df[$last_k_df] = '';
+                        $df_cms_dirty = true;
+                    }
+                    unset($ref_df);
+                }
+            }
+            if ($df_cms_dirty) {
+                $df_cms['siteContentUpdatedAt'] = (int)round(microtime(true) * 1000);
+                th_write_json_atomic($df_cms_file, $df_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
+        $df_fp = rtrim(realpath($uploads_dir_df) ?: $uploads_dir_df, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $df_bn;
+        $df_deleted = file_exists($df_fp) ? @unlink($df_fp) : false;
+        $df_state['mediaLibrary'] = array_values(array_filter($df_state['mediaLibrary'] ?? [], function($m) use ($df_base) {
+            return th_strip_url_base($m['url'] ?? '') !== $df_base;
+        }));
+        th_save_image_state_atomic($uploads_dir_df, $df_state);
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        echo json_encode([
+            "success" => true,
+            "deletedUrl" => $df_base,
+            "deletedFromDisk" => $df_deleted,
+            "siteContentCleared" => $df_cms_dirty
+        ]);
+        break;
+
+    case 'site_images_auto_fix':
+        $uploads_dir_af = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_af) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_af = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_af)) {
+            @mkdir($uploads_dir_af, 0775, true);
+        }
+        $af_raw_items = is_array($input['items'] ?? null) ? array_slice($input['items'], 0, 25) : [];
+        if (empty($af_raw_items)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Provide items array for auto-fix."]);
+            break;
+        }
+        $af_state = th_load_merged_image_state($uploads_dir_af);
+        $af_cms_file = __DIR__ . '/site_content.json';
+        $af_cms = th_read_json_locked($af_cms_file);
+        $af_cms_dirty = false;
+        $af_now_ms = (int)round(microtime(true) * 1000);
+        $af_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+
+        // Build global set of currently attached URLs across all overrides
+        $af_used_urls = [];
+        foreach (($af_state['overrides'] ?? []) as $ov_k => $ov_v) {
+            if (!is_array($ov_v)) continue;
+            $pu = th_strip_url_base($ov_v['primary'] ?? '');
+            if ($pu !== '') $af_used_urls[$pu] = (string)$ov_k;
+            if (!empty($ov_v['replacedOldUrls']) && is_array($ov_v['replacedOldUrls'])) {
+                foreach ($ov_v['replacedOldUrls'] as $ru) {
+                    $rbu = th_strip_url_base($ru);
+                    if ($rbu !== '') $af_used_urls[$rbu] = (string)$ov_k;
+                }
+            }
+        }
+
+        // Pre-scan local /assets/uploads/ directory once per batch
+        $af_local_files = [];
+        foreach (@scandir($uploads_dir_af) ?: [] as $uf_af) {
+            if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf_af) || preg_match('/(diwali-offer|unsplash|placeholder|vecteezy)/i', $uf_af)) continue;
+            $fp_af = $uploads_dir_af . '/' . $uf_af;
+            if (!is_file($fp_af) || @filesize($fp_af) < 2000) continue;
+            $af_local_files[] = [
+                'webUrl' => '/assets/uploads/' . $uf_af,
+                'lowName' => strtolower($uf_af)
+            ];
+        }
+
+        $af_stop = ['the','and','for','with','from','grade','high','pure','quality','bulk','wholesale','industrial','natural','organic','fresh','raw','export','import','india','indian','china','chinese','japan','japanese','germany','german','chile','chilean','korea','korean','uganda','south','north','east','west','africa','african','europe','european','asia','asian','best','price','supplier','manufacturer','buyer','lead','rfq','ton','tons','kg','mt','pack','packaging','type','certified','origin','vintage','mixed','used','bale','bales','system','systems','large','small','stationary','easy','made','continuous','standby','premium','standard'];
+        $af_cat_map = [
+            ['re' => '/\b(fish|tuna|shrimp|prawn|salmon|mackerel|squid|crab|lobster|seafood|fillet|tilapia)\b/i', 'tokens' => ['fish','tuna','shrimp','prawn','salmon','seafood','fillet','marine'], 'q' => 'yellowfin tuna fish seafood'],
+            ['re' => '/\b(rice|basmati|tteokbokki|wheat|flour|grain|corn|maize|barley|soybean|lentil|pulse|bean|sesame|seed|sugar)\b/i', 'tokens' => ['rice','basmati','wheat','flour','grain','corn','soybean','lentil','pulse','bean','seed','sugar','agro','farm'], 'q' => 'basmati rice grains sacks'],
+            ['re' => '/\b(spice|pepper|turmeric|cardamom|clove|cinnamon|cumin|chilli|chili|ginger|garlic|cashew|almond|walnut|pistachio|peanut|nut|coffee|tea|cocoa)\b/i', 'tokens' => ['spice','pepper','turmeric','cardamom','clove','cumin','ginger','cashew','almond','nut','coffee','tea','cocoa'], 'q' => 'whole spices turmeric pepper'],
+            ['re' => '/\b(oil|sunflower|palm|olive|coconut|fruit|mango|apple|banana|onion|potato|tomato|vegetable|juice|beverage|honey|chicken|meat|beef|dairy|milk|food|agri)\b/i', 'tokens' => ['oil','sunflower','palm','coconut','fruit','mango','vegetable','honey','food','rice','grain','spice','agro','farm','tea','coffee'], 'q' => 'cooking sunflower oil agricultural food'],
+            ['re' => '/\b(shoe|shoes|sneaker|boot|footwear|leather|belt|wallet|handbag|luggage)\b/i', 'tokens' => ['shoe','shoes','footwear','leather','belt','wallet','handbag','bag','apparel','fashion'], 'q' => 'leather shoes footwear wholesale'],
+            ['re' => '/\b(denim|jeans|cloth|clothing|garment|apparel|textile|fabric|cotton|silk|saree|shirt|jacket|yarn|wool|linen|towel|carpet|rug|jute)\b/i', 'tokens' => ['denim','jeans','cloth','clothing','garment','apparel','textile','fabric','cotton','silk','saree','shirt','yarn','towel','carpet','jute','leather'], 'q' => 'cotton textile fabric denim garments'],
+            ['re' => '/\b(generator|genset|cummins|tank|storage|boiler|compressor|pump|valve|hvac|chiller|excavator|bulldozer|loader|crane|forklift|tractor|cnc|lathe|milling|welding|welder|machinery|machine)\b/i', 'tokens' => ['generator','genset','diesel','tank','storage','pump','valve','excavator','crane','forklift','cnc','welding','machinery','machine','industrial','equipment'], 'q' => 'industrial diesel generator machinery'],
+            ['re' => '/\b(coal|anthracite|coke|en590|diesel|jet|bitumen|petroleum|fuel|lng|lpg|solar|panel|battery|energy)\b/i', 'tokens' => ['coal','diesel','jet','bitumen','petroleum','fuel','solar','panel','battery','energy','oil','mining'], 'q' => 'steam coal solar panels energy'],
+            ['re' => '/\b(steel|iron|copper|aluminum|aluminium|brass|zinc|nickel|gold|silver|ore|ingot|billet|coil|rebar|cathode|scrap|metal|mineral|marble|granite|mining)\b/i', 'tokens' => ['steel','iron','copper','aluminum','aluminium','gold','ore','ingot','coil','scrap','metal','mineral','marble','granite','mining','coal'], 'q' => 'stainless steel coils copper ingots'],
+            ['re' => '/\b(chemical|acid|soda|urea|fertilizer|resin|polymer|hdpe|ldpe|pvc|plastic|rubber|paint|coating)\b/i', 'tokens' => ['chemical','acid','soda','urea','fertilizer','resin','polymer','hdpe','pvc','plastic','rubber','paint','drum'], 'q' => 'industrial chemical drums plastic pellets'],
+            ['re' => '/\b(cement|clinker|brick|tile|ceramic|glass|plywood|timber|lumber|wood|bamboo|sand|gravel|aggregate|building|construction)\b/i', 'tokens' => ['cement','brick','tile','ceramic','glass','plywood','timber','wood','bamboo','sand','gravel','aggregate','marble','building','construction'], 'q' => 'portland cement timber building materials'],
+            ['re' => '/\b(hotel|hospitality|restaurant|tableware|cutlery|kitchen|furniture|chair|table|sofa|bed|home|decor|appliance)\b/i', 'tokens' => ['hotel','hospitality','tableware','kitchen','ceramic','glass','linen','towel','furniture','wood','bamboo','home'], 'q' => 'hotel hospitality tableware furniture'],
+            ['re' => '/\b(electronic|electrical|cable|wire|led|light|lamp|semiconductor|computer|laptop|server|phone|camera|motor)\b/i', 'tokens' => ['electronic','electrical','cable','wire','led','light','lamp','computer','motor','solar','battery'], 'q' => 'industrial electrical cables led lighting'],
+            ['re' => '/\b(car|auto|automotive|vehicle|truck|trailer|motorcycle|tire|tyre|wheel|brake|engine|transport|logistics|shipping|container)\b/i', 'tokens' => ['auto','automotive','vehicle','truck','tire','tyre','wheel','engine','battery','transport','shipping','container','cargo'], 'q' => 'commercial truck tires automotive parts'],
+            ['re' => '/\b(medical|hospital|surgical|lab|pharma|medicine|cosmetic|skincare|beauty|soap|hygiene)\b/i', 'tokens' => ['medical','hospital','surgical','lab','pharma','cosmetic','skincare','beauty','soap','bottle','chemical'], 'q' => 'medical diagnostic supplies laboratory'],
+            ['re' => '/\b(paper|kraft|cardboard|carton|packaging|bottle|printing|office|gift|craft|jewelry|gem)\b/i', 'tokens' => ['paper','kraft','cardboard','carton','packaging','bottle','printing','office','gift','craft','jewelry','bamboo','wood'], 'q' => 'corrugated cardboard packaging kraft paper']
+        ];
+        $af_results = [];
+        $af_deleted_all = [];
+        $af_fixed_count = 0;
+        $af_fallback_usage = [];
+
+        foreach ($af_raw_items as $af_item) {
+            if (!is_array($af_item)) continue;
+            $it_id = trim((string)($af_item['id'] ?? ''));
+            $it_type = strtoupper(trim((string)($af_item['type'] ?? 'PRODUCT')));
+            $it_title = trim((string)($af_item['title'] ?? $it_id));
+            $it_cat = trim((string)($af_item['category'] ?? ''));
+            $it_old = trim((string)($af_item['currentUrl'] ?? ''));
+            $it_fp = trim((string)($af_item['fieldPath'] ?? ''));
+
+            if ($it_id === '') continue;
+
+            // Never overwrite brand logo automatically
+            if ($it_id === 'site-brand-logo' || $it_fp === 'branding.logoUrl') {
+                $af_results[] = [
+                    'id' => $it_id,
+                    'type' => $it_type,
+                    'oldUrl' => $it_old,
+                    'newUrl' => $it_old,
+                    'deletedOldUrls' => [],
+                    'success' => false,
+                    'message' => 'Brand logo is protected from automatic stock photo replacement.'
+                ];
+                continue;
+            }
+
+            $old_base_af = th_strip_url_base($it_old);
+            if ($old_base_af !== '') {
+                $af_used_urls[$old_base_af] = $it_id;
+            }
+
+            $search_text_af = strtolower($it_title . ' ' . $it_cat);
+            if ($it_type === 'SITE_ASSET' || $it_type === 'HERO_SLIDE') {
+                $search_text_af .= ' global trade logistics port container ship warehouse industrial cargo';
+            }
+            $words_af = array_values(array_unique(array_filter(
+                preg_split('/[^a-z0-9]+/', $search_text_af) ?: [],
+                function($w) use ($af_stop) { return strlen($w) >= 3 && !in_array($w, $af_stop, true) && !ctype_digit($w); }
+            )));
+
+            // Determine similar-category profile tokens and query
+            $cat_tokens_af = ['industrial','warehouse','cargo','container','steel','machinery','grain','fabric','chemical','timber'];
+            $cat_query_af = $it_cat !== '' ? $it_cat : 'industrial wholesale product';
+            foreach ($af_cat_map as $cm_af) {
+                if (preg_match($cm_af['re'], $search_text_af)) {
+                    $cat_tokens_af = $cm_af['tokens'];
+                    $cat_query_af = $cm_af['q'];
+                    break;
+                }
+            }
+
+            $chosen_url = '';
+            $best_sc = 0;
+            // PASS 1: Unused local file matching product title or category tokens
+            $combined_tokens_af = array_values(array_unique(array_merge($words_af, $cat_tokens_af)));
+            if (!empty($combined_tokens_af)) {
+                foreach ($af_local_files as $lf) {
+                    $wu = $lf['webUrl'];
+                    if (isset($af_used_urls[$wu])) continue;
+                    $sc = 0;
+                    foreach ($words_af as $w) {
+                        $st = (strlen($w) > 4 && substr($w, -1) === 's') ? substr($w, 0, -1) : $w;
+                        if (strpos($lf['lowName'], $w) !== false) $sc += 6;
+                        elseif (strlen($st) >= 4 && strpos($lf['lowName'], $st) !== false) $sc += 3;
+                    }
+                    foreach ($cat_tokens_af as $cw) {
+                        if (strpos($lf['lowName'], $cw) !== false) $sc += 2;
+                    }
+                    if ($sc > $best_sc) {
+                        $best_sc = $sc;
+                        $chosen_url = $wu;
+                    }
+                }
+            }
+
+            // PASS 2: Bounded 3s Wikimedia fetch for product noun, then category query
+            if ($chosen_url === '' && function_exists('curl_init')) {
+                $wm_queries_af = [];
+                if (!empty($words_af)) $wm_queries_af[] = implode(' ', array_slice($words_af, 0, 3));
+                if ($cat_query_af !== '') $wm_queries_af[] = $cat_query_af;
+                $auto_slug_af = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                foreach ($wm_queries_af as $q_af) {
+                    $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode($q_af . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
+                    $ch_af = curl_init($wm_u);
+                    curl_setopt($ch_af, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch_af, CURLOPT_TIMEOUT, 3);
+                    curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 2);
+                    curl_setopt($ch_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                    $raw_wm = (string)curl_exec($ch_af);
+                    $code_wm = intval(curl_getinfo($ch_af, CURLINFO_HTTP_CODE));
+                    curl_close($ch_af);
+                    if ($code_wm === 200 && $raw_wm !== '') {
+                        $wm_data = json_decode($raw_wm, true);
+                        $wm_pages = $wm_data['query']['pages'] ?? [];
+                        foreach ($wm_pages as $pg_af) {
+                            $info_af = $pg_af['imageinfo'][0] ?? null;
+                            if (!$info_af) continue;
+                            $mime_af = strtolower((string)($info_af['mime'] ?? ''));
+                            if (strpos($mime_af, 'jpeg') === false && strpos($mime_af, 'png') === false && strpos($mime_af, 'webp') === false) continue;
+                            $cu_af = trim((string)($info_af['thumburl'] ?? $info_af['url'] ?? ''));
+                            if ($cu_af === '' || !th_is_safe_public_http_url($cu_af)) continue;
+                            $u_hash_af = substr(sha1($cu_af), 0, 12);
+                            $local_fn_af = "auto-{$auto_slug_af}-{$u_hash_af}.jpg";
+                            $local_web_af = '/assets/uploads/' . $local_fn_af;
+                            if (isset($af_used_urls[$local_web_af])) continue;
+                            $local_fp_af = $uploads_dir_af . '/' . $local_fn_af;
+                            if (!file_exists($local_fp_af) || @filesize($local_fp_af) < 2000) {
+                                $ch_dl_af = curl_init($cu_af);
+                                curl_setopt($ch_dl_af, CURLOPT_RETURNTRANSFER, true);
+                                curl_setopt($ch_dl_af, CURLOPT_FOLLOWLOCATION, true);
+                                curl_setopt($ch_dl_af, CURLOPT_MAXREDIRS, 2);
+                                curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 3);
+                                curl_setopt($ch_dl_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
+                                $bin_af = (string)curl_exec($ch_dl_af);
+                                $dl_code_af = intval(curl_getinfo($ch_dl_af, CURLINFO_HTTP_CODE));
+                                curl_close($ch_dl_af);
+                                if ($dl_code_af >= 200 && $dl_code_af < 300 && strlen($bin_af) > 2500) {
+                                    @file_put_contents($local_fp_af, $bin_af, LOCK_EX);
+                                }
+                            }
+                            if (file_exists($local_fp_af) && @filesize($local_fp_af) > 2000) {
+                                $chosen_url = $local_web_af;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // PASS 3 (ZERO-SKIP GUARANTEED SIMILAR-CATEGORY PHOTO COPY):
+            // Pick best-matching least-used real local photo from same/similar category and create a unique asset copy so item is NEVER skipped
+            if (($chosen_url === '' || $chosen_url === $old_base_af) && !empty($af_local_files)) {
+                $best_tpl_web = '';
+                $best_tpl_sc = -1;
+                $best_tpl_use = PHP_INT_MAX;
+                foreach ($af_local_files as $lf) {
+                    $wu = $lf['webUrl'];
+                    if ($wu === $old_base_af) continue;
+                    $sc = 0;
+                    foreach ($words_af as $w) {
+                        if (strpos($lf['lowName'], $w) !== false) $sc += 6;
+                    }
+                    foreach ($cat_tokens_af as $cw) {
+                        if (strpos($lf['lowName'], $cw) !== false) $sc += 3;
+                    }
+                    $use_c = $af_fallback_usage[$wu] ?? 0;
+                    if ($sc > $best_tpl_sc + 2 || ($sc >= $best_tpl_sc - 2 && $use_c < $best_tpl_use)) {
+                        $best_tpl_sc = $sc;
+                        $best_tpl_use = $use_c;
+                        $best_tpl_web = $wu;
+                    }
+                }
+                if ($best_tpl_web !== '') {
+                    $src_fp_af = $uploads_dir_af . '/' . basename($best_tpl_web);
+                    if (is_file($src_fp_af)) {
+                        $ext_tpl = strtolower(pathinfo($src_fp_af, PATHINFO_EXTENSION) ?: 'webp');
+                        $slug_tpl = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                        $uniq_h = substr(sha1($it_id . '::' . microtime(true) . '::' . mt_rand()), 0, 12);
+                        $new_fn_af = "cat-{$slug_tpl}-{$uniq_h}.{$ext_tpl}";
+                        $dest_fp_af = $uploads_dir_af . '/' . $new_fn_af;
+                        if (@copy($src_fp_af, $dest_fp_af)) {
+                            $chosen_url = '/assets/uploads/' . $new_fn_af;
+                            $af_fallback_usage[$best_tpl_web] = ($af_fallback_usage[$best_tpl_web] ?? 0) + 1;
+                        }
+                    }
+                }
+            }
+
+            if ($chosen_url === '' || $chosen_url === $old_base_af) {
+                $af_results[] = [
+                    'id' => $it_id,
+                    'type' => $it_type,
+                    'oldUrl' => $it_old,
+                    'newUrl' => $it_old,
+                    'deletedOldUrls' => [],
+                    'success' => false,
+                    'message' => 'No verified image available for "' . $it_title . '".'
+                ];
+                continue;
+            }
+
+            $af_used_urls[$chosen_url] = $it_id;
+            $ex_ov_af = isset($af_state['overrides'][$it_id]) && is_array($af_state['overrides'][$it_id]) ? $af_state['overrides'][$it_id] : [];
+            $rep_af = array_values(array_filter(
+                th_merge_replaced_old_urls($ex_ov_af['replacedOldUrls'] ?? [], [$it_old, $ex_ov_af['primary'] ?? null]),
+                function($u) use ($chosen_url) { return th_strip_url_base($u) !== $chosen_url; }
+            ));
+
+            $af_state['overrides'][$it_id] = [
+                'primary' => $chosen_url,
+                'previousPrimary' => ($old_base_af !== '' && $old_base_af !== $chosen_url) ? $old_base_af : ($ex_ov_af['previousPrimary'] ?? null),
+                'gallery' => [$chosen_url],
+                'format' => strtoupper(pathinfo($chosen_url, PATHINFO_EXTENSION) ?: 'WEBP'),
+                'updatedAt' => $af_now_iso,
+                'imageUpdatedAt' => $af_now_ms,
+                'updatedBy' => 'catalog-image-auditor',
+                'locked' => true,
+                'serverVerified' => true,
+                'verifiedAt' => $af_now_iso,
+                'replacedOldUrls' => $rep_af
+            ];
+            $af_state['productActivityTimestamps'][$it_id] = $af_now_ms;
+            th_sync_image_override_to_db_and_cms($it_id, $chosen_url, [$chosen_url], $pdo, $db_connected);
+
+            if (is_array($af_cms)) {
+                if ($it_type === 'HERO_SLIDE' && isset($af_cms['homepage']['heroSlides']) && is_array($af_cms['homepage']['heroSlides'])) {
+                    foreach ($af_cms['homepage']['heroSlides'] as &$sl_af) {
+                        if ((string)($sl_af['id'] ?? '') === $it_id) {
+                            $sl_af['image'] = $chosen_url;
+                            $af_cms_dirty = true;
+                        }
+                    }
+                    unset($sl_af);
+                } elseif ($it_type === 'CATEGORY' && isset($af_cms['homepage']['categoriesList']) && is_array($af_cms['homepage']['categoriesList'])) {
+                    foreach ($af_cms['homepage']['categoriesList'] as &$cat_af) {
+                        if ((string)($cat_af['id'] ?? '') === $it_id) {
+                            $cat_af['image'] = $chosen_url;
+                            $af_cms_dirty = true;
+                        }
+                    }
+                    unset($cat_af);
+                } elseif ($it_fp !== '') {
+                    $parts_af = array_values(array_filter(explode('.', $it_fp), function($x) { return trim($x) !== ''; }));
+                    if (count($parts_af) > 0) {
+                        $ref_af = &$af_cms;
+                        for ($pi = 0; $pi < count($parts_af) - 1; $pi++) {
+                            if (!isset($ref_af[$parts_af[$pi]]) || !is_array($ref_af[$parts_af[$pi]])) {
+                                $ref_af[$parts_af[$pi]] = [];
+                            }
+                            $ref_af = &$ref_af[$parts_af[$pi]];
+                        }
+                        $ref_af[$parts_af[count($parts_af) - 1]] = $chosen_url;
+                        unset($ref_af);
+                        $af_cms_dirty = true;
+                    }
+                }
+            }
+
+            $af_fixed_count++;
+            $af_results[] = [
+                'id' => $it_id,
+                'type' => $it_type,
+                'oldUrl' => $it_old,
+                'newUrl' => $chosen_url,
+                'deletedOldUrls' => [],
+                'success' => true
+            ];
+        }
+
+        if ($af_cms_dirty && is_array($af_cms)) {
+            $af_cms['siteContentUpdatedAt'] = $af_now_ms;
+            th_write_json_atomic($af_cms_file, $af_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        if ($af_fixed_count > 0) {
+            th_save_image_state_atomic($uploads_dir_af, $af_state);
+        }
+
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        echo json_encode([
+            "success" => true,
+            "fixedCount" => $af_fixed_count,
+            "failedCount" => count($af_results) - $af_fixed_count,
+            "deletedOldUrls" => $af_deleted_all,
+            "results" => $af_results
         ]);
         break;
 

@@ -16484,38 +16484,59 @@ function invalidatePublicProductImagesCache() {
   publicProductImagesCache = null;
 }
 
+function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
+  const s = String(rawUrl || '').trim();
+  if (!s) return '';
+  const qIdx = s.indexOf('?');
+  const base = qIdx >= 0 ? s.slice(0, qIdx) : s;
+  if (!base.startsWith('/assets/uploads/')) return s;
+  const fn = path.basename(base);
+  const directPath = path.join(uploadsStaticDir, fn);
+  if (fs.existsSync(directPath)) return `/assets/uploads/${fn}`;
+  let cur = fn;
+  let hops = 0;
+  while (virtualImageAliasesMap[cur] && hops < 8) {
+    cur = path.basename(String(virtualImageAliasesMap[cur]));
+    hops++;
+    if (fs.existsSync(path.join(uploadsStaticDir, cur))) {
+      return `/assets/uploads/${cur}`;
+    }
+  }
+  return `/assets/uploads/${fn}`;
+}
+
 function buildSlimPublicProductImageState(state: ProductImageSystemState) {
   const rawOverrides = state?.overrides || {};
   const slimOverrides: Record<string, any> = {};
   for (const [k, ov] of Object.entries(rawOverrides)) {
     if (!ov || typeof ov !== 'object') continue;
+    const resolvedPrimary = resolvePublicPhysicalUploadUrl((ov as any).primary);
+    if (!resolvedPrimary) continue;
     const entry: Record<string, any> = {
-      primary: (ov as any).primary
+      primary: resolvedPrimary
     };
-    if (Array.isArray((ov as any).gallery) && (ov as any).gallery.length > 0) {
-      entry.gallery = (ov as any).gallery.slice(0, 6);
+    if (Array.isArray((ov as any).gallery) && (ov as any).gallery.length > 1) {
+      const resolvedGal = (ov as any).gallery
+        .slice(0, 4)
+        .map(resolvePublicPhysicalUploadUrl)
+        .filter(Boolean);
+      if (resolvedGal.length > 1) {
+        entry.gallery = resolvedGal;
+      }
     }
-    if ((ov as any).updatedBy) entry.updatedBy = (ov as any).updatedBy;
-    if ((ov as any).updatedAt) entry.updatedAt = (ov as any).updatedAt;
-    if ((ov as any).imageUpdatedAt) entry.imageUpdatedAt = (ov as any).imageUpdatedAt;
     if ((ov as any).locked) entry.locked = true;
-    if ((ov as any).serverVerified) entry.serverVerified = true;
-    if ((ov as any).verifiedAt) entry.verifiedAt = (ov as any).verifiedAt;
-    if (Array.isArray((ov as any).replacedOldUrls) && (ov as any).replacedOldUrls.length > 0) {
-      entry.replacedOldUrls = (ov as any).replacedOldUrls.slice(0, 12);
-    }
-    if ((ov as any).altText) entry.altText = (ov as any).altText;
+    if ((ov as any).imageUpdatedAt) entry.imageUpdatedAt = (ov as any).imageUpdatedAt;
     if ((ov as any).deleted) entry.deleted = true;
     slimOverrides[k] = entry;
   }
   return {
     overrides: slimOverrides,
-    productActivityTimestamps: state?.productActivityTimestamps || {},
+    productActivityTimestamps: {},
     globalDefaultImage: state?.globalDefaultImage ?? null,
     categoryOverrides: state?.categoryOverrides || {},
-    urlReplacements: state?.urlReplacements || {},
+    urlReplacements: {},
     deletedUrls: Array.isArray((state as any)?.deletedUrls) ? (state as any).deletedUrls : [],
-    mediaLibrary: Array.isArray(state?.mediaLibrary) ? state.mediaLibrary.slice(0, 24) : [],
+    mediaLibrary: [],
     updatedAt: (state as any)?.updatedAt || new Date().toISOString()
   };
 }

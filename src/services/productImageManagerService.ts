@@ -187,20 +187,6 @@ export function optimizeImageUrl(
     return `${base}?${queryParams.toString()}`;
   }
 
-  const isLocalOptimizableRaster =
-    (base.startsWith('/assets/uploads/') ||
-      base.startsWith('/assets/tradeheaven/') ||
-      base.startsWith('/assets/aistudio/') ||
-      base.startsWith('/uploads/renewal-branding/') ||
-      base.startsWith('/src/assets/images/') ||
-      base.startsWith('/assets/')) &&
-    /\.(jpg|jpeg|png|webp|avif)$/i.test(base);
-
-  if (isLocalOptimizableRaster) {
-    queryParams.set('w', String(targetWidth));
-    return `${base}?${queryParams.toString()}`;
-  }
-
   return normalized;
 }
 
@@ -212,15 +198,10 @@ export function buildResponsiveImageSrcSet(
   const normalized = normalizeProductAssetUrl(rawUrl);
   if (!normalized || normalized.startsWith('data:') || normalized.startsWith('blob:')) return undefined;
   const base = normalized.split('?')[0];
-  const isLocalRaster =
-    (base.startsWith('/assets/uploads/') ||
-      base.startsWith('/assets/tradeheaven/') ||
-      base.startsWith('/assets/aistudio/') ||
-      base.startsWith('/src/assets/images/') ||
-      base.startsWith('/assets/')) &&
-    /\.(jpg|jpeg|png|webp|avif)$/i.test(base);
 
-  if (!isLocalRaster && !base.includes('images.unsplash.com')) return undefined;
+  // Static local files in /assets/uploads/ are already pre-compressed WebP/JPEG on disk;
+  // only generate multi-width srcSet for dynamic resize hosts like Unsplash.
+  if (!base.includes('images.unsplash.com')) return undefined;
 
   const widths = isThumbnail
     ? [160, 320, 480]

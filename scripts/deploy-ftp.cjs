@@ -30,19 +30,25 @@ async function deploy() {
     process.exit(1);
   }
 
-  // Ensure api.php and .htaccess are in dist
+  // Ensure latest public/api.php and public/.htaccess are synced to root and dist
+  const publicApiPhp = path.resolve(__dirname, '..', 'public', 'api.php');
   const rootApiPhp = path.resolve(__dirname, '..', 'api.php');
   const distApiPhp = path.join(distDir, 'api.php');
-  if (fs.existsSync(rootApiPhp) && !fs.existsSync(distApiPhp)) {
-    fs.copyFileSync(rootApiPhp, distApiPhp);
-    console.log('[DEPLOY] Copied api.php into dist/');
+  const srcApiPhp = fs.existsSync(publicApiPhp) ? publicApiPhp : rootApiPhp;
+  if (fs.existsSync(srcApiPhp)) {
+    fs.copyFileSync(srcApiPhp, distApiPhp);
+    if (srcApiPhp !== rootApiPhp) fs.copyFileSync(srcApiPhp, rootApiPhp);
+    console.log('[DEPLOY] Synced latest api.php into dist/ and root');
   }
 
+  const publicHtaccess = path.resolve(__dirname, '..', 'public', '.htaccess');
   const rootHtaccess = path.resolve(__dirname, '..', '.htaccess');
   const distHtaccess = path.join(distDir, '.htaccess');
-  if (fs.existsSync(rootHtaccess) && !fs.existsSync(distHtaccess)) {
-    fs.copyFileSync(rootHtaccess, distHtaccess);
-    console.log('[DEPLOY] Copied .htaccess into dist/');
+  const srcHtaccess = fs.existsSync(publicHtaccess) ? publicHtaccess : rootHtaccess;
+  if (fs.existsSync(srcHtaccess)) {
+    fs.copyFileSync(srcHtaccess, distHtaccess);
+    if (srcHtaccess !== rootHtaccess) fs.copyFileSync(srcHtaccess, rootHtaccess);
+    console.log('[DEPLOY] Synced latest .htaccess into dist/ and root');
   }
 
   let connected = false;

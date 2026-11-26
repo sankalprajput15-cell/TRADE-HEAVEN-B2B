@@ -280,6 +280,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
     const isCrossCompanyAsset = (url: string): boolean => {
       const u = url.toLowerCase();
+      // Trust server-verified local uploads so auto-fixed & uploaded images never get hidden on Chrome
+      if (u.startsWith('/assets/uploads/')) return false;
       if (u.includes('leather_belt_')) return true;
       if (u.includes('image00') && !lowerSupplier.includes('atlantic')) return true;
       if (u.includes('whatsapp_image_') && !lowerSupplier.includes('blackstone') && !lowerSupplier.includes('yunnan')) return true;
@@ -429,10 +431,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     );
   }, [src, effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName, type]);
 
-  // When a product/RFQ/category has no valid real image candidate (or all candidates failed),
-  // automatically search sequential product headings and upload a real matching photo
+  // Only run background remote image discovery when Admin Live Edit is active and no candidate exists
   useEffect(() => {
-    if (isLogoOrAvatar) return;
+    if (!isLiveUploadActive || isLogoOrAvatar) return;
     if (candidates.length > 0 && !hasError) return;
     const headingText = String(productTitle || alt || '').trim();
     if (headingText.length < 3) return;
@@ -481,7 +482,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isLogoOrAvatar, candidates.length, hasError, productId, productTitle, alt, category]);
+  }, [isLiveUploadActive, isLogoOrAvatar, candidates.length, hasError, productId, productTitle, alt, category]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);
@@ -763,7 +764,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           onLoad={handleLoad}
           onError={handleError}
           style={callerStyle}
-          className={`w-full h-full object-cover transition-opacity duration-150 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}
+          className={`w-full h-full object-cover ${imgClassName}`}
           {...props}
         />
       )}

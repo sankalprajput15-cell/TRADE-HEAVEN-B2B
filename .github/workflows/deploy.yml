@@ -27,8 +27,10 @@ jobs:
 
       - name: Copy Server Config Files to Dist
         run: |
-          cp api.php dist/ 2>/dev/null || true
-          cp .htaccess dist/ 2>/dev/null || true
+          cp public/api.php api.php 2>/dev/null || true
+          cp public/.htaccess .htaccess 2>/dev/null || true
+          cp public/api.php dist/api.php 2>/dev/null || cp api.php dist/ 2>/dev/null || true
+          cp public/.htaccess dist/.htaccess 2>/dev/null || cp .htaccess dist/ 2>/dev/null || true
 
       - name: Deploy to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
