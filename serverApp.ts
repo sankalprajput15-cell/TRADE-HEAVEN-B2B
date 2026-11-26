@@ -29888,18 +29888,28 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
     }
 
     const batchItems = rawItems
-      .slice(0, 25)
+      .slice(0, 30)
       .map(normalizeSiteImageAutoFixInputItem)
       .filter((x): x is SiteImageAutoFixInputItem => Boolean(x));
+    const fastBatchMode = Boolean(req.body?.fastBatchMode || batchItems.length > 1);
+    const preindexedFiles = fastBatchMode ? buildPreindexedLocalUploadFiles() : undefined;
+    const sharedRegistry = fastBatchMode ? buildGlobalAttachedImageRegistry() : undefined;
     const results: SiteImageAutoFixResultRow[] = [];
     const allDeletedOldUrls: string[] = [];
     let fixedCount = 0;
     let failedCount = 0;
 
     for (const item of batchItems) {
-      let rowRes = await processSingleSiteImageAutoFix(item);
+      let rowRes = await processSingleSiteImageAutoFix(item, {
+        fastBatchMode,
+        preindexedFiles,
+        sharedRegistry
+      });
       if (!rowRes.success && item.id !== 'site-brand-logo') {
-        const fb = await assignZeroSkipCategoryFallback(item);
+        const fb = await assignZeroSkipCategoryFallback(item, {
+          preindexedFiles,
+          sharedRegistry
+        });
         if (fb) rowRes = fb;
       }
       if (rowRes.success) {

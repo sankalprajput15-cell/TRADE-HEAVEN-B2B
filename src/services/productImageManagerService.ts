@@ -1228,7 +1228,8 @@ class ProductImageManagerService {
       // 2. Fallback to PHP endpoint (for cPanel / BigRock deployment)
       if (!srv) {
         try {
-          const phpRes = await fetch(`/api.php?action=get_product_images&_t=${Date.now()}`, {
+          const phpMediaFlag = includeFullMedia ? '&includeMedia=1' : '';
+          const phpRes = await fetch(`/api.php?action=get_product_images${phpMediaFlag}&_t=${Date.now()}`, {
             cache: 'no-store'
           });
           if (phpRes.ok) {

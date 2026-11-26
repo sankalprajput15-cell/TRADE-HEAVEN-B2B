@@ -276,14 +276,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     try {
       if (forceSync) {
         await Promise.allSettled([
-          productImageManagerService.syncFromServer(true, false, {
+          productImageManagerService.syncFromServer(true, true, {
             bypassCooldown: true,
             emitEvenIfUnchanged: true
           }),
           refreshFromServer()
         ]);
       } else {
-        await productImageManagerService.ensureHydrated().catch(() => {});
+        await productImageManagerService.syncFromServer(true, true).catch(() => {});
       }
 
       const [prodRes, rfqRes, snapRes, delRes] = await Promise.allSettled([

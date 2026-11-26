@@ -340,20 +340,23 @@ export async function replaceSiteImage(
  * when running against a host that does not yet expose /api/v1/admin/site-images/auto-fix.
  */
 export async function autoFixSiteImages(
-  items: SiteImageAutoFixItemInput[]
+  items: SiteImageAutoFixItemInput[],
+  opts?: { fastBatchMode?: boolean }
 ): Promise<{ results: SiteImageAutoFixRowResult[] }> {
   if (items.length === 0) return { results: [] };
 
+  const fastBatchMode = Boolean(opts?.fastBatchMode || items.length > 1);
+  const timeoutMs = items.length > 1 ? 35000 : 20000;
   const serverResultsById = new Map<string, SiteImageAutoFixRowResult>();
   for (const endpoint of ['/api/v1/admin/site-images/auto-fix', '/api.php?action=site_images_auto_fix']) {
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 18000) : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, fastBatchMode }),
         ...(ctrl ? { signal: ctrl.signal } : {})
       });
       const json = await res.json().catch(() => null);
@@ -372,13 +375,15 @@ export async function autoFixSiteImages(
             const loadsOk = isServerLocalUpload ? true : await validateRealImageUrlLoads(cleanNewUrl);
             if (loadsOk) {
               serverResultsById.set(cleanId, { ...r, newUrl: cleanNewUrl });
-              void productImageManagerService.logAndVerifyUploadPropagation({
-                targetId: cleanId,
-                targetType: r.type,
-                expectedUrl: cleanNewUrl,
-                deletedOldUrls: r.deletedOldUrls,
-                source: `autoFixSiteImages:${endpoint}`
-              });
+              if (!fastBatchMode) {
+                void productImageManagerService.logAndVerifyUploadPropagation({
+                  targetId: cleanId,
+                  targetType: r.type,
+                  expectedUrl: cleanNewUrl,
+                  deletedOldUrls: r.deletedOldUrls,
+                  source: `autoFixSiteImages:${endpoint}`
+                });
+              }
               continue;
             }
           }
@@ -388,7 +393,7 @@ export async function autoFixSiteImages(
             type: r.type || 'PRODUCT',
             success: false,
             oldUrl: r.oldUrl,
-            error: r.error || 'No verified unused matching photo found automatically.'
+            error: r.error || r.message || 'No verified unused matching photo found automatically.'
           });
         }
         if (serverResultsById.size === items.length) {

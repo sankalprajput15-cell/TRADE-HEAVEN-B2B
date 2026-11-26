@@ -1452,6 +1452,8 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'stats';
     } elseif (strpos($clean_route, 'admin/site-images/replace') !== false || strpos($clean_route, 'site-images/replace') !== false) {
         $raw_action = 'site_images_replace';
+    } elseif (strpos($clean_route, 'admin/site-images/auto-fix-jobs') !== false || strpos($clean_route, 'site-images/auto-fix-jobs') !== false) {
+        $raw_action = 'site_images_auto_fix_jobs';
     } elseif (strpos($clean_route, 'admin/site-images/auto-fix') !== false || strpos($clean_route, 'site-images/auto-fix') !== false) {
         $raw_action = 'site_images_auto_fix';
     } elseif (strpos($clean_route, 'admin/site-images/delete-file') !== false || strpos($clean_route, 'site-images/delete-file') !== false) {
@@ -1555,6 +1557,8 @@ if (empty($raw_action)) {
             $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
         } elseif (strpos($sub, 'admin/site-images/replace') !== false || strpos($sub, 'site-images/replace') !== false) {
             $raw_action = 'site_images_replace';
+        } elseif (strpos($sub, 'admin/site-images/auto-fix-jobs') !== false || strpos($sub, 'site-images/auto-fix-jobs') !== false) {
+            $raw_action = 'site_images_auto_fix_jobs';
         } elseif (strpos($sub, 'admin/site-images/auto-fix') !== false || strpos($sub, 'site-images/auto-fix') !== false) {
             $raw_action = 'site_images_auto_fix';
         } elseif (strpos($sub, 'admin/site-images/delete-file') !== false || strpos($sub, 'site-images/delete-file') !== false) {
@@ -8959,6 +8963,18 @@ switch ($action) {
         ]);
         break;
 
+    case 'site_images_auto_fix_jobs':
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        echo json_encode([
+            "success" => false,
+            "unsupportedJobQueue" => true,
+            "useClientBatchMode" => true,
+            "job" => null,
+            "message" => "PHP host uses fast batched client auto-fix mode."
+        ]);
+        break;
+
     case 'site_images_auto_fix':
         $uploads_dir_af = __DIR__ . '/assets/uploads';
         if (!is_dir($uploads_dir_af) && is_dir(__DIR__ . '/public/assets/uploads')) {
@@ -8967,18 +8983,35 @@ switch ($action) {
         if (!is_dir($uploads_dir_af)) {
             @mkdir($uploads_dir_af, 0775, true);
         }
-        $af_raw_items = is_array($input['items'] ?? null) ? array_slice($input['items'], 0, 25) : [];
+        $af_raw_items = is_array($input['items'] ?? null) ? array_slice($input['items'], 0, 30) : [];
         if (empty($af_raw_items)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Provide items array for auto-fix."]);
             break;
         }
+        $af_fast_batch = !empty($input['fastBatchMode']) || count($af_raw_items) > 1;
         $af_state = th_load_merged_image_state($uploads_dir_af);
         $af_cms_file = __DIR__ . '/site_content.json';
         $af_cms = th_read_json_locked($af_cms_file);
         $af_cms_dirty = false;
         $af_now_ms = (int)round(microtime(true) * 1000);
         $af_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+
+        // Load virtual image alias map for zero-bloat instant unique URLs
+        $af_aliases = [];
+        $af_aliases_dirty = false;
+        $af_alias_paths = [
+            $uploads_dir_af . '/virtual-image-aliases.json',
+            __DIR__ . '/data/virtual-image-aliases.json'
+        ];
+        foreach ($af_alias_paths as $af_ap) {
+            if (is_file($af_ap)) {
+                $loaded_ap = th_read_json_locked($af_ap);
+                if (is_array($loaded_ap) && !empty($loaded_ap)) {
+                    $af_aliases = array_merge($af_aliases, $loaded_ap);
+                }
+            }
+        }
 
         // Build global set of currently attached URLs across all overrides
         $af_used_urls = [];
@@ -8994,10 +9027,10 @@ switch ($action) {
             }
         }
 
-        // Pre-scan local /assets/uploads/ directory once per batch
+        // Pre-scan local /assets/uploads/ directory once per batch, excluding cross-category-mismatched templates
         $af_local_files = [];
         foreach (@scandir($uploads_dir_af) ?: [] as $uf_af) {
-            if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf_af) || preg_match('/(diwali-offer|unsplash|placeholder|vecteezy)/i', $uf_af)) continue;
+            if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf_af) || preg_match('/(automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|industrial-ball-bearings-frozen-shri|diwali-offer|unsplash|placeholder|vecteezy|WhatsApp_Image_2026-11-02)/i', $uf_af)) continue;
             $fp_af = $uploads_dir_af . '/' . $uf_af;
             if (!is_file($fp_af) || @filesize($fp_af) < 2000) continue;
             $af_local_files[] = [
@@ -9010,10 +9043,10 @@ switch ($action) {
         $af_cat_map = [
             ['re' => '/\b(fish|tuna|shrimp|prawn|salmon|mackerel|squid|crab|lobster|seafood|fillet|tilapia)\b/i', 'tokens' => ['fish','tuna','shrimp','prawn','salmon','seafood','fillet','marine'], 'q' => 'yellowfin tuna fish seafood'],
             ['re' => '/\b(rice|basmati|tteokbokki|wheat|flour|grain|corn|maize|barley|soybean|lentil|pulse|bean|sesame|seed|sugar)\b/i', 'tokens' => ['rice','basmati','wheat','flour','grain','corn','soybean','lentil','pulse','bean','seed','sugar','agro','farm'], 'q' => 'basmati rice grains sacks'],
-            ['re' => '/\b(spice|pepper|turmeric|cardamom|clove|cinnamon|cumin|chilli|chili|ginger|garlic|cashew|almond|walnut|pistachio|peanut|nut|coffee|tea|cocoa)\b/i', 'tokens' => ['spice','pepper','turmeric','cardamom','clove','cumin','ginger','cashew','almond','nut','coffee','tea','cocoa'], 'q' => 'whole spices turmeric pepper'],
+            ['re' => '/\b(spice|pepper|turmeric|cardamom|clove|cinnamon|cumin|chilli|chili|ginger|garlic|cashew|almond|walnut|pistachio|peanut|nut|coffee|tea|cocoa|vanilla)\b/i', 'tokens' => ['spice','pepper','turmeric','cardamom','clove','cumin','ginger','cashew','almond','nut','coffee','tea','cocoa','vanilla'], 'q' => 'whole spices turmeric pepper'],
             ['re' => '/\b(oil|sunflower|palm|olive|coconut|fruit|mango|apple|banana|onion|potato|tomato|vegetable|juice|beverage|honey|chicken|meat|beef|dairy|milk|food|agri)\b/i', 'tokens' => ['oil','sunflower','palm','coconut','fruit','mango','vegetable','honey','food','rice','grain','spice','agro','farm','tea','coffee'], 'q' => 'cooking sunflower oil agricultural food'],
             ['re' => '/\b(shoe|shoes|sneaker|boot|footwear|leather|belt|wallet|handbag|luggage)\b/i', 'tokens' => ['shoe','shoes','footwear','leather','belt','wallet','handbag','bag','apparel','fashion'], 'q' => 'leather shoes footwear wholesale'],
-            ['re' => '/\b(denim|jeans|cloth|clothing|garment|apparel|textile|fabric|cotton|silk|saree|shirt|jacket|yarn|wool|linen|towel|carpet|rug|jute)\b/i', 'tokens' => ['denim','jeans','cloth','clothing','garment','apparel','textile','fabric','cotton','silk','saree','shirt','yarn','towel','carpet','jute','leather'], 'q' => 'cotton textile fabric denim garments'],
+            ['re' => '/\b(denim|jeans|cloth|clothing|garment|apparel|textile|fabric|cotton|silk|saree|shirt|jacket|coat|yarn|wool|linen|towel|carpet|rug|jute)\b/i', 'tokens' => ['denim','jeans','cloth','clothing','garment','apparel','textile','fabric','cotton','silk','saree','shirt','yarn','towel','carpet','jute','leather'], 'q' => 'cotton textile fabric denim garments'],
             ['re' => '/\b(generator|genset|cummins|tank|storage|boiler|compressor|pump|valve|hvac|chiller|excavator|bulldozer|loader|crane|forklift|tractor|cnc|lathe|milling|welding|welder|machinery|machine)\b/i', 'tokens' => ['generator','genset','diesel','tank','storage','pump','valve','excavator','crane','forklift','cnc','welding','machinery','machine','industrial','equipment'], 'q' => 'industrial diesel generator machinery'],
             ['re' => '/\b(coal|anthracite|coke|en590|diesel|jet|bitumen|petroleum|fuel|lng|lpg|solar|panel|battery|energy)\b/i', 'tokens' => ['coal','diesel','jet','bitumen','petroleum','fuel','solar','panel','battery','energy','oil','mining'], 'q' => 'steam coal solar panels energy'],
             ['re' => '/\b(steel|iron|copper|aluminum|aluminium|brass|zinc|nickel|gold|silver|ore|ingot|billet|coil|rebar|cathode|scrap|metal|mineral|marble|granite|mining)\b/i', 'tokens' => ['steel','iron','copper','aluminum','aluminium','gold','ore','ingot','coil','scrap','metal','mineral','marble','granite','mining','coal'], 'q' => 'stainless steel coils copper ingots'],
@@ -9022,7 +9055,7 @@ switch ($action) {
             ['re' => '/\b(hotel|hospitality|restaurant|tableware|cutlery|kitchen|furniture|chair|table|sofa|bed|home|decor|appliance)\b/i', 'tokens' => ['hotel','hospitality','tableware','kitchen','ceramic','glass','linen','towel','furniture','wood','bamboo','home'], 'q' => 'hotel hospitality tableware furniture'],
             ['re' => '/\b(electronic|electrical|cable|wire|led|light|lamp|semiconductor|computer|laptop|server|phone|camera|motor)\b/i', 'tokens' => ['electronic','electrical','cable','wire','led','light','lamp','computer','motor','solar','battery'], 'q' => 'industrial electrical cables led lighting'],
             ['re' => '/\b(car|auto|automotive|vehicle|truck|trailer|motorcycle|tire|tyre|wheel|brake|engine|transport|logistics|shipping|container)\b/i', 'tokens' => ['auto','automotive','vehicle','truck','tire','tyre','wheel','engine','battery','transport','shipping','container','cargo'], 'q' => 'commercial truck tires automotive parts'],
-            ['re' => '/\b(medical|hospital|surgical|lab|pharma|medicine|cosmetic|skincare|beauty|soap|hygiene)\b/i', 'tokens' => ['medical','hospital','surgical','lab','pharma','cosmetic','skincare','beauty','soap','bottle','chemical'], 'q' => 'medical diagnostic supplies laboratory'],
+            ['re' => '/\b(medical|hospital|surgical|lab|pharma|medicine|cosmetic|skincare|beauty|soap|hygiene|mask)\b/i', 'tokens' => ['medical','hospital','surgical','lab','pharma','cosmetic','skincare','beauty','soap','bottle','chemical','mask'], 'q' => 'medical diagnostic supplies laboratory'],
             ['re' => '/\b(paper|kraft|cardboard|carton|packaging|bottle|printing|office|gift|craft|jewelry|gem)\b/i', 'tokens' => ['paper','kraft','cardboard','carton','packaging','bottle','printing','office','gift','craft','jewelry','bamboo','wood'], 'q' => 'corrugated cardboard packaging kraft paper']
         ];
         $af_results = [];
@@ -9050,6 +9083,7 @@ switch ($action) {
                     'newUrl' => $it_old,
                     'deletedOldUrls' => [],
                     'success' => false,
+                    'error' => 'Brand logo is protected from automatic stock photo replacement.',
                     'message' => 'Brand logo is protected from automatic stock photo replacement.'
                 ];
                 continue;
@@ -9104,18 +9138,18 @@ switch ($action) {
                 }
             }
 
-            // PASS 2: Bounded 3s Wikimedia fetch for product noun, then category query
-            if ($chosen_url === '' && function_exists('curl_init')) {
+            // PASS 2: Fast bounded Wikimedia fetch ONLY in single-item interactive mode (skipped in fastBatchMode to prevent PHP/Chrome timeouts)
+            if (!$af_fast_batch && $chosen_url === '' && function_exists('curl_init')) {
                 $wm_queries_af = [];
                 if (!empty($words_af)) $wm_queries_af[] = implode(' ', array_slice($words_af, 0, 3));
-                if ($cat_query_af !== '') $wm_queries_af[] = $cat_query_af;
+                elseif ($cat_query_af !== '') $wm_queries_af[] = $cat_query_af;
                 $auto_slug_af = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
                 foreach ($wm_queries_af as $q_af) {
-                    $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode($q_af . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
+                    $wm_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . rawurlencode($q_af . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=4&prop=imageinfo&iiprop=url|mime&iiurlwidth=960&format=json';
                     $ch_af = curl_init($wm_u);
                     curl_setopt($ch_af, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch_af, CURLOPT_TIMEOUT, 3);
-                    curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 2);
+                    curl_setopt($ch_af, CURLOPT_TIMEOUT, 2);
+                    curl_setopt($ch_af, CURLOPT_CONNECTTIMEOUT, 1);
                     curl_setopt($ch_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
                     $raw_wm = (string)curl_exec($ch_af);
                     $code_wm = intval(curl_getinfo($ch_af, CURLINFO_HTTP_CODE));
@@ -9123,7 +9157,9 @@ switch ($action) {
                     if ($code_wm === 200 && $raw_wm !== '') {
                         $wm_data = json_decode($raw_wm, true);
                         $wm_pages = $wm_data['query']['pages'] ?? [];
+                        $dl_tries = 0;
                         foreach ($wm_pages as $pg_af) {
+                            if ($dl_tries >= 2) break;
                             $info_af = $pg_af['imageinfo'][0] ?? null;
                             if (!$info_af) continue;
                             $mime_af = strtolower((string)($info_af['mime'] ?? ''));
@@ -9135,12 +9171,14 @@ switch ($action) {
                             $local_web_af = '/assets/uploads/' . $local_fn_af;
                             if (isset($af_used_urls[$local_web_af])) continue;
                             $local_fp_af = $uploads_dir_af . '/' . $local_fn_af;
+                            $dl_tries++;
                             if (!file_exists($local_fp_af) || @filesize($local_fp_af) < 2000) {
                                 $ch_dl_af = curl_init($cu_af);
                                 curl_setopt($ch_dl_af, CURLOPT_RETURNTRANSFER, true);
                                 curl_setopt($ch_dl_af, CURLOPT_FOLLOWLOCATION, true);
                                 curl_setopt($ch_dl_af, CURLOPT_MAXREDIRS, 2);
-                                curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 3);
+                                curl_setopt($ch_dl_af, CURLOPT_TIMEOUT, 2);
+                                curl_setopt($ch_dl_af, CURLOPT_CONNECTTIMEOUT, 1);
                                 curl_setopt($ch_dl_af, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
                                 $bin_af = (string)curl_exec($ch_dl_af);
                                 $dl_code_af = intval(curl_getinfo($ch_dl_af, CURLINFO_HTTP_CODE));
@@ -9158,8 +9196,8 @@ switch ($action) {
                 }
             }
 
-            // PASS 3 (ZERO-SKIP GUARANTEED SIMILAR-CATEGORY PHOTO COPY):
-            // Pick best-matching least-used real local photo from same/similar category and create a unique asset copy so item is NEVER skipped
+            // PASS 3 (ZERO-SKIP GUARANTEED INSTANT VIRTUAL ALIAS):
+            // Pick best-matching least-used real local photo from same/similar category and map a unique virtual alias so item is NEVER skipped and disk is never bloated
             if (($chosen_url === '' || $chosen_url === $old_base_af) && !empty($af_local_files)) {
                 $best_tpl_web = '';
                 $best_tpl_sc = -1;
@@ -9182,18 +9220,15 @@ switch ($action) {
                     }
                 }
                 if ($best_tpl_web !== '') {
-                    $src_fp_af = $uploads_dir_af . '/' . basename($best_tpl_web);
-                    if (is_file($src_fp_af)) {
-                        $ext_tpl = strtolower(pathinfo($src_fp_af, PATHINFO_EXTENSION) ?: 'webp');
-                        $slug_tpl = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
-                        $uniq_h = substr(sha1($it_id . '::' . microtime(true) . '::' . mt_rand()), 0, 12);
-                        $new_fn_af = "cat-{$slug_tpl}-{$uniq_h}.{$ext_tpl}";
-                        $dest_fp_af = $uploads_dir_af . '/' . $new_fn_af;
-                        if (@copy($src_fp_af, $dest_fp_af)) {
-                            $chosen_url = '/assets/uploads/' . $new_fn_af;
-                            $af_fallback_usage[$best_tpl_web] = ($af_fallback_usage[$best_tpl_web] ?? 0) + 1;
-                        }
-                    }
+                    $tpl_base_af = basename($best_tpl_web);
+                    $ext_tpl = strtolower(pathinfo($tpl_base_af, PATHINFO_EXTENSION) ?: 'webp');
+                    $slug_tpl = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($it_title)), '-'), 0, 34) ?: 'item';
+                    $uniq_h = substr(sha1($it_id . '::' . microtime(true) . '::' . mt_rand()), 0, 12);
+                    $new_fn_af = "cat-{$slug_tpl}-{$uniq_h}.{$ext_tpl}";
+                    $af_aliases[$new_fn_af] = $tpl_base_af;
+                    $af_aliases_dirty = true;
+                    $chosen_url = '/assets/uploads/' . $new_fn_af;
+                    $af_fallback_usage[$best_tpl_web] = ($af_fallback_usage[$best_tpl_web] ?? 0) + 1;
                 }
             }
 
@@ -9205,6 +9240,7 @@ switch ($action) {
                     'newUrl' => $it_old,
                     'deletedOldUrls' => [],
                     'success' => false,
+                    'error' => 'No verified image available for "' . $it_title . '".',
                     'message' => 'No verified image available for "' . $it_title . '".'
                 ];
                 continue;
@@ -9274,10 +9310,21 @@ switch ($action) {
                 'oldUrl' => $it_old,
                 'newUrl' => $chosen_url,
                 'deletedOldUrls' => [],
+                'updatedAt' => $af_now_iso,
+                'imageUpdatedAt' => $af_now_ms,
                 'success' => true
             ];
         }
 
+        if ($af_aliases_dirty) {
+            foreach ($af_alias_paths as $af_ap) {
+                $af_ap_dir = dirname($af_ap);
+                if (!is_dir($af_ap_dir)) {
+                    @mkdir($af_ap_dir, 0775, true);
+                }
+                th_write_json_atomic($af_ap, $af_aliases, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
         if ($af_cms_dirty && is_array($af_cms)) {
             $af_cms['siteContentUpdatedAt'] = $af_now_ms;
             th_write_json_atomic($af_cms_file, $af_cms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

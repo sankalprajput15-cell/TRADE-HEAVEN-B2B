@@ -78,6 +78,7 @@ class BackgroundAutoFixService {
   private lastSyncedFixedCount = 0;
   private lastServerProgressAtMs = 0;
   private lastServerCompletedCount = -1;
+  private syncChannel: BroadcastChannel | null = null;
 
   private state: BackgroundAutoFixSnapshot = {
     active: false,
@@ -100,6 +101,20 @@ class BackgroundAutoFixService {
 
   constructor() {
     this.loadPersistedSession();
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.syncChannel = new BroadcastChannel('tradeheaven_bg_autofix_sync');
+        this.syncChannel.onmessage = (ev) => {
+          if (ev?.data?.type === 'snapshot' && ev.data.snapshot && !this.localWorkerRunning) {
+            const incoming = ev.data.snapshot as BackgroundAutoFixSnapshot;
+            this.state = { ...this.state, ...incoming };
+            for (const listener of this.listeners) {
+              try { listener(this.getSnapshot()); } catch {}
+            }
+          }
+        };
+      } catch {}
+    }
   }
 
   private loadPersistedSession() {
@@ -152,6 +167,9 @@ class BackgroundAutoFixService {
   private emit() {
     this.persistSession();
     const snap = this.getSnapshot();
+    try {
+      this.syncChannel?.postMessage({ type: 'snapshot', snapshot: snap });
+    } catch {}
     for (const listener of this.listeners) {
       try {
         listener(snap);
@@ -346,7 +364,7 @@ class BackgroundAutoFixService {
       this.lastServerOverridesSyncAt = nowMs;
       this.lastSyncedFixedCount = this.state.fixed;
       void productImageManagerService
-        .syncFromServer(true, false, { bypassCooldown: true, emitEvenIfUnchanged: true })
+        .syncFromServer(true, true, { bypassCooldown: true, emitEvenIfUnchanged: true })
         .then(() => {
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
@@ -431,7 +449,7 @@ class BackgroundAutoFixService {
         this.stopPollingServerJob();
         this.emit();
         void productImageManagerService
-          .syncFromServer(true, false, { bypassCooldown: true, emitEvenIfUnchanged: true })
+          .syncFromServer(true, true, { bypassCooldown: true, emitEvenIfUnchanged: true })
           .catch(() => {});
       }
     } catch {
@@ -506,6 +524,13 @@ class BackgroundAutoFixService {
               ...(ctrl ? { signal: ctrl.signal } : {})
             });
             const json = await res.json().catch(() => null);
+            if (json?.useClientBatchMode || json?.unsupportedJobQueue) {
+              // PHP/shared host without persistent job daemon — switch immediately to fast client batch mode
+              serverAccepted = false;
+              latestServerJob = null;
+              i = items.length;
+              break;
+            }
             if (res.ok && json?.success && json.job) {
               latestServerJob = json.job;
               serverAccepted = true;
@@ -594,100 +619,104 @@ class BackgroundAutoFixService {
   private async runLocalBackgroundWorker() {
     if (this.localWorkerRunning) return;
     this.localWorkerRunning = true;
-    const LOCAL_CONCURRENCY = 2;
-    const PER_ITEM_TIMEOUT_MS = 18000;
-    const activeSlots = new Map<number, BackgroundAutoFixItem>();
+    const BATCH_SIZE = 10;
+    const BATCH_TIMEOUT_MS = 38000;
 
-    const updateCurrentActiveSlot = () => {
-      for (const item of activeSlots.values()) {
-        this.state.currentItemId = item.id;
-        this.state.currentLabel = item.title || item.id;
-        return;
-      }
-      if (this.localQueue.length > 0) {
-        this.state.currentItemId = this.localQueue[0].id;
-        this.state.currentLabel = this.localQueue[0].title || this.localQueue[0].id;
-      }
-    };
-
-    const runSlot = async (slotIdx: number) => {
+    try {
       while (!this.localStopRequested && this.localQueue.length > 0) {
-        const target = this.localQueue.shift();
-        if (!target) break;
-        activeSlots.set(slotIdx, target);
-        this.state.currentItemId = target.id;
-        this.state.currentLabel = target.title || target.id;
+        const batch = this.localQueue.splice(0, BATCH_SIZE);
+        if (batch.length === 0) break;
+
+        this.state.currentItemId = batch[0].id;
+        this.state.currentLabel =
+          batch.length > 1 ? `${batch[0].title || batch[0].id} (+${batch.length - 1} in batch)` : batch[0].title || batch[0].id;
         this.state.queuedIds = [
-          ...Array.from(activeSlots.values()).map(a => a.id),
-          ...this.localQueue.slice(0, 96).map(q => q.id)
+          ...batch.map(b => b.id),
+          ...this.localQueue.slice(0, 90).map(q => q.id)
         ];
         this.emit();
 
         let timeoutHandle: number | null = null;
+        let resList: SiteImageAutoFixRowResult[] = [];
         try {
-          const timeoutPromise = new Promise<{ results: SiteImageAutoFixRowResult[] }>(resolve => {
-            timeoutHandle = window.setTimeout(() => {
-              resolve({
-                results: [
-                  {
-                    id: target.id,
-                    type: target.type,
-                    success: false,
-                    error: 'Timed out after 18s (skipped to keep batch moving).'
-                  }
-                ]
-              });
-            }, PER_ITEM_TIMEOUT_MS);
+          const timeoutPromise = new Promise<{ __timedOut: true }>(resolve => {
+            timeoutHandle = window.setTimeout(() => resolve({ __timedOut: true }), BATCH_TIMEOUT_MS);
           });
+          const raceOut = await Promise.race([
+            autoFixSiteImages(batch, { fastBatchMode: true }),
+            timeoutPromise
+          ]);
+          if (timeoutHandle !== null) {
+            window.clearTimeout(timeoutHandle);
+            timeoutHandle = null;
+          }
+          if ((raceOut as any)?.__timedOut) {
+            // Retry in smaller 3-item chunks on transient slow hosting response before ever skipping
+            for (let si = 0; si < batch.length && !this.localStopRequested; si += 3) {
+              const sub = batch.slice(si, si + 3);
+              try {
+                const subOut = await autoFixSiteImages(sub, { fastBatchMode: true });
+                if (Array.isArray(subOut?.results)) resList.push(...subOut.results);
+              } catch {
+                for (const s of sub) {
+                  resList.push({
+                    id: s.id,
+                    type: s.type,
+                    success: false,
+                    error: 'Server timed out while processing batch item.'
+                  });
+                }
+              }
+            }
+          } else {
+            resList = Array.isArray((raceOut as any)?.results) ? (raceOut as any).results : [];
+          }
+        } catch (err: any) {
+          if (timeoutHandle !== null) {
+            window.clearTimeout(timeoutHandle);
+            timeoutHandle = null;
+          }
+          resList = batch.map(t => ({
+            id: t.id,
+            type: t.type,
+            success: false,
+            error: err?.message || 'Background auto-fix batch request failed.'
+          }));
+        }
 
-          const json = await Promise.race([autoFixSiteImages([target]), timeoutPromise]);
-          const resList = Array.isArray(json?.results) ? json.results : [];
-          const match = resList.find(r => r.id === target.id) || resList[0];
+        const byId = new Map<string, SiteImageAutoFixRowResult>();
+        for (const r of resList) {
+          if (r?.id) byId.set(String(r.id), r);
+        }
+
+        const normalizedRows: SiteImageAutoFixRowResult[] = [];
+        for (const target of batch) {
+          const match = byId.get(target.id);
           this.state.completed += 1;
-
           if (match?.success && match?.newUrl) {
             this.state.fixed += 1;
             const delCount = Array.isArray(match.deletedOldUrls) ? match.deletedOldUrls.length : 0;
             this.state.deletedOld += delCount;
-            this.applyProcessedResultRows([match]);
+            normalizedRows.push(match);
           } else {
             this.state.failed += 1;
-            this.applyProcessedResultRows([
-              {
-                id: target.id,
-                type: target.type,
-                success: false,
-                error: match?.error || 'Auto-fix skipped item (open inspector to pick from ~20 photos).'
-              }
-            ]);
-          }
-        } catch (err: any) {
-          this.state.completed += 1;
-          this.state.failed += 1;
-          this.applyProcessedResultRows([
-            {
+            normalizedRows.push({
               id: target.id,
               type: target.type,
               success: false,
-              error: err?.message || 'Background auto-fix request failed for this item.'
-            }
-          ]);
-        } finally {
-          if (timeoutHandle !== null) window.clearTimeout(timeoutHandle);
-          activeSlots.delete(slotIdx);
-          updateCurrentActiveSlot();
-          this.state.queuedIds = [
-            ...Array.from(activeSlots.values()).map(a => a.id),
-            ...this.localQueue.slice(0, 96).map(q => q.id)
-          ];
-          this.emit();
+              error: match?.error || 'Auto-fix skipped item (open inspector to pick a photo).'
+            });
+          }
         }
-      }
-    };
+        this.applyProcessedResultRows(normalizedRows);
 
-    try {
-      const workerCount = Math.min(LOCAL_CONCURRENCY, Math.max(1, this.localQueue.length));
-      await Promise.all(Array.from({ length: workerCount }, (_, idx) => runSlot(idx)));
+        if (this.localQueue.length > 0) {
+          this.state.currentItemId = this.localQueue[0].id;
+          this.state.currentLabel = this.localQueue[0].title || this.localQueue[0].id;
+        }
+        this.state.queuedIds = this.localQueue.slice(0, 100).map(q => q.id);
+        this.emit();
+      }
     } finally {
       const wasStopped = this.localStopRequested;
       this.localWorkerRunning = false;
@@ -711,6 +740,9 @@ class BackgroundAutoFixService {
         at: Date.now()
       };
       this.emit();
+      void productImageManagerService
+        .syncFromServer(true, true, { bypassCooldown: true, emitEvenIfUnchanged: true })
+        .catch(() => {});
     }
   }
 
