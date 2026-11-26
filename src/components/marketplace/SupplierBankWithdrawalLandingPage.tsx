@@ -138,14 +138,16 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
 
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [savedBanks, setSavedBanks] = useState<SavedSupplierBankAccount[]>(() => getSavedSupplierBanks());
+  const [savedBanks, setSavedBanks] = useState<SavedSupplierBankAccount[]>(() =>
+    currentUser?.id ? getSavedSupplierBanks(currentUser.id, currentUser.companyName) : []
+  );
 
   const loadState = async (silent = false) => {
     if (!silent) setIsRefreshing(true);
     try {
       const data = await tradeHeavenMediationService.getState();
       setState(data);
-      setSavedBanks(getSavedSupplierBanks());
+      setSavedBanks(currentUser?.id ? getSavedSupplierBanks(currentUser.id, currentUser.companyName) : []);
     } finally {
       if (!silent) setIsRefreshing(false);
     }
@@ -160,7 +162,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
       } else {
         loadState(true);
       }
-      setSavedBanks(getSavedSupplierBanks());
+      setSavedBanks(currentUser?.id ? getSavedSupplierBanks(currentUser.id, currentUser.companyName) : []);
     };
 
     const handleStorageSync = (e: StorageEvent) => {
@@ -177,7 +179,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
           const payload = event.data as MediationSystemState | null;
           if (payload && Array.isArray(payload.wallets)) {
             setState(payload);
-            setSavedBanks(getSavedSupplierBanks());
+            setSavedBanks(currentUser?.id ? getSavedSupplierBanks(currentUser.id, currentUser.companyName) : []);
           } else {
             loadState(true);
           }
@@ -220,14 +222,11 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
       if (matched) return matched;
     }
 
-    const firstSupplier = wallets.find(w => w.wallet_type === 'SUPPLIER');
-    if (firstSupplier) return firstSupplier;
-
     return {
-      id: `wal-personal-${currentUser?.id || 'supplier'}`,
-      entity_id: currentUser?.id || 'comp-bharat-steel',
-      entity_name: currentUser?.name || 'Verified Supplier Account',
-      company_name: currentUser?.companyName || currentUser?.name || 'Verified Supplier',
+      id: `wal-personal-${currentUser?.id || 'guest'}`,
+      entity_id: currentUser?.id || 'guest',
+      entity_name: currentUser?.name || 'Guest Member',
+      company_name: currentUser?.companyName || currentUser?.name || 'Sign in to view corporate treasury',
       wallet_type: 'SUPPLIER',
       plan_status: currentUser?.tier === 'VIP' ? 'VIP' : 'BASIC',
       available_balance: '0',

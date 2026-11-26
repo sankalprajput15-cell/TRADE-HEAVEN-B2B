@@ -533,43 +533,53 @@ async function loadStaticMarketStoreData(): Promise<{
     if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       const rawRfqs = Array.isArray(data?.rfqs) ? data.rfqs : [];
-      const mappedRfqs: RfqRequirement[] = rawRfqs.map((r: any) => ({
-        id: String(r.id || `rfq-mkt-${Date.now()}`),
-        title: String(r.productName || r.title || 'Global Commodity RFQ'),
-        productName: String(r.productName || r.title || 'Global Commodity RFQ'),
-        category: String(r.category || 'Global Wholesale Commodities'),
-        targetQuantity: Number(r.targetQuantity || r.quantity || 20),
-        quantityUnit: String(r.quantityUnit || r.unit || 'Metric Tons'),
-        orderFrequency: (r.orderFrequency || r.order_frequency || 'Monthly') as any,
-        buyerCountry: String(r.buyerCountry || r.buyer_country || 'United Arab Emirates'),
-        destinationPort: String(r.destinationPort || r.destination_port || 'Jebel Ali Port, Dubai, UAE'),
-        targetPriceUsd: Number(r.targetPriceUsd || r.targetPrice || 1200),
-        estimatedOrderValueUsd: Number(
-          r.estimatedOrderValueUsd ||
-            Number(r.targetQuantity || r.quantity || 20) * Number(r.targetPriceUsd || r.targetPrice || 1200)
-        ),
-        preferredIncoterm: String(r.preferredIncoterm || r.incoterms || 'CIF') as any,
-        paymentTerms: String(r.paymentTerms || r.payment_terms || 'CIF, Irrevocable LC at Sight / TT'),
-        detailedDescription: String(r.detailedDescription || r.detailedRequirements || r.specifications || ''),
-        detailedRequirements: String(r.detailedRequirements || r.specifications || r.detailedDescription || ''),
-        postedDate: String(r.created_at || new Date().toISOString()).split('T')[0],
-        postedLabel: String(r.postedLabel || r.posted_label || 'Just now'),
-        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-        quotesCount: Number(r.quotesCount || 3),
-        status: 'OPEN',
-        buyerVerified: true,
-        urgency: (r.urgency || 'URGENT') as any,
-        buyerName: String(r.buyerName || r.buyer_name || 'International Procurement Directorate'),
-        buyerCompany: String(r.buyerCompany || r.buyer_company || 'Global Trade Importers LLC'),
-        buyerEmail: String(r.buyerEmail || r.buyer_email || 'procurement@almaktoumcommodities.ae'),
-        buyerPhone: String(r.buyerPhone || r.buyer_phone || '+971 50 482 9130'),
-        buyerAddress: String(r.buyerAddress || r.buyer_address || ''),
-        source: 'auto_generated',
-        syncTag: 'market_sync',
-        searchKeyword: String(r.searchKeyword || r.search_keyword || ''),
-        marketInsight: String(r.marketInsight || r.market_insight || ''),
-        marketDemandVerified: true
-      }));
+      const mappedRfqs: RfqRequirement[] = rawRfqs.map((r: any) => {
+        const primaryImg = String(r.image || r.image_url || (Array.isArray(r.images) ? r.images[0] : '') || '').trim();
+        const imgList = Array.isArray(r.images) && r.images.length > 0
+          ? r.images.map((u: any) => String(u || '').trim()).filter(Boolean)
+          : primaryImg
+            ? [primaryImg]
+            : [];
+        return {
+          id: String(r.id || `rfq-mkt-${Date.now()}`),
+          title: String(r.productName || r.title || 'Global Commodity RFQ'),
+          productName: String(r.productName || r.title || 'Global Commodity RFQ'),
+          category: String(r.category || 'Global Wholesale Commodities'),
+          ...(primaryImg ? { image: primaryImg, image_url: primaryImg } : {}),
+          ...(imgList.length > 0 ? { images: imgList } : {}),
+          targetQuantity: Number(r.targetQuantity || r.quantity || 20),
+          quantityUnit: String(r.quantityUnit || r.unit || 'Metric Tons'),
+          orderFrequency: (r.orderFrequency || r.order_frequency || 'Monthly') as any,
+          buyerCountry: String(r.buyerCountry || r.buyer_country || 'United Arab Emirates'),
+          destinationPort: String(r.destinationPort || r.destination_port || 'Jebel Ali Port, Dubai, UAE'),
+          targetPriceUsd: Number(r.targetPriceUsd || r.targetPrice || 1200),
+          estimatedOrderValueUsd: Number(
+            r.estimatedOrderValueUsd ||
+              Number(r.targetQuantity || r.quantity || 20) * Number(r.targetPriceUsd || r.targetPrice || 1200)
+          ),
+          preferredIncoterm: String(r.preferredIncoterm || r.incoterms || 'CIF') as any,
+          paymentTerms: String(r.paymentTerms || r.payment_terms || 'CIF, Irrevocable LC at Sight / TT'),
+          detailedDescription: String(r.detailedDescription || r.detailedRequirements || r.specifications || ''),
+          detailedRequirements: String(r.detailedRequirements || r.specifications || r.detailedDescription || ''),
+          postedDate: String(r.created_at || new Date().toISOString()).split('T')[0],
+          postedLabel: String(r.postedLabel || r.posted_label || 'Just now'),
+          expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          quotesCount: Number(r.quotesCount || 3),
+          status: 'OPEN',
+          buyerVerified: true,
+          urgency: (r.urgency || 'URGENT') as any,
+          buyerName: String(r.buyerName || r.buyer_name || 'International Procurement Directorate'),
+          buyerCompany: String(r.buyerCompany || r.buyer_company || 'Global Trade Importers LLC'),
+          buyerEmail: String(r.buyerEmail || r.buyer_email || 'procurement@almaktoumcommodities.ae'),
+          buyerPhone: String(r.buyerPhone || r.buyer_phone || '+971 50 482 9130'),
+          buyerAddress: String(r.buyerAddress || r.buyer_address || ''),
+          source: 'auto_generated',
+          syncTag: 'market_sync',
+          searchKeyword: String(r.searchKeyword || r.search_keyword || ''),
+          marketInsight: String(r.marketInsight || r.market_insight || ''),
+          marketDemandVerified: true
+        };
+      });
       cachedStaticMarketStore = {
         rfqs: mappedRfqs,
         insights: data?.insights && typeof data.insights === 'object' ? data.insights : {}

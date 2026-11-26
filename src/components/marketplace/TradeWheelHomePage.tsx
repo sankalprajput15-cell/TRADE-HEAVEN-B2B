@@ -361,10 +361,14 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
   const featuredProducts = React.useMemo(() => {
     const prodLimit = Math.max(1, featuredProductsLayout.itemCount || 12);
-    const source = products && products.length > 0 ? products : MOCK_PRODUCTS;
-    const synced = productImageManagerService.sortProductsLatestUploadedFirst(
-      productImageManagerService.applyOverridesToProductList(source)
-    );
+    const hasLiveProducts = Boolean(products && products.length > 0);
+    const source = hasLiveProducts ? products : MOCK_PRODUCTS;
+    const synced =
+      !hasLiveProducts || imageSyncVersion > 0
+        ? productImageManagerService.sortProductsLatestUploadedFirst(
+            productImageManagerService.applyOverridesToProductList(source)
+          )
+        : source;
     const hiddenSet = new Set(displayConfig.hiddenProductIds || []);
     const visibleSynced = synced.filter(p => p && !hiddenSet.has(p.id));
     const filtered = selectedCategory

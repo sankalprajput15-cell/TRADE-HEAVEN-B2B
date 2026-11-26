@@ -712,7 +712,7 @@ const MainApp: React.FC = () => {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeModalRfq, setUpgradeModalRfq] = useState<RfqRequirement | null>(null);
   const [isVipWithdrawalModalOpen, setIsVipWithdrawalModalOpen] = useState(false);
-  const [vipModalBalance, setVipModalBalance] = useState('$50,000.00 USD');
+  const [vipModalBalance, setVipModalBalance] = useState('$0.00 USD');
 
   const handleOpenMembershipUpgradeModal = (rfq?: RfqRequirement) => {
     setUpgradeModalRfq(rfq || null);
@@ -1032,7 +1032,7 @@ const MainApp: React.FC = () => {
           return;
         }
         if (storefrontCompanyId || activeView === 'VENDOR_PROFILE') {
-          const supId = storefrontCompanyId || 'comp-melissa-mpcommodity';
+          const supId = storefrontCompanyId || MOCK_COMPANIES[0]?.id || 'comp-bharat-steel';
           const vendorProfile = DETAILED_VENDOR_PROFILES[supId];
           setShareModalConfig({
             isOpen: true,
@@ -1121,7 +1121,7 @@ const MainApp: React.FC = () => {
 
       let formattedTarget: CustomLinkTarget;
       if (detail.type === 'STOREFRONT' || detail.type === 'SUPPLIER') {
-        const supId = resolveSupplierId(detail.id || detail.supplierId || storefrontCompanyId) || 'comp-melissa-mpcommodity';
+        const supId = resolveSupplierId(detail.id || detail.supplierId || storefrontCompanyId) || MOCK_COMPANIES[0]?.id || 'comp-bharat-steel';
         const vendorProfile = DETAILED_VENDOR_PROFILES[supId];
         formattedTarget = {
           type: 'SUPPLIER',
@@ -1286,11 +1286,18 @@ const MainApp: React.FC = () => {
       setIsAuthModalOpen(true);
     };
     const handleVipWithdrawalEvent = (e: Event) => {
+      if (!currentUser) {
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
       const customEvent = e as CustomEvent<{ balance?: string; balanceFormatted?: string }>;
       if (customEvent?.detail?.balanceFormatted) {
         setVipModalBalance(customEvent.detail.balanceFormatted);
       } else if (customEvent?.detail?.balance) {
         setVipModalBalance(customEvent.detail.balance);
+      } else {
+        setVipModalBalance('$0.00 USD');
       }
       setIsVipWithdrawalModalOpen(true);
     };
@@ -2446,6 +2453,7 @@ const MainApp: React.FC = () => {
       }
 
       try {
+        const isTrackedClick = rawHref.includes('/api/v1/track/click/') || rawHref.includes('ms_trk');
         let resolvedUrl = new URL(rawHref, 'https://www.tradeheaven.net');
         if (resolvedUrl.pathname.includes('/api/v1/track/click/')) {
           const nested = resolvedUrl.searchParams.get('url');
@@ -2460,7 +2468,24 @@ const MainApp: React.FC = () => {
           host.includes('aistudio.google.com') ||
           (typeof window !== 'undefined' && host === window.location.hostname.toLowerCase());
 
-        if (isTradeHeavenOrPreviewLink) {
+        if (!isTradeHeavenOrPreviewLink) return;
+
+        // Only intercept explicit tracking/email links or SPA query routes — never hijack normal links without query params
+        const sp = resolvedUrl.searchParams;
+        const hasSpaOrEmailQuery =
+          isTrackedClick ||
+          sp.has('ms_trk') ||
+          sp.has('pay_zac') ||
+          sp.has('from_email') ||
+          sp.get('utm_source') === 'email' ||
+          sp.has('view') ||
+          sp.has('rfq') ||
+          sp.has('product') ||
+          sp.has('supplier') ||
+          sp.has('buyer') ||
+          sp.has('action');
+
+        if (hasSpaOrEmailQuery) {
           e.preventDefault();
           e.stopPropagation();
           if (resolvedUrl.search) {
@@ -3570,7 +3595,7 @@ const MainApp: React.FC = () => {
                       setActiveView('BUY_LEADS');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    isLoadingProducts={isLoadingInitialData}
+                    isLoadingProducts={isLoadingInitialData && products.length === 0}
                     currentUser={currentUser}
                     onOpenRegisterFree={handleOpenRegisterFree}
                     onSelectCountry={handleOpenCountryHub}
@@ -3679,14 +3704,20 @@ const MainApp: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              const email = (currentUser?.email || '').toLowerCase();
-              const id = (currentUser?.id || '').toLowerCase();
-              const name = (currentUser?.name || '').toLowerCase();
+              if (!currentUser) {
+                setAuthModalMode('LOGIN');
+                setIsAuthModalOpen(true);
+                return;
+              }
+              const email = (currentUser.email || '').toLowerCase();
+              const id = (currentUser.id || '').toLowerCase();
+              const name = (currentUser.name || '').toLowerCase();
               const isMelissa = email.includes('melissa') || id.includes('melissa') || name.includes('melissa');
               const plan = ((currentUser as any)?.plan || (currentUser as any)?.tier || '').toLowerCase();
               const isBasic = isMelissa || (!plan.includes('vip') && !plan.includes('enterprise'));
 
               if (isBasic) {
+                setVipModalBalance(isMelissa ? '$50,000.00 USD' : '$0.00 USD');
                 setIsVipWithdrawalModalOpen(true);
               } else {
                 handleNavigate('SUPPLIER_WITHDRAWAL');

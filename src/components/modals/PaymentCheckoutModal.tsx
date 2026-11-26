@@ -237,7 +237,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             targetBuyer,
             orderId,
             orderPaise,
-            'comp-melissa-mpcommodity',
+            (checkoutData as any)?.supplierId || 'comp-bharat-steel',
             resolvedTitle
           );
         } catch {

@@ -296,7 +296,14 @@ class AutoSeoEngineService {
     this.seedDefaultOptimizedArticlesIfNeeded();
     if (!this.geoDistribution.topCountries || this.geoDistribution.topCountries.length === 0) {
       if (typeof window !== 'undefined') {
-        setTimeout(() => this.computeRealGeoDistribution(), 1800);
+        const runGeo = () => this.computeRealGeoDistribution();
+        setTimeout(() => {
+          if (typeof (window as any).requestIdleCallback === 'function') {
+            (window as any).requestIdleCallback(runGeo, { timeout: 6000 });
+          } else {
+            runGeo();
+          }
+        }, 4500);
       }
     }
     this.startUnconditional30MinuteAutonomousScheduler();
@@ -470,18 +477,30 @@ class AutoSeoEngineService {
   private startUnconditional30MinuteAutonomousScheduler(): void {
     if (typeof window === 'undefined') return;
 
-    // Sync with real server telemetry in background after initial page paint completes
+    // Sync with real server telemetry in background well after initial paint & user interaction
     setTimeout(() => {
-      this.syncWithRealServerTelemetry().catch(() => {});
-    }, 2500);
+      const runSync = () => {
+        this.syncWithRealServerTelemetry().catch(() => {});
+      };
+      if (typeof (window as any).requestIdleCallback === 'function') {
+        (window as any).requestIdleCallback(runSync, { timeout: 8000 });
+      } else {
+        runSync();
+      }
+    }, 6000);
 
     // Execute initial cycle in background if never run or if >= 30 mins elapsed since last run
     const lastMs = new Date(this.schedulerStatus.lastRunAt || 0).getTime();
     const elapsedMs = Date.now() - lastMs;
     if (this.schedulerStatus.totalCyclesExecuted === 0 || elapsedMs >= THIRTY_MINUTES_MS) {
       setTimeout(() => {
-        this.runAutonomous30MinCycle('AUTONOMOUS_BOOT_CATCHUP_24_7_365');
-      }, 3200);
+        const runCycle = () => this.runAutonomous30MinCycle('AUTONOMOUS_BOOT_CATCHUP_24_7_365');
+        if (typeof (window as any).requestIdleCallback === 'function') {
+          (window as any).requestIdleCallback(runCycle, { timeout: 10000 });
+        } else {
+          runCycle();
+        }
+      }, 9000);
     } else {
       const remainingMs = Math.max(5000, THIRTY_MINUTES_MS - elapsedMs);
       this.schedulerStatus.nextRunAt = new Date(Date.now() + remainingMs).toISOString();

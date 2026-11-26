@@ -40,9 +40,9 @@ export function triggerVipWithdrawalModal(detail?: {
 export const VipWithdrawalRequiredModal: React.FC<VipWithdrawalRequiredModalProps> = ({
   isOpen,
   onClose,
-  userName = 'Melissa Prezios',
-  companyName = 'MP Commodity Brokers Australia Pty Ltd',
-  balanceFormatted = '$50,000.00 USD',
+  userName = 'Member',
+  companyName = 'Trade Heaven Account',
+  balanceFormatted = '$0.00 USD',
   onUpgrade,
   onUpgradeToVip
 }) => {
@@ -181,7 +181,13 @@ export const VipWithdrawalRequiredModal: React.FC<VipWithdrawalRequiredModalProp
 
           {/* Treasury Protection Statement */}
           <div className="bg-slate-100 rounded-xl p-3 text-[11px] text-slate-600 leading-relaxed border border-slate-200">
-            <strong>Trade Heaven Treasury Rule:</strong> To safeguard international escrow balances and comply with SBLC and trade assurance provisions, payouts are authorized solely for active VIP Plan members. Once upgraded to VIP, the full <strong>{balanceFormatted}</strong> will be instantly withdrawable to your verified corporate bank account.
+            <strong>Trade Heaven Treasury Rule:</strong> To safeguard international escrow balances and comply with SBLC and trade assurance provisions, payouts are authorized solely for active VIP Plan members. Once upgraded to VIP,{' '}
+            {balanceFormatted && balanceFormatted !== '$0.00 USD' && balanceFormatted !== '$0.00' ? (
+              <>the full <strong>{balanceFormatted}</strong></>
+            ) : (
+              <>your verified treasury balance</>
+            )}{' '}
+            will be instantly withdrawable to your verified corporate bank account.
           </div>
         </div>
 

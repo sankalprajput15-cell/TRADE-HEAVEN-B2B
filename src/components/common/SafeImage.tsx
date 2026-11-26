@@ -393,7 +393,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    // Subject-matched real local fallback photo ONLY when no primary candidate exists and topic explicitly matches
+    // Subject-matched real local fallback photo when no primary candidate exists
     if (list.length === 0 && !isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
       const subjectText = `${productId || ''} ${productTitle || ''} ${category || ''} ${alt || ''}`.toLowerCase();
       let verifiedRealFallback = '';
@@ -403,21 +403,31 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         verifiedRealFallback = '/assets/uploads/auto-lbma-good-delivery-gold-bullion-ba-6f8695d4a3e8.webp';
       } else if (/solar|battery|lithium|ess|renewable|energy|inverter|photovoltaic|panel|monocryst/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp';
-      } else if (/generator|genset|diesel|cat\b|cummins/.test(subjectText)) {
+      } else if (/diesel|fuel|en590|jet\s*a1|petrol|crude|oil|lng|lpg|gasoline|bitumen/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-automotive-diesel-fuel-590-7dcf9ede6689.webp';
+      } else if (/generator|genset|cat\b|cummins|power\s*plant|turbine/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/image002_50ab7837.png';
-      } else if (/leather|belt|tannery|hide|wallet/.test(subjectText)) {
-        verifiedRealFallback = '/assets/uploads/verified-belt-01.webp';
-      } else if (/electric vehicle|\bev\b|car charger|charging station/.test(subjectText)) {
-        verifiedRealFallback = '/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp';
-      } else if (/semiconductor|microchip|silicon wafer|pcb|circuit board|cnc milling/.test(subjectText)) {
+      } else if (/steel|metal|alumin|copper|iron|alloy|coil|wire|scrap|ingot|cathode|zinc|nickel/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-aluminum-extrusion-6063-metal-9a9239a1345c.webp';
+      } else if (/machin|cnc|weld|excavator|industrial|equipment|pump|valve|motor|compressor|tractor|crane/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-advanced-submerged-arc-welder-7a84947dfaf6.webp';
+      } else if (/textile|apparel|fabric|garment|cotton|silk|yarn|saree|leather|clothing|shirt|jacket/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-apparel-textiles-product-75662a9b4b90.webp';
+      } else if (/semiconductor|microchip|silicon|pcb|circuit|electronic|chip|led|cable|sensor|server/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-electronics-semiconductors-8cd68208c5af.webp';
-      } else if (/polymer pellets|hdpe resin|petrochemical|bitumen|solvent/.test(subjectText)) {
+      } else if (/chemical|polymer|hdpe|ldpe|resin|petrochemical|solvent|acid|urea|fertilizer|plastic|pvc/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp';
-      } else if (/nitrile glove|surgical glove|examination glove|mri scanner/.test(subjectText)) {
+      } else if (/glove|medical|surgical|pharma|hospital|mask|syringe|diagnostic|mri|health/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-disposable-nitrile-examination-7302dff17ffb.webp';
-      } else if (/\bwheat\b|\bsoybean\b|\bgreen coffee\b|\bcashew\b|\bbasmati rice\b/.test(subjectText)) {
+      } else if (/rice|basmati|grain|flour/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-1121-extra-long-grain-steam-basmati--10aa87f2702e.webp';
+      } else if (/paper|packaging|carton|pulp|wood|timber|lumber|box|corrugated/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-a4-copy-paper-409a95d789b3.webp';
+      } else if (/wheat|soybean|coffee|cashew|sugar|agro|agricult|food|corn|maize|nut|fruit|seed|tea|cocoa/.test(subjectText)) {
         verifiedRealFallback = '/assets/uploads/auto-agriculture-agro-commodities-1e606ba818e1.webp';
-      } else if (/\bbricks\b|\bclay brick\b|\brebar\b|\bcement\b|\bconcrete\b|\bconstruction materials\b/.test(subjectText)) {
+      } else if (/brick|rebar|cement|concrete|construction|building|tile|marble|granite|glass|pipe/.test(subjectText)) {
+        verifiedRealFallback = '/assets/uploads/auto-building-construction-materials-37394a3c058e.webp';
+      } else if (type === 'rfq') {
         verifiedRealFallback = '/assets/uploads/auto-building-construction-materials-37394a3c058e.webp';
       }
       if (verifiedRealFallback && !list.includes(verifiedRealFallback)) {

@@ -85,26 +85,22 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
 
   const mediationState = propMediationState || localMediationState;
 
-  const entityId = currentUser?.id || 'comp-melissa-mpcommodity';
+  const entityId = currentUser?.id || '';
   const effectiveCompanyName = (currentUser as any)?.companyName || (currentUser as any)?.company;
   const supplierCompany =
-    effectiveCompanyName || currentUser?.name || 'Verified Supplier Corporate Account';
+    effectiveCompanyName || currentUser?.name || 'Trade Heaven Member';
 
   const activeWallet = useMemo(() => {
-    if (!mediationState) return null;
+    if (!mediationState || !currentUser) return null;
     return (
       mediationState.wallets.find(
         (w) =>
-          w.entity_id === entityId ||
-          w.entity_id.includes(entityId) ||
+          (entityId && (w.entity_id === entityId || w.entity_id.includes(entityId))) ||
           (effectiveCompanyName &&
             w.company_name.toLowerCase().includes(effectiveCompanyName.toLowerCase()))
-      ) ||
-      mediationState.wallets.find((w) => w.wallet_type === 'SUPPLIER' || (w as any).entity_type === 'SUPPLIER') ||
-      mediationState.wallets[1] ||
-      null
+      ) || null
     );
-  }, [mediationState, entityId, currentUser]);
+  }, [mediationState, entityId, effectiveCompanyName, currentUser]);
 
   const currencyMeta = useMemo(
     () => getEntityCurrency(activeWallet || { id: entityId, name: supplierCompany }),
@@ -429,23 +425,25 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
       });
       setShowVipModal(true);
       triggerVipWithdrawalModal({
-        userName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
-        companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+        companyName: supplierCompany || 'Trade Heaven Account',
         balanceFormatted: nativeAvailFormatted.nativeAmount
       });
 
-      // Dispatch Proforma Invoice & VIP Plan Upgrade Proposal email with full procedure
-      fetch('/api/v1/email/vip-upgrade-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientEmail: effectiveUser?.email || 'melissa@mpcommoditybrokers.com',
-          recipientName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
-          companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
-          currentTier,
-          balanceFormatted: nativeAvailFormatted.nativeAmount
-        })
-      }).catch(() => {});
+      // Dispatch Proforma Invoice & VIP Plan Upgrade Proposal email only when an authenticated user email is present
+      if (effectiveUser?.email) {
+        fetch('/api/v1/email/vip-upgrade-invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientEmail: effectiveUser.email,
+            recipientName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+            companyName: supplierCompany || 'Trade Heaven Account',
+            currentTier,
+            balanceFormatted: nativeAvailFormatted.nativeAmount
+          })
+        }).catch(() => {});
+      }
 
       setWithdrawStatus({
         type: 'error',
@@ -1194,8 +1192,8 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
       <VipWithdrawalRequiredModal
         isOpen={showVipModal}
         onClose={() => setShowVipModal(false)}
-        userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
-        companyName={supplierCompany || 'MP Commodity Brokers Australia Pty Ltd'}
+        userName={currentUser?.name || activeWallet?.entity_name || 'Member'}
+        companyName={supplierCompany || 'Trade Heaven Account'}
         balanceFormatted={nativeAvailFormatted.nativeAmount}
       />
 

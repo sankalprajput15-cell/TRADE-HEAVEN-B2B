@@ -120,10 +120,10 @@ const DEFAULT_SAVED_BANKS: SavedSupplierBankAccount[] = [
 ];
 
 export function getSavedSupplierBanks(entityId?: string, companyName?: string): SavedSupplierBankAccount[] {
+  if (!entityId || entityId === 'guest') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY_BANKS);
     const list: SavedSupplierBankAccount[] = raw ? JSON.parse(raw) : DEFAULT_SAVED_BANKS;
-    if (!entityId) return list;
     const eid = entityId.toLowerCase();
     const filtered = list.filter(b => b.entityId.toLowerCase() === eid || eid.includes(b.entityId.toLowerCase()));
     if (filtered.length > 0) return filtered;
@@ -143,7 +143,7 @@ export function getSavedSupplierBanks(entityId?: string, companyName?: string): 
       }
     ];
   } catch {
-    return DEFAULT_SAVED_BANKS;
+    return [];
   }
 }
 
@@ -372,23 +372,25 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
       });
       setShowVipModal(true);
       triggerVipWithdrawalModal({
-        userName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
-        companyName: effectiveUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+        companyName: effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Account',
         balanceFormatted: nativeAvailFormatted.nativeAmount
       });
 
-      // Dispatch Proforma Invoice & VIP Plan Upgrade Proposal email with full procedure
-      fetch('/api/v1/email/vip-upgrade-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientEmail: effectiveUser?.email || 'melissa@mpcommoditybrokers.com',
-          recipientName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
-          companyName: effectiveUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
-          currentTier,
-          balanceFormatted: nativeAvailFormatted.nativeAmount
-        })
-      }).catch(() => {});
+      // Dispatch Proforma Invoice & VIP Plan Upgrade Proposal email only when an authenticated user email exists
+      if (effectiveUser?.email) {
+        fetch('/api/v1/email/vip-upgrade-invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientEmail: effectiveUser.email,
+            recipientName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+            companyName: effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Account',
+            currentTier,
+            balanceFormatted: nativeAvailFormatted.nativeAmount
+          })
+        }).catch(() => {});
+      }
 
       setFeedback({
         type: 'error',
@@ -994,8 +996,8 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
       <VipWithdrawalRequiredModal
         isOpen={showVipModal}
         onClose={() => setShowVipModal(false)}
-        userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
-        companyName={currentUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd'}
+        userName={currentUser?.name || activeWallet?.entity_name || 'Member'}
+        companyName={currentUser?.companyName || activeWallet?.company_name || 'Trade Heaven Account'}
         balanceFormatted={nativeAvailFormatted.nativeAmount}
       />
 

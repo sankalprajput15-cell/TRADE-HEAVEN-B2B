@@ -142,17 +142,23 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
     clean.startsWith('/assets/tradeheaven/') ||
     clean.startsWith('/src/assets/images/')
   ) {
-    const params = new URLSearchParams(existingQuery);
-    if (!params.has('v') && !params.has('cb')) {
+    if (!existingQuery) {
       const versionTag =
         activeProductImageManagerInstance &&
         typeof activeProductImageManagerInstance.getVersionTagForUrl === 'function'
           ? activeProductImageManagerInstance.getVersionTagForUrl(clean)
           : 'v7';
-      params.set('v', versionTag || 'v7');
+      return `${clean}?v=${versionTag || 'v7'}`;
     }
-    const qStr = params.toString();
-    return qStr ? `${clean}?${qStr}` : clean;
+    if (!existingQuery.includes('v=') && !existingQuery.includes('cb=')) {
+      const versionTag =
+        activeProductImageManagerInstance &&
+        typeof activeProductImageManagerInstance.getVersionTagForUrl === 'function'
+          ? activeProductImageManagerInstance.getVersionTagForUrl(clean)
+          : 'v7';
+      return `${clean}?${existingQuery}&v=${versionTag || 'v7'}`;
+    }
+    return `${clean}?${existingQuery}`;
   }
 
   if (existingQuery) {
@@ -380,9 +386,12 @@ class ProductImageManagerService {
   private stateWriteVersion = 0;
   private readonly MANUAL_MUTATION_GRACE_MS = 10 * 60 * 1000;
   private syncChannel: BroadcastChannel | null = null;
+  private urlVersionMap: Map<string, string> = new Map();
+  private persistDebounceTimer: number | null = null;
 
   constructor() {
     this.state = this.loadFromLocalStorage();
+    this.rebuildUrlVersionMap();
     activeProductImageManagerInstance = this;
     if (typeof window !== 'undefined') {
       this.hydrateFromIndexedDb();
@@ -414,35 +423,34 @@ class ProductImageManagerService {
         }
       });
 
-      // Automatically sync when tab becomes visible, window gains focus, or browser restores from bfcache
+      // Automatically sync when tab becomes visible after a long pause (60s cooldown prevents UI jank on app switch)
       const triggerFocusSync = () => {
         if (
           this.inFlightWriteCount === 0 &&
-          Date.now() - this.lastLocalMutationAt > 2500 &&
-          Date.now() - this.lastServerSyncAt > 1500
+          Date.now() - this.lastLocalMutationAt > 5000 &&
+          Date.now() - this.lastServerSyncAt > 60000
         ) {
           this.syncFromServer(true).catch(() => {});
         }
       };
       window.addEventListener('focus', triggerFocusSync);
-      window.addEventListener('pageshow', triggerFocusSync);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           triggerFocusSync();
         }
       });
 
-      // Lightweight periodic cross-window sync (beats Chrome Third-Party Storage Partitioning between iframe preview & standalone Chrome tabs)
+      // Lightweight periodic cross-window sync (every 5 minutes to keep UI completely responsive)
       window.setInterval(() => {
         if (
           document.visibilityState === 'visible' &&
           this.inFlightWriteCount === 0 &&
-          Date.now() - this.lastLocalMutationAt > 4000 &&
-          Date.now() - this.lastServerSyncAt > 11000
+          Date.now() - this.lastLocalMutationAt > 5000 &&
+          Date.now() - this.lastServerSyncAt > 240000
         ) {
           this.syncFromServer(true).catch(() => {});
         }
-      }, 35000);
+      }, 300000);
 
       // Immediately refresh authoritative server image state on login/logout so guests never see stale pre-upload images
       window.addEventListener('tradeheaven_auth_changed', () => {
@@ -652,59 +660,87 @@ class ProductImageManagerService {
     return false;
   }
 
+  private rebuildUrlVersionMap(): void {
+    const nextMap = new Map<string, string>();
+    const overrides = this.state?.overrides;
+    if (overrides) {
+      for (const entry of Object.values(overrides)) {
+        if (!entry) continue;
+        let tag = '';
+        if (entry.imageUpdatedAt && Number(entry.imageUpdatedAt) > 0) {
+          tag = String(entry.imageUpdatedAt);
+        } else if (entry.updatedAt) {
+          const t = Date.parse(entry.updatedAt);
+          if (!isNaN(t)) tag = String(t);
+        }
+        if (!tag) continue;
+        if (entry.primary) {
+          const qIdx = entry.primary.indexOf('?');
+          const clean = qIdx === -1 ? entry.primary : entry.primary.slice(0, qIdx);
+          nextMap.set(clean, tag);
+        }
+        if (Array.isArray(entry.gallery)) {
+          for (let i = 0; i < entry.gallery.length; i++) {
+            const u = entry.gallery[i];
+            if (!u) continue;
+            const qIdx = u.indexOf('?');
+            const clean = qIdx === -1 ? u : u.slice(0, qIdx);
+            if (!nextMap.has(clean)) nextMap.set(clean, tag);
+          }
+        }
+      }
+    }
+    const media = this.state?.mediaLibrary;
+    if (Array.isArray(media)) {
+      for (let i = 0; i < media.length; i++) {
+        const m = media[i];
+        if (!m?.url || !m.uploadedAt) continue;
+        const qIdx = m.url.indexOf('?');
+        const clean = qIdx === -1 ? m.url : m.url.slice(0, qIdx);
+        if (!nextMap.has(clean)) {
+          const t = Date.parse(m.uploadedAt);
+          if (!isNaN(t)) nextMap.set(clean, String(t));
+        }
+      }
+    }
+    this.urlVersionMap = nextMap;
+  }
+
   private getCanonicalVisualHash(st: ProductImageSystemState): string {
-    const sortedOverrides = Object.keys(st.overrides || {})
-      .sort()
-      .map(k => {
-        const entry = st.overrides[k];
-        if (!entry?.primary) return '';
-        const p = normalizeProductAssetUrl(entry.primary);
-        const g = Array.isArray(entry.gallery) ? entry.gallery.map(u => normalizeProductAssetUrl(u)).join(',') : p;
-        return `${k}:${p}|${g}`;
-      })
-      .filter(Boolean)
-      .join(';');
-    const sortedCats = Object.keys(st.categoryOverrides || {})
-      .sort()
-      .map(k => `${k}:${normalizeProductAssetUrl(st.categoryOverrides[k])}`)
-      .join(';');
-    const sortedUrls = Object.keys(st.urlReplacements || {})
-      .sort()
-      .map(k => `${k}->${normalizeProductAssetUrl(st.urlReplacements[k])}`)
-      .join(';');
-    const globalDef = st.globalDefaultImage ? normalizeProductAssetUrl(st.globalDefaultImage) : '';
-    const mediaSig = Array.isArray(st.mediaLibrary)
-      ? `${st.mediaLibrary.length}:${st.mediaLibrary
-          .slice(0, 30)
-          .map(m => normalizeProductAssetUrl(m?.url || ''))
-          .filter(Boolean)
-          .join(',')}`
-      : '0:';
-    return `O=[${sortedOverrides}]|G=[${globalDef}]|C=[${sortedCats}]|U=[${sortedUrls}]|M=[${mediaSig}]`;
+    const overrides = st.overrides || {};
+    const keys = Object.keys(overrides);
+    let hash = 2166136261 >>> 0;
+    const mix = (str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 16777619) >>> 0;
+      }
+    };
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      const entry = overrides[k];
+      if (!entry?.primary) continue;
+      mix(k);
+      mix(':');
+      const pIdx = entry.primary.indexOf('?');
+      mix(pIdx === -1 ? entry.primary : entry.primary.slice(0, pIdx));
+      if (Array.isArray(entry.gallery) && entry.gallery.length > 1) {
+        mix(`#${entry.gallery.length}`);
+      }
+    }
+    const catKeys = Object.keys(st.categoryOverrides || {});
+    const urlKeys = Object.keys(st.urlReplacements || {});
+    const globalDef = st.globalDefaultImage || '';
+    const mediaLen = Array.isArray(st.mediaLibrary) ? st.mediaLibrary.length : 0;
+    return `${keys.length}:${hash}:${catKeys.length}:${urlKeys.length}:${globalDef}:${mediaLen}`;
   }
 
   public getVersionTagForUrl(url: string): string {
-    const cleanUrl = (url || '').split('?')[0];
-    for (const entry of Object.values(this.state?.overrides || {})) {
-      if (!entry) continue;
-      if (entry.primary && entry.primary.split('?')[0] === cleanUrl) {
-        if (entry.updatedAt) {
-          const t = new Date(entry.updatedAt).getTime();
-          if (!isNaN(t)) return String(t);
-        }
-      }
-      if (Array.isArray(entry.gallery) && entry.gallery.some(u => u && u.split('?')[0] === cleanUrl)) {
-        if (entry.updatedAt) {
-          const t = new Date(entry.updatedAt).getTime();
-          if (!isNaN(t)) return String(t);
-        }
-      }
-    }
-    const media = (this.state?.mediaLibrary || []).find(m => m && m.url && m.url.split('?')[0] === cleanUrl);
-    if (media?.uploadedAt) {
-      const t = new Date(media.uploadedAt).getTime();
-      if (!isNaN(t)) return String(t);
-    }
+    if (!url) return String(this.stateWriteVersion || 'v7');
+    const qIdx = url.indexOf('?');
+    const cleanUrl = qIdx === -1 ? url : url.slice(0, qIdx);
+    const cached = this.urlVersionMap.get(cleanUrl);
+    if (cached) return cached;
     return String(this.stateWriteVersion || 'v7');
   }
 
@@ -906,7 +942,7 @@ class ProductImageManagerService {
       const db = await this.openIndexedDb();
       if (!db) return;
       const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put(JSON.parse(JSON.stringify(stateToSave)), IDB_KEY);
+      tx.objectStore(IDB_STORE).put(stateToSave, IDB_KEY);
     } catch {}
   }
 
@@ -941,6 +977,7 @@ class ProductImageManagerService {
           }
         }
         if (changed && !this.isHydratedFromServer) {
+          this.rebuildUrlVersionMap();
           this.emitImageSavedEvent({ action: 'idb_hydrated' });
           this.notifyListeners();
         }
@@ -948,47 +985,64 @@ class ProductImageManagerService {
     } catch {}
   }
 
-  private saveToLocalStorage(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
+  private flushPersistenceToStorage(): void {
     if (typeof window === 'undefined') return;
+    const stateSnapshot = this.state;
+    this.saveToIndexedDb(stateSnapshot);
 
-    // 1. Always persist full state to IndexedDB (unlimited quota for base64 & high-res assets)
-    this.saveToIndexedDb(this.state);
-
-    // 2. Store serialized snapshot in both in-memory Map and browser localStorage (filtering out data: URIs so localStorage never overflows)
     try {
-      const fullSerialized = JSON.stringify(this.state);
-      this.memoryStorage.set(STORAGE_KEY, fullSerialized);
-      this.memoryStorage.set(LEGACY_OVERRIDES_KEY, JSON.stringify(this.state.overrides));
-      try {
-        const compactOverrides: Record<string, ProductImageOverrideEntry> = {};
-        for (const [k, v] of Object.entries(this.state.overrides || {})) {
-          if (!v?.primary || v.primary.startsWith('data:')) continue;
-          compactOverrides[k] = {
-            ...v,
-            gallery: Array.isArray(v.gallery) ? v.gallery.filter(u => u && !u.startsWith('data:')).slice(0, 4) : [v.primary]
-          };
-        }
-        const compactState: ProductImageSystemState = {
-          overrides: compactOverrides,
-          productActivityTimestamps: this.state.productActivityTimestamps || {},
-          globalDefaultImage:
-            this.state.globalDefaultImage && !this.state.globalDefaultImage.startsWith('data:')
-              ? this.state.globalDefaultImage
-              : null,
-          categoryOverrides: this.state.categoryOverrides || {},
-          urlReplacements: this.state.urlReplacements || {},
-          mediaLibrary: (this.state.mediaLibrary || []).filter(m => m?.url && !m.url.startsWith('data:')).slice(0, 120)
+      const compactOverrides: Record<string, ProductImageOverrideEntry> = {};
+      for (const [k, v] of Object.entries(stateSnapshot.overrides || {})) {
+        if (!v?.primary || v.primary.startsWith('data:')) continue;
+        compactOverrides[k] = {
+          ...v,
+          gallery: Array.isArray(v.gallery) ? v.gallery.filter(u => u && !u.startsWith('data:')).slice(0, 4) : [v.primary]
         };
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(compactState));
-        window.localStorage.setItem(LEGACY_OVERRIDES_KEY, JSON.stringify(compactOverrides));
+      }
+      const compactState: ProductImageSystemState = {
+        overrides: compactOverrides,
+        productActivityTimestamps: stateSnapshot.productActivityTimestamps || {},
+        globalDefaultImage:
+          stateSnapshot.globalDefaultImage && !stateSnapshot.globalDefaultImage.startsWith('data:')
+            ? stateSnapshot.globalDefaultImage
+            : null,
+        categoryOverrides: stateSnapshot.categoryOverrides || {},
+        urlReplacements: stateSnapshot.urlReplacements || {},
+        mediaLibrary: (stateSnapshot.mediaLibrary || []).filter(m => m?.url && !m.url.startsWith('data:')).slice(0, 120)
+      };
+      const serialized = JSON.stringify(compactState);
+      this.memoryStorage.set(STORAGE_KEY, serialized);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, serialized);
       } catch {}
       this.syncCachedProductsInLocalStorage();
     } catch (err) {
       console.warn('[ProductImageManagerService] Error saving to persistent storage:', err);
-    } finally {
-      // 3. ALWAYS emit custom events so EditableImage & SafeImage re-render immediately
-      this.emitImageSavedEvent(context);
     }
+  }
+
+  private saveToLocalStorage(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
+    if (typeof window === 'undefined') return;
+
+    this.rebuildUrlVersionMap();
+
+    // Emit UI update immediately without blocking clicks on multi-MB JSON serialization
+    this.emitImageSavedEvent(context);
+
+    // Defer heavy IndexedDB & localStorage serialization so interaction latency stays near 0ms
+    const isManualWrite = Boolean(context?.productId) || (context?.action && context.action !== 'sync_from_server');
+    if (this.persistDebounceTimer !== null) {
+      window.clearTimeout(this.persistDebounceTimer);
+    }
+    this.persistDebounceTimer = window.setTimeout(() => {
+      this.persistDebounceTimer = null;
+      const runFlush = () => this.flushPersistenceToStorage();
+      if (typeof (window as any).requestIdleCallback === 'function' && !isManualWrite) {
+        (window as any).requestIdleCallback(runFlush, { timeout: 2500 });
+      } else {
+        runFlush();
+      }
+    }, isManualWrite ? 150 : 1200);
   }
 
   private emitImageSavedEvent(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
@@ -1595,37 +1649,43 @@ class ProductImageManagerService {
       }
     }
 
-    // 3. Check URL replacement rules (including query-stripped local URLs)
-    if (normalizedSrc) {
-      const strippedSrc = this.stripLocalAssetQuery(normalizedSrc);
-      const acceptReplacement = (rawNewUrl: string): string | undefined => {
-        const normNew = normalizeProductAssetUrl(rawNewUrl);
-        if (!normNew || isGenericOrPlaceholderImageUrl(normNew)) return undefined;
-        if (isMismatchedProductImageUrl(normNew, productTitle, category)) return undefined;
-        return normNew;
-      };
-      if (this.state.urlReplacements[normalizedSrc]) {
-        const ok = acceptReplacement(this.state.urlReplacements[normalizedSrc]);
-        if (ok) return ok;
-      }
-      if (strippedSrc && this.state.urlReplacements[strippedSrc]) {
-        const ok = acceptReplacement(this.state.urlReplacements[strippedSrc]);
-        if (ok) return ok;
-      }
-      if (src && this.state.urlReplacements[src]) {
-        const ok = acceptReplacement(this.state.urlReplacements[src]);
-        if (ok) return ok;
-      }
-      for (const [oldSubstr, newUrl] of Object.entries(this.state.urlReplacements)) {
-        const cleanSubstr = this.stripLocalAssetQuery(oldSubstr);
-        if (
-          oldSubstr &&
-          (normalizedSrc.includes(oldSubstr) ||
-            (cleanSubstr && strippedSrc.includes(cleanSubstr)) ||
-            (src && src.includes(oldSubstr)))
-        ) {
-          const ok = acceptReplacement(newUrl);
+    // 3. Check URL replacement rules (fast-path when map is empty)
+    const urlReplacements = this.state.urlReplacements;
+    if (normalizedSrc && urlReplacements) {
+      const replacementKeys = Object.keys(urlReplacements);
+      if (replacementKeys.length > 0) {
+        const strippedSrc = this.stripLocalAssetQuery(normalizedSrc);
+        const acceptReplacement = (rawNewUrl: string): string | undefined => {
+          const normNew = normalizeProductAssetUrl(rawNewUrl);
+          if (!normNew || isGenericOrPlaceholderImageUrl(normNew)) return undefined;
+          if (isMismatchedProductImageUrl(normNew, productTitle, category)) return undefined;
+          return normNew;
+        };
+        if (urlReplacements[normalizedSrc]) {
+          const ok = acceptReplacement(urlReplacements[normalizedSrc]);
           if (ok) return ok;
+        }
+        if (strippedSrc && urlReplacements[strippedSrc]) {
+          const ok = acceptReplacement(urlReplacements[strippedSrc]);
+          if (ok) return ok;
+        }
+        if (src && urlReplacements[src]) {
+          const ok = acceptReplacement(urlReplacements[src]);
+          if (ok) return ok;
+        }
+        for (let i = 0; i < replacementKeys.length; i++) {
+          const oldSubstr = replacementKeys[i];
+          const newUrl = urlReplacements[oldSubstr];
+          const cleanSubstr = this.stripLocalAssetQuery(oldSubstr);
+          if (
+            oldSubstr &&
+            (normalizedSrc.includes(oldSubstr) ||
+              (cleanSubstr && strippedSrc.includes(cleanSubstr)) ||
+              (src && src.includes(oldSubstr)))
+          ) {
+            const ok = acceptReplacement(newUrl);
+            if (ok) return ok;
+          }
         }
       }
     }

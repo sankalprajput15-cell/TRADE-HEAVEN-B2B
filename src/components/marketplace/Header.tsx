@@ -197,14 +197,15 @@ export const Header: React.FC<Props> = ({
   const [liveSyncBadgeText, setLiveSyncBadgeText] = useState<string>('');
 
   const availableProductsList = useMemo(() => {
+    if (!showAdminQuickUploadModal) return [];
     const base = products && products.length > 0 ? products : MOCK_PRODUCTS;
     return productImageManagerService.sortProductsLatestUploadedFirst(
       productImageManagerService.applyOverridesToProductList(base)
     );
-  }, [products, quickAfterUrl]);
+  }, [showAdminQuickUploadModal, products, quickAfterUrl]);
 
   useEffect(() => {
-    if (!selectedQuickProductId && availableProductsList.length > 0) {
+    if (showAdminQuickUploadModal && !selectedQuickProductId && availableProductsList.length > 0) {
       const first = availableProductsList[0];
       setSelectedQuickProductId(first.id);
       const ov = productImageManagerService.getState().overrides[first.id];
@@ -212,7 +213,7 @@ export const Header: React.FC<Props> = ({
       setQuickAfterUrl(ov?.primary || first.images?.[0] || '');
       setQuickDirectUrl(ov?.primary || first.images?.[0] || '');
     }
-  }, [availableProductsList, selectedQuickProductId]);
+  }, [showAdminQuickUploadModal, availableProductsList, selectedQuickProductId]);
 
   const handleSelectQuickProduct = (pid: string) => {
     setSelectedQuickProductId(pid);

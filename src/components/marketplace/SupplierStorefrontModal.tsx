@@ -58,7 +58,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
                 new CustomEvent('tradeheaven_open_share', {
                   detail: {
                     type: 'STOREFRONT',
-                    id: companyId || company?.id || 'comp-melissa-mpcommodity',
+                    id: companyId || company?.id || 'comp-bharat-steel',
                     title: (company as any)?.companyName || 'Verified Supplier Storefront'
                   }
                 })
