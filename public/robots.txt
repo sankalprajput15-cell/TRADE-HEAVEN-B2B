@@ -1,6 +1,6 @@
 # ==============================================================================
 # Trade Heaven B2B Global Sourcing & Exporter Portal - Robots.txt
-# Auto-generated: 2026-11-26T05:55:43.457Z
+# Auto-generated: 2026-11-26T11:05:42.294Z
 # Documentation: https://developers.google.com/search/docs/crawling-indexing/robots/intro
 # ==============================================================================
 
