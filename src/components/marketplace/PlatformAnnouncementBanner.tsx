@@ -85,11 +85,47 @@ const THEME_STYLES: Record<
   }
 };
 
+let cachedBootOffersLoaded =
+  typeof window !== 'undefined' && Array.isArray((window as any).__TH_BOOT__?.platformOffers);
+let cachedPlatformOffers: PlatformOfferAnnouncement[] = cachedBootOffersLoaded
+  ? (window as any).__TH_BOOT__.platformOffers
+  : [];
+let inFlightOffersPromise: Promise<PlatformOfferAnnouncement[]> | null = null;
+
+async function fetchSharedActiveCampaigns(forceRefresh = false): Promise<PlatformOfferAnnouncement[]> {
+  if (!forceRefresh && cachedBootOffersLoaded) {
+    return cachedPlatformOffers;
+  }
+  if (inFlightOffersPromise) {
+    return inFlightOffersPromise;
+  }
+  inFlightOffersPromise = (async () => {
+    try {
+      const res = await fetch('/api/v1/platform-offers?activeOnly=1', {
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.items)) {
+          cachedPlatformOffers = data.items;
+          cachedBootOffersLoaded = true;
+        }
+      }
+    } catch {
+      // ignore transient network errors
+    } finally {
+      inFlightOffersPromise = null;
+    }
+    return cachedPlatformOffers;
+  })();
+  return inFlightOffersPromise;
+}
+
 export const PlatformAnnouncementBanner: React.FC<PlatformAnnouncementBannerProps> = ({
   onNavigate,
   variant = 'hero-banner'
 }) => {
-  const [items, setItems] = useState<PlatformOfferAnnouncement[]>([]);
+  const [items, setItems] = useState<PlatformOfferAnnouncement[]>(() => cachedPlatformOffers);
   const [activeIndex, setActiveIndex] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -102,25 +138,18 @@ export const PlatformAnnouncementBanner: React.FC<PlatformAnnouncementBannerProp
     }
   });
 
-  const loadActiveCampaigns = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/platform-offers?activeOnly=1', {
-        headers: { Accept: 'application/json' }
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (Array.isArray(data?.items)) {
-        setItems(data.items);
-      }
-    } catch {
-      // ignore transient network errors
-    }
+  const loadActiveCampaigns = useCallback(async (forceRefresh = false) => {
+    const nextItems = await fetchSharedActiveCampaigns(forceRefresh);
+    setItems(nextItems);
   }, []);
 
   useEffect(() => {
-    void loadActiveCampaigns();
+    if (!cachedBootOffersLoaded) {
+      void loadActiveCampaigns(false);
+    }
     const handler = () => {
-      void loadActiveCampaigns();
+      cachedBootOffersLoaded = false;
+      void loadActiveCampaigns(true);
     };
     window.addEventListener('tradeheaven_platform_offers_updated', handler);
     return () => {

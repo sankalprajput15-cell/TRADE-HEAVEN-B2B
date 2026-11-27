@@ -287,15 +287,20 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
   React.useEffect(() => {
     const handleImageUpdate = () => setImageSyncVersion(v => v + 1);
-    window.addEventListener('tradeheaven_product_images_updated', handleImageUpdate);
     window.addEventListener('tradeheaven_product_image_saved', handleImageUpdate);
     window.addEventListener('tradeheaven_products_updated', handleImageUpdate);
     window.addEventListener('tradeheaven_auth_changed', handleImageUpdate);
-    productImageManagerService.ensureHydrated().then(() => {
-      setImageSyncVersion(v => v + 1);
-    }).catch(() => {});
+    const hasBootOverrides = Boolean(
+      typeof window !== 'undefined' &&
+      (window as any).__TH_BOOT__?.criticalOverrides &&
+      Object.keys((window as any).__TH_BOOT__.criticalOverrides).length > 0
+    );
+    if (!productImageManagerService.isHydrated() && !hasBootOverrides) {
+      productImageManagerService.ensureHydrated().then(() => {
+        setImageSyncVersion(v => v + 1);
+      }).catch(() => {});
+    }
     return () => {
-      window.removeEventListener('tradeheaven_product_images_updated', handleImageUpdate);
       window.removeEventListener('tradeheaven_product_image_saved', handleImageUpdate);
       window.removeEventListener('tradeheaven_products_updated', handleImageUpdate);
       window.removeEventListener('tradeheaven_auth_changed', handleImageUpdate);
@@ -304,11 +309,32 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
   const isUserPaidMember = isPaidMemberUser(currentUser);
 
-  const allHomeRfqsPool = React.useMemo(() => {
-    const rawPool = (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r =>
-      securityService.gateRfqRequirement(r, currentUser)
-    );
-    const enriched = rawPool.map(r => {
+  const rawRfqsSource = React.useMemo(() => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS), [rfqs]);
+
+  const activeRfqsPool = React.useMemo(() => {
+    const hiddenSet = new Set(displayConfig.hiddenRfqIds || []);
+    const pinnedSet = new Set(displayConfig.pinnedRfqIds || []);
+    const overrides = productImageManagerService.getState().overrides || {};
+    const candidates: RfqRequirement[] = [];
+
+    for (let i = 0; i < rawRfqsSource.length; i++) {
+      const r = rawRfqsSource[i];
+      if (!r || !r.id || hiddenSet.has(r.id)) continue;
+      const isBaselineHead = i < 50;
+      const isLiveOrPinned =
+        pinnedSet.has(r.id) ||
+        !String(r.id).startsWith('rfq-mock') ||
+        Boolean((r as any).imageUpdatedAt) ||
+        Boolean((r as any).updatedAt) ||
+        Boolean(overrides[r.id]) ||
+        Boolean(r.productName && overrides[r.productName]);
+      if (isBaselineHead || isLiveOrPinned) {
+        candidates.push(r);
+      }
+    }
+
+    const enriched = candidates.map(rawRfq => {
+      const r = securityService.gateRfqRequirement(rawRfq, currentUser);
       const rawPhoto = (r as any).image_url || (r as any).image || (r as any).images?.[0];
       const resolvedPhoto = productImageManagerService.resolveImageSrc({
         src: rawPhoto,
@@ -329,18 +355,16 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         recentActivityTs: rank.timestampMs
       };
     });
-    return enriched.sort((a, b) => {
+
+    enriched.sort((a, b) => {
       if (a.recentActivityTs !== b.recentActivityTs) {
         return b.recentActivityTs - a.recentActivityTs;
       }
       return 0;
     });
-  }, [rfqs, currentUser, imageSyncVersion]);
 
-  const activeRfqsPool = React.useMemo(() => {
-    const hiddenSet = new Set(displayConfig.hiddenRfqIds || []);
-    return allHomeRfqsPool.filter(r => !hiddenSet.has(r.id)).slice(0, 40);
-  }, [allHomeRfqsPool, displayConfig.hiddenRfqIds]);
+    return enriched.slice(0, 40);
+  }, [rawRfqsSource, currentUser, imageSyncVersion, displayConfig.hiddenRfqIds, displayConfig.pinnedRfqIds]);
 
   const displayedRfqs = React.useMemo(() => {
     const rfqLimit = Math.max(1, recentRfqsLayout.itemCount || 8);
@@ -473,7 +497,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenCreateRfq={onOpenCreateRfq}
         onOpenLiveTool={onOpenLiveTool}
         products={products}
-        rfqs={allHomeRfqsPool}
+        rfqs={rawRfqsSource}
         selectedCurrency={selectedCurrency}
         onSelectProduct={onSelectProduct}
         onOpenStorefront={onOpenStorefront}

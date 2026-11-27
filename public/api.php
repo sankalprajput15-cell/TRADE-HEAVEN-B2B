@@ -1470,6 +1470,10 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'auto_upload_product_image';
     } elseif (strpos($clean_route, 'admin/upload-product-image') !== false) {
         $raw_action = 'upload_product_image';
+    } elseif (strpos($clean_route, 'public/bootstrap') !== false) {
+        $raw_action = 'get_bootstrap';
+    } elseif (strpos($clean_route, 'platform-offers') !== false) {
+        $raw_action = 'platform_offers';
     } elseif (strpos($clean_route, 'admin/product-images') !== false || strpos($clean_route, 'public/product-images') !== false) {
         if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             $raw_action = 'delete_product_images';
@@ -1577,6 +1581,10 @@ if (empty($raw_action)) {
             $raw_action = 'auto_upload_product_image';
         } elseif (strpos($sub, 'admin/upload-product-image') !== false) {
             $raw_action = 'upload_product_image';
+        } elseif (strpos($sub, 'public/bootstrap') !== false) {
+            $raw_action = 'get_bootstrap';
+        } elseif (strpos($sub, 'platform-offers') !== false) {
+            $raw_action = 'platform_offers';
         } elseif (strpos($sub, 'admin/product-images') !== false || strpos($sub, 'public/product-images') !== false) {
             if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $raw_action = 'delete_product_images';
@@ -1765,6 +1773,130 @@ switch ($action) {
             "products" => $products,
             "deletedIds" => $deleted_ids
         ]);
+        exit;
+
+    case 'platform_offers':
+        $offers_file = __DIR__ . '/data/platform-announcements.json';
+        if (!file_exists($offers_file) && file_exists(__DIR__ . '/public/data/platform-announcements.json')) {
+            $offers_file = __DIR__ . '/public/data/platform-announcements.json';
+        }
+        $items = [];
+        if (file_exists($offers_file)) {
+            $parsed_offers = th_read_json_locked($offers_file);
+            if (is_array($parsed_offers)) {
+                $active_only = !empty($_GET['activeOnly']) && ($_GET['activeOnly'] === '1' || $_GET['activeOnly'] === 'true');
+                $now_ms = (int)round(microtime(true) * 1000);
+                foreach ($parsed_offers as $it) {
+                    if (!is_array($it) || empty($it['id'])) continue;
+                    if ($active_only) {
+                        if (empty($it['isActive'])) continue;
+                        if (($it['placement'] ?? '') === 'EMAIL_ONLY') continue;
+                        if (!empty($it['startsAt'])) {
+                            $st = strtotime((string)$it['startsAt']);
+                            if ($st !== false && $now_ms < ($st * 1000)) continue;
+                        }
+                        if (!empty($it['expiresAt'])) {
+                            $exp_str = trim((string)$it['expiresAt']);
+                            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $exp_str)) {
+                                $exp_str .= 'T23:59:59Z';
+                            }
+                            $ex = strtotime($exp_str);
+                            if ($ex !== false && $now_ms > ($ex * 1000)) continue;
+                        }
+                    }
+                    $items[] = $it;
+                }
+            }
+        }
+        header("Cache-Control: no-cache");
+        echo json_encode(["status" => "success", "success" => true, "items" => $items]);
+        exit;
+
+    case 'get_bootstrap':
+    case 'public_bootstrap':
+        $cms_file = __DIR__ . '/site_content.json';
+        $site_content = file_exists($cms_file) ? (th_read_json_locked($cms_file) ?: new stdClass()) : new stdClass();
+
+        $cat_file = __DIR__ . '/custom_catalog.json';
+        $del_file = __DIR__ . '/deleted_products.json';
+        $deleted_ids = [];
+        if (file_exists($del_file)) {
+            $d = json_decode((string)@file_get_contents($del_file), true);
+            if (is_array($d)) $deleted_ids = array_map('strval', $d);
+        }
+        $companies = [];
+        $products = [];
+        if (file_exists($cat_file)) {
+            $cat_data = json_decode((string)@file_get_contents($cat_file), true);
+            if (is_array($cat_data)) {
+                $companies = $cat_data['companies'] ?? [];
+                $raw_products = $cat_data['products'] ?? [];
+                $products = array_values(array_filter($raw_products, function ($p) use ($deleted_ids) {
+                    $pid = strval($p['id'] ?? '');
+                    return !empty($pid) && !in_array($pid, $deleted_ids, true);
+                }));
+            }
+        }
+
+        $offers_file = __DIR__ . '/data/platform-announcements.json';
+        if (!file_exists($offers_file) && file_exists(__DIR__ . '/public/data/platform-announcements.json')) {
+            $offers_file = __DIR__ . '/public/data/platform-announcements.json';
+        }
+        $active_offers = [];
+        if (file_exists($offers_file)) {
+            $parsed_offers = th_read_json_locked($offers_file);
+            if (is_array($parsed_offers)) {
+                $now_ms = (int)round(microtime(true) * 1000);
+                foreach ($parsed_offers as $it) {
+                    if (!is_array($it) || empty($it['id']) || empty($it['isActive']) || (($it['placement'] ?? '') === 'EMAIL_ONLY')) continue;
+                    $active_offers[] = $it;
+                }
+            }
+        }
+
+        $uploads_dir = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+        $img_state = is_dir($uploads_dir) ? th_load_merged_image_state($uploads_dir) : ['overrides' => [], 'categoryOverrides' => [], 'globalDefaultImage' => null, 'deletedUrls' => []];
+        $critical_overrides = [];
+        $recent_candidates = [];
+        foreach (($img_state['overrides'] ?? []) as $k => $ov) {
+            if (!is_array($ov) || empty($ov['primary'])) continue;
+            $lower = strtolower((string)$k);
+            $is_struct = strpos($lower, 'cat-') === 0 || strpos($lower, 'hero') === 0 || strpos($lower, 'slide') === 0 ||
+                strpos($lower, 'site') === 0 || strpos($lower, 'banner') === 0 || strpos($lower, 'custom-') === 0 ||
+                strpos($lower, 'prod-custom-') === 0 || strpos($lower, 'manual-') === 0 || strpos($lower, 'comp-') === 0;
+            $slim = ['primary' => strtok((string)$ov['primary'], '?')];
+            if (!empty($ov['locked'])) $slim['locked'] = true;
+            if (!empty($ov['imageUpdatedAt'])) $slim['imageUpdatedAt'] = $ov['imageUpdatedAt'];
+            if ($is_struct) {
+                $critical_overrides[$k] = $slim;
+            } else {
+                $ts = isset($ov['imageUpdatedAt']) ? (int)$ov['imageUpdatedAt'] : 0;
+                if ($ts > 0 || !empty($ov['locked'])) {
+                    $recent_candidates[] = ['k' => $k, 'entry' => $slim, 'ts' => $ts];
+                }
+            }
+        }
+        usort($recent_candidates, function($a, $b) { return $b['ts'] <=> $a['ts']; });
+        foreach (array_slice($recent_candidates, 0, 180) as $rc) {
+            $critical_overrides[$rc['k']] = $rc['entry'];
+        }
+
+        header("Cache-Control: no-cache");
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "siteContent" => $site_content,
+            "platformOffers" => $active_offers,
+            "customCatalog" => [
+                "companies" => $companies,
+                "products" => $products,
+                "deletedIds" => $deleted_ids
+            ],
+            "criticalOverrides" => $critical_overrides,
+            "categoryOverrides" => $img_state['categoryOverrides'] ?? [],
+            "globalDefaultImage" => $img_state['globalDefaultImage'] ?? null,
+            "deletedUrls" => $img_state['deletedUrls'] ?? []
+        ], JSON_UNESCAPED_SLASHES);
         exit;
 
     // -------------------------------------------------------------

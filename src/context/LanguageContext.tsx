@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { SUPPORTED_LANGUAGES, LanguageOption } from '../components/marketplace/LanguageRegionSelector';
-import { BASE_TRANSLATIONS } from '../data/translationsData';
-import type { Translations } from '../data/translationsData';
+import { EN_TRANSLATIONS, type Translations } from '../data/translationsEn';
 
 export type LanguageCode = 'en' | 'zh' | 'es' | 'ar' | 'de' | 'fr' | 'pt' | 'ru' | 'ja' | 'hi' | 'tr' | 'vi';
 export type { Translations };
@@ -194,6 +193,25 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('tradeheaven_language_change', handleCustomChange);
   }, [langCode]);
 
+  const [loadedBundles, setLoadedBundles] = useState<Partial<Record<LanguageCode, Translations>>>({});
+
+  // Lazy-load non-English translation bundles only when langCode !== 'en'
+  useEffect(() => {
+    if (langCode === 'en' || loadedBundles[langCode]) return;
+    let cancelled = false;
+    import('../data/translationsData')
+      .then((mod) => {
+        if (cancelled) return;
+        if (mod?.BASE_TRANSLATIONS) {
+          setLoadedBundles(mod.BASE_TRANSLATIONS);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [langCode, loadedBundles]);
+
   // Sync with document element on mount and change
   useEffect(() => {
     const found = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
@@ -214,10 +232,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [langCode]);
 
   const currentOption = SUPPORTED_LANGUAGES.find(l => l.code === langCode) || SUPPORTED_LANGUAGES[0];
-  const activeTranslations = BASE_TRANSLATIONS[langCode] || BASE_TRANSLATIONS.en;
+  const activeTranslations = (langCode !== 'en' && loadedBundles[langCode]) || EN_TRANSLATIONS;
+
+  const englishReverseLookup = useMemo(() => {
+    const map = new Map<string, keyof Translations>();
+    (Object.keys(EN_TRANSLATIONS) as Array<keyof Translations>).forEach((k) => {
+      map.set(EN_TRANSLATIONS[k], k);
+    });
+    return map;
+  }, []);
 
   const t = (key: keyof Translations, fallback?: string): string => {
-    return activeTranslations[key] || BASE_TRANSLATIONS.en[key] || fallback || '';
+    return activeTranslations[key] || EN_TRANSLATIONS[key] || fallback || '';
   };
 
   const tr = (dict: Partial<Record<LanguageCode | string, string>>): string => {
@@ -234,11 +260,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return mapped[langCode]!;
     }
 
-    // Check direct key in translations
-    const directKey = Object.keys(BASE_TRANSLATIONS.en).find(
-      k => BASE_TRANSLATIONS.en[k as keyof Translations] === englishText
-    ) as keyof Translations | undefined;
-
+    // Fast O(1) lookup via precomputed map
+    const directKey = englishReverseLookup.get(englishText);
     if (directKey && activeTranslations[directKey]) {
       return activeTranslations[directKey];
     }
@@ -271,10 +294,10 @@ export const useLanguage = (): LanguageContextType => {
       currentLanguage: SUPPORTED_LANGUAGES[0],
       languageCode: 'en',
       setLanguage: () => {},
-      t: (key: keyof Translations, fallback?: string) => BASE_TRANSLATIONS.en[key] || fallback || '',
+      t: (key: keyof Translations, fallback?: string) => EN_TRANSLATIONS[key] || fallback || '',
       tr: (dict: Partial<Record<LanguageCode | string, string>>) => dict.en || Object.values(dict)[0] || '',
       tText: (text: string) => text,
-      translations: BASE_TRANSLATIONS.en,
+      translations: EN_TRANSLATIONS,
       isRTL: false
     };
   }

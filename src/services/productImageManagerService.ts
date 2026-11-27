@@ -116,9 +116,13 @@ const IDB_STORE = 'image_system_state';
 const IDB_KEY = 'active_state_v8';
 
 let activeProductImageManagerInstance: ProductImageManagerService | null = null;
+const normalizedAssetUrlCache = new Map<string, string>();
 
 export function normalizeProductAssetUrl(url: string | undefined | null): string {
   if (!url || typeof url !== 'string') return '';
+  const cachedHit = normalizedAssetUrlCache.get(url);
+  if (cachedHit !== undefined) return cachedHit;
+
   let clean = url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
   let existingQuery = '';
   const qIdx = clean.indexOf('?');
@@ -136,6 +140,7 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
     }
   }
 
+  let result: string;
   if (
     clean.startsWith('/assets/uploads/') ||
     clean.startsWith('/assets/client-uploads/') ||
@@ -148,23 +153,28 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
         typeof activeProductImageManagerInstance.getVersionTagForUrl === 'function'
           ? activeProductImageManagerInstance.getVersionTagForUrl(clean)
           : 'v7';
-      return `${clean}?v=${versionTag || 'v7'}`;
-    }
-    if (!existingQuery.includes('v=') && !existingQuery.includes('cb=')) {
+      result = `${clean}?v=${versionTag || 'v7'}`;
+    } else if (!existingQuery.includes('v=') && !existingQuery.includes('cb=')) {
       const versionTag =
         activeProductImageManagerInstance &&
         typeof activeProductImageManagerInstance.getVersionTagForUrl === 'function'
           ? activeProductImageManagerInstance.getVersionTagForUrl(clean)
           : 'v7';
-      return `${clean}?${existingQuery}&v=${versionTag || 'v7'}`;
+      result = `${clean}?${existingQuery}&v=${versionTag || 'v7'}`;
+    } else {
+      result = `${clean}?${existingQuery}`;
     }
-    return `${clean}?${existingQuery}`;
+  } else if (existingQuery) {
+    result = `${clean}?${existingQuery}`;
+  } else {
+    result = clean;
   }
 
-  if (existingQuery) {
-    return `${clean}?${existingQuery}`;
+  if (normalizedAssetUrlCache.size > 6000) {
+    normalizedAssetUrlCache.clear();
   }
-  return clean;
+  normalizedAssetUrlCache.set(url, result);
+  return result;
 }
 
 export function optimizeImageUrl(
@@ -704,6 +714,7 @@ class ProductImageManagerService {
       }
     }
     this.urlVersionMap = nextMap;
+    normalizedAssetUrlCache.clear();
   }
 
   private getCanonicalVisualHash(st: ProductImageSystemState): string {
@@ -914,6 +925,31 @@ class ProductImageManagerService {
     } catch (err) {
       console.warn('[ProductImageManagerService] Error reading persistent storage:', err);
     }
+
+    // Apply server-injected critical homepage overrides synchronously before Frame 1 paint
+    try {
+      const boot = (window as any).__TH_BOOT__;
+      if (boot && typeof boot === 'object') {
+        if (boot.criticalOverrides && typeof boot.criticalOverrides === 'object') {
+          const normalizedBoot = this.normalizeOverrideMap(boot.criticalOverrides);
+          for (const [k, entry] of Object.entries(normalizedBoot)) {
+            if (!entry?.primary || this.locallyDeletedIds.has(k)) continue;
+            base.overrides[k] = entry;
+          }
+        }
+        if (boot.categoryOverrides && typeof boot.categoryOverrides === 'object') {
+          base.categoryOverrides = { ...base.categoryOverrides, ...boot.categoryOverrides };
+        }
+        if (boot.globalDefaultImage !== undefined) {
+          base.globalDefaultImage = boot.globalDefaultImage
+            ? normalizeProductAssetUrl(boot.globalDefaultImage)
+            : null;
+        }
+        if (Array.isArray(boot.deletedUrls) && boot.deletedUrls.length > 0) {
+          base.deletedUrls = Array.from(new Set([...(base.deletedUrls || []), ...boot.deletedUrls]));
+        }
+      }
+    } catch {}
 
     return base;
   }
@@ -1199,17 +1235,22 @@ class ProductImageManagerService {
 
     try {
       let srv: ProductImageSystemState | null = null;
-      // 1. Try public & admin Node/Express endpoints (always cache-busted with no-store so another Chrome window never receives stale overrides)
-      const bustQuery = `_t=${Date.now()}`;
-      const publicQueryParts = [includeFullMedia ? 'includeMedia=1' : '', bustQuery].filter(Boolean).join('&');
-      const publicUrl = `/api/v1/public/product-images?${publicQueryParts}`;
+      // 1. Try public & admin Node/Express endpoints (use clean URL on normal boot so <link rel="preload"> & HTTP ETag 304 hit!)
+      const shouldBust = Boolean(opts?.bypassCooldown || includeFullMedia);
+      const publicQueryParts = [
+        includeFullMedia ? 'includeMedia=1' : '',
+        shouldBust ? `_t=${Date.now()}` : ''
+      ].filter(Boolean).join('&');
+      const publicUrl = publicQueryParts
+        ? `/api/v1/public/product-images?${publicQueryParts}`
+        : '/api/v1/public/product-images';
       const endpoints: Array<{ url: string; cacheMode: RequestCache }> = includeFullMedia
         ? [
             { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' },
             { url: publicUrl, cacheMode: 'no-store' }
           ]
         : [
-            { url: publicUrl, cacheMode: 'no-store' },
+            { url: publicUrl, cacheMode: shouldBust ? 'no-store' : 'default' },
             { url: `/api/v1/admin/product-images?_t=${Date.now()}`, cacheMode: 'no-store' }
           ];
       for (const ep of endpoints) {
@@ -1381,9 +1422,35 @@ class ProductImageManagerService {
         const nextVisualHash = this.getCanonicalVisualHash(this.state);
         this.isHydratedFromServer = true;
 
-        // Save and notify UI components on initial hydration, whenever image URLs / activity timestamps change, or on explicit Refresh All
-        if (wasUnhydrated || prevVisualHash !== nextVisualHash || activityTimestampsChanged || opts?.emitEvenIfUnchanged) {
+        const hasBootOverrides = Boolean(
+          typeof window !== 'undefined' &&
+          (window as any).__TH_BOOT__?.criticalOverrides &&
+          Object.keys((window as any).__TH_BOOT__.criticalOverrides).length > 0
+        );
+
+        // Notify UI components when image URLs/timestamps actually changed, on explicit refresh, or if boot payload wasn't already injected
+        if (
+          prevVisualHash !== nextVisualHash ||
+          activityTimestampsChanged ||
+          opts?.emitEvenIfUnchanged ||
+          (wasUnhydrated && !hasBootOverrides)
+        ) {
           this.saveToLocalStorage({ action: 'sync_from_server' });
+        } else if (wasUnhydrated) {
+          // Silently update version map and persist in background without causing unnecessary synchronous DOM re-renders
+          this.rebuildUrlVersionMap();
+          if (this.persistDebounceTimer !== null) {
+            window.clearTimeout(this.persistDebounceTimer);
+          }
+          this.persistDebounceTimer = window.setTimeout(() => {
+            this.persistDebounceTimer = null;
+            const runFlush = () => this.flushPersistenceToStorage();
+            if (typeof (window as any).requestIdleCallback === 'function') {
+              (window as any).requestIdleCallback(runFlush, { timeout: 2500 });
+            } else {
+              runFlush();
+            }
+          }, 1500);
         }
       } else {
         this.isHydratedFromServer = true;

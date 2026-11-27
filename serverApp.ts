@@ -3308,6 +3308,7 @@ function savePlatformOffersStore(items: ServerPlatformOfferRecord[]) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(PLATFORM_OFFERS_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    invalidatePublicBootstrapCache();
   } catch (err) {
     console.warn('[PlatformOffersStore] Failed to write platform-announcements.json:', err);
   }
@@ -16480,10 +16481,22 @@ interface PrecompressedJsonCacheEntry {
 }
 let publicProductImagesCache: PrecompressedJsonCacheEntry | null = null;
 let publicProductImagesCacheEpoch = 1;
+let publicBootstrapEpoch = 1;
+let publicBootstrapJsonCache: PrecompressedJsonCacheEntry | null = null;
+let publicBootHtmlScriptCache: { sig: string; scriptTag: string; bootPayload: any } | null = null;
+let servedDistHtmlCache: { sig: string; etag: string; raw: Buffer; gzipped: Buffer; brotli: Buffer } | null = null;
+
+function invalidatePublicBootstrapCache() {
+  publicBootstrapEpoch += 1;
+  publicBootstrapJsonCache = null;
+  publicBootHtmlScriptCache = null;
+  servedDistHtmlCache = null;
+}
 
 function invalidatePublicProductImagesCache() {
   publicProductImagesCacheEpoch += 1;
   publicProductImagesCache = null;
+  invalidatePublicBootstrapCache();
 }
 
 function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
@@ -16543,6 +16556,41 @@ function buildSlimPublicProductImageState(state: ProductImageSystemState) {
   };
 }
 
+function buildCriticalHomepageOverrides(slimState: ReturnType<typeof buildSlimPublicProductImageState>) {
+  const allEntries = Object.entries(slimState.overrides || {});
+  const criticalOverrides: Record<string, any> = {};
+  const recentCandidates: Array<{ k: string; entry: any; ts: number }> = [];
+
+  for (const [k, entry] of allEntries) {
+    if (!entry?.primary) continue;
+    const lower = k.toLowerCase();
+    const isStructuralOrCustom =
+      lower.startsWith('cat-') ||
+      lower.startsWith('hero') ||
+      lower.startsWith('slide') ||
+      lower.startsWith('site') ||
+      lower.startsWith('banner') ||
+      lower.startsWith('custom-') ||
+      lower.startsWith('prod-custom-') ||
+      lower.startsWith('manual-') ||
+      lower.startsWith('comp-');
+    if (isStructuralOrCustom) {
+      criticalOverrides[k] = entry;
+      continue;
+    }
+    const ts = Number(entry.imageUpdatedAt || 0) || 0;
+    if (ts > 0 || entry.locked) {
+      recentCandidates.push({ k, entry, ts });
+    }
+  }
+
+  recentCandidates.sort((a, b) => b.ts - a.ts);
+  for (const item of recentCandidates.slice(0, 180)) {
+    criticalOverrides[item.k] = item.entry;
+  }
+  return criticalOverrides;
+}
+
 function getOrBuildPublicProductImagesCache(): PrecompressedJsonCacheEntry {
   const sig = `${publicProductImagesCacheEpoch}:${lastLoadedProductImageDiskSig}:${Object.keys(serverProductImageState.overrides || {}).length}`;
   if (publicProductImagesCache && publicProductImagesCache.sig === sig) {
@@ -16565,6 +16613,104 @@ function getOrBuildPublicProductImagesCache(): PrecompressedJsonCacheEntry {
   publicProductImagesCache = { sig, etag, raw, gzipped, brotli };
   return publicProductImagesCache;
 }
+
+function getOrBuildPublicBootPayload(): { sig: string; scriptTag: string; bootPayload: any } {
+  const pimgCache = getOrBuildPublicProductImagesCache();
+  const scSig = `${siteContentCacheEpoch}:${Number((serverSiteContent as any)?.siteContentUpdatedAt || 0)}`;
+  let customMtime = 0;
+  try {
+    if (fs.existsSync(CUSTOM_CATALOG_FILE)) {
+      customMtime = Math.round(fs.statSync(CUSTOM_CATALOG_FILE).mtimeMs);
+    }
+  } catch {}
+  const activeOffers = (platformOffersStore || []).filter((item) => isCampaignInSchedule(item));
+  const sig = `${publicBootstrapEpoch}:${pimgCache.sig}:${scSig}:${customMtime}:${activeOffers.length}:${serverDeletedProductIds.size}`;
+  if (publicBootHtmlScriptCache && publicBootHtmlScriptCache.sig === sig) {
+    return publicBootHtmlScriptCache;
+  }
+
+  const slimImgState = buildSlimPublicProductImageState(serverProductImageState);
+  const criticalOverrides = buildCriticalHomepageOverrides(slimImgState);
+  const customStore = loadCustomCatalogFromDisk();
+  const visibleCustomProducts = (customStore.products || []).filter(
+    (p: any) => p && !serverDeletedProductIds.has(String(p.id))
+  );
+
+  const bootPayload = {
+    version: sig,
+    siteContent: serverSiteContent || {},
+    platformOffers: activeOffers,
+    customCatalog: {
+      companies: customStore.companies || [],
+      products: visibleCustomProducts,
+      deletedIds: Array.from(serverDeletedProductIds)
+    },
+    criticalOverrides,
+    categoryOverrides: slimImgState.categoryOverrides || {},
+    globalDefaultImage: slimImgState.globalDefaultImage ?? null,
+    deletedUrls: slimImgState.deletedUrls || []
+  };
+
+  const safeJson = JSON.stringify(bootPayload).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
+  const scriptTag = `<script id="__th-boot-data">window.__TH_BOOT__=${safeJson};</script>`;
+  publicBootHtmlScriptCache = { sig, scriptTag, bootPayload };
+  return publicBootHtmlScriptCache;
+}
+
+function injectBootDataIntoHtml(rawHtml: string): string {
+  const { scriptTag } = getOrBuildPublicBootPayload();
+  if (rawHtml.includes('id="__th-boot-data"')) {
+    return rawHtml;
+  }
+  const headCloseIdx = rawHtml.lastIndexOf('</head>');
+  if (headCloseIdx !== -1) {
+    return rawHtml.slice(0, headCloseIdx) + scriptTag + rawHtml.slice(headCloseIdx);
+  }
+  return rawHtml + scriptTag;
+}
+
+function getOrBuildPublicBootstrapJsonCache(): PrecompressedJsonCacheEntry {
+  const { sig, bootPayload } = getOrBuildPublicBootPayload();
+  if (publicBootstrapJsonCache && publicBootstrapJsonCache.sig === sig) {
+    return publicBootstrapJsonCache;
+  }
+  const raw = Buffer.from(JSON.stringify({ success: true, ...bootPayload }), 'utf-8');
+  const hash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16);
+  const etag = `"th-boot-${hash}-${raw.length}"`;
+  const gzipped = zlib.gzipSync(raw, { level: 4 });
+  const brotli = zlib.brotliCompressSync(raw, {
+    params: {
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 3,
+      [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+    }
+  });
+  publicBootstrapJsonCache = { sig, etag, raw, gzipped, brotli };
+  return publicBootstrapJsonCache;
+}
+
+app.get('/api/v1/public/bootstrap', (req, res) => {
+  const cached = getOrBuildPublicBootstrapJsonCache();
+  res.setHeader('ETag', cached.etag);
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Vary', 'Accept-Encoding');
+  if (!req.query._t && req.headers['if-none-match'] === cached.etag) {
+    return res.status(304).end();
+  }
+  const acceptEncoding = String(req.headers['accept-encoding'] || '');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (acceptEncoding.includes('br')) {
+    res.setHeader('Content-Encoding', 'br');
+    res.setHeader('Content-Length', String(cached.brotli.length));
+    return res.status(200).end(cached.brotli);
+  }
+  if (acceptEncoding.includes('gzip')) {
+    res.setHeader('Content-Encoding', 'gzip');
+    res.setHeader('Content-Length', String(cached.gzipped.length));
+    return res.status(200).end(cached.gzipped);
+  }
+  res.setHeader('Content-Length', String(cached.raw.length));
+  return res.status(200).end(cached.raw);
+});
 
 // GET /api/v1/admin/product-images & /api/v1/public/product-images - Fetch product image overrides & media library
 const handleGetProductImages = (req: express.Request, res: express.Response) => {
@@ -18506,6 +18652,7 @@ let siteContentCacheEpoch = 1;
 function invalidateSiteContentResponseCache() {
   siteContentCacheEpoch += 1;
   siteContentResponseCache = null;
+  invalidatePublicBootstrapCache();
 }
 
 function getOrBuildSiteContentResponseCache(): PrecompressedJsonCacheEntry {
@@ -20925,6 +21072,7 @@ function saveCustomCatalogToDisk(store: CustomCatalogStore) {
       fs.mkdirSync(uploadsStaticDir, { recursive: true });
     }
     fs.writeFileSync(CUSTOM_CATALOG_FILE, JSON.stringify(store, null, 2), 'utf-8');
+    invalidatePublicBootstrapCache();
   } catch (err) {
     console.warn('[CustomCatalog] Failed to save custom-catalog-store.json:', err);
   }
@@ -30633,10 +30781,53 @@ async function startServer() {
       }
     }
 
-    // For SPA root or route requests (no file extension or .html), serve gzipped dist/index.html
+    // For SPA root or route requests (no file extension or .html), serve cached boot-injected gzipped/brotli dist/index.html
     if (req.path === '/' || req.path === '/index.html' || !path.extname(req.path)) {
-      if (serveCachedDistFile(req, res, distIndexHtml, false)) {
+      try {
+        const htmlStat = fs.statSync(distIndexHtml);
+        const { sig: bootSig } = getOrBuildPublicBootPayload();
+        const combinedSig = `${Math.round(htmlStat.mtimeMs)}:${bootSig}`;
+        if (!servedDistHtmlCache || servedDistHtmlCache.sig !== combinedSig) {
+          const baseHtml = fs.readFileSync(distIndexHtml, 'utf-8');
+          const injectedHtml = injectBootDataIntoHtml(baseHtml);
+          const raw = Buffer.from(injectedHtml, 'utf-8');
+          const hash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16);
+          const etag = `"th-html-${hash}-${raw.length}"`;
+          const gzipped = zlib.gzipSync(raw, { level: 5 });
+          const brotli = zlib.brotliCompressSync(raw, {
+            params: {
+              [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+              [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT
+            }
+          });
+          servedDistHtmlCache = { sig: combinedSig, etag, raw, gzipped, brotli };
+        }
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.setHeader('ETag', servedDistHtmlCache.etag);
+        if (req.headers['if-none-match'] === servedDistHtmlCache.etag) {
+          res.status(304).end();
+          return;
+        }
+        const acceptEncoding = String(req.headers['accept-encoding'] || '');
+        if (acceptEncoding.includes('br')) {
+          res.setHeader('Content-Encoding', 'br');
+          res.setHeader('Content-Length', String(servedDistHtmlCache.brotli.length));
+          res.status(200).end(servedDistHtmlCache.brotli);
+        } else if (acceptEncoding.includes('gzip')) {
+          res.setHeader('Content-Encoding', 'gzip');
+          res.setHeader('Content-Length', String(servedDistHtmlCache.gzipped.length));
+          res.status(200).end(servedDistHtmlCache.gzipped);
+        } else {
+          res.setHeader('Content-Length', String(servedDistHtmlCache.raw.length));
+          res.status(200).end(servedDistHtmlCache.raw);
+        }
         return;
+      } catch {
+        if (serveCachedDistFile(req, res, distIndexHtml, false)) {
+          return;
+        }
       }
     }
 
@@ -30677,8 +30868,23 @@ async function startServer() {
 
     app.use(async (req, res, next) => {
       try {
-        if (!viteMiddleware) {
-          await getOrCreateVite();
+        const vite = await getOrCreateVite();
+        if (
+          vite &&
+          req.method === 'GET' &&
+          !req.path.startsWith('/@') &&
+          !req.path.startsWith('/src/') &&
+          !req.path.startsWith('/node_modules/') &&
+          (req.path === '/' || req.path === '/index.html' || !path.extname(req.path))
+        ) {
+          const devHtmlPath = path.join(process.cwd(), 'index.html');
+          if (fs.existsSync(devHtmlPath)) {
+            const rawTemplate = fs.readFileSync(devHtmlPath, 'utf-8');
+            const transformed = await vite.transformIndexHtml(req.originalUrl, rawTemplate);
+            const injected = injectBootDataIntoHtml(transformed);
+            res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').end(injected);
+            return;
+          }
         }
         if (viteMiddleware) {
           return viteMiddleware(req, res, next);

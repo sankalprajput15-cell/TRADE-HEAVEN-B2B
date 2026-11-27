@@ -83,6 +83,16 @@ const overrideSubscribers = new Set<() => void>();
 const liveModeSubscribers = new Set<(active: boolean) => void>();
 let cachedLiveMode = typeof window !== 'undefined' ? checkIsAdminLiveEditActive() : false;
 let hubInitialized = false;
+let pendingOverrideFlush = false;
+
+function scheduleOverrideSubscriberFlush() {
+  if (pendingOverrideFlush) return;
+  pendingOverrideFlush = true;
+  queueMicrotask(() => {
+    pendingOverrideFlush = false;
+    overrideSubscribers.forEach(cb => cb());
+  });
+}
 
 function initSafeImageGlobalHub() {
   if (hubInitialized || typeof window === 'undefined') return;
@@ -90,13 +100,13 @@ function initSafeImageGlobalHub() {
 
   if (!productImageManagerService.isHydrated()) {
     productImageManagerService.ensureHydrated().then(() => {
-      overrideSubscribers.forEach(cb => cb());
+      scheduleOverrideSubscriberFlush();
     }).catch(() => {});
   }
 
   const notifyOverrides = () => {
     FAILED_IMAGE_URLS.clear();
-    overrideSubscribers.forEach(cb => cb());
+    scheduleOverrideSubscriberFlush();
   };
   const notifyLiveMode = () => {
     cachedLiveMode = checkIsAdminLiveEditActive();
@@ -109,7 +119,6 @@ function initSafeImageGlobalHub() {
   };
 
   window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, notifyOverrides);
-  window.addEventListener('tradeheaven_product_images_updated', notifyOverrides);
   window.addEventListener('storage', notifyOverrides);
   window.addEventListener('tradeheaven_live_edit_mode_changed', notifyLiveMode);
   window.addEventListener('tradeheaven_auth_changed', notifyAuthChanged);
@@ -499,10 +508,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
   const currentCandidate = candidates[effectiveAttemptIndex] || '';
 
+  const currentCandidateBase = currentCandidate ? currentCandidate.split('?')[0] : '';
+
   const [isLoaded, setIsLoaded] = useState<boolean>(() =>
     Boolean(
       currentCandidate &&
         (LOADED_IMAGE_URLS.has(currentCandidate) ||
+          (currentCandidateBase && LOADED_IMAGE_URLS.has(currentCandidateBase)) ||
           currentCandidate.startsWith('data:') ||
           currentCandidate.startsWith('blob:'))
     )
@@ -523,6 +535,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
     if (
       LOADED_IMAGE_URLS.has(currentCandidate) ||
+      (currentCandidateBase && LOADED_IMAGE_URLS.has(currentCandidateBase)) ||
       currentCandidate.startsWith('data:') ||
       currentCandidate.startsWith('blob:')
     ) {
@@ -533,6 +546,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     if (imgEl && imgEl.complete) {
       if (imgEl.naturalWidth > 0) {
         LOADED_IMAGE_URLS.add(currentCandidate);
+        if (currentCandidateBase) LOADED_IMAGE_URLS.add(currentCandidateBase);
         setIsLoaded(true);
       } else {
         FAILED_IMAGE_URLS.add(currentCandidate);
@@ -561,7 +575,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }, 4500);
       return () => clearTimeout(stallTimer);
     }
-  }, [currentCandidate, effectiveAttemptIndex, candidates.length]);
+  }, [currentCandidate, currentCandidateBase, effectiveAttemptIndex, candidates.length]);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
@@ -582,6 +596,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
       LOADED_IMAGE_URLS.add(currentCandidate);
+      if (currentCandidateBase) LOADED_IMAGE_URLS.add(currentCandidateBase);
       // Auto-upload & bind displayed product/category/RFQ image ONLY when no override exists yet and primary candidate loaded
       if (
         !isLogoOrAvatar &&

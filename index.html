@@ -20,7 +20,8 @@
     <link rel="me" href="https://www.facebook.com/profile.php?id=61569916454663" />
     <link rel="me" href="https://twitter.com/tradeheaven" />
     <link rel="me" href="https://wa.me/918532934479" />
-    <!-- Preconnect & clean head resource hints without wasted unused image preloads -->
+    <!-- Preconnect & fetch preload hints so overrides download in parallel with entry JS -->
+    <link rel="preload" href="/api/v1/public/product-images" as="fetch" crossorigin="anonymous" />
     <!-- Safe window.parent.postMessage & environment resilience shim -->
     <script>
       (function() {

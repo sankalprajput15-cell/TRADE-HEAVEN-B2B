@@ -217,15 +217,42 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
+  const bootSiteContentRef = useRef<any>(
+    typeof window !== 'undefined' ? (window as any).__TH_BOOT__?.siteContent || null : null
+  );
+
   const [siteContent, setSiteContent] = useState<SiteContent>(() => {
+    let localParsed: any = null;
     try {
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (cached) {
-        const parsed = JSON.parse(cached);
-        return normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed });
+        localParsed = JSON.parse(cached);
       }
     } catch {
       // Fallback
+    }
+    const bootData =
+      bootSiteContentRef.current &&
+      typeof bootSiteContentRef.current === 'object' &&
+      !Array.isArray(bootSiteContentRef.current)
+        ? bootSiteContentRef.current
+        : null;
+
+    if (bootData && Object.keys(bootData).length > 0) {
+      const bootTs = Number(bootData.siteContentUpdatedAt || 0);
+      const localTs = Number(localParsed?.siteContentUpdatedAt || 0);
+      const chosen = localParsed && localTs > bootTs ? localParsed : { ...(localParsed || {}), ...bootData };
+      const normalized = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...chosen });
+      try {
+        if (bootTs >= localTs) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalized));
+        }
+      } catch {}
+      return normalized;
+    }
+
+    if (localParsed) {
+      return normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...localParsed });
     }
     return DEFAULT_SITE_CONTENT;
   });
@@ -349,13 +376,20 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     let isMounted = true;
+    const hasBootContent = Boolean(
+      bootSiteContentRef.current &&
+      typeof bootSiteContentRef.current === 'object' &&
+      !Array.isArray(bootSiteContentRef.current) &&
+      Object.keys(bootSiteContentRef.current).length > 0
+    );
+
     async function loadServerContent() {
+      // If server already injected authoritative siteContent in window.__TH_BOOT__, skip redundant blocking boot fetch
+      if (hasBootContent) {
+        return;
+      }
       try {
-        setIsLoading(true);
-        const [contentRes, permsData] = await Promise.all([
-          apiClient.getSiteContent(),
-          api.getCmsPermissions()
-        ]);
+        const contentRes = await apiClient.getSiteContent();
         if (!isMounted) return;
         if (
           !hasLocalSiteMutationRef.current &&
@@ -381,14 +415,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return merged;
           });
         }
-        if (permsData) {
-          if (Array.isArray(permsData.authorizedUsers)) setAuthorizedUsers(permsData.authorizedUsers);
-          if (Array.isArray(permsData.accessRequests)) setAccessRequests(permsData.accessRequests);
-        }
       } catch (err) {
         console.warn('Using local site content store');
-      } finally {
-        if (isMounted) setIsLoading(false);
       }
     }
     loadServerContent();
@@ -507,7 +535,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     window.addEventListener('focus', handleWindowFocusRefresh);
     window.addEventListener('pageshow', handleWindowFocusRefresh);
     document.addEventListener('visibilitychange', handleVisibilityRefresh);
-    window.addEventListener('tradeheaven_product_images_updated', handleImagesUpdatedRefresh);
+    window.addEventListener('tradeheaven_product_image_saved', handleImagesUpdatedRefresh);
     return () => {
       isMounted = false;
       window.removeEventListener('storage', handleStorageSync);
@@ -515,7 +543,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       window.removeEventListener('focus', handleWindowFocusRefresh);
       window.removeEventListener('pageshow', handleWindowFocusRefresh);
       document.removeEventListener('visibilitychange', handleVisibilityRefresh);
-      window.removeEventListener('tradeheaven_product_images_updated', handleImagesUpdatedRefresh);
+      window.removeEventListener('tradeheaven_product_image_saved', handleImagesUpdatedRefresh);
       if (bc) {
         try { bc.close(); } catch {}
       }
@@ -555,16 +583,23 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
+  // Gate admin-only background auto-fix polling and CMS permissions fetches strictly behind verified root admin session
+  const isVerifiedAdminUser = isStrictVerifiedRootAdmin(currentUser);
   useEffect(() => {
+    if (!isVerifiedAdminUser) {
+      backgroundAutoFixService.registerSiteContentRefresher(null);
+      return;
+    }
     backgroundAutoFixService.registerSiteContentRefresher(async () => {
       await refreshFromServer();
     });
     void backgroundAutoFixService.hydrateFromServerOnBoot();
+    void refreshPermissions();
     return () => {
       backgroundAutoFixService.registerSiteContentRefresher(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isVerifiedAdminUser]);
 
   // Helper to check if a specific user is authorized to edit CMS or access admin areas
   const isUserAuthorized = (user: AuthUser | null = currentUser): UserAuthorizationResult => {

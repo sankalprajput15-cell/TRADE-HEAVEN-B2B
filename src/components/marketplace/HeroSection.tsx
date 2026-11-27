@@ -257,8 +257,11 @@ export const HeroSection: React.FC<Props> = ({
 
   const activeRfqPool = useMemo(() => {
     const base = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
+    if (!searchQuery.trim() && !isSearchPopoverOpen && discoveredRfqs.length === 0) {
+      return base;
+    }
     return sortRfqsRealFirst(mergeRfqLists(base, discoveredRfqs));
-  }, [rfqs, discoveredRfqs]);
+  }, [rfqs, discoveredRfqs, searchQuery, isSearchPopoverOpen]);
 
   const activeRfqPoolRef = useRef<RfqRequirement[]>(activeRfqPool);
   useEffect(() => {

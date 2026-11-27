@@ -477,58 +477,63 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('tradeheaven_database_error', handleDbError);
   }, []);
 
-  // Background prefetch for popular categories, suppliers, and assets after initial load
-  useEffect(() => {
-    const prefetchPopularData = () => {
-      try {
-        const topCategoryImages = [
-          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=70',
-          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=70',
-          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=70',
-          'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=70'
-        ];
-        topCategoryImages.forEach(url => {
-          const img = new Image();
-          img.src = url;
-        });
-      } catch (e) {}
+  // Products and entities initialized with default rich marketplace dataset + __TH_BOOT__.customCatalog + local products + active image overrides
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const bootCatalog = typeof window !== 'undefined' ? (window as any).__TH_BOOT__?.customCatalog : null;
+      if (bootCatalog && typeof bootCatalog === 'object') {
+        if (Array.isArray(bootCatalog.deletedIds)) {
+          syncDeletedProductIdsFromServer(bootCatalog.deletedIds);
+        }
+        if (Array.isArray(bootCatalog.companies) && bootCatalog.companies.length > 0) {
+          bootCatalog.companies.forEach((comp: any) => {
+            if (comp && comp.id) {
+              const existingIdx = MOCK_COMPANIES.findIndex(c => c.id === comp.id);
+              if (existingIdx >= 0) {
+                MOCK_COMPANIES[existingIdx] = { ...MOCK_COMPANIES[existingIdx], ...comp };
+              } else {
+                MOCK_COMPANIES.unshift(comp);
+              }
+            }
+          });
+        }
+      }
+    } catch {}
+
+    let baseList: Product[] = [...MOCK_PRODUCTS];
+    const applyAdditionalProducts = (extraList: any[]) => {
+      if (!Array.isArray(extraList) || extraList.length === 0) return;
+      const baseMap = new Map<string, Product>();
+      baseList.forEach(p => baseMap.set(p.id, p));
+      const newAdditions: Product[] = [];
+      extraList.forEach(c => {
+        if (c && c.id) {
+          if (baseMap.has(c.id)) {
+            baseMap.set(c.id, { ...baseMap.get(c.id)!, ...c });
+          } else {
+            newAdditions.push(c);
+          }
+        }
+      });
+      baseList = [...newAdditions, ...Array.from(baseMap.values())];
     };
 
-    if (typeof window !== 'undefined') {
-      if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(prefetchPopularData, { timeout: 2500 });
-      } else {
-        setTimeout(prefetchPopularData, 1200);
-      }
-    }
-  }, []);
-
-  // Products and entities initialized with default rich marketplace dataset + custom local products + active image overrides
-  const [products, setProducts] = useState<Product[]>(() => {
-    let baseList: Product[] = [...MOCK_PRODUCTS];
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const rawCustom = localStorage.getItem('trade_heaven_custom_products');
         if (rawCustom) {
-          const customList: Product[] = JSON.parse(rawCustom);
-          if (Array.isArray(customList) && customList.length > 0) {
-            const baseMap = new Map<string, Product>();
-            baseList.forEach(p => baseMap.set(p.id, p));
-            const newAdditions: Product[] = [];
-            customList.forEach(c => {
-              if (c && c.id) {
-                if (baseMap.has(c.id)) {
-                  baseMap.set(c.id, { ...baseMap.get(c.id)!, ...c });
-                } else {
-                  newAdditions.push(c);
-                }
-              }
-            });
-            baseList = [...newAdditions, ...Array.from(baseMap.values())];
-          }
+          applyAdditionalProducts(JSON.parse(rawCustom));
         }
       }
     } catch {}
+
+    try {
+      const bootProducts = typeof window !== 'undefined' ? (window as any).__TH_BOOT__?.customCatalog?.products : null;
+      if (Array.isArray(bootProducts) && bootProducts.length > 0) {
+        applyAdditionalProducts(bootProducts);
+      }
+    } catch {}
+
     const deletedSet = getDeletedProductIdsSet();
     if (deletedSet.size > 0) {
       baseList = baseList.filter(
@@ -617,7 +622,11 @@ const MainApp: React.FC = () => {
       } catch {}
     };
 
-    void syncFromServer();
+    // Skip redundant initial mount fetch when server already injected customCatalog into window.__TH_BOOT__
+    const hasBootCatalog = Boolean(typeof window !== 'undefined' && (window as any).__TH_BOOT__?.customCatalog);
+    if (!hasBootCatalog) {
+      void syncFromServer();
+    }
 
     const handleStudioUpdated = (e: Event) => {
       const detail = (e as CustomEvent)?.detail;
@@ -632,7 +641,7 @@ const MainApp: React.FC = () => {
   }, []);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(true);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
   const [showLoaderDemo, setShowLoaderDemo] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -1352,6 +1361,9 @@ const MainApp: React.FC = () => {
       const loadedRfqs = await apiClient.getRfqs();
       const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs : [];
       const deletedRfqSet = getDeletedRfqIdsSet();
+      if (extraLoaded.length === 0 && deletedRfqSet.size === 0) {
+        return;
+      }
       const isRfqActive = (r: RfqRequirement | null | undefined) => {
         if (!r || !r.id) return false;
         const rid = String(r.id).trim();
@@ -1362,22 +1374,41 @@ const MainApp: React.FC = () => {
         const merged = sortRfqsRealFirst(
           mergeRfqLists(mergeRfqLists(MOCK_RFQS, prev), extraLoaded).filter(isRfqActive)
         );
+        if (merged.length === prev.length && merged[0]?.id === prev[0]?.id && extraLoaded.length === 0) {
+          return prev;
+        }
         setSelectedRfqId(currId => (currId && merged.some(r => r.id === currId)) ? currId : (merged[0]?.id || null));
         return merged as any;
       });
     } catch (err) {}
   };
 
-  // Fetch live Products/Listings non-blocking in background
+  // Fetch live Products/Listings non-blocking in background without causing unnecessary full-tree re-renders
   const fetchProducts = async () => {
     try {
       const prods = await api.getProducts();
-      if (Array.isArray(prods)) {
-        setProducts(
-          productImageManagerService.sortProductsLatestUploadedFirst(
+      if (Array.isArray(prods) && prods.length > 0) {
+        setProducts(prev => {
+          const nextList = productImageManagerService.sortProductsLatestUploadedFirst(
             productImageManagerService.applyOverridesToProductList(prods)
-          )
-        );
+          );
+          if (prev.length === nextList.length) {
+            let unchanged = true;
+            for (let i = 0; i < prev.length; i++) {
+              if (
+                prev[i].id !== nextList[i].id ||
+                prev[i].images?.[0] !== nextList[i].images?.[0] ||
+                prev[i].imageUpdatedAt !== nextList[i].imageUpdatedAt ||
+                prev[i].updatedAt !== nextList[i].updatedAt
+              ) {
+                unchanged = false;
+                break;
+              }
+            }
+            if (unchanged) return prev;
+          }
+          return nextList;
+        });
       }
     } catch (err) {}
   };
@@ -1516,7 +1547,6 @@ const MainApp: React.FC = () => {
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     window.addEventListener('tradeheaven_rfqs_updated', handleRfqRefresh);
-    window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
 
@@ -1524,7 +1554,6 @@ const MainApp: React.FC = () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_rfqs_updated', handleRfqRefresh);
-      window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
     };
