@@ -88,15 +88,22 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const [manualUrlInput, setManualUrlInput] = useState<string>('');
   const [showUrlBar, setShowUrlBar] = useState<boolean>(false);
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
-  const [pickerTab, setPickerTab] = useState<'CANDIDATES' | 'MEDIA_LIBRARY'>('CANDIDATES');
+  const [pickerTab, setPickerTab] = useState<'CANDIDATES' | 'ALIBABA' | 'MEDIA_LIBRARY'>('CANDIDATES');
   const [libraryFilter, setLibraryFilter] = useState<string>('');
+  const [libraryVisibleCount, setLibraryVisibleCount] = useState<number>(40);
   const [searchQuery, setSearchQuery] = useState<string>(String(product.title || '').trim());
   const headingSearchQueries = React.useMemo(
     () => extractProductHeadingSearchQueries(product.title || '', product.category),
     [product.title, product.category]
   );
   const [candidates, setCandidates] = useState<VisualProductImageCandidate[]>([]);
+  const [alibabaCandidates, setAlibabaCandidates] = useState<VisualProductImageCandidate[]>([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState<boolean>(false);
+  const [isLoadingAlibaba, setIsLoadingAlibaba] = useState<boolean>(false);
+  const [isLoadingMoreAll, setIsLoadingMoreAll] = useState<boolean>(false);
+  const [isLoadingMoreAlibaba, setIsLoadingMoreAlibaba] = useState<boolean>(false);
+  const [hasMoreAll, setHasMoreAll] = useState<boolean>(true);
+  const [hasMoreAlibaba, setHasMoreAlibaba] = useState<boolean>(true);
   const [isApplying, setIsApplying] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isCropping, setIsCropping] = useState<boolean>(false);
@@ -106,16 +113,28 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   } | null>(null);
   const autoUploadedWhenOutRef = useRef<boolean>(false);
   const shownCandidateUrlsRef = useRef<Set<string>>(new Set());
+  const shownAlibabaUrlsRef = useRef<Set<string>>(new Set());
   const searchAttemptRef = useRef<number>(0);
-
+  const alibabaPageRef = useRef<number>(0);
+  const activeQueryRef = useRef<string>(String(product.title || '').trim());
   const activeSearchSeqRef = useRef<number>(0);
+  const activeAlibabaSeqRef = useRef<number>(0);
+  const modalScrollBodyRef = useRef<HTMLDivElement | null>(null);
+  const endlessSentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     shownCandidateUrlsRef.current.clear();
+    shownAlibabaUrlsRef.current.clear();
     searchAttemptRef.current = 0;
+    alibabaPageRef.current = 0;
+    activeQueryRef.current = String(product.title || '').trim();
     autoUploadedWhenOutRef.current = false;
     activeSearchSeqRef.current++;
-  }, [product.id]);
+    activeAlibabaSeqRef.current++;
+    setHasMoreAll(true);
+    setHasMoreAlibaba(true);
+    setLibraryVisibleCount(40);
+  }, [product.id, product.title]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { mediaLibraryItems, localSearchPool } = React.useMemo(() => {
@@ -211,87 +230,207 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     [product.id, onImageUpdated]
   );
 
-  const loadCandidates = useCallback(
-    async (queryText: string, forceRefresh = false) => {
-      const q = String(queryText || product.title || '').trim();
+  const isAlibabaCandidate = useCallback((cand: VisualProductImageCandidate): boolean => {
+    const dom = String(cand?.sourceDomain || '').toLowerCase();
+    const u = String(cand?.url || '').toLowerCase();
+    const sp = String(cand?.sourcePageUrl || '').toLowerCase();
+    return (
+      dom.includes('alibaba') ||
+      u.includes('alicdn.com') ||
+      u.includes('alibaba.com') ||
+      sp.includes('alibaba.com') ||
+      sp.includes('aliexpress.com')
+    );
+  }, []);
+
+  const loadAlibabaCandidates = useCallback(
+    async (queryText: string, options?: { append?: boolean; forceRefresh?: boolean }) => {
+      const q = String(queryText || activeQueryRef.current || product.title || '').trim();
       if (!q) return;
-      const seq = ++activeSearchSeqRef.current;
-      setSearchQuery(q);
-
+      const append = Boolean(options?.append);
+      const seq = append ? activeAlibabaSeqRef.current : ++activeAlibabaSeqRef.current;
       const cleanCurrentLive = String(liveUrl || '').split('?')[0].trim();
-      const excludeList = forceRefresh
-        ? Array.from(shownCandidateUrlsRef.current).slice(-180)
-        : [];
-      if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
 
-      // PHASE 1 (< 10ms): Instant in-memory search across 3,700+ local verified server images
-      const instantLocal = buildInstantLocalSearchCandidates({
-        queryText: q,
-        category: product.category,
-        localPool: localSearchPool,
-        excludeUrls: excludeList,
-        limit: 36
-      });
-
-      if (instantLocal.length > 0) {
-        setCandidates(instantLocal);
+      if (!append) {
+        shownAlibabaUrlsRef.current.clear();
+        alibabaPageRef.current = 0;
+        setHasMoreAlibaba(true);
+        setIsLoadingAlibaba(true);
+      } else {
+        setIsLoadingMoreAlibaba(true);
       }
-      setIsLoadingCandidates(true);
 
       try {
-        const pageForAttempt = forceRefresh ? ++searchAttemptRef.current : searchAttemptRef.current;
+        const nextPage = append ? ++alibabaPageRef.current : 0;
+        const excludeList = append ? Array.from(shownAlibabaUrlsRef.current).slice(-250) : [];
+        if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
+
         const specsText =
           product.description && product.description !== siteLocationLabel
             ? product.description
             : undefined;
 
-        // PHASE 2 (< 1.2s): Fast parallel live web + Wikimedia Commons search
         const res = await fetchVisualProductImages({
           productName: q,
           productId: product.id,
           category: product.category,
           specifications: specsText,
           count: 48,
-          forceRefresh,
+          forceRefresh: Boolean(options?.forceRefresh || append),
           excludeUrls: excludeList,
-          searchPage: pageForAttempt
+          searchPage: nextPage,
+          sourceFilter: 'alibaba'
+        });
+
+        if (seq !== activeAlibabaSeqRef.current) return;
+
+        const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
+        const freshAli: VisualProductImageCandidate[] = [];
+        for (const cand of rawList) {
+          const uBase = String(cand?.url || '').split('?')[0].split('#')[0].trim();
+          if (!uBase || uBase === cleanCurrentLive || isSyntheticSpecCardOrPlaceholder(cand)) continue;
+          if (!isAlibabaCandidate(cand)) continue;
+          if (shownAlibabaUrlsRef.current.has(uBase)) continue;
+          shownAlibabaUrlsRef.current.add(uBase);
+          freshAli.push({ ...cand, sourceDomain: 'alibaba.com' });
+        }
+
+        if (append) {
+          if (freshAli.length > 0) {
+            setAlibabaCandidates(prev => [...prev, ...freshAli]);
+          } else if (nextPage >= 10) {
+            setHasMoreAlibaba(false);
+          }
+        } else {
+          setAlibabaCandidates(freshAli);
+          setHasMoreAlibaba(true);
+        }
+      } catch {
+        if (!append && seq === activeAlibabaSeqRef.current) {
+          setAlibabaCandidates([]);
+        }
+      } finally {
+        if (seq === activeAlibabaSeqRef.current) {
+          setIsLoadingAlibaba(false);
+          setIsLoadingMoreAlibaba(false);
+        }
+      }
+    },
+    [product.id, product.title, product.category, product.description, siteLocationLabel, liveUrl, isAlibabaCandidate]
+  );
+
+  const loadCandidates = useCallback(
+    async (queryText: string, forceRefresh = false, append = false) => {
+      const q = String(queryText || activeQueryRef.current || product.title || '').trim();
+      if (!q) return;
+      const seq = append ? activeSearchSeqRef.current : ++activeSearchSeqRef.current;
+      activeQueryRef.current = q;
+      setSearchQuery(q);
+
+      const cleanCurrentLive = String(liveUrl || '').split('?')[0].trim();
+
+      if (!append) {
+        shownCandidateUrlsRef.current.clear();
+        searchAttemptRef.current = 0;
+        setHasMoreAll(true);
+        // Kick off dedicated Alibaba fetch in parallel so the Alibaba section populates immediately alongside All Photos!
+        void loadAlibabaCandidates(q, { append: false, forceRefresh });
+      }
+
+      const excludeList = append
+        ? Array.from(shownCandidateUrlsRef.current).slice(-250)
+        : [];
+      if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
+
+      // PHASE 1 (< 10ms): Instant in-memory search across 3,700+ local verified server images (initial page only)
+      const instantLocal = append
+        ? []
+        : buildInstantLocalSearchCandidates({
+            queryText: q,
+            category: product.category,
+            localPool: localSearchPool,
+            excludeUrls: excludeList,
+            limit: 24
+          });
+
+      if (!append) {
+        if (instantLocal.length > 0) {
+          setCandidates(instantLocal);
+        }
+        setIsLoadingCandidates(true);
+      } else {
+        setIsLoadingMoreAll(true);
+      }
+
+      try {
+        const pageForAttempt = append ? ++searchAttemptRef.current : 0;
+        const specsText =
+          product.description && product.description !== siteLocationLabel
+            ? product.description
+            : undefined;
+
+        // PHASE 2: Fast parallel live Alibaba + Commercial Web + Wikimedia search
+        const res = await fetchVisualProductImages({
+          productName: q,
+          productId: product.id,
+          category: product.category,
+          specifications: specsText,
+          count: 48,
+          forceRefresh: forceRefresh || append,
+          excludeUrls: excludeList,
+          searchPage: pageForAttempt,
+          sourceFilter: 'all'
         });
 
         if (seq !== activeSearchSeqRef.current) return;
 
         const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
-        const seenBases = new Set<string>();
-        const mergedList: VisualProductImageCandidate[] = [];
+        const newlyFoundAlibaba: VisualProductImageCandidate[] = [];
+        const freshBatch: VisualProductImageCandidate[] = [];
 
         const pushUniqueCand = (cand: VisualProductImageCandidate) => {
           const uBase = String(cand?.url || '').split('?')[0].split('#')[0].trim();
-          if (!uBase || seenBases.has(uBase) || uBase === cleanCurrentLive) return;
+          if (!uBase || shownCandidateUrlsRef.current.has(uBase) || uBase === cleanCurrentLive) return;
           if (isSyntheticSpecCardOrPlaceholder(cand)) return;
-          seenBases.add(uBase);
-          mergedList.push(cand);
+          shownCandidateUrlsRef.current.add(uBase);
+          freshBatch.push(cand);
+          if (isAlibabaCandidate(cand) && !shownAlibabaUrlsRef.current.has(uBase)) {
+            shownAlibabaUrlsRef.current.add(uBase);
+            newlyFoundAlibaba.push({ ...cand, sourceDomain: 'alibaba.com' });
+          }
         };
 
-        // Interleave instant local server photos and live web/Wikimedia photos so top cards load in 0ms while web photos appear right alongside
-        const topInstant = instantLocal.slice(0, 10);
-        for (const c of topInstant) pushUniqueCand(c);
-        for (const c of rawList) pushUniqueCand(c);
-        for (const c of instantLocal.slice(10)) pushUniqueCand(c);
-
-        for (const cand of mergedList.slice(0, 30)) {
-          const uBase = String(cand?.url || '').split('?')[0].split('#')[0];
-          if (uBase) shownCandidateUrlsRef.current.add(uBase);
+        if (!append) {
+          for (const c of instantLocal.slice(0, 8)) pushUniqueCand(c);
+          for (const c of rawList) pushUniqueCand(c);
+          for (const c of instantLocal.slice(8)) pushUniqueCand(c);
+          if (freshBatch.length > 0) {
+            setCandidates(freshBatch);
+          }
+        } else {
+          for (const c of rawList) pushUniqueCand(c);
+          if (freshBatch.length > 0) {
+            setCandidates(prev => [...prev, ...freshBatch]);
+          } else if (pageForAttempt >= 12) {
+            setHasMoreAll(false);
+          }
         }
 
-        if (mergedList.length > 0) {
-          setCandidates(mergedList.slice(0, 60));
+        if (newlyFoundAlibaba.length > 0) {
+          setAlibabaCandidates(prev => {
+            const seenExisting = new Set(prev.map(x => String(x.url || '').split('?')[0]));
+            const add = newlyFoundAlibaba.filter(x => !seenExisting.has(String(x.url || '').split('?')[0]));
+            return add.length > 0 ? [...prev, ...add] : prev;
+          });
         }
       } catch {
-        if (seq === activeSearchSeqRef.current && instantLocal.length === 0) {
+        if (!append && seq === activeSearchSeqRef.current && instantLocal.length === 0) {
           setCandidates([]);
         }
       } finally {
         if (seq === activeSearchSeqRef.current) {
           setIsLoadingCandidates(false);
+          setIsLoadingMoreAll(false);
         }
       }
     },
@@ -302,14 +441,65 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       product.description,
       siteLocationLabel,
       liveUrl,
-      localSearchPool
+      localSearchPool,
+      loadAlibabaCandidates,
+      isAlibabaCandidate
     ]
   );
 
   useEffect(() => {
-    void loadCandidates(product.title, false);
+    void loadCandidates(product.title, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id, product.title]);
+
+  // Endless scroll observer: automatically loads the next page of photos as the user scrolls toward the bottom
+  useEffect(() => {
+    const sentinel = endlessSentinelRef.current;
+    const scrollRoot = modalScrollBodyRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        const hit = entries.some(e => e.isIntersecting);
+        if (!hit) return;
+
+        if (pickerTab === 'ALIBABA') {
+          if (!isLoadingAlibaba && !isLoadingMoreAlibaba && hasMoreAlibaba && alibabaCandidates.length > 0) {
+            void loadAlibabaCandidates(activeQueryRef.current, { append: true, forceRefresh: true });
+          }
+        } else if (pickerTab === 'CANDIDATES') {
+          if (!isLoadingCandidates && !isLoadingMoreAll && hasMoreAll && candidates.length > 0) {
+            void loadCandidates(activeQueryRef.current, true, true);
+          }
+        } else if (pickerTab === 'MEDIA_LIBRARY') {
+          if (libraryVisibleCount < filteredLibraryItems.length) {
+            setLibraryVisibleCount(prev => Math.min(filteredLibraryItems.length, prev + 40));
+          }
+        }
+      },
+      {
+        root: scrollRoot,
+        rootMargin: '280px 0px'
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    pickerTab,
+    isLoadingAlibaba,
+    isLoadingMoreAlibaba,
+    hasMoreAlibaba,
+    alibabaCandidates.length,
+    isLoadingCandidates,
+    isLoadingMoreAll,
+    hasMoreAll,
+    candidates.length,
+    libraryVisibleCount,
+    filteredLibraryItems.length,
+    loadAlibabaCandidates,
+    loadCandidates
+  ]);
 
   const replaceViaWholeSiteEndpoint = async (source: { file?: File; imageUrl?: string }) => {
     return replaceSiteImage({
@@ -670,7 +860,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         </div>
 
         {/* Body */}
-        <div className="p-5 overflow-y-auto space-y-5">
+        <div ref={modalScrollBodyRef} className="p-5 overflow-y-auto space-y-5">
           {(status === 'DUPLICATE' || status === 'NEEDS_FIX' || skippedReason) && (
             <div
               className={`px-3.5 py-2.5 rounded-xl border text-xs space-y-1.5 ${
@@ -935,10 +1125,10 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             )}
           </div>
 
-          {/* Visual Search Candidate Picker & Server Media Library Picker */}
+          {/* Visual Search Candidate Picker, Dedicated Alibaba Section & Server Media Library Picker */}
           <div className="space-y-3 pt-3 border-t border-slate-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 self-start">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 self-start">
                 <button
                   type="button"
                   onClick={() => setPickerTab('CANDIDATES')}
@@ -948,7 +1138,23 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Verified Photo Search ({candidates.length})
+                  All Photos ({candidates.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickerTab('ALIBABA');
+                    if (alibabaCandidates.length === 0 && !isLoadingAlibaba) {
+                      void loadAlibabaCandidates(searchQuery || product.title, { append: false, forceRefresh: true });
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-md text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+                    pickerTab === 'ALIBABA'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : 'text-orange-700 hover:bg-orange-50'
+                  }`}
+                >
+                  <span>Alibaba Images ({alibabaCandidates.length})</span>
                 </button>
                 <button
                   type="button"
@@ -960,16 +1166,21 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                   }`}
                 >
                   <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Server Media Library ({mediaLibraryItems.length})</span>
+                  <span>Server Library ({mediaLibraryItems.length})</span>
                 </button>
               </div>
 
-              {pickerTab === 'CANDIDATES' ? (
+              {pickerTab !== 'MEDIA_LIBRARY' ? (
                 <form
-                  className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:max-w-md"
+                  className="flex items-center gap-2 w-full lg:w-auto flex-1 lg:max-w-md"
                   onSubmit={e => {
                     e.preventDefault();
-                    void loadCandidates(searchQuery, true);
+                    if (pickerTab === 'ALIBABA') {
+                      activeQueryRef.current = searchQuery.trim();
+                      void loadAlibabaCandidates(searchQuery, { append: false, forceRefresh: true });
+                    } else {
+                      void loadCandidates(searchQuery, true, false);
+                    }
                   }}
                 >
                   <div className="relative flex-1">
@@ -978,26 +1189,41 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                       type="text"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="Search full product heading..."
+                      placeholder={
+                        pickerTab === 'ALIBABA'
+                          ? 'Search Alibaba product photos (endless scroll)...'
+                          : 'Search Alibaba & Web photos (endless scroll)...'
+                      }
                       className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <button
                     type="submit"
-                    disabled={isLoadingCandidates}
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
+                    disabled={pickerTab === 'ALIBABA' ? isLoadingAlibaba : isLoadingCandidates}
+                    className={`px-3 py-1.5 rounded-lg text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50 ${
+                      pickerTab === 'ALIBABA'
+                        ? 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-slate-900 hover:bg-slate-800'
+                    }`}
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCandidates ? 'animate-spin' : ''}`} />
-                    <span>Search</span>
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${
+                        (pickerTab === 'ALIBABA' ? isLoadingAlibaba : isLoadingCandidates) ? 'animate-spin' : ''
+                      }`}
+                    />
+                    <span>{pickerTab === 'ALIBABA' ? 'Search Alibaba' : 'Search'}</span>
                   </button>
                 </form>
               ) : (
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full lg:w-64">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={libraryFilter}
-                    onChange={e => setLibraryFilter(e.target.value)}
+                    onChange={e => {
+                      setLibraryFilter(e.target.value);
+                      setLibraryVisibleCount(40);
+                    }}
                     placeholder="Filter server uploads..."
                     className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500"
                   />
@@ -1005,7 +1231,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
               )}
             </div>
 
-            {pickerTab === 'CANDIDATES' && headingSearchQueries.length > 0 && (
+            {pickerTab !== 'MEDIA_LIBRARY' && headingSearchQueries.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-semibold text-slate-500 mr-1">Heading queries:</span>
                 {headingSearchQueries.map((hq, idx) => {
@@ -1014,14 +1240,21 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                     <button
                       key={`${hq}-${idx}`}
                       type="button"
-                      disabled={isLoadingCandidates}
+                      disabled={pickerTab === 'ALIBABA' ? isLoadingAlibaba : isLoadingCandidates}
                       onClick={() => {
                         setSearchQuery(hq);
-                        void loadCandidates(hq, true);
+                        activeQueryRef.current = hq;
+                        if (pickerTab === 'ALIBABA') {
+                          void loadAlibabaCandidates(hq, { append: false, forceRefresh: true });
+                        } else {
+                          void loadCandidates(hq, true, false);
+                        }
                       }}
                       className={`px-2 py-0.5 rounded-md border text-[11px] font-medium transition-colors cursor-pointer max-w-full truncate ${
                         isActive
-                          ? 'bg-[#0F294D] text-white border-[#0F294D]'
+                          ? pickerTab === 'ALIBABA'
+                            ? 'bg-orange-600 text-white border-orange-600'
+                            : 'bg-[#0F294D] text-white border-[#0F294D]'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                       }`}
                       title={`Search photos for: ${hq}`}
@@ -1033,29 +1266,320 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
               </div>
             )}
 
-            {pickerTab === 'CANDIDATES' ? (
-              isLoadingCandidates && candidates.length === 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
-                    <div key={i} className="aspect-4/3 rounded-lg bg-slate-100 animate-pulse border border-slate-200" />
-                  ))}
+            {pickerTab === 'ALIBABA' ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-xs text-orange-900">
+                  <span className="font-semibold">
+                    Alibaba Wholesale Product Images ({alibabaCandidates.length} loaded — scroll down for endless more)
+                  </span>
+                  <button
+                    type="button"
+                    disabled={isLoadingAlibaba || isLoadingMoreAlibaba}
+                    onClick={() => void loadAlibabaCandidates(searchQuery || product.title, { append: true, forceRefresh: true })}
+                    className="px-2.5 py-1 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-[11px] font-bold cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoadingMoreAlibaba ? 'Loading More...' : '+ Load More Alibaba'}
+                  </button>
                 </div>
-              ) : candidates.length === 0 ? (
-                <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
-                  No matching candidates found for this query. Try editing the search words above or click <strong>Manual Upload</strong>.
+
+                {isLoadingAlibaba && alibabaCandidates.length === 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                      <div key={i} className="aspect-4/3 rounded-lg bg-orange-50 animate-pulse border border-orange-200" />
+                    ))}
+                  </div>
+                ) : alibabaCandidates.length === 0 ? (
+                  <div className="text-xs text-slate-600 bg-orange-50/50 border border-orange-200 rounded-xl p-4 text-center space-y-2">
+                    <div>No Alibaba photos matched "{searchQuery}". Try shorter product keywords (e.g. 2–3 core words) above.</div>
+                    <button
+                      type="button"
+                      onClick={() => void loadAlibabaCandidates(headingSearchQueries[headingSearchQueries.length - 1] || searchQuery, { append: false, forceRefresh: true })}
+                      className="px-3 py-1.5 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold cursor-pointer"
+                    >
+                      Retry with Short Keywords
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {alibabaCandidates.map((cand, idx) => {
+                      const isCurrent = cand.url.split('?')[0] === liveUrl.split('?')[0];
+                      const initialThumb = cand.thumbnailUrl || cand.url;
+                      return (
+                        <button
+                          key={`ali-${cand.url}-${idx}`}
+                          type="button"
+                          disabled={isApplying || isUploading}
+                          onClick={() => void handlePickCandidate(cand.url)}
+                          className={`group relative rounded-lg overflow-hidden border text-left transition-all cursor-pointer ${
+                            isCurrent
+                              ? 'border-emerald-600 ring-2 ring-emerald-500/30'
+                              : 'border-orange-200 hover:border-orange-500 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="aspect-4/3 bg-slate-100 overflow-hidden">
+                            <img
+                              src={initialThumb}
+                              alt={cand.title || product.title}
+                              referrerPolicy="no-referrer"
+                              loading={idx < 15 ? 'eager' : 'lazy'}
+                              decoding="async"
+                              onError={e => {
+                                const imgEl = e.currentTarget;
+                                const step = imgEl.getAttribute('data-fallback-step') || '0';
+                                if (step === '0' && cand.url && cand.url !== initialThumb) {
+                                  imgEl.setAttribute('data-fallback-step', '1');
+                                  imgEl.src = cand.url;
+                                } else if ((step === '0' || step === '1') && /^https?:\/\//i.test(cand.url)) {
+                                  imgEl.setAttribute('data-fallback-step', '2');
+                                  imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                                } else if (step === '2' && /^https?:\/\//i.test(cand.url)) {
+                                  imgEl.setAttribute('data-fallback-step', '3');
+                                  imgEl.src = `/api.php?action=proxy_image&url=${encodeURIComponent(cand.url)}`;
+                                } else {
+                                  markBrokenExternalImageUrl(cand.url);
+                                  setAlibabaCandidates(prev => prev.filter(item => item.url !== cand.url));
+                                }
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          </div>
+                          <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
+                            <span className="truncate flex items-center gap-1">
+                              <span>#{idx + 1}</span>
+                              <span className="text-orange-600 font-bold">Alibaba</span>
+                            </span>
+                            {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Endless Scroll Sentinel & Load More Footer for Alibaba */}
+                <div ref={endlessSentinelRef} className="pt-2 flex items-center justify-center">
+                  {isLoadingMoreAlibaba ? (
+                    <div className="text-xs font-semibold text-orange-700 inline-flex items-center gap-2 py-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Fetching more Alibaba product photos...</span>
+                    </div>
+                  ) : hasMoreAlibaba && alibabaCandidates.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void loadAlibabaCandidates(activeQueryRef.current, { append: true, forceRefresh: true })}
+                      className="px-4 py-1.5 rounded-lg border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-800 text-xs font-bold cursor-pointer"
+                    >
+                      Load More Alibaba Images
+                    </button>
+                  ) : null}
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {candidates.slice(0, 60).map((cand, idx) => {
-                    const isCurrent =
-                      cand.url.split('?')[0] === liveUrl.split('?')[0];
-                    const initialThumb = cand.thumbnailUrl || cand.url;
+              </div>
+            ) : pickerTab === 'CANDIDATES' ? (
+              <div className="space-y-4">
+                {/* Separate Highlighted Alibaba Images Strip right inside All Photos view */}
+                <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-bold text-orange-900 flex items-center gap-2">
+                      <span>Alibaba Images</span>
+                      <span className="text-[11px] font-semibold text-orange-700">
+                        ({isLoadingAlibaba && alibabaCandidates.length === 0 ? 'fetching...' : `${alibabaCandidates.length} found`})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPickerTab('ALIBABA')}
+                      className="text-[11px] font-bold text-orange-700 hover:text-orange-900 underline cursor-pointer"
+                    >
+                      Open Endless Alibaba Section ({alibabaCandidates.length}+) →
+                    </button>
+                  </div>
+
+                  {isLoadingAlibaba && alibabaCandidates.length === 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <div key={i} className="aspect-4/3 rounded-lg bg-orange-100/70 animate-pulse border border-orange-200" />
+                      ))}
+                    </div>
+                  ) : alibabaCandidates.length === 0 ? (
+                    <div className="text-[11px] text-orange-800/80">
+                      No direct Alibaba photos for this exact phrase yet — click <strong>Open Endless Alibaba Section</strong> or try shorter keywords.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      {alibabaCandidates.slice(0, 10).map((cand, idx) => {
+                        const isCurrent = cand.url.split('?')[0] === liveUrl.split('?')[0];
+                        const initialThumb = cand.thumbnailUrl || cand.url;
+                        return (
+                          <button
+                            key={`ali-strip-${cand.url}-${idx}`}
+                            type="button"
+                            disabled={isApplying || isUploading}
+                            onClick={() => void handlePickCandidate(cand.url)}
+                            className={`group relative rounded-lg overflow-hidden border text-left transition-all cursor-pointer bg-white ${
+                              isCurrent
+                                ? 'border-emerald-600 ring-2 ring-emerald-500/30'
+                                : 'border-orange-200 hover:border-orange-500 hover:shadow-md'
+                            }`}
+                          >
+                            <div className="aspect-4/3 bg-slate-100 overflow-hidden">
+                              <img
+                                src={initialThumb}
+                                alt={cand.title || product.title}
+                                referrerPolicy="no-referrer"
+                                loading="eager"
+                                decoding="async"
+                                onError={e => {
+                                  const imgEl = e.currentTarget;
+                                  const step = imgEl.getAttribute('data-fallback-step') || '0';
+                                  if (step === '0' && cand.url && cand.url !== initialThumb) {
+                                    imgEl.setAttribute('data-fallback-step', '1');
+                                    imgEl.src = cand.url;
+                                  } else if ((step === '0' || step === '1') && /^https?:\/\//i.test(cand.url)) {
+                                    imgEl.setAttribute('data-fallback-step', '2');
+                                    imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                                  } else if (step === '2' && /^https?:\/\//i.test(cand.url)) {
+                                    imgEl.setAttribute('data-fallback-step', '3');
+                                    imgEl.src = `/api.php?action=proxy_image&url=${encodeURIComponent(cand.url)}`;
+                                  } else {
+                                    markBrokenExternalImageUrl(cand.url);
+                                    setAlibabaCandidates(prev => prev.filter(item => item.url !== cand.url));
+                                  }
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            </div>
+                            <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
+                              <span className="text-orange-600 font-bold truncate">Alibaba #{idx + 1}</span>
+                              {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* All Web & Catalog Photos (Endless Scroll) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Web &amp; Catalog Photos ({candidates.length} loaded — scroll down for endless more)</span>
+                    <button
+                      type="button"
+                      disabled={isLoadingCandidates || isLoadingMoreAll}
+                      onClick={() => void loadCandidates(activeQueryRef.current, true, true)}
+                      className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      {isLoadingMoreAll ? 'Loading More...' : '+ Load More Photos'}
+                    </button>
+                  </div>
+
+                  {isLoadingCandidates && candidates.length === 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                        <div key={i} className="aspect-4/3 rounded-lg bg-slate-100 animate-pulse border border-slate-200" />
+                      ))}
+                    </div>
+                  ) : candidates.length === 0 ? (
+                    <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                      No matching candidates found for this query. Try editing the search words above or click <strong>Manual Upload</strong>.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                      {candidates.map((cand, idx) => {
+                        const isCurrent =
+                          cand.url.split('?')[0] === liveUrl.split('?')[0];
+                        const initialThumb = cand.thumbnailUrl || cand.url;
+                        return (
+                          <button
+                            key={`${cand.url}-${idx}`}
+                            type="button"
+                            disabled={isApplying || isUploading}
+                            onClick={() => void handlePickCandidate(cand.url)}
+                            className={`group relative rounded-lg overflow-hidden border text-left transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'border-emerald-600 ring-2 ring-emerald-500/30'
+                                : 'border-slate-200 hover:border-blue-600 hover:shadow-md'
+                            }`}
+                          >
+                            <div className="aspect-4/3 bg-slate-100 overflow-hidden">
+                              <img
+                                src={initialThumb}
+                                alt={cand.title || product.title}
+                                referrerPolicy="no-referrer"
+                                loading={idx < 20 ? 'eager' : 'lazy'}
+                                decoding="async"
+                                onError={e => {
+                                  const imgEl = e.currentTarget;
+                                  const step = imgEl.getAttribute('data-fallback-step') || '0';
+                                  if (step === '0' && cand.url && cand.url !== initialThumb) {
+                                    imgEl.setAttribute('data-fallback-step', '1');
+                                    imgEl.src = cand.url;
+                                  } else if ((step === '0' || step === '1') && /^https?:\/\//i.test(cand.url)) {
+                                    imgEl.setAttribute('data-fallback-step', '2');
+                                    imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                                  } else if (step === '2' && /^https?:\/\//i.test(cand.url)) {
+                                    imgEl.setAttribute('data-fallback-step', '3');
+                                    imgEl.src = `/api.php?action=proxy_image&url=${encodeURIComponent(cand.url)}`;
+                                  } else {
+                                    markBrokenExternalImageUrl(cand.url);
+                                    setCandidates(prev => prev.filter(item => item.url !== cand.url));
+                                  }
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            </div>
+                            <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
+                              <span className="truncate flex items-center gap-1">
+                                <span>#{idx + 1}</span>
+                                {isAlibabaCandidate(cand) ? (
+                                  <span className="text-orange-600 font-bold">Alibaba</span>
+                                ) : (
+                                  <span>· {cand.sourceDomain || 'Google/Web'}</span>
+                                )}
+                              </span>
+                              {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Endless Scroll Sentinel & Load More Footer */}
+                  <div ref={endlessSentinelRef} className="pt-2 flex items-center justify-center">
+                    {isLoadingMoreAll ? (
+                      <div className="text-xs font-semibold text-slate-600 inline-flex items-center gap-2 py-2">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Loading more photos...</span>
+                      </div>
+                    ) : hasMoreAll && candidates.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => void loadCandidates(activeQueryRef.current, true, true)}
+                        className="px-4 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold cursor-pointer"
+                      >
+                        Load More Photos
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : filteredLibraryItems.length === 0 ? (
+              <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                No uploaded files in the server media library match your filter.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {filteredLibraryItems.slice(0, libraryVisibleCount).map(item => {
+                    const cleanU = item.url.split('?')[0];
+                    const isCurrent = cleanU === liveUrl.split('?')[0];
                     return (
                       <button
-                        key={`${cand.url}-${idx}`}
+                        key={item.id || item.url}
                         type="button"
                         disabled={isApplying || isUploading}
-                        onClick={() => void handlePickCandidate(cand.url)}
+                        onClick={() => void handlePickCandidate(cleanU)}
                         className={`group relative rounded-lg overflow-hidden border text-left transition-all cursor-pointer ${
                           isCurrent
                             ? 'border-emerald-600 ring-2 ring-emerald-500/30'
@@ -1064,84 +1588,31 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                       >
                         <div className="aspect-4/3 bg-slate-100 overflow-hidden">
                           <img
-                            src={initialThumb}
-                            alt={cand.title || product.title}
-                            referrerPolicy="no-referrer"
-                            loading={idx < 20 ? 'eager' : 'lazy'}
-                            decoding="async"
-                            onError={e => {
-                              const imgEl = e.currentTarget;
-                              const step = imgEl.getAttribute('data-fallback-step') || '0';
-                              if (step === '0' && cand.url && cand.url !== initialThumb) {
-                                imgEl.setAttribute('data-fallback-step', '1');
-                                imgEl.src = cand.url;
-                              } else if ((step === '0' || step === '1') && /^https?:\/\//i.test(cand.url)) {
-                                imgEl.setAttribute('data-fallback-step', '2');
-                                imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
-                              } else if (step === '2' && /^https?:\/\//i.test(cand.url)) {
-                                imgEl.setAttribute('data-fallback-step', '3');
-                                imgEl.src = `/api.php?action=proxy_image&url=${encodeURIComponent(cand.url)}`;
-                              } else {
-                                markBrokenExternalImageUrl(cand.url);
-                                setCandidates(prev => prev.filter(item => item.url !== cand.url));
-                              }
-                            }}
+                            src={cleanU}
+                            alt={item.name || 'Uploaded image'}
+                            loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         </div>
                         <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
-                          <span className="truncate flex items-center gap-1">
-                            <span>#{idx + 1}</span>
-                            {(String(cand.sourceDomain || '').toLowerCase().includes('alibaba') ||
-                              String(cand.url || '').toLowerCase().includes('alicdn.com')) ? (
-                              <span className="text-orange-600 font-bold">Alibaba</span>
-                            ) : (
-                              <span>· {cand.sourceDomain || 'Google/Web'}</span>
-                            )}
-                          </span>
+                          <span className="truncate">{item.name || cleanU.split('/').pop()}</span>
                           {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
                         </div>
                       </button>
                     );
                   })}
                 </div>
-              )
-            ) : filteredLibraryItems.length === 0 ? (
-              <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
-                No uploaded files in the server media library match your filter.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-h-64 overflow-y-auto pr-1">
-                {filteredLibraryItems.slice(0, 40).map(item => {
-                  const cleanU = item.url.split('?')[0];
-                  const isCurrent = cleanU === liveUrl.split('?')[0];
-                  return (
+                <div ref={endlessSentinelRef} className="pt-1 flex items-center justify-center">
+                  {libraryVisibleCount < filteredLibraryItems.length && (
                     <button
-                      key={item.id || item.url}
                       type="button"
-                      disabled={isApplying || isUploading}
-                      onClick={() => void handlePickCandidate(cleanU)}
-                      className={`group relative rounded-lg overflow-hidden border text-left transition-all cursor-pointer ${
-                        isCurrent
-                          ? 'border-emerald-600 ring-2 ring-emerald-500/30'
-                          : 'border-slate-200 hover:border-blue-600 hover:shadow-md'
-                      }`}
+                      onClick={() => setLibraryVisibleCount(prev => Math.min(filteredLibraryItems.length, prev + 40))}
+                      className="px-4 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold cursor-pointer"
                     >
-                      <div className="aspect-4/3 bg-slate-100 overflow-hidden">
-                        <img
-                          src={cleanU}
-                          alt={item.name || 'Uploaded image'}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                      <div className="px-2 py-1 bg-white text-[10px] font-semibold text-slate-700 truncate flex items-center justify-between gap-1">
-                        <span className="truncate">{item.name || cleanU.split('/').pop()}</span>
-                        {isCurrent && <Check className="w-3 h-3 text-emerald-600 shrink-0" />}
-                      </div>
+                      Load More Server Uploads ({libraryVisibleCount} / {filteredLibraryItems.length})
                     </button>
-                  );
-                })}
+                  )}
+                </div>
               </div>
             )}
           </div>

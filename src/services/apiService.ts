@@ -93,13 +93,19 @@ export function markProductIdsDeleted(ids: string[]): void {
 
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      const rawCustom = localStorage.getItem('trade_heaven_custom_products');
-      if (rawCustom) {
-        const customList: Product[] = JSON.parse(rawCustom);
-        if (Array.isArray(customList)) {
-          const removeSet = new Set(cleanIds);
-          const filtered = customList.filter(p => p && !removeSet.has(String(p.id)));
-          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(filtered));
+      const removeSet = getDeletedProductIdsSet();
+      for (const storeKey of ['trade_heaven_custom_products', 'th_products_store', 'trade_heaven_v1_products_v7']) {
+        const rawList = localStorage.getItem(storeKey);
+        if (!rawList) continue;
+        const parsedList: Product[] = JSON.parse(rawList);
+        if (Array.isArray(parsedList)) {
+          const filtered = parsedList.filter(p => {
+            if (!p?.id) return false;
+            const pid = String(p.id).trim();
+            const stripped = pid.replace(/^prod-db-/i, '');
+            return !removeSet.has(pid) && !removeSet.has(stripped) && !removeSet.has(`prod-db-${stripped}`);
+          });
+          localStorage.setItem(storeKey, JSON.stringify(filtered));
         }
       }
     }
@@ -131,24 +137,22 @@ export function unmarkProductIdDeleted(id: string): void {
 }
 
 export function syncDeletedProductIdsFromServer(serverDeletedIds: string[]): void {
-  const cleanIds = Array.from(
-    new Set(
-      (serverDeletedIds || [])
-        .map(id => String(id || '').trim())
-        .filter(Boolean)
-    )
-  );
+  const existingSet = getDeletedProductIdsSet();
   const winSet = getWindowDeletedSet();
-  winSet.clear();
-  cleanIds.forEach(id => {
+  for (const id of existingSet) {
+    winSet.add(id);
+  }
+  for (const rawId of serverDeletedIds || []) {
+    const id = String(rawId || '').trim();
+    if (!id) continue;
     winSet.add(id);
     if (id.startsWith('prod-db-')) {
       winSet.add(id.replace('prod-db-', ''));
     }
-  });
+  }
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(DELETED_PRODUCT_IDS_KEY, JSON.stringify(cleanIds));
+      localStorage.setItem(DELETED_PRODUCT_IDS_KEY, JSON.stringify(Array.from(winSet)));
     }
   } catch {}
 }
@@ -224,26 +228,24 @@ export function markRfqIdsDeleted(ids: string[]): void {
 }
 
 export function syncDeletedRfqIdsFromServer(serverDeletedIds: string[]): void {
-  const cleanIds = Array.from(
-    new Set(
-      (serverDeletedIds || [])
-        .map(id => String(id || '').trim())
-        .filter(Boolean)
-    )
-  );
+  const existingSet = getDeletedRfqIdsSet();
   const winSet = getWindowDeletedRfqSet();
-  winSet.clear();
-  cleanIds.forEach(id => {
+  for (const id of existingSet) {
+    winSet.add(id);
+  }
+  for (const rawId of serverDeletedIds || []) {
+    const id = String(rawId || '').trim();
+    if (!id) continue;
     winSet.add(id);
     const stripped = id.replace(/^rfq-/i, '');
     if (stripped) {
       winSet.add(stripped);
       winSet.add(`rfq-${stripped}`);
     }
-  });
+  }
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(DELETED_RFQ_IDS_KEY, JSON.stringify(cleanIds));
+      localStorage.setItem(DELETED_RFQ_IDS_KEY, JSON.stringify(Array.from(winSet)));
     }
   } catch {}
 }

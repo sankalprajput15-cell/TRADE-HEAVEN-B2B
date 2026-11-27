@@ -276,15 +276,38 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     try {
       if (forceSync) {
         await Promise.allSettled([
-          productImageManagerService.syncFromServer(true, true, {
+          productImageManagerService.syncFromServer(true, false, {
             bypassCooldown: true,
             emitEvenIfUnchanged: true
           }),
           refreshFromServer()
         ]);
       } else {
-        await productImageManagerService.syncFromServer(true, true).catch(() => {});
+        await productImageManagerService.syncFromServer(true, false, {
+          bypassCooldown: true,
+          emitEvenIfUnchanged: true
+        }).catch(() => {});
       }
+      // Clear stale broken-thumbnail marks after authoritative server overrides sync in
+      setBrokenThumbUrls({});
+
+      const fetchDeletedIds = async () => {
+        try {
+          const r = await fetch(`/api/v1/admin/site-items/deleted-ids?_t=${Date.now()}`, { cache: 'no-store' });
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            if (j?.success) return j;
+          }
+        } catch {}
+        try {
+          const r2 = await fetch(`/api.php?action=site_items_deleted_ids&_t=${Date.now()}`, { cache: 'no-store' });
+          if (r2.ok) {
+            const j2 = await r2.json().catch(() => null);
+            if (j2?.success) return j2;
+          }
+        } catch {}
+        return null;
+      };
 
       const [prodRes, rfqRes, snapRes, delRes] = await Promise.allSettled([
         api.getProducts(),
@@ -292,9 +315,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         fetch(`/data/fullCatalogSnapshot.json?_t=${Date.now()}`, { cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
           .catch(() => null),
-        fetch(`/api/v1/admin/site-items/deleted-ids?_t=${Date.now()}`, { cache: 'no-store' })
-          .then(r => (r.ok ? r.json() : null))
-          .catch(() => null)
+        fetchDeletedIds()
       ]);
 
       if (delRes.status === 'fulfilled' && delRes.value?.success) {
@@ -433,7 +454,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
   // Build unified inventory across the ENTIRE website with exact live site locations
   const allItems = useMemo<UnifiedSiteImageItem[]>(() => {
-    const overrides = productImageManagerService.getState().overrides || {};
+    const imgState = productImageManagerService.getState();
+    const overrides = imgState.overrides || {};
+    const clearedImageIdsSet = new Set<string>(
+      Array.isArray(imgState.clearedImageIds) ? imgState.clearedImageIds : []
+    );
     const rawList: Array<Omit<UnifiedSiteImageItem, 'status' | 'statusDetail'>> = [];
     const seenIds = new Set<string>();
 
@@ -480,7 +505,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const id = String(slide?.id || `hero-slide-${idx + 1}`).trim();
       const ov = overrides[id];
       const base = cleanBaseUrl(slide?.image);
-      const current = cleanBaseUrl(ov?.primary || slide?.image);
+      const current = cleanBaseUrl(ov?.primary || (clearedImageIdsSet.has(id) ? '' : slide?.image));
       const changedAtMs = parseUpdatedMs(ov, id);
       pushRaw({
         id,
@@ -528,7 +553,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         fieldUrl && (isGenericOrPlaceholderImageUrl(fieldUrl) || (slot.id !== 'site-brand-logo' && /tradeheaven_317b5f4c/i.test(fieldUrl)))
       );
       const current = cleanBaseUrl(
-        ov?.primary || (fieldIsStalePlaceholder ? '' : fieldUrl) || fieldUrl
+        ov?.primary || (clearedImageIdsSet.has(slot.id) ? '' : (fieldIsStalePlaceholder ? '' : fieldUrl) || fieldUrl)
       );
       const changedAtMs = parseUpdatedMs(ov, slot.id);
       pushRaw({
@@ -562,7 +587,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       const id = String(cat?.id || '').trim();
       if (!id) continue;
       const ov = overrides[id];
-      const current = cleanBaseUrl(ov?.primary || cat?.image);
+      const current = cleanBaseUrl(ov?.primary || (clearedImageIdsSet.has(id) ? '' : cat?.image));
       const changedAtMs = parseUpdatedMs(ov, id);
       pushRaw({
         id,
@@ -588,7 +613,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (!id) continue;
       const ov = overrides[id];
       const base = cleanBaseUrl(prod.images?.[0] || (prod as any).image);
-      const current = cleanBaseUrl(ov?.primary || base);
+      const current = cleanBaseUrl(ov?.primary || (clearedImageIdsSet.has(id) ? '' : base));
       const changedAtMs = parseUpdatedMs(ov, id);
       const onHomepage = topHomepageProductIds.has(id);
       pushRaw({
@@ -618,7 +643,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (!id) continue;
       const ov = overrides[id];
       const base = cleanBaseUrl((rfq as any).image || (rfq as any).images?.[0]);
-      const current = cleanBaseUrl(ov?.primary || base);
+      const current = cleanBaseUrl(ov?.primary || (clearedImageIdsSet.has(id) ? '' : base));
       const changedAtMs = parseUpdatedMs(ov, id);
       const rfqSpecs = [
         (rfq as any).specifications,
@@ -2150,16 +2175,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 : 'grid grid-cols-1 gap-2.5'
             }
           >
-            {pageItems.map(item => {
+            {pageItems.map((item, idx) => {
               const isSelected = Boolean(selectedIds[item.id]);
               const rowBusyLabel = busyRowIds[item.id];
               const isEditingUrl = urlEditor?.itemId === item.id;
               const isConfirmingDelete = deleteConfirmId === item.id;
-              const thumbSrc = item.currentUrl
-                ? item.currentUrl.startsWith('/assets/uploads/')
-                  ? `${optimizeImageUrl(item.currentUrl, { width: 200, isThumbnail: true })}&_v=${stateVersion}`
-                  : item.currentUrl
-                : '';
+              const thumbSrc = (() => {
+                if (!item.currentUrl) return '';
+                if (!item.currentUrl.startsWith('/assets/uploads/')) return item.currentUrl;
+                const optimized = optimizeImageUrl(item.currentUrl, { width: 200, isThumbnail: true });
+                if (item.changedAtMs > 0 && !optimized.includes('v=')) {
+                  return `${optimized}${optimized.includes('?') ? '&' : '?'}v=${item.changedAtMs}`;
+                }
+                return optimized;
+              })();
 
               const isBgQueued = bgSnapshot.active && bgQueuedSet.has(item.id);
               const isSkipped = Boolean(skippedItems[item.id]);
@@ -2270,8 +2299,20 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                             src={thumbSrc}
                             alt={item.title}
                             referrerPolicy="no-referrer"
-                            loading="lazy"
-                            onError={() => {
+                            loading={idx < 12 ? 'eager' : 'lazy'}
+                            decoding="async"
+                            onError={e => {
+                              const imgEl = e.currentTarget;
+                              const fallbackDirect = item.currentUrl.split('?')[0];
+                              if (
+                                fallbackDirect &&
+                                imgEl.dataset.retriedDirect !== '1' &&
+                                imgEl.getAttribute('src') !== fallbackDirect
+                              ) {
+                                imgEl.dataset.retriedDirect = '1';
+                                imgEl.src = fallbackDirect;
+                                return;
+                              }
                               setBrokenThumbUrls(prev =>
                                 prev[item.id] === item.currentUrl
                                   ? prev

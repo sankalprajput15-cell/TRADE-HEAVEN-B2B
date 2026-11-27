@@ -1,6 +1,7 @@
 export interface VisualProductImageCandidate {
   url: string;
   thumbnailUrl?: string;
+  sourcePageUrl?: string;
   title?: string;
   sourceDomain?: string;
   width?: number;
@@ -1153,6 +1154,7 @@ export async function fetchVisualProductImages(params: {
   shuffleOnly?: boolean;
   excludeUrls?: string[];
   searchPage?: number;
+  sourceFilter?: 'all' | 'alibaba';
 }): Promise<VisualProductSearchResponse> {
   hydrateSessionCacheFromLocalStorage();
 
@@ -1162,7 +1164,8 @@ export async function fetchVisualProductImages(params: {
   const productId = String(params.productId || '').trim();
   const category = String(params.category || '').trim();
   const specifications = String(params.specifications || '').trim();
-  const count = Math.max(20, Math.min(60, Number(params.count) || 48));
+  const sourceFilter: 'all' | 'alibaba' = params.sourceFilter === 'alibaba' ? 'alibaba' : 'all';
+  const count = Math.max(20, Math.min(80, Number(params.count) || 48));
   const searchPage = Math.max(0, Number(params.searchPage) || 0);
 
   if (productName.length < 2) {
@@ -1187,7 +1190,8 @@ export async function fetchVisualProductImages(params: {
     }
   }
 
-  const key = normalizeVisualQueryKey(productName, category);
+  const baseKey = normalizeVisualQueryKey(productName, category);
+  const key = sourceFilter === 'alibaba' ? `alibaba::${baseKey}` : baseKey;
   const attachedRegistry = buildClientAttachedRegistry(productId);
   const filterUnused = (list: VisualProductImageCandidate[]): VisualProductImageCandidate[] => {
     const seen = new Set<string>();
@@ -1256,7 +1260,7 @@ export async function fetchVisualProductImages(params: {
     }
   }
 
-  const inflightKey = `${key}::${productId || 'anon'}::p${searchPage}::ex${callerExcludeBases.size}::${params.forceRefresh ? 'fresh' : 'std'}`;
+  const inflightKey = `${key}::${productId || 'anon'}::${sourceFilter}::p${searchPage}::ex${callerExcludeBases.size}::${params.forceRefresh ? 'fresh' : 'std'}`;
   if (INFLIGHT_REQUESTS.has(inflightKey)) {
     return INFLIGHT_REQUESTS.get(inflightKey)!;
   }
@@ -1328,12 +1332,13 @@ export async function fetchVisualProductImages(params: {
           specifications,
           count,
           fast_mode: true,
-          force_refresh: Boolean(params.forceRefresh),
+          source_filter: sourceFilter,
+          force_refresh: Boolean(params.forceRefresh || searchPage > 0),
           search_page: searchPage,
           exclude_urls: mergedExcludeUrls
         };
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timer = controller ? setTimeout(() => controller.abort(), 4500) : null;
+        const timer = controller ? setTimeout(() => controller.abort(), sourceFilter === 'alibaba' ? 8000 : 6500) : null;
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -1353,6 +1358,13 @@ export async function fetchVisualProductImages(params: {
         const candidatePool = normalized.pool.filter(c => {
           const u = String(c?.url || '').trim();
           if (!u || isSyntheticSpecCardOrPlaceholder(c)) return false;
+          if (sourceFilter === 'alibaba') {
+            const dom = String(c?.sourceDomain || '').toLowerCase();
+            const low = u.toLowerCase();
+            if (!dom.includes('alibaba') && !low.includes('alicdn.com') && !low.includes('alibaba.com') && !low.includes('aliexpress.com')) {
+              return false;
+            }
+          }
           const base = u.split('?')[0].split('#')[0];
           if (dedupSeen.has(base) || callerExcludeBases.has(base)) return false;
           dedupSeen.add(base);
@@ -1369,12 +1381,14 @@ export async function fetchVisualProductImages(params: {
         );
         const strictUrls = new Set(strictPool.map(c => c.url));
         const cleanPool =
-          strictPool.length >= count
-            ? strictPool
-            : [
-                ...strictPool,
-                ...unusedFirst.filter(c => !strictUrls.has(c.url))
-              ];
+          sourceFilter === 'alibaba'
+            ? [...strictPool, ...unusedFirst.filter(c => !strictUrls.has(c.url))]
+            : strictPool.length >= count
+              ? strictPool
+              : [
+                  ...strictPool,
+                  ...unusedFirst.filter(c => !strictUrls.has(c.url))
+                ];
         if (cleanPool.length > 0) {
           const finalNorm: VisualProductSearchResponse = {
             ...normalized,
@@ -1385,8 +1399,10 @@ export async function fetchVisualProductImages(params: {
             images: cleanPool.slice(0, count),
             totalVerified: cleanPool.length
           };
-          SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
-          persistSessionCacheToLocalStorage();
+          if (searchPage === 0) {
+            SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
+            persistSessionCacheToLocalStorage();
+          }
           return { result: finalNorm, reachable: true };
         }
         return { result: null, reachable: true };
@@ -1408,7 +1424,9 @@ export async function fetchVisualProductImages(params: {
           }
           return null;
         })(),
-        fetchWikimediaCommonsCorsCandidates(queryChip, category, count).catch(() => [] as VisualProductImageCandidate[])
+        sourceFilter === 'alibaba' || searchPage > 0
+          ? Promise.resolve([] as VisualProductImageCandidate[])
+          : fetchWikimediaCommonsCorsCandidates(queryChip, category, count).catch(() => [] as VisualProductImageCandidate[])
       ]);
 
       const wikiClean = (wikiRaw || []).filter(
@@ -1421,22 +1439,27 @@ export async function fetchVisualProductImages(params: {
 
       if (backendAttempt && backendAttempt.images.length > 0) {
         const existingBases = new Set(backendAttempt.pool.map(c => c.url.split('?')[0].split('#')[0]));
-        const mergedPool = [
-          ...backendAttempt.pool,
-          ...wikiClean.filter(c => !existingBases.has(c.url.split('?')[0].split('#')[0]))
-        ];
+        const mergedPool =
+          sourceFilter === 'alibaba'
+            ? backendAttempt.pool
+            : [
+                ...backendAttempt.pool,
+                ...wikiClean.filter(c => !existingBases.has(c.url.split('?')[0].split('#')[0]))
+              ];
         const mergedResp: VisualProductSearchResponse = {
           ...backendAttempt,
           pool: mergedPool,
           images: mergedPool.slice(0, count),
           totalVerified: mergedPool.length
         };
-        SESSION_CACHE.set(key, { data: mergedResp, cachedAt: Date.now() });
-        persistSessionCacheToLocalStorage();
+        if (searchPage === 0) {
+          SESSION_CACHE.set(key, { data: mergedResp, cachedAt: Date.now() });
+          persistSessionCacheToLocalStorage();
+        }
         return mergedResp;
       }
 
-      if (wikiClean.length > 0) {
+      if (sourceFilter !== 'alibaba' && wikiClean.length > 0) {
         const wikiResp: VisualProductSearchResponse = {
           success: true,
           status: 'ok',
@@ -1446,34 +1469,38 @@ export async function fetchVisualProductImages(params: {
           images: wikiClean.slice(0, count),
           pool: wikiClean
         };
-        SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
-        persistSessionCacheToLocalStorage();
+        if (searchPage === 0) {
+          SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
+          persistSessionCacheToLocalStorage();
+        }
         return wikiResp;
       }
     }
 
-    // Fallback to server media library matches
-    for (const queryChip of activeQueries) {
-      try {
-        const serverMediaCandidates = (
-          await buildServerMediaLibraryCandidates(queryChip, category, count)
-        ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
-        if (serverMediaCandidates.length > 0) {
-          const fallbackResp: VisualProductSearchResponse = {
-            success: true,
-            status: 'ok',
-            provider: 'server_media_library_verified',
-            queryUsed: queryChip,
-            totalVerified: serverMediaCandidates.length,
-            images: serverMediaCandidates.slice(0, count),
-            pool: serverMediaCandidates
-          };
-          SESSION_CACHE.set(key, { data: fallbackResp, cachedAt: Date.now() });
-          persistSessionCacheToLocalStorage();
-          return fallbackResp;
+    // Fallback to server media library matches (only on page 0 and not in Alibaba-only mode)
+    if (sourceFilter !== 'alibaba' && searchPage === 0) {
+      for (const queryChip of activeQueries) {
+        try {
+          const serverMediaCandidates = (
+            await buildServerMediaLibraryCandidates(queryChip, category, count)
+          ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
+          if (serverMediaCandidates.length > 0) {
+            const fallbackResp: VisualProductSearchResponse = {
+              success: true,
+              status: 'ok',
+              provider: 'server_media_library_verified',
+              queryUsed: queryChip,
+              totalVerified: serverMediaCandidates.length,
+              images: serverMediaCandidates.slice(0, count),
+              pool: serverMediaCandidates
+            };
+            SESSION_CACHE.set(key, { data: fallbackResp, cachedAt: Date.now() });
+            persistSessionCacheToLocalStorage();
+            return fallbackResp;
+          }
+        } catch {
+          // continue
         }
-      } catch {
-        // continue
       }
     }
 

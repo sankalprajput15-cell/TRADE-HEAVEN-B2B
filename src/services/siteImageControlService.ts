@@ -555,15 +555,36 @@ export async function deleteSiteListingsPermanently(
     };
   }
 
-  const res = await fetch('/api/v1/admin/site-items/delete-listing', {
-    method: 'POST',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ items })
-  });
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.success) {
-    throw new Error(json?.message || `Failed to permanently delete listing(s) (HTTP ${res.status}).`);
+  let json: any = null;
+  let lastStatus = 0;
+  try {
+    const res = await fetch('/api/v1/admin/site-items/delete-listing', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ items })
+    });
+    lastStatus = res.status;
+    json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) {
+      json = null;
+    }
+  } catch {
+    json = null;
+  }
+
+  if (!json?.success) {
+    const res2 = await fetch('/api.php?action=site_items_delete_listing', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ items })
+    });
+    lastStatus = res2.status;
+    json = await res2.json().catch(() => null);
+    if (!res2.ok || !json?.success) {
+      throw new Error(json?.message || `Failed to permanently delete listing(s) (HTTP ${lastStatus || 500}).`);
+    }
   }
 
   // Clear local override entries for every deleted item immediately

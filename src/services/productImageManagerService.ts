@@ -71,6 +71,7 @@ export interface ProductImageSystemState {
   categoryOverrides: Record<string, string>;
   urlReplacements: Record<string, string>;
   mediaLibrary: MediaLibraryItem[];
+  clearedImageIds?: string[];
   deletedUrls?: string[];
 }
 
@@ -1323,13 +1324,27 @@ class ProductImageManagerService {
 
         const localOverrides = this.state.overrides || {};
         const srvOverrides = this.normalizeOverrideMap(srv.overrides || {});
-        const mergedOverrides: Record<string, ProductImageOverrideEntry> = {
-          ...DEFAULT_BUILTIN_OVERRIDES
-        };
+        const clearedSet = new Set<string>([
+          ...(Array.isArray((srv as any).clearedImageIds) ? (srv as any).clearedImageIds : []),
+          ...(Array.isArray(this.state.clearedImageIds) ? this.state.clearedImageIds : []),
+          ...Array.from(this.locallyDeletedIds)
+        ].map(x => String(x || '').trim()).filter(Boolean));
+        // If server explicitly has an active override for a key (and it wasn't just deleted locally), honor server
+        for (const pid of Object.keys(srvOverrides)) {
+          if (!this.locallyDeletedIds.has(pid)) {
+            clearedSet.delete(pid);
+          }
+        }
+        const mergedOverrides: Record<string, ProductImageOverrideEntry> = {};
+        for (const [bPid, bEntry] of Object.entries(DEFAULT_BUILTIN_OVERRIDES)) {
+          if (!clearedSet.has(bPid)) {
+            mergedOverrides[bPid] = bEntry;
+          }
+        }
 
         // Server overrides unconditionally supersede static DEFAULT_BUILTIN_OVERRIDES
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
-          if (this.locallyDeletedIds.has(pid)) continue;
+          if (this.locallyDeletedIds.has(pid) || clearedSet.has(pid)) continue;
           mergedOverrides[pid] = srvEntry;
         }
 
@@ -1338,7 +1353,7 @@ class ProductImageManagerService {
         // from ever hiding newly auto-fixed images saved on the server).
         const nowMsForMerge = Date.now();
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
-          if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
+          if (!localEntry?.primary || this.locallyDeletedIds.has(pid) || clearedSet.has(pid)) continue;
           const mutatedAt = this.localMutationTimes.get(pid) || 0;
           const recentlyMutatedInThisTab = mutatedAt > 0 && nowMsForMerge - mutatedAt < 30000;
           if (!recentlyMutatedInThisTab) continue;
@@ -1359,6 +1374,7 @@ class ProductImageManagerService {
         }
 
         this.state.overrides = mergedOverrides;
+        this.state.clearedImageIds = Array.from(clearedSet).slice(0, 5000);
         let activityTimestampsChanged = false;
         const nextActivityObj: Record<string, number> = {
           ...(this.state.productActivityTimestamps || {})
@@ -1509,6 +1525,9 @@ class ProductImageManagerService {
 
       const nowMs = Date.now();
       this.locallyDeletedIds.delete(cleanId);
+      if (Array.isArray(this.state.clearedImageIds) && this.state.clearedImageIds.includes(cleanId)) {
+        this.state.clearedImageIds = this.state.clearedImageIds.filter(x => x !== cleanId);
+      }
       this.localMutationTimes.set(cleanId, nowMs);
       const existing = this.state.overrides[cleanId];
       const existingPrimaryBase = existing?.primary ? normalizeProductAssetUrl(existing.primary).split('?')[0] : '';
@@ -2859,6 +2878,9 @@ class ProductImageManagerService {
       const cleanPrimary = this.withFreshCacheBuster(primaryUrl, versionTs);
       const cleanPrimaryBase = cleanPrimary.split('?')[0];
       this.locallyDeletedIds.delete(cleanId);
+      if (Array.isArray(this.state.clearedImageIds) && this.state.clearedImageIds.includes(cleanId)) {
+        this.state.clearedImageIds = this.state.clearedImageIds.filter(x => x !== cleanId);
+      }
       this.localMutationTimes.set(cleanId, versionTs);
 
       const existing = this.state.overrides[cleanId];
@@ -3401,6 +3423,10 @@ class ProductImageManagerService {
     try {
       const cleanId = productId.trim();
       this.locallyDeletedIds.add(cleanId);
+      const existingCleared = Array.isArray(this.state.clearedImageIds) ? this.state.clearedImageIds : [];
+      if (!existingCleared.includes(cleanId)) {
+        this.state.clearedImageIds = [cleanId, ...existingCleared].slice(0, 5000);
+      }
       delete this.state.overrides[cleanId];
       this.saveToLocalStorage({ productId: cleanId, action: 'reset_product_image' });
       this.notifyListeners();
@@ -3442,18 +3468,24 @@ class ProductImageManagerService {
     if (!Array.isArray(productIds) || productIds.length === 0) return;
     this.beginWrite();
     try {
+      const clearedSet = new Set<string>(Array.isArray(this.state.clearedImageIds) ? this.state.clearedImageIds : []);
       for (const pid of productIds) {
         if (pid) {
-          this.locallyDeletedIds.add(pid.trim());
-          delete this.state.overrides[pid.trim()];
+          const cleanPid = pid.trim();
+          this.locallyDeletedIds.add(cleanPid);
+          clearedSet.add(cleanPid);
+          delete this.state.overrides[cleanPid];
         }
       }
       for (const title of productTitles) {
         if (title) {
-          this.locallyDeletedIds.add(title.trim());
-          delete this.state.overrides[title.trim()];
+          const cleanTitle = title.trim();
+          this.locallyDeletedIds.add(cleanTitle);
+          clearedSet.add(cleanTitle);
+          delete this.state.overrides[cleanTitle];
         }
       }
+      this.state.clearedImageIds = Array.from(clearedSet).slice(0, 5000);
 
       this.saveToLocalStorage({ action: 'delete_bulk_associations', details: { productIds } });
       this.notifyListeners();
