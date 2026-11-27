@@ -16517,7 +16517,7 @@ function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
       return `/assets/uploads/${cur}`;
     }
   }
-  return `/assets/uploads/${fn}`;
+  return '';
 }
 
 function buildSlimPublicProductImageState(state: ProductImageSystemState) {
@@ -18570,6 +18570,78 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
       }
     },
     {
+      slotId: 'site-hero-bg',
+      getVal: () => String(contentPayload?.homepage?.heroBgImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        contentPayload.homepage.heroBgImage = v;
+      }
+    },
+    {
+      slotId: 'site-onboarding-banner',
+      getVal: () => String(contentPayload?.homepage?.onboardingBannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.homepage) contentPayload.homepage = {};
+        contentPayload.homepage.onboardingBannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-products-banner',
+      getVal: () => String(contentPayload?.productsDirectory?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.productsDirectory) contentPayload.productsDirectory = {};
+        contentPayload.productsDirectory.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-buyleads-banner',
+      getVal: () => String(contentPayload?.buyLeads?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.buyLeads) contentPayload.buyLeads = {};
+        contentPayload.buyLeads.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-suppliers-banner',
+      getVal: () => String(contentPayload?.suppliersDirectory?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.suppliersDirectory) contentPayload.suppliersDirectory = {};
+        contentPayload.suppliersDirectory.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-post-rfq-banner',
+      getVal: () => String(contentPayload?.postBuyingRequest?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.postBuyingRequest) contentPayload.postBuyingRequest = {};
+        contentPayload.postBuyingRequest.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-post-offer-banner',
+      getVal: () => String(contentPayload?.postSellOffer?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.postSellOffer) contentPayload.postSellOffer = {};
+        contentPayload.postSellOffer.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-membership-banner',
+      getVal: () => String(contentPayload?.membership?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.membership) contentPayload.membership = {};
+        contentPayload.membership.bannerImage = v;
+      }
+    },
+    {
+      slotId: 'site-escrow-banner',
+      getVal: () => String(contentPayload?.escrow?.bannerImage || ''),
+      setVal: (v: string) => {
+        if (!contentPayload.escrow) contentPayload.escrow = {};
+        contentPayload.escrow.bannerImage = v;
+      }
+    },
+    {
       slotId: 'site-app-download-banner',
       getVal: () => String(contentPayload?.homepage?.appBanner?.image || ''),
       setVal: (v: string) => {
@@ -18580,30 +18652,69 @@ function syncSiteContentCategoriesToImageOverrides(contentPayload: any) {
     }
   ];
 
+  let siteContentMutated = false;
   for (const slot of coreSiteSlotChecks) {
     const existing = serverProductImageState.overrides[slot.slotId];
     if (!existing?.primary) continue;
-    const existingPrimary = normalizeServerAssetUrl(existing.primary).split('?')[0];
-    if (existingPrimary.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(existingPrimary)) continue;
+    const resolvedExisting = resolvePublicPhysicalUploadUrl(existing.primary) || normalizeServerAssetUrl(existing.primary).split('?')[0];
+    if (!resolvedExisting) continue;
+    if (resolvedExisting.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(resolvedExisting)) continue;
     const rawCurrent = slot.getVal().trim();
     const cleanCurrent = rawCurrent ? normalizeServerAssetUrl(rawCurrent).split('?')[0] : '';
     const existingTs = Number(existing?.imageUpdatedAt || (existing?.updatedAt ? Date.parse(existing.updatedAt) : 0) || 0);
+    const isLogoMisusedAsBanner = slot.slotId !== 'site-brand-logo' && /tradeheaven_317b5f4c/i.test(cleanCurrent);
     if (
       !cleanCurrent ||
+      isGenericOrPlaceholderServerUrl(cleanCurrent) ||
+      isLogoMisusedAsBanner ||
       (cleanCurrent.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanCurrent)) ||
       isUrlBlockedForOverride(existing, cleanCurrent) ||
-      (existing.locked && existingPrimary !== cleanCurrent && existingTs > 0 && (payloadTs === 0 || existingTs >= payloadTs))
+      (existing.locked && resolvedExisting !== cleanCurrent && existingTs > 0 && (payloadTs === 0 || existingTs >= payloadTs))
     ) {
-      slot.setVal(existingPrimary);
+      if (cleanCurrent !== resolvedExisting) {
+        slot.setVal(resolvedExisting);
+        siteContentMutated = true;
+      }
+    }
+  }
+
+  // Replace stale vecteezy fallback on homepage banner columns if verified hero/banner overrides exist
+  const verifiedHeroBg = String(contentPayload?.homepage?.heroBgImage || '').trim();
+  if (verifiedHeroBg && !isGenericOrPlaceholderServerUrl(verifiedHeroBg)) {
+    if (isGenericOrPlaceholderServerUrl(String(contentPayload?.homepage?.bannerImageCol1 || ''))) {
+      contentPayload.homepage.bannerImageCol1 = verifiedHeroBg;
+      siteContentMutated = true;
+    }
+    const verifiedSuppliersBg = String(contentPayload?.suppliersDirectory?.bannerImage || verifiedHeroBg).trim();
+    if (isGenericOrPlaceholderServerUrl(String(contentPayload?.homepage?.bannerImageCol2 || ''))) {
+      contentPayload.homepage.bannerImageCol2 = verifiedSuppliersBg;
+      siteContentMutated = true;
+    }
+  }
+
+  // Prune stray legacy bracketed flat keys (e.g. "products[prod-ext2026-5-2]") from siteContent root
+  if (contentPayload && typeof contentPayload === 'object') {
+    for (const key of Object.keys(contentPayload)) {
+      if (key.includes('[') && key.includes(']')) {
+        delete contentPayload[key];
+        siteContentMutated = true;
+      }
     }
   }
 
   if (updated) {
     saveServerProductImageState();
   }
+  return siteContentMutated;
 }
 
 let serverSiteContent: any = loadServerSiteContentFromDisk();
+if (serverSiteContent && typeof serverSiteContent === 'object') {
+  const reconciledOnBoot = syncSiteContentCategoriesToImageOverrides(serverSiteContent);
+  if (reconciledOnBoot) {
+    saveServerSiteContentToDisk();
+  }
+}
 let serverAuthorizedUsers = [
   {
     id: 'perm-admin-001',
@@ -22850,8 +22961,12 @@ function normalizeFullProductHeading(rawName: string): string {
   if (!s) return '';
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
   s = s.replace(
-    /^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/gi,
+    /^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+(?:supply\s+)?contract|long[\s-]+term\s+(?:supply\s+)?contract|factory[\s-]+direct|prime\s+quality|verified\s+buyer|bulk\s+commercial|rfq|wanted)\b[\s:\-–—•]*/gi,
     ''
+  );
+  s = s.replace(
+    /\(\s*(?:verified\s+importer|urgent\s+turnkey\s+sourcing|turnkey\s+sourcing|annual\s+wholesale|bulk\s+wholesale|direct\s+importer|direct\s+buyer|spot\s+order|urgent\s+sourcing|verified\s+buyer)[^)]*\)/gi,
+    ' '
   );
   s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
   s = normalizeCompoundProductTerms(s);
@@ -22952,7 +23067,7 @@ const BLOCKED_IMAGE_DOMAINS = [
 ];
 
 const EXCLUDED_IMAGE_TERMS_REGEX =
-  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|map|maps|political|territory|boundary|geography|atlas|flag|coat[-_]?of[-_]?arms|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|spec[-_]?sheet|datasheet|data[-_]?sheet|details[-_]?card|detail[-_]?page|specification[-_]?sheet|price[-_]?list|quotation|invoice|certificate|msds|coa[-_]|test[-_]?report|comparison[-_]?chart|table[-_]?of|spec[-_]?card|text[-_]?card|flexpay|hsn\.com|qvc\.com|infomercial|steampowered|steamcommunity|verified[-_]?b2b[-_]?export[-_]?spec|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|map|maps|political|territory|boundary|geography|atlas|flag|coat[-_]?of[-_]?arms|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|nasa|solar_flare|sunspot|eclipse|astronomy|telescope|observatory|nebula|galaxy|spacecraft|soho_|sdo_|sunset|sunrise|mountain_valley|canyon|glacier|volcano|konark|sun_temple|cathedral|mosque|pagoda|monument|ruins|statue|sculpture|tate_modern|turbine_hall|ai_weiwei|exhibition|installation|museum|herbarium|botanical_plate|botanical_illustration|engraving|lithograph|etching|woodcut|watercolor|encyclopedia|cyclopedia|dictionary|book_page|page_\d|plate_\d|flora_of|biodiversity_heritage|bhl_|popular_science|illustrations_of|natural_history|us_navy|soldier|military|selfie|wedding|spec[-_]?sheet|datasheet|data[-_]?sheet|details[-_]?card|detail[-_]?page|specification[-_]?sheet|price[-_]?list|quotation|invoice|certificate|msds|coa[-_]|test[-_]?report|comparison[-_]?chart|table[-_]?of|spec[-_]?card|text[-_]?card|size[-_ ]?chart|size[-_ ]?guide|sizing[-_ ]?table|measurement[-_ ]?chart|how[-_ ]?to[-_ ]?measure|feature[-_ ]?diagram|company[-_ ]?profile|why[-_ ]?choose|workflow|timeline|checklist|graphic[-_ ]?banner|promo[-_ ]?poster|shipping[-_ ]?info|faq[-_ ]?table|flexpay|hsn\.com|qvc\.com|infomercial|steampowered|steamcommunity|verified[-_]?b2b[-_]?export[-_]?spec|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
 
 const RFQ_METADATA_NOISE_WORDS = new Set([
   'spec', 'specs', 'specification', 'specifications', 'required', 'requirement', 'requirements',
@@ -23010,7 +23125,9 @@ const PRODUCT_STOPWORDS = new Set([
   'heavy', 'duty', 'turnkey', 'configuration', 'config', 'solution', 'solutions', 'series',
   'edition', 'version', 'capacity', 'spec', 'specs', 'specification', 'specifications',
   'complete', 'professional', 'enterprise', 'advanced', 'modern', 'ultra', 'super', 'pro',
-  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'trade', 'heaven', 'tradeheaven'
+  'max', 'plus', 'type', 'class', 'model', 'system', 'systems', 'trade', 'heaven', 'tradeheaven',
+  'long', 'term', 'contract', 'importer', 'importers', 'buyer', 'buyers', 'sourcing', 'prime',
+  'annual', 'monthly', 'spot', 'trial'
 ]);
 
 const GENERIC_MODIFIER_WORDS = new Set([
@@ -23066,6 +23183,18 @@ function buildRealPhotoSubjectHints(productName: string, _category?: string): {
     return {
       primaryQuery: 'industrial diesel generator',
       expandedTokens: ['diesel', 'generator', 'generators', 'genset', 'cummins', 'caterpillar']
+    };
+  }
+  if (/(pet\s*cloth|dog\s*cloth|cat\s*cloth|pet\s*apparel|dog\s*sweater|dog\s*jacket|puppy\s*cloth)/i.test(titleLower)) {
+    return {
+      primaryQuery: 'dog pet clothes sweater apparel',
+      expandedTokens: ['dog', 'pet', 'clothes', 'clothing', 'sweater', 'jacket', 'puppy', 'hoodie', 'doggy', 'apparel']
+    };
+  }
+  if (/(baby\s*bootie|infant\s*bootie|newborn\s*bootie|baby\s*knit\s*shoe|baby\s*crochet\s*shoe)/i.test(titleLower)) {
+    return {
+      primaryQuery: 'baby booties infant knit shoes',
+      expandedTokens: ['baby', 'booties', 'bootie', 'infant', 'newborn', 'knit', 'crochet', 'shoes', 'toddler']
     };
   }
   if (isPureCategoryTitle) {
@@ -23302,6 +23431,29 @@ function isCandidateStrictlyRelevant(
 
   const { allTokens, coreNouns } = tokenProfile;
   if (allTokens.length === 0) return { valid: true, score: 1 };
+
+  const joinedProfileTokens = allTokens.join(' ');
+  const isPetApparelOrSupplySubject =
+    /\b(?:pet|pets|dog|cat|puppy|kitten)\b/.test(joinedProfileTokens) &&
+    !/\b(?:coke|flakes|resin|straps|strap|bottle|bottles|polyester|polyethylene|terephthalate|granules|pellets|preform|plastic|scrap|hdpe|lldpe)\b/.test(joinedProfileTokens);
+  if (isPetApparelOrSupplySubject) {
+    // Reject industrial PET plastic/coke and human adult fashion models/dresses for pet products
+    if (/(pet[-_ ]?coke|pet[-_ ]?flakes|pet[-_ ]?straps|pet[-_ ]?resin|pet[-_ ]?bottle|polyethylene|terephthalate|hdpe|lldpe|plastic[-_ ]?strap|women'?s[-_ ]?dress|woman[-_ ]?wearing|maxi[-_ ]?dress|evening[-_ ]?gown|bridal|wedding[-_ ]?dress|ladies[-_ ]?dress|bodycon|lingerie|lehenga|saree|abaya|runway[-_ ]?model)/i.test(combinedText)) {
+      return { valid: false, score: 0 };
+    }
+    // For pet clothing specifically, require at least one pet/animal cue in title/URL so plain human clothing photos are never accepted
+    if (/\b(?:cloth|clothes|clothing|clothings|apparel|garment|sweater|jacket|coat|hoodie)\b/.test(joinedProfileTokens)) {
+      if (!/\b(?:pet|pets|dog|dogs|puppy|puppies|cat|cats|kitten|doggy|canine|feline)\b/i.test(combinedText)) {
+        return { valid: false, score: 0 };
+      }
+    }
+  }
+  const isBabyFootwearSubject = /\b(?:baby|infant|newborn|toddler)\b/.test(joinedProfileTokens) && /\b(?:bootie|booties|shoe|shoes|sock|socks|slipper|slippers|footwear)\b/.test(joinedProfileTokens);
+  if (isBabyFootwearSubject) {
+    if (/(ash[-_ ]?wood|wood[-_ ]?briquette|timber|lumber|size[-_ ]?chart|size[-_ ]?guide|sizing|measurement|table|comparison|diagram|infographic|step[-_ ]?\d|how[-_ ]?to)/i.test(combinedText)) {
+      return { valid: false, score: 0 };
+    }
+  }
 
   let matchedAll = 0;
   for (const tk of allTokens) {
@@ -23976,7 +24128,7 @@ async function fetchAlibabaProductImages(
   const shortAliQuery = focused[focused.length - 1] || alibabaQuery;
 
   const bannedAlibabaRegex =
-    /watermark|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf|logo|icon|badge|avatar|sprite|-tps-\d+|favicon|spec[-_]?sheet|datasheet|price[-_]?list|certificate|chart|diagram|infographic|invoice|quotation|banner/i;
+    /watermark|shutterstock|istockphoto|gettyimages|alamy|dreamstime|123rf|logo|icon|badge|avatar|sprite|-tps-\d+|favicon|spec[-_]?sheet|datasheet|price[-_]?list|certificate|chart|diagram|infographic|invoice|quotation|banner|size[-_ ]?chart|size[-_ ]?guide|sizing[-_ ]?table|measurement|comparison|company[-_ ]?profile|why[-_ ]?choose|workflow|checklist|faq/i;
 
   const normalizeAlicdnUrl = (rawU: string): string => {
     let u = String(rawU || '').trim();
@@ -24160,7 +24312,7 @@ async function fetchLiveCommercialWebProductImages(
   }
 
   const bannedLiveRegex =
-    /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph|spec[-_ ]?sheet|datasheet|data[-_ ]?sheet|details[-_ ]?card|specification[-_ ]?sheet|price[-_ ]?list|quotation|invoice|certificate|msds|test[-_ ]?report|flexpay|hsn\.com|qvc\.com|infomercial/i;
+    /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto|nasa|solar flare|eclipse|konark|sun temple|ai weiwei|tate modern|herbarium|botanical illustration|engraving|lithograph|spec[-_ ]?sheet|datasheet|data[-_ ]?sheet|details[-_ ]?card|specification[-_ ]?sheet|price[-_ ]?list|quotation|invoice|certificate|msds|test[-_ ]?report|size[-_ ]?chart|size[-_ ]?guide|sizing[-_ ]?table|measurement[-_ ]?chart|how[-_ ]?to[-_ ]?measure|comparison[-_ ]?table|company[-_ ]?profile|why[-_ ]?choose|workflow|timeline|checklist|flexpay|hsn\.com|qvc\.com|infomercial/i;
 
   await Promise.allSettled(
     searchEndpoints.slice(0, fastMode ? 2 : searchEndpoints.length).map(async ep => {
@@ -24643,14 +24795,25 @@ Return ONLY valid JSON in this format:
       'verified', 'prod', 'bulk', 'wholesale', 'export', 'grade', 'quality', 'premium', 'pure',
       'natural', 'fresh', 'raw', 'custom', 'private', 'label', 'series', 'collection', 'direct',
       'factory', 'industrial', 'commercial', 'standard', 'iqf', 'molai', 'origin', 'certified',
-      'hand', 'stitched', 'full', 'grain', 'casual', 'dress'
+      'hand', 'stitched', 'full', 'grain', 'casual', 'dress', 'long', 'term', 'supply', 'contract',
+      'importer', 'urgent', 'turnkey', 'sourcing', 'prime', 'annual', 'spot', 'trial'
+    ]);
+    const neverStandaloneTokens = new Set([
+      'clothing', 'clothings', 'clothes', 'apparel', 'garment', 'garments', 'pet', 'pets',
+      'baby', 'infant', 'toddler', 'boot', 'wood', 'metal', 'plastic', 'steel', 'oil', 'strap',
+      'straps', 'belt', 'sheet', 'roll', 'powder', 'machine', 'equipment', 'parts', 'supplies',
+      'accessories', 'goods', 'items', 'products', 'textile', 'fabric'
     ]);
     const coreToks = extractMeaningfulAuditTokens(cleanName).filter(t => t.length >= 3 && !stopSet.has(t));
     if (coreToks.length >= 2) {
       pushFb(coreToks.slice(-2).join(' '));
       pushFb(coreToks.slice(0, 2).join(' '));
     }
-    for (const ct of coreToks) pushFb(ct);
+    for (const ct of coreToks) {
+      if (!neverStandaloneTokens.has(ct) || coreToks.length === 1) {
+        pushFb(ct);
+      }
+    }
 
     const maxFallbackHeadings = isFastMode ? 1 : 5;
     for (const nextHeading of fallbackHeadings.slice(0, maxFallbackHeadings)) {
@@ -25569,25 +25732,36 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     let unusedPool = filterUnusedPool(result.pool?.length ? result.pool : result.images);
 
-    // Prepend matching local /assets/uploads/ photos from disk so Inspector search always includes instant local server matches
-    const queryToks = extractMeaningfulAuditTokens(`${productName} ${category}`);
+    // Include strictly-matched local /assets/uploads/ photos from disk (never prepend single-token or cross-category mismatches)
+    const queryToks = extractMeaningfulAuditTokens(cleanProductSearchSubject(productName));
+    const targetSubjectLower = `${productName} ${category}`.toLowerCase();
     if (queryToks.length > 0 && preindexedFiles.length > 0) {
       const seenBase = new Set(unusedPool.map(c => normalizeAuditImageUrl(c.url)));
+      const minLocalHits = queryToks.length >= 2 ? 2 : 1;
       const localMatches: Array<{ cand: VisualImageCandidate; score: number }> = [];
       for (const entry of preindexedFiles) {
-        if (seenBase.has(normalizeAuditImageUrl(entry.webUrl))) continue;
+        const entryBase = normalizeAuditImageUrl(entry.webUrl);
+        if (seenBase.has(entryBase) || recentlyDeletedUploadUrls.has(entry.webUrl)) continue;
+        if (isGenericOrPlaceholderServerUrl(entry.webUrl)) continue;
+        if (isExtremeCrossCategoryUploadUrl(entry.webUrl.toLowerCase(), targetSubjectLower)) continue;
         let score = 0;
         let hits = 0;
         for (const qt of queryToks) {
           if (entry.tokens.includes(qt)) {
             score += 8;
             hits++;
-          } else if (qt.length >= 4 && entry.tokens.some(et => et.length >= 4 && (et.includes(qt) || qt.includes(et)))) {
+          } else if (qt.length >= 5 && entry.tokens.some(et => et.length >= 5 && (et.includes(qt) || qt.includes(et)))) {
             score += 4;
             hits++;
           }
         }
-        if (hits === 0) continue;
+        if (hits < minLocalHits) continue;
+        const issueChk = detectCatalogImageIssue(
+          { id: 'search-probe', type: 'PRODUCT', title: productName, category, imageUrl: entry.webUrl },
+          new Map(),
+          { skipDiskStat: true }
+        );
+        if (issueChk.flagged) continue;
         localMatches.push({
           score,
           cand: {
@@ -25597,14 +25771,14 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
             sourceDomain: 'tradeheaven.net',
             width: 800,
             height: 600,
-            relevanceScore: 30 + score
+            relevanceScore: 22 + score
           }
         });
       }
       localMatches.sort((a, b) => b.score - a.score);
-      const topLocal = localMatches.slice(0, 18).map(m => m.cand);
+      const topLocal = localMatches.slice(0, 10).map(m => m.cand);
       if (topLocal.length > 0) {
-        unusedPool = [...topLocal, ...unusedPool];
+        unusedPool = unusedPool.length > 0 ? [...unusedPool, ...topLocal] : topLocal;
         if (!result.success) {
           result = {
             ...result,
@@ -26699,6 +26873,10 @@ function isExtremeCrossCategoryUploadUrl(urlLower: string, targetJoinedLower: st
   if (/(deformed-reinforcing-steel-rebar|deformed-steel-rebar|steel-rebar)/i.test(urlLower) && !/(rebar|steel|iron|metal|billet|coil|bar|rod|building|construction|cement|hardware|elevator|escalator|scaffold)/i.test(targetJoinedLower)) return true;
   if (/(paper-shredder|paper-trimmers|a4-copy-paper)/i.test(urlLower) && !/(paper|stationery|office|print|book|packaging|carton|box|notebook|pulp|shredder|envelope)/i.test(targetJoinedLower)) return true;
   if (/(copper-wire|copper-cathode|copper-powder)/i.test(urlLower) && !/(copper|wire|cable|metal|scrap|cathode|ingot|mining|mineral|alloy|brass|aluminum)/i.test(targetJoinedLower)) return true;
+  if (/(pet-coke|pet-flak|pet-straps|pet-resin|hdpe-lldpe)/i.test(urlLower) && /(pet\s*cloth|dog|cat|puppy|kitten|pets?\s*&\s*pet\s*supplies|pet\s*supplies|pet\s*accessories|pet\s*bed|pet\s*toy|pet\s*food)/i.test(targetJoinedLower)) return true;
+  if (/(ash-wood|wood-briquettes|biochar|timber|lumber|bamboo-toothpicks|baby-corn|broccoli|vanilla|acupressure)/i.test(urlLower) && /(baby\s*bootie|infant|toddler|booties|shoes|footwear|glass|ceramic|apparel|clothing|pet)/i.test(targetJoinedLower)) return true;
+  if (/(steel-rails|r50-r65)/i.test(urlLower) && !/(rail|steel|iron|track|railway|metal|metallurgy|construction)/i.test(targetJoinedLower)) return true;
+  if (/(soybean-oil)/i.test(urlLower) && /(petroleum|crude\s*oil|diesel|fuel|lubricant|bitumen)/i.test(targetJoinedLower)) return true;
   return false;
 }
 
@@ -27384,7 +27562,10 @@ function extractMeaningfulAuditTokens(text: string): string[] {
     'spec', 'specs', 'specification', 'specifications', 'precision', 'axis', 'procurement',
     'corp', 'enterprises', 'solutions', 'experts', 'center', 'management', 'brothers',
     'services', 'group', 'pre', 'shipment', 'containerized', 'volume', 'strict', 'clean',
-    'oem', 'distribution', 'spot', 'vessel', 'fcl', 'lcl', 'prompt', 'loading', 'purity'
+    'oem', 'distribution', 'spot', 'vessel', 'fcl', 'lcl', 'prompt', 'loading', 'purity',
+    'prime', 'turnkey', 'household', 'merchandise', 'equipment', 'equipments', 'accessories',
+    'accessory', 'goods', 'item', 'items', 'part', 'parts', 'set', 'sets', 'kit', 'kits',
+    'pack', 'packs', 'pair', 'pairs', 'style', 'fashion', 'design', 'annual', 'monthly'
   ]);
   return String(text || '')
     .toLowerCase()

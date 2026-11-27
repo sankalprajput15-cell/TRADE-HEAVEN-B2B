@@ -524,7 +524,12 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     for (const slot of coreSiteAssetSlots) {
       const fieldUrl = getNestedString(siteContent, slot.fieldPath);
       const ov = overrides[slot.id];
-      const current = cleanBaseUrl(fieldUrl || ov?.primary);
+      const fieldIsStalePlaceholder = Boolean(
+        fieldUrl && (isGenericOrPlaceholderImageUrl(fieldUrl) || (slot.id !== 'site-brand-logo' && /tradeheaven_317b5f4c/i.test(fieldUrl)))
+      );
+      const current = cleanBaseUrl(
+        ov?.primary || (fieldIsStalePlaceholder ? '' : fieldUrl) || fieldUrl
+      );
       const changedAtMs = parseUpdatedMs(ov, slot.id);
       pushRaw({
         id: slot.id,
@@ -667,6 +672,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       if (/(deformed-reinforcing-steel-rebar|deformed-steel-rebar|steel-rebar)/i.test(ul) && !/(rebar|steel|iron|metal|billet|coil|bar|rod|building|construction|cement|hardware|elevator|escalator|scaffold)/i.test(tj)) return true;
       if (/(paper-shredder|paper-trimmers|a4-copy-paper)/i.test(ul) && !/(paper|stationery|office|print|book|packaging|carton|box|notebook|pulp|shredder|envelope)/i.test(tj)) return true;
       if (/(copper-wire|copper-cathode|copper-powder)/i.test(ul) && !/(copper|wire|cable|metal|scrap|cathode|ingot|mining|mineral|alloy|brass|aluminum)/i.test(tj)) return true;
+      if (/(pet-coke|pet-flakes|pet-straps|pet-resin|hdpe-lldpe)/i.test(ul) && /(pet\s*cloth|dog|cat|puppy|kitten|pets?\s*&\s*pet\s*supplies|pet\s*supplies|pet\s*accessories|pet\s*bed|pet\s*toy|pet\s*food)/i.test(tj)) return true;
+      if (/(ash-wood|wood-briquettes|biochar|timber|lumber|bamboo-toothpicks)/i.test(ul) && /(baby|infant|toddler|booties|shoes|footwear|glass|ceramic|apparel|clothing|pet)/i.test(tj)) return true;
+      if (/(steel-rails|r50-r65)/i.test(ul) && !/(rail|steel|iron|track|railway|metal|metallurgy|construction)/i.test(tj)) return true;
+      if (/(soybean-oil)/i.test(ul) && /(petroleum|crude\s*oil|diesel|fuel|lubricant|bitumen)/i.test(tj)) return true;
       if (/(avocado|strawberry|apricot|mango|banana|chicken|egg|coffee|tea|turmeric|cardamom|jasmine-rice|basmati|cashew|sunflower|soybean|corn-maize|sugar-free|fruit-jam|vanilla|broccoli|asparagus)/i.test(ul) && !/(food|fruit|jam|spread|meat|poultry|chicken|egg|rice|grain|spice|tea|coffee|oil|agri|agriculture|nut|cashew|corn|maize|soy|sugar|vegetable|produce|seed|bean)/i.test(tj)) return true;
       return false;
     };
@@ -1459,7 +1468,14 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   };
 
   const unusedOrFlaggedList = useMemo(
-    () => allItems.filter(it => (it.status === 'NEEDS_FIX' || it.status === 'DUPLICATE') && it.id !== 'site-brand-logo'),
+    () =>
+      allItems.filter(
+        it =>
+          (it.status === 'NEEDS_FIX' || it.status === 'DUPLICATE') &&
+          it.id !== 'site-brand-logo' &&
+          it.type !== 'SITE_ASSET' &&
+          it.type !== 'HERO_SLIDE'
+      ),
     [allItems]
   );
 
@@ -1479,7 +1495,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const flaggedItems = useMemo(
     () =>
       allItems
-        .filter(it => it.status !== 'VERIFIED' && it.id !== 'site-brand-logo' && it.type !== 'SITE_ASSET')
+        .filter(it => it.status !== 'VERIFIED' && it.id !== 'site-brand-logo')
         .sort((a, b) => {
           const rank = (t: SiteImageTargetType) =>
             t === 'PRODUCT' ? 0 : t === 'CATEGORY' ? 1 : t === 'RFQ' ? 2 : 3;
