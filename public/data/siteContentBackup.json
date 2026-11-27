@@ -19,7 +19,7 @@
     "heroHeadlineGradient": "Verified Global Buyers & Bulk RFQs",
     "heroSubheadline": "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     "heroTrustEyebrow": "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    "heroBgImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    "heroBgImage": "/assets/uploads/trade-heaven-homepage-main-hero-background-902548d-1795615031839.webp",
     "searchPlaceholder": "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     "tradeSpecialist": {
       "name": "Elena Rostova",
@@ -28,10 +28,10 @@
       "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80",
       "badge": "Verified Trade Specialist"
     },
-    "bannerImageCol1": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    "bannerImageCol1": "/assets/uploads/trade-heaven-homepage-main-hero-background-902548d-1795615031839.webp",
     "bannerTitleCol1": "Verified Container Sourcing",
     "bannerDescCol1": "Direct FOB / CIF container shipments with factory audit guarantee.",
-    "bannerImageCol2": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    "bannerImageCol2": "/assets/uploads/trade-heaven-verified-suppliers-header-banner-173c-1795615114431.webp",
     "bannerTitleCol2": "2026 Global Sourcing & Manufacturing Expo",
     "bannerSubtitleCol2": "Connect directly with 10,000+ verified Asian & European production plants.",
     "bannerBadgeCol2": "FEATURED GLOBAL TRADE EVENT",
@@ -93,7 +93,7 @@
         "name": "Automotive & Electric Vehicles",
         "description": "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         "iconName": "Car",
-        "image": "/assets/uploads/cat-automotive-motorcycle-parts-prod-3c1aacf43334.webp",
+        "image": "/assets/uploads/auto-automotive-motorcycle-parts-prod-e9ae437ff5a6.webp",
         "badge": "High Growth",
         "productCount": "32,900+ Products"
       },
@@ -111,7 +111,7 @@
         "name": "Chemicals & Raw Polymers",
         "description": "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         "iconName": "FlaskConical",
-        "image": "/assets/uploads/auto-chemicals-allied-products-produc-a6afe87a0b15.webp",
+        "image": "/assets/uploads/trade-heaven-chemicals-raw-polymers-14cb8a747a34.webp",
         "badge": "REACH Compliant",
         "productCount": "28,500+ Products"
       },
@@ -120,7 +120,7 @@
         "name": "Textiles, Garments & Fabrics",
         "description": "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
         "iconName": "Scissors",
-        "image": "/assets/uploads/auto-apparel-textiles-product-75662a9b4b90.webp",
+        "image": "/assets/uploads/trade-heaven-textiles-garments-fabrics-4aefd21ac2b4.webp",
         "badge": "OEKO-TEX",
         "productCount": "52,400+ Products"
       },
@@ -129,7 +129,7 @@
         "name": "Renewable Energy & Solar",
         "description": "Tier-1 N-Type TOPCon solar panels, commercial hybrid inverters, BESS.",
         "iconName": "Sun",
-        "image": "/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp",
+        "image": "/assets/uploads/trade-heaven-renewable-energy-solar-8224f5db58f2.webp",
         "badge": "CE / TÜV Certified",
         "productCount": "19,800+ Products"
       },
@@ -156,7 +156,7 @@
         "name": "Building & Construction Materials",
         "description": "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         "iconName": "Box",
-        "image": "/assets/uploads/auto-building-construction-materials-37394a3c058e.webp",
+        "image": "/assets/uploads/trade-heaven-building-construction-materials-5f84ada760d3.webp",
         "badge": "ASTM / ISO",
         "productCount": "37,000+ Products"
       }
@@ -355,194 +355,26 @@
     "pinnedCategoryIds": [],
     "sectionLayouts": {}
   },
-  "siteContentUpdatedAt": 1795732603001,
+  "siteContentUpdatedAt": 1795775641039,
   "escrow": {
-    "bannerImage": ""
+    "bannerImage": "/assets/uploads/trade-heaven-products-directory-header-banner-2e54-1795601900097.webp"
   },
   "productsDirectory": {
-    "bannerImage": "/assets/aistudio/tradeheaven_317b5f4c.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-products-directory-header-banner-b315-1795610420871.webp"
   },
   "buyLeads": {
-    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-91e9b8a1-1795683655010.webp"
   },
   "suppliersDirectory": {
-    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+    "bannerImage": "/assets/uploads/trade-heaven-verified-suppliers-header-banner-173c-1795615114431.webp"
   },
   "postBuyingRequest": {
-    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+    "bannerImage": "/assets/uploads/auto-products-directory-header-banner-d4078821d44b.jpg"
   },
   "postSellOffer": {
-    "bannerImage": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-a2b6dbd9-1795615334879.webp"
   },
-  "products[prod-ext2026-5-2]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-96aa1d39ec23.webp"
-  },
-  "rfqs[rfq-auto-p1-53-mc]": {
-    "images[0]": "/assets/uploads/trade-heaven-bulk-tyre-scraps-baled-rubber-offcut-828836995414.webp"
-  },
-  "products[prod-avo-05]": {
-    "images[0]": "/assets/uploads/trade-heaven-kenyan-export-grade-hass-avocados-3aaaa414657a.webp"
-  },
-  "rfqs[rfq-us-corp-06]": {
-    "images[0]": "/assets/uploads/trade-heaven-procurement-of-subsurface-drip-irrig-96fe035d0404.webp"
-  },
-  "products[prod-rice-01]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-078d1ff462c8.webp"
-  },
-  "products[prod-bamboo-01]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-16f0b4451b3b.webp"
-  },
-  "products[prod-rice-04]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-31f0ebf18829.webp"
-  },
-  "products[prod-rice-05]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-42126a7f8a6a.webp"
-  },
-  "products[prod-rice-08]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-60364fd52ee3.webp"
-  },
-  "products[prod-iqf-yafurui-broccoli-snap-peas]": {
-    "images[0]": "/assets/uploads/trade-heaven-laiyang-yafurui-iqf-broccoli-florets-02718af4806b.webp"
-  },
-  "products[prod-iqf-snowfresh-broccoli-strawberries]": {
-    "images[0]": "/assets/uploads/trade-heaven-laiyang-yafurui-iqf-broccoli-florets-06592561447b.webp"
-  },
-  "products[prod-iqf-qingguo-broccoli-mushroom]": {
-    "images[0]": "/assets/uploads/trade-heaven-laiyang-yafurui-iqf-broccoli-florets-2d000c4eb794.webp"
-  },
-  "products[prod-iqf-dongtai-asparagus-broccoli]": {
-    "images[0]": "/assets/uploads/trade-heaven-laiyang-yafurui-iqf-broccoli-florets-4eb32698a15b.webp"
-  },
-  "products[prod-iqf-topsource-broccoli-chestnuts]": {
-    "images[0]": "/assets/uploads/trade-heaven-laiyang-yafurui-iqf-broccoli-florets-6d9f1799dd5e.webp"
-  },
-  "products[prod-rice-10]": {
-    "images[0]": "/assets/uploads/trade-heaven-thai-hom-mali-jasmine-rice-grade-a-959f6392b172.webp"
-  },
-  "products[th-prod-02]": {
-    "images[0]": "/assets/uploads/trade-heaven-frozen-atlantic-salmon-fillets-trim-23b8bac6f88f.webp"
-  },
-  "products[th-prod-04]": {
-    "images[0]": "/assets/uploads/trade-heaven-frozen-atlantic-salmon-fillets-trim-452e116ac549.webp"
-  },
-  "products[th-prod-05]": {
-    "images[0]": "/assets/uploads/trade-heaven-frozen-atlantic-salmon-fillets-trim-5cccbda8f37e.webp"
-  },
-  "products[prod-sunflower-10]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-7476a5589394.webp"
-  },
-  "products[prod-eec-poland-15]": {
-    "images[0]": "/assets/uploads/trade-heaven-high-quality-brown-chicken-eggs-for-c64395b0cf5d.webp"
-  },
-  "products[prod-eec-poland-10]": {
-    "images[0]": "/assets/uploads/trade-heaven-custom-private-label-full-grain-cowh-84410d8ae34a.webp"
-  },
-  "products[prod-jet-6]": {
-    "images[0]": "/assets/uploads/auto-lithium-battery-7b6c94de8534.webp"
-  },
-  "products[prod-jet-7]": {
-    "images[0]": "/assets/uploads/auto-lithium-battery-8ff74ff88b04.webp"
-  },
-  "products[prod-jet-14]": {
-    "images[0]": "/assets/uploads/auto-lithium-battery-f58cfb8ad3a8.webp"
-  },
-  "products[prod-jet-16]": {
-    "images[0]": "/assets/uploads/auto-lithium-battery-storage-module-bc8b02ff8d0c.webp"
-  },
-  "products[prod-jet-21]": {
-    "images[0]": "/assets/uploads/cat-high-quality-steam-coal-5500-nar-r-609e05efe31e.webp"
-  },
-  "products[prod-jet-38]": {
-    "images[0]": "/assets/uploads/cat-off-grid-wind-solar-hybrid-streetl-05b57af26d90.webp"
-  },
-  "products[prod-jet-23]": {
-    "images[0]": "/assets/uploads/cat-certified-aviation-gasoline-avgas--3bfbe429fa41.webp"
-  },
-  "products[prod-espo-1]": {
-    "images[0]": "/assets/uploads/cat-certified-light-sweet-crude-espo-u-b9f06308a6b9.webp"
-  },
-  "products[prod-espo-2]": {
-    "images[0]": "/assets/uploads/cat-bulk-light-sweet-crude-espo-singap-9e46d687bcc4.webp"
-  },
-  "products[prod-avgas-test-probe]": {
-    "images[0]": "/assets/uploads/cat-certified-aviation-gasoline-avgas--a788cb184ce4.webp"
-  },
-  "products[probe]": {
-    "images[0]": "/assets/uploads/trade-heaven-premium-aviation-gasoline-avgas-100l-8612ca78de6d.webp"
-  },
-  "products[prod-espo-4]": {
-    "images[0]": "/assets/uploads/auto-sunflower-oil-0740af3fa041.webp"
-  },
-  "products[prod-espo-8]": {
-    "images[0]": "/assets/uploads/trade-heaven-bulk-espo-blend-crude-oil-russia-ori-80e26c67f107.webp"
-  },
-  "products[prod-espo-13]": {
-    "images[0]": "/assets/uploads/trade-heaven-en590-10ppm-ultra-low-sulfur-diesel-84779ed6e9fc.webp"
-  },
-  "products[prod-espo-14]": {
-    "images[0]": "/assets/uploads/trade-heaven-bulk-light-sweet-crude-espo-singapor-1a0fa9145461.webp"
-  },
-  "products[prod-espo-26]": {
-    "images[0]": "/assets/uploads/trade-heaven-certified-light-sweet-crude-espo-uae-adb00bb8d2d4.webp"
-  },
-  "products[prod-espo-28]": {
-    "images[0]": "/assets/uploads/cat-high-quality-light-sweet-crude-esp-c2b2ffa072ca.webp"
-  },
-  "products[prod-espo-30]": {
-    "images[0]": "/assets/uploads/cat-premium-light-sweet-crude-espo-uae-2d72a5e42df1.webp"
-  },
-  "products[prod-espo-35]": {
-    "images[0]": "/assets/uploads/trade-heaven-certified-light-sweet-crude-espo-uae-96a3137647fb.webp"
-  },
-  "products[prod-espo-34]": {
-    "images[0]": "/assets/uploads/cat-bulk-light-sweet-crude-espo-china--6022f3d8cbca.webp"
-  },
-  "products[prod-cp-11]": {
-    "images[0]": "/assets/uploads/cat-certified-gold-bullion-lbma-switze-75c2ccb3459f.webp"
-  },
-  "products[prod-clo-9]": {
-    "images[0]": "/assets/uploads/cat-certified-mixed-used-clothing-bale-b389ce8c8083.webp"
-  },
-  "products[prod-clo-5]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-5cbae04551d0.webp"
-  },
-  "products[prod-clo-14]": {
-    "images[0]": "/assets/uploads/cat-bulk-used-shoes-bales-usa-origin-30983a825f97.webp"
-  },
-  "products[prod-clo-13]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-6262f2b742e9.webp"
-  },
-  "products[prod-clo-18]": {
-    "images[0]": "/assets/uploads/cat-premium-used-shoes-bales-japan-ori-249912a91ff9.webp"
-  },
-  "products[prod-clo-15]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-63657ff0de17.webp"
-  },
-  "products[prod-clo-19]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-6e250fcac90b.webp"
-  },
-  "products[prod-clo-20]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-79784c47f610.webp"
-  },
-  "products[prod-clo-21]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-85fc5c586f60.webp"
-  },
-  "products[prod-clo-24]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-87e4e34837b6.webp"
-  },
-  "products[prod-clo-25]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-a1b2be062a8d.webp"
-  },
-  "products[prod-clo-26]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-b1f3d761d82e.webp"
-  },
-  "products[prod-clo-27]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-c499e8e1ed87.webp"
-  },
-  "products[prod-clo-28]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-c6b182a2276e.webp"
-  },
-  "products[prod-clo-30]": {
-    "images[0]": "/assets/uploads/trade-heaven-full-grain-cowhide-leather-belt-c80b7d51bc6f.webp"
+  "membership": {
+    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-090105f2-1795615118047.webp"
   }
 }

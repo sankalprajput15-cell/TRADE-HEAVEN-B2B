@@ -359,14 +359,14 @@ class BackgroundAutoFixService {
     const nowMs = Date.now();
     if (
       jobJustFinished ||
-      (fixedAdvanced && nowMs - this.lastServerOverridesSyncAt >= 5000)
+      (fixedAdvanced && nowMs - this.lastServerOverridesSyncAt >= 45000)
     ) {
       this.lastServerOverridesSyncAt = nowMs;
       this.lastSyncedFixedCount = this.state.fixed;
       void productImageManagerService
-        .syncFromServer(true, true, { bypassCooldown: true, emitEvenIfUnchanged: true })
+        .syncFromServer(true, jobJustFinished, { bypassCooldown: true, emitEvenIfUnchanged: jobJustFinished })
         .then(() => {
-          if (typeof window !== 'undefined') {
+          if (jobJustFinished && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated'));
             window.dispatchEvent(new Event('tradeheaven_products_updated'));
           }

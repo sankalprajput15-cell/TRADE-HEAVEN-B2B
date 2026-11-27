@@ -15318,7 +15318,9 @@ function buildGlobalAttachedImageRegistry(
   options?: { skipContentHashing?: boolean }
 ): GlobalAttachedImageRegistry {
   const excludeId = String(excludeRecordId || '').trim();
-  const skipContentHashing = Boolean(options?.skipContentHashing);
+  // Default to true so HTTP requests and Auto-Fix jobs NEVER synchronously read & SHA-256 hash 3,800+ files on the event loop;
+  // in-memory metadata hashes (entry.imageContentHash, meta.rawSha256, usedLocalUrls, usedSourceUrls, usedUrlHashes) already enforce uniqueness in O(1) RAM.
+  const skipContentHashing = options?.skipContentHashing !== false;
   const usedLocalUrls = new Set<string>(inFlightCatalogFixReservedUrls);
   const usedSourceUrls = new Set<string>(inFlightCatalogFixReservedSourceUrls);
   const usedUrlHashes = new Set<string>(inFlightCatalogFixReservedUrlHashes);
@@ -16499,6 +16501,27 @@ function invalidatePublicProductImagesCache() {
   invalidatePublicBootstrapCache();
 }
 
+let cachedUploadsDirSet: Set<string> | null = null;
+let cachedUploadsDirSetAt = 0;
+
+function getCachedUploadsDirFileSet(forceRefresh = false): Set<string> {
+  const now = Date.now();
+  if (!forceRefresh && cachedUploadsDirSet && now - cachedUploadsDirSetAt < 15000) {
+    return cachedUploadsDirSet;
+  }
+  const next = new Set<string>();
+  try {
+    if (fs.existsSync(uploadsStaticDir)) {
+      for (const name of fs.readdirSync(uploadsStaticDir)) {
+        next.add(name);
+      }
+    }
+  } catch {}
+  cachedUploadsDirSet = next;
+  cachedUploadsDirSetAt = now;
+  return next;
+}
+
 function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
   const s = String(rawUrl || '').trim();
   if (!s) return '';
@@ -16506,14 +16529,21 @@ function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
   const base = qIdx >= 0 ? s.slice(0, qIdx) : s;
   if (!base.startsWith('/assets/uploads/')) return s;
   const fn = path.basename(base);
+  const dirSet = getCachedUploadsDirFileSet();
+  if (dirSet.has(fn)) return `/assets/uploads/${fn}`;
+  // Single direct fallback check for newly written file before TTL refresh
   const directPath = path.join(uploadsStaticDir, fn);
-  if (fs.existsSync(directPath)) return `/assets/uploads/${fn}`;
+  if (fs.existsSync(directPath)) {
+    dirSet.add(fn);
+    return `/assets/uploads/${fn}`;
+  }
   let cur = fn;
   let hops = 0;
   while (virtualImageAliasesMap[cur] && hops < 8) {
     cur = path.basename(String(virtualImageAliasesMap[cur]));
     hops++;
-    if (fs.existsSync(path.join(uploadsStaticDir, cur))) {
+    if (dirSet.has(cur) || fs.existsSync(path.join(uploadsStaticDir, cur))) {
+      dirSet.add(cur);
       return `/assets/uploads/${cur}`;
     }
   }
@@ -25069,12 +25099,21 @@ function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
   try {
     const baseName = path.basename(clean);
     if (!baseName || baseName.includes('..')) return false;
+    const dirSet = getCachedUploadsDirFileSet();
+    if (dirSet.has(baseName)) {
+      return true;
+    }
     const publicPath = path.join(UPLOADS_DIR, baseName);
     const minBytes = baseName.startsWith('auto-') ? 1500 : 100;
     if (fs.existsSync(publicPath)) {
       const size = fs.statSync(publicPath).size;
-      if (size > minBytes) return true;
+      if (size > minBytes) {
+        dirSet.add(baseName);
+        return true;
+      }
     }
+    const aliasHit = resolveVirtualAliasDiskPath(baseName);
+    if (aliasHit) return true;
     const distPath = path.join(process.cwd(), 'dist', 'assets', 'uploads', baseName);
     if (fs.existsSync(distPath)) {
       const size = fs.statSync(distPath).size;
@@ -25082,12 +25121,11 @@ function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
         try {
           ensureUploadsDir();
           fs.copyFileSync(distPath, publicPath);
+          dirSet.add(baseName);
         } catch {}
         return true;
       }
     }
-    const aliasHit = resolveVirtualAliasDiskPath(baseName);
-    if (aliasHit) return true;
     return false;
   } catch {
     return false;
@@ -25698,7 +25736,7 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
       : [];
 
     const registry = buildGlobalAttachedImageRegistry(productId || undefined, extraExcludeUrls, {
-      skipContentHashing: fastMode
+      skipContentHashing: true
     });
     const preindexedFiles = buildPreindexedLocalUploadFiles();
 
@@ -29917,7 +29955,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     }
   }
   backgroundAutoFixWorkerRunning = true;
-  const CONCURRENCY = 4;
+  const CONCURRENCY = 2;
   const PER_ITEM_TIMEOUT_MS = 10000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
@@ -29925,10 +29963,10 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
   let lastFlushAtMs = Date.now();
   let flushInFlight = false;
 
-  // Load state, preindex local upload files, and build ONE shared live uniqueness registry for all concurrent workers
+  // Load state, preindex local upload files, and build ONE shared live uniqueness registry in pure O(1) RAM (no sync disk SHA-256)
   serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: true });
   const preindexedFiles = buildPreindexedLocalUploadFiles();
-  const sharedRegistry = buildGlobalAttachedImageRegistry();
+  const sharedRegistry = buildGlobalAttachedImageRegistry(undefined, undefined, { skipContentHashing: true });
 
   const yieldToEventLoop = () => new Promise<void>(resolve => setImmediate(resolve));
 
@@ -29942,6 +29980,12 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
         : JSON.stringify(serverProductImageState);
       await atomicWriteTextFileAsync(IMAGE_OVERRIDES_FILE, stateJson);
       await yieldToEventLoop();
+      if (!isFinalFlush) {
+        // Lightweight periodic checkpoint: skip heavy multi-file mirror, snapshot rewrite, and gzip/brotli cache churn until job finishes
+        lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
+        lastFlushAtMs = Date.now();
+        return;
+      }
       await atomicWriteTextFileAsync(PUBLIC_DATA_OVERRIDES_FILE, stateJson);
       await saveVirtualImageAliasesToDiskAsync();
       await yieldToEventLoop();
@@ -29953,6 +29997,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
           await atomicWriteTextFileAsync(path.join(distDir, 'data', 'productImageSystemState.json'), stateJson);
         } catch {}
       }
+      cachedUploadsDirSet = null;
       lastLoadedProductImageDiskSig = computeProductImageDiskSignature(hasCompletedUploadsDirScan);
       invalidatePublicProductImagesCache();
 
@@ -30108,7 +30153,7 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       }
       job.updatedAtMs = Date.now();
 
-      if (fixedSinceLastFlush >= 20 || (fixedSinceLastFlush > 0 && Date.now() - lastFlushAtMs >= 5000)) {
+      if (fixedSinceLastFlush >= 40 || (fixedSinceLastFlush > 0 && Date.now() - lastFlushAtMs >= 15000)) {
         fixedSinceLastFlush = 0;
         await flushBatchStoresToDiskAsync(false);
       }
@@ -31084,12 +31129,10 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
-    // Non-blocking startup prewarm: pre-compress entry HTML/JS/CSS, API caches, and hero/top-fold images into RAM
-    setImmediate(() => {
+    // Defer heavy startup prewarm slightly so incoming health checks and initial HTTP requests respond in <20ms
+    setTimeout(() => {
       try {
-        if (!hasCompletedUploadsDirScan) {
-          serverProductImageState = loadServerProductImageState(serverProductImageState, { skipDirectoryScan: false });
-        }
+        getCachedUploadsDirFileSet(true);
         getOrBuildPublicProductImagesCache();
         getOrBuildSiteContentResponseCache();
       } catch {}
@@ -31154,7 +31197,7 @@ async function startServer() {
       if (prewarmVite) {
         prewarmVite();
       }
-    });
+    }, 600);
   });
 
   // Real-time WebSocket server for Multi-Identity Admin Buyer Chat (/ws/chat)
