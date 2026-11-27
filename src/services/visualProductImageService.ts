@@ -769,17 +769,20 @@ export async function validateRealImageUrlLoads(url: string, timeoutMs = 4500): 
       img.src = srcToLoad;
     });
 
-  // For local/same-origin URLs (e.g., /assets/uploads/...), strictly confirm HTTP 200 + non-HTML/SVG image + naturalWidth > 0
+  // For local/same-origin URLs (e.g., /assets/uploads/...), use a single fast DOM decode check in browser
   if (!isExternal && !clean.startsWith('data:') && !clean.startsWith('blob:')) {
-    const httpOk = await checkHttp200Image(clean);
-    if (!httpOk) {
-      markBrokenExternalImageUrl(clean);
-      return false;
-    }
-    const domOk = await checkDomImage(clean);
-    if (!domOk) {
-      markBrokenExternalImageUrl(clean);
-      return false;
+    if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
+      const domOk = await checkDomImage(clean);
+      if (!domOk) {
+        markBrokenExternalImageUrl(clean);
+        return false;
+      }
+    } else {
+      const httpOk = await checkHttp200Image(clean);
+      if (!httpOk) {
+        markBrokenExternalImageUrl(clean);
+        return false;
+      }
     }
     VERIFIED_LOADABLE_URLS.add(clean);
     VERIFIED_LOADABLE_URLS.add(baseKey);
@@ -806,14 +809,11 @@ export async function validateRealImageUrlLoads(url: string, timeoutMs = 4500): 
       VERIFIED_LOADABLE_URLS.add(baseKey);
       return true;
     }
-    const proxyHttpOk = await checkHttp200Image(proxyUrl);
-    if (proxyHttpOk) {
-      const proxyDomOk = await checkDomImage(proxyUrl);
-      if (proxyDomOk) {
-        VERIFIED_LOADABLE_URLS.add(clean);
-        VERIFIED_LOADABLE_URLS.add(baseKey);
-        return true;
-      }
+    const proxyDomOk = await checkDomImage(proxyUrl);
+    if (proxyDomOk) {
+      VERIFIED_LOADABLE_URLS.add(clean);
+      VERIFIED_LOADABLE_URLS.add(baseKey);
+      return true;
     }
     markBrokenExternalImageUrl(clean);
     return false;
@@ -833,17 +833,40 @@ export async function validateRealImageUrlLoads(url: string, timeoutMs = 4500): 
 export async function filterLoadableRealCandidates(
   candidates: VisualProductImageCandidate[],
   desiredCount = 48,
-  timeoutMs = 3500
+  timeoutMs = 1800
 ): Promise<VisualProductImageCandidate[]> {
   const cleanList = (candidates || []).filter(
     c => c?.url && !isSyntheticSpecCardOrPlaceholder(c) && !isGenericOrPlaceholderImageUrl(c.url) && !BROKEN_EXTERNAL_URLS.has(c.url)
   );
   if (cleanList.length === 0) return [];
   const verified: VisualProductImageCandidate[] = [];
-  const batchSize = 12;
-  const maxToInspect = Math.min(cleanList.length, Math.max(desiredCount + 20, 64));
+  const needsProbe: VisualProductImageCandidate[] = [];
+
+  for (const cand of cleanList) {
+    const u = String(cand.url || '').trim();
+    const base = u.split('?')[0];
+    // Local /assets/uploads/ files and Wikimedia CDN bitmap thumbnails are already verified bitmaps;
+    // skipping pre-download avoids double-fetching and Wikimedia 429 rate-limiting in Chrome.
+    if (
+      u.startsWith('/assets/uploads/') ||
+      VERIFIED_LOADABLE_URLS.has(u) ||
+      VERIFIED_LOADABLE_URLS.has(base) ||
+      (u.includes('upload.wikimedia.org/') && /\.(?:jpe?g|png|webp)(?:[?#].*)?$/i.test(u))
+    ) {
+      verified.push(cand);
+    } else {
+      needsProbe.push(cand);
+    }
+  }
+
+  if (verified.length >= desiredCount || needsProbe.length === 0) {
+    return verified.slice(0, desiredCount);
+  }
+
+  const batchSize = 20;
+  const maxToInspect = Math.min(needsProbe.length, Math.max(desiredCount - verified.length + 12, 32));
   for (let i = 0; i < maxToInspect && verified.length < desiredCount; i += batchSize) {
-    const batch = cleanList.slice(i, i + batchSize);
+    const batch = needsProbe.slice(i, i + batchSize);
     const checks = await Promise.all(
       batch.map(async cand => {
         const ok = await validateRealImageUrlLoads(cand.url, timeoutMs);
@@ -854,7 +877,7 @@ export async function filterLoadableRealCandidates(
       if (item) verified.push(item);
     }
   }
-  return verified;
+  return verified.slice(0, desiredCount);
 }
 
 export function isManuallyUploadedImageUrl(url?: string): boolean {
@@ -1290,39 +1313,56 @@ export async function fetchVisualProductImages(params: {
     const tryBackendFetchForQuery = async (
       endpoint: string,
       queryChip: string
-    ): Promise<VisualProductSearchResponse | null> => {
+    ): Promise<{ result: VisualProductSearchResponse | null; reachable: boolean }> => {
       try {
         const mergedExcludeUrls = Array.from(
           new Set([
             ...(Array.isArray(params.excludeUrls) ? params.excludeUrls : []),
-            ...Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-150)
+            ...Array.from(ASSIGNED_UPLOAD_IMAGE_URLS).slice(-120)
           ])
-        ).slice(0, 300);
+        ).slice(0, 200);
         const payload = {
           product_name: queryChip,
           product_id: productId,
           category,
           specifications,
           count,
+          fast_mode: true,
           force_refresh: Boolean(params.forceRefresh),
           search_page: searchPage,
           exclude_urls: mergedExcludeUrls
         };
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), 4500) : null;
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: controller ? controller.signal : undefined
         });
+        if (timer) clearTimeout(timer);
         const ctype = (res.headers.get('content-type') || '').toLowerCase();
-        if (!res.ok || ctype.includes('text/html')) return null;
+        if (!res.ok || ctype.includes('text/html')) return { result: null, reachable: false };
         const json = await res.json().catch(() => null);
-        if (!json || typeof json !== 'object') return null;
-        if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) return null;
+        if (!json || typeof json !== 'object') return { result: null, reachable: false };
+        if (json.service && !Array.isArray(json.images) && !Array.isArray(json.pool)) {
+          return { result: null, reachable: false };
+        }
         const normalized = parsePayload(json, queryChip);
-        const serverVerifiedUnused = filterUnused(normalized.pool).filter(
-          c => !isSyntheticSpecCardOrPlaceholder(c)
-        );
-        const strictPool = serverVerifiedUnused.filter(
+        const dedupSeen = new Set<string>();
+        const candidatePool = normalized.pool.filter(c => {
+          const u = String(c?.url || '').trim();
+          if (!u || isSyntheticSpecCardOrPlaceholder(c)) return false;
+          const base = u.split('?')[0].split('#')[0];
+          if (dedupSeen.has(base) || callerExcludeBases.has(base)) return false;
+          dedupSeen.add(base);
+          return true;
+        });
+        const unusedFirst = [
+          ...filterUnused(candidatePool),
+          ...candidatePool.filter(c => !filterUnused([c]).length)
+        ];
+        const strictPool = unusedFirst.filter(
           c =>
             !isMismatchedProductImageUrl(c.url, queryChip, category) &&
             !isCandidateOffTopicClient(c, queryChip)
@@ -1333,89 +1373,107 @@ export async function fetchVisualProductImages(params: {
             ? strictPool
             : [
                 ...strictPool,
-                ...serverVerifiedUnused.filter(c => !strictUrls.has(c.url))
+                ...unusedFirst.filter(c => !strictUrls.has(c.url))
               ];
-        if (normalized.success && cleanPool.length > 0) {
-          const verifiedPool = await filterLoadableRealCandidates(cleanPool, count, 3500);
-          if (verifiedPool.length > 0) {
-            const finalNorm: VisualProductSearchResponse = {
-              ...normalized,
-              queryUsed: queryChip,
-              pool: verifiedPool,
-              images: verifiedPool.slice(0, count),
-              totalVerified: verifiedPool.length
-            };
-            SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
-            persistSessionCacheToLocalStorage();
-            return finalNorm;
-          }
-        }
-      } catch {
-        // ignore network/parse error
-      }
-      return null;
-    };
-
-    // Automatic Sequential Heading Advancement:
-    // Step through Full Heading -> Sub-headings -> Core 2-word noun -> Core 1-word noun until real loadable photos are found
-    for (const queryChip of headingQueries) {
-      const primaryVisual = await tryBackendFetchForQuery('/api/v1/products/fetch-images', queryChip);
-      if (primaryVisual && primaryVisual.images.length > 0) {
-        return primaryVisual;
-      }
-
-      const phpVisual = await tryBackendFetchForQuery('/api.php?action=fetch_product_images', queryChip);
-      if (phpVisual && phpVisual.images.length > 0) {
-        return phpVisual;
-      }
-
-      try {
-        const wikiCandidates = filterUnused(
-          await fetchWikimediaCommonsCorsCandidates(queryChip, category, count)
-        ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
-        const verifiedWiki = await filterLoadableRealCandidates(wikiCandidates, count, 4000);
-        if (verifiedWiki.length > 0) {
-          const wikiResp: VisualProductSearchResponse = {
+        if (cleanPool.length > 0) {
+          const finalNorm: VisualProductSearchResponse = {
+            ...normalized,
             success: true,
             status: 'ok',
-            provider: 'wikimedia_commons_live',
             queryUsed: queryChip,
-            totalVerified: verifiedWiki.length,
-            images: verifiedWiki.slice(0, count),
-            pool: verifiedWiki
+            pool: cleanPool,
+            images: cleanPool.slice(0, count),
+            totalVerified: cleanPool.length
           };
-          SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
+          SESSION_CACHE.set(key, { data: finalNorm, cachedAt: Date.now() });
           persistSessionCacheToLocalStorage();
-          return wikiResp;
+          return { result: finalNorm, reachable: true };
         }
+        return { result: null, reachable: true };
       } catch {
-        // continue to next heading query chip
+        return { result: null, reachable: false };
+      }
+    };
+
+    // Fast parallel discovery: run primary query + core fallback query at most (never 8 serial loops!)
+    const activeQueries = headingQueries.slice(0, 2);
+    for (const queryChip of activeQueries) {
+      const [backendAttempt, wikiRaw] = await Promise.all([
+        (async () => {
+          const primary = await tryBackendFetchForQuery('/api/v1/products/fetch-images', queryChip);
+          if (primary.result && primary.result.images.length > 0) return primary.result;
+          if (!primary.reachable) {
+            const php = await tryBackendFetchForQuery('/api.php?action=fetch_product_images', queryChip);
+            if (php.result && php.result.images.length > 0) return php.result;
+          }
+          return null;
+        })(),
+        fetchWikimediaCommonsCorsCandidates(queryChip, category, count).catch(() => [] as VisualProductImageCandidate[])
+      ]);
+
+      const wikiClean = (wikiRaw || []).filter(
+        c =>
+          c?.url &&
+          !BROKEN_EXTERNAL_URLS.has(c.url) &&
+          !isSyntheticSpecCardOrPlaceholder(c) &&
+          !callerExcludeBases.has(c.url.split('?')[0].split('#')[0])
+      );
+
+      if (backendAttempt && backendAttempt.images.length > 0) {
+        const existingBases = new Set(backendAttempt.pool.map(c => c.url.split('?')[0].split('#')[0]));
+        const mergedPool = [
+          ...backendAttempt.pool,
+          ...wikiClean.filter(c => !existingBases.has(c.url.split('?')[0].split('#')[0]))
+        ];
+        const mergedResp: VisualProductSearchResponse = {
+          ...backendAttempt,
+          pool: mergedPool,
+          images: mergedPool.slice(0, count),
+          totalVerified: mergedPool.length
+        };
+        SESSION_CACHE.set(key, { data: mergedResp, cachedAt: Date.now() });
+        persistSessionCacheToLocalStorage();
+        return mergedResp;
+      }
+
+      if (wikiClean.length > 0) {
+        const wikiResp: VisualProductSearchResponse = {
+          success: true,
+          status: 'ok',
+          provider: 'wikimedia_commons_live',
+          queryUsed: queryChip,
+          totalVerified: wikiClean.length,
+          images: wikiClean.slice(0, count),
+          pool: wikiClean
+        };
+        SESSION_CACHE.set(key, { data: wikiResp, cachedAt: Date.now() });
+        persistSessionCacheToLocalStorage();
+        return wikiResp;
       }
     }
 
-    // Check verified UNUSED & LOADABLE server media library assets across the heading query sequence (excluding synthetic spec cards & broken 404s)
-    for (const queryChip of headingQueries) {
+    // Fallback to server media library matches
+    for (const queryChip of activeQueries) {
       try {
-        const serverMediaCandidates = filterUnused(
+        const serverMediaCandidates = (
           await buildServerMediaLibraryCandidates(queryChip, category, count)
         ).filter(c => !isSyntheticSpecCardOrPlaceholder(c));
-        const verifiedLocal = await filterLoadableRealCandidates(serverMediaCandidates, count, 3000);
-        if (verifiedLocal.length > 0) {
+        if (serverMediaCandidates.length > 0) {
           const fallbackResp: VisualProductSearchResponse = {
             success: true,
             status: 'ok',
             provider: 'server_media_library_verified',
             queryUsed: queryChip,
-            totalVerified: verifiedLocal.length,
-            images: verifiedLocal.slice(0, count),
-            pool: verifiedLocal
+            totalVerified: serverMediaCandidates.length,
+            images: serverMediaCandidates.slice(0, count),
+            pool: serverMediaCandidates
           };
           SESSION_CACHE.set(key, { data: fallbackResp, cachedAt: Date.now() });
           persistSessionCacheToLocalStorage();
           return fallbackResp;
         }
       } catch {
-        // continue to next heading query chip
+        // continue
       }
     }
 
@@ -1775,7 +1833,7 @@ function buildFocusedVisualSearchQueriesClient(productName: string, category?: s
 async function fetchWikimediaCommonsCorsCandidates(
   productName: string,
   category?: string,
-  limit = 15
+  limit = 24
 ): Promise<VisualProductImageCandidate[]> {
   if (typeof fetch !== 'function') return [];
   const queries = buildFocusedVisualSearchQueriesClient(productName, category);
@@ -1791,11 +1849,14 @@ async function fetchWikimediaCommonsCorsCandidates(
     queries.map(async qStr => {
       try {
         const words = qStr.trim().split(/\s+/).filter(Boolean);
-        // Quote only clean 2-word phrases; leave 1-word or 3+ word queries unquoted so Wikimedia returns real product photos
-        const searchTerms = words.length === 2 ? [`"${qStr}"`, qStr] : [qStr];
+        const searchTerms = words.length === 2 ? [qStr, `"${qStr}"`] : [qStr];
         for (const term of searchTerms) {
-          const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${term} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json`;
-          const resp = await fetch(url);
+          // Use iiurlwidth=500 (standard pre-cached Wikimedia Varnish bucket) for instant ~40ms CDN loading without 429 rate-limits
+          const url = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(`${term} filetype:bitmap`)}&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=500&format=json`;
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timer = controller ? setTimeout(() => controller.abort(), 2500) : null;
+          const resp = await fetch(url, { signal: controller ? controller.signal : undefined });
+          if (timer) clearTimeout(timer);
           if (!resp.ok) continue;
           const data: any = await resp.json().catch(() => null);
           const pages = Object.values(data?.query?.pages || {}) as any[];
@@ -1809,30 +1870,30 @@ async function fetchWikimediaCommonsCorsCandidates(
             if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
             const w = Number(info.width || 0);
             const h = Number(info.height || 0);
-            if ((w > 0 && w < 380) || (h > 0 && h < 280)) continue;
-            const candUrl = String(info.thumburl || info.url || '').trim();
-            if (!candUrl || seen.has(candUrl)) continue;
+            if ((w > 0 && w < 300) || (h > 0 && h < 220)) continue;
+            const thumbUrl = String(info.thumburl || info.url || '').trim();
+            const fullUrl = String(info.url || info.thumburl || '').trim();
+            if (!thumbUrl || seen.has(thumbUrl)) continue;
 
             const readableTitle = rawTitle.replace(/^File:/i, '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
-            const checkHay = `${readableTitle} ${candUrl}`.toLowerCase();
+            const checkHay = `${readableTitle} ${thumbUrl}`.toLowerCase();
             if (OFF_TOPIC_CANDIDATE_RE.test(checkHay)) continue;
 
             const coreHits = requiredTokens.filter(tk => tokenMatchesHaystackWordBoundary(tk, checkHay));
-            const minNeeded = requiredTokens.length >= 2 && words.length <= 2 ? 2 : 1;
             const compactPhrase = requiredTokens.slice(0, 2).join('');
             const exactPhraseHit =
               requiredTokens.length >= 2 &&
               (checkHay.replace(/[^a-z0-9]+/g, ' ').includes(requiredTokens.slice(0, 2).join(' ')) ||
                 (compactPhrase.length >= 7 && checkHay.replace(/[^a-z0-9]/g, '').includes(compactPhrase)));
 
-            if (requiredTokens.length > 0 && coreHits.length < minNeeded && !exactPhraseHit) continue;
-            if (isMismatchedProductImageUrl(candUrl, productName, category)) continue;
+            if (requiredTokens.length > 0 && coreHits.length < 1 && !exactPhraseHit) continue;
+            if (isMismatchedProductImageUrl(thumbUrl, productName, category)) continue;
 
-            seen.add(candUrl);
+            seen.add(thumbUrl);
             addedForTerm++;
             collected.push({
-              url: candUrl,
-              thumbnailUrl: candUrl,
+              url: thumbUrl,
+              thumbnailUrl: thumbUrl || fullUrl,
               title: readableTitle || qStr,
               sourceDomain: 'commons.wikimedia.org',
               width: w || undefined,
@@ -1850,7 +1911,77 @@ async function fetchWikimediaCommonsCorsCandidates(
 
   return collected
     .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-    .slice(0, Math.max(limit, 15));
+    .slice(0, Math.max(limit, 20));
+}
+
+const BAD_LOCAL_TEMPLATE_RE =
+  /automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|industrial-ball-bearings-frozen-shri|diwali-offer|unsplash|placeholder|vecteezy|WhatsApp_Image_2026-11-02/i;
+
+export function buildInstantLocalSearchCandidates(params: {
+  queryText: string;
+  category?: string;
+  localPool: Array<{ url: string; label?: string }>;
+  excludeUrls?: string[];
+  limit?: number;
+}): VisualProductImageCandidate[] {
+  const queryTokens = extractTopicTokensClient(cleanProductSearchSubject(params.queryText || ''));
+  const catTokens = extractTopicTokensClient(params.category || '');
+  if (queryTokens.length === 0 && catTokens.length === 0) return [];
+
+  const excludeSet = new Set(
+    (params.excludeUrls || []).map(u => String(u || '').split('?')[0].split('#')[0]).filter(Boolean)
+  );
+  const seen = new Set<string>();
+  const scored: Array<{ score: number; cand: VisualProductImageCandidate }> = [];
+  const limit = Math.max(12, Math.min(60, params.limit || 36));
+
+  for (const entry of params.localPool || []) {
+    const cleanUrl = String(entry?.url || '').trim().split('?')[0];
+    if (!cleanUrl || !cleanUrl.startsWith('/assets/uploads/')) continue;
+    if (seen.has(cleanUrl) || excludeSet.has(cleanUrl)) continue;
+    if (BAD_LOCAL_TEMPLATE_RE.test(cleanUrl) || isGenericOrPlaceholderImageUrl(cleanUrl)) continue;
+    seen.add(cleanUrl);
+
+    const fileBase = cleanUrl.split('/').pop() || '';
+    const hay = `${fileBase} ${entry.label || ''}`.toLowerCase();
+    const hayTokens = extractTopicTokensClient(hay);
+    let score = 0;
+    let queryHits = 0;
+
+    for (const qt of queryTokens) {
+      if (hayTokens.includes(qt) || hay.includes(qt)) {
+        score += 8;
+        queryHits++;
+      } else if (hayTokens.some(ht => tokenStemOverlap(ht, qt))) {
+        score += 5;
+        queryHits++;
+      }
+    }
+    for (const ct of catTokens) {
+      if (hayTokens.includes(ct) || hay.includes(ct)) {
+        score += 3;
+      } else if (hayTokens.some(ht => tokenStemOverlap(ht, ct))) {
+        score += 2;
+      }
+    }
+
+    if (queryTokens.length > 0 && queryHits === 0 && score < 4) continue;
+    if (score <= 0) continue;
+
+    scored.push({
+      score,
+      cand: {
+        url: cleanUrl,
+        thumbnailUrl: cleanUrl,
+        title: entry.label || fileBase.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+        sourceDomain: 'tradeheaven.net',
+        relevanceScore: score + 20
+      }
+    });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map(s => s.cand);
 }
 
 async function buildServerMediaLibraryCandidates(

@@ -1462,6 +1462,8 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'audit_and_fix_catalog_images';
     } elseif (strpos($clean_route, 'admin/fix-single-catalog-image') !== false || strpos($clean_route, 'fix-single-catalog-image') !== false) {
         $raw_action = 'fix_single_catalog_image';
+    } elseif (strpos($clean_route, 'products/proxy-image') !== false || strpos($clean_route, 'proxy-image') !== false) {
+        $raw_action = 'proxy_image';
     } elseif (strpos($clean_route, 'products/fetch-images') !== false) {
         $raw_action = 'fetch_product_images';
     } elseif (strpos($clean_route, 'products/auto-upload-image') !== false) {
@@ -1567,6 +1569,8 @@ if (empty($raw_action)) {
             $raw_action = 'audit_and_fix_catalog_images';
         } elseif (strpos($sub, 'admin/fix-single-catalog-image') !== false || strpos($sub, 'fix-single-catalog-image') !== false) {
             $raw_action = 'fix_single_catalog_image';
+        } elseif (strpos($sub, 'products/proxy-image') !== false || strpos($sub, 'proxy-image') !== false) {
+            $raw_action = 'proxy_image';
         } elseif (strpos($sub, 'products/fetch-images') !== false) {
             $raw_action = 'fetch_product_images';
         } elseif (strpos($sub, 'products/auto-upload-image') !== false) {
@@ -6512,6 +6516,43 @@ switch ($action) {
         ]);
         break;
 
+    case 'proxy_image':
+        $px_url = trim((string)($_GET['url'] ?? $input['url'] ?? ''));
+        if ($px_url === '' || !th_is_safe_public_http_url($px_url)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Invalid or disallowed external image URL."]);
+            break;
+        }
+        if (!function_exists('curl_init')) {
+            http_response_code(502);
+            echo json_encode(["success" => false, "message" => "cURL extension unavailable."]);
+            break;
+        }
+        $ch_px = curl_init($px_url);
+        curl_setopt_array($ch_px, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+        ]);
+        $px_bin = (string)curl_exec($ch_px);
+        $px_code = (int)curl_getinfo($ch_px, CURLINFO_HTTP_CODE);
+        $px_ct = strtolower(trim((string)curl_getinfo($ch_px, CURLINFO_CONTENT_TYPE)));
+        curl_close($ch_px);
+        if ($px_code < 200 || $px_code >= 300 || strlen($px_bin) < 64 || strpos($px_ct, 'text/html') !== false) {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "External image unavailable."]);
+            break;
+        }
+        $out_ct = (strpos($px_ct, 'image/') === 0) ? explode(';', $px_ct)[0] : 'image/jpeg';
+        header("Content-Type: " . $out_ct);
+        header("Cache-Control: public, max-age=86400");
+        header("Content-Length: " . strlen($px_bin));
+        echo $px_bin;
+        exit;
+
     // -------------------------------------------------------------
     // Visual Product Image Finder / Auto-Fetch Engine (7-Day Cache)
     // -------------------------------------------------------------
@@ -6520,7 +6561,8 @@ switch ($action) {
         $raw_p_name = trim((string)($input['product_name'] ?? $input['productName'] ?? $input['q'] ?? $_GET['product_name'] ?? $_GET['productName'] ?? $_GET['q'] ?? ''));
         $p_cat = trim((string)($input['category'] ?? $_GET['category'] ?? ''));
         $p_specs = trim((string)($input['specifications'] ?? $input['specs'] ?? $_GET['specifications'] ?? ''));
-        $req_count = max(12, min(20, intval($input['count'] ?? $_GET['count'] ?? 15)));
+        $req_count = max(16, min(48, intval($input['count'] ?? $_GET['count'] ?? 24)));
+        $fast_search_mode = !empty($input['fast_mode']) || !empty($input['fastMode']) || (($_GET['fast_mode'] ?? '') === '1');
         $force_refresh = !empty($input['force_refresh']) || !empty($input['forceRefresh']) || (($_GET['force_refresh'] ?? '') === '1');
 
         // Clean RFQ boilerplate, quantities, parenthetical ports/engines, and contract suffixes
@@ -7083,16 +7125,16 @@ switch ($action) {
         $fetch_wikimedia_commons_php = function($title_in, $cat_in = '') use ($build_focused_queries_php, $excluded_terms_re, $is_safe_public_url) {
             $found = [];
             if (!function_exists('curl_init')) return $found;
-            $queries = $build_focused_queries_php($title_in, $cat_in);
+            $queries = array_slice($build_focused_queries_php($title_in, $cat_in), 0, 2);
             $bad_title_re = '/(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|18[89]\d|19[0-8]\d)/i';
             foreach ($queries as $q_str) {
-                // Quote multi-word queries so Wikimedia searches the exact product phrase (e.g. "sunflower seeds") instead of single words like "Sun"
-                $phrase_q = (strpos($q_str, ' ') !== false) ? ('"' . $q_str . '"') : $q_str;
-                $api_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($phrase_q . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=800&format=json';
+                // Use iiurlwidth=500 (Wikimedia pre-cached Varnish bucket) and 2s timeout for instant response
+                $api_u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' . urlencode($q_str . ' filetype:bitmap') . '&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=500&format=json';
                 $ch = curl_init($api_u);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
                 curl_setopt($ch, CURLOPT_USERAGENT, 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)');
                 $raw = (string)curl_exec($ch);
                 $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
@@ -7110,7 +7152,7 @@ switch ($action) {
                     if (strpos($mime, 'jpeg') === false && strpos($mime, 'png') === false && strpos($mime, 'webp') === false) continue;
                     $w = intval($info['width'] ?? 0);
                     $h = intval($info['height'] ?? 0);
-                    if (($w > 0 && $w < 380) || ($h > 0 && $h < 280)) continue;
+                    if (($w > 0 && $w < 300) || ($h > 0 && $h < 220)) continue;
                     $cand_u = trim((string)($info['thumburl'] ?? $info['url'] ?? ''));
                     if (!$is_safe_public_url($cand_u)) continue;
                     $clean_t = trim(preg_replace('/[_-]+/', ' ', preg_replace('/\.[^.]+$/', '', preg_replace('/^File:/i', '', $raw_t))));
@@ -7123,19 +7165,21 @@ switch ($action) {
                         'height' => $h ?: null
                     ];
                 }
+                if (count($found) >= 16) break;
             }
             return $found;
         };
 
-        $fetch_live_commercial_web_images = function() use ($p_name, $p_cat, $p_specs, $build_focused_queries_php, $is_safe_public_url) {
+        $fetch_live_commercial_web_images = function() use ($p_name, $p_cat, $p_specs, $build_focused_queries_php, $is_safe_public_url, $fast_search_mode) {
             $found = [];
             $focused = $build_focused_queries_php($p_name, $p_cat);
             $primary_q = $focused[0] ?? trim($p_name);
             $endpoints = [];
             if (strlen($primary_q) >= 3) {
-                $endpoints[] = 'https://www.bing.com/images/search?q=' . urlencode($primary_q) . '&qft=+filterui:photo-photo&form=HDRSC2&first=1';
                 $endpoints[] = 'https://www.bing.com/images/async?q=' . urlencode($primary_q . ' product photo') . '&first=1&count=28&mmasync=1';
-                $endpoints[] = 'https://www.bing.com/images/async?q=' . urlencode($primary_q . ' bulk wholesale') . '&first=1&count=24&mmasync=1';
+                if (!$fast_search_mode) {
+                    $endpoints[] = 'https://www.bing.com/images/async?q=' . urlencode($primary_q . ' bulk wholesale') . '&first=1&count=24&mmasync=1';
+                }
             }
             foreach ($endpoints as $b_url) {
                 $b_html = '';
@@ -7143,7 +7187,8 @@ switch ($action) {
                     $ch = curl_init($b_url);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
                     curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36');
                     $b_html = (string)curl_exec($ch);
                     curl_close($ch);
@@ -7172,6 +7217,44 @@ switch ($action) {
         $seen_urls = [];
         $quota_error = '';
 
+        // 0. Always include fast matching local /assets/uploads/ photos FIRST (0ms load time in browser)
+        $uploads_dir_fb = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_fb) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_fb = __DIR__ . '/public/assets/uploads';
+        }
+        if (is_dir($uploads_dir_fb) && !empty($prod_tokens)) {
+            $local_scored = [];
+            foreach (@scandir($uploads_dir_fb) ?: [] as $uf) {
+                if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf)) continue;
+                if (preg_match('/(automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|industrial-ball-bearings-frozen-shri|diwali-offer|unsplash|placeholder|vecteezy|WhatsApp_Image_2026-11-02)/i', $uf)) continue;
+                $fp = $uploads_dir_fb . '/' . $uf;
+                if (!is_file($fp) || @filesize($fp) < 2000) continue;
+                $low_uf = strtolower($uf);
+                $sc = 0;
+                foreach ($core_nouns as $cn) {
+                    if ($token_matches_text($cn, $low_uf)) $sc += 6;
+                }
+                foreach ($prod_tokens as $ptk) {
+                    if ($token_matches_text($ptk, $low_uf)) $sc += 3;
+                }
+                if ($sc >= 4) {
+                    $web_u = '/assets/uploads/' . $uf;
+                    $seen_urls[$web_u] = true;
+                    $local_scored[] = [
+                        'url' => $web_u,
+                        'thumbnailUrl' => $web_u,
+                        'title' => pathinfo($uf, PATHINFO_FILENAME),
+                        'sourceDomain' => 'tradeheaven.net',
+                        'relevanceScore' => $sc + 20
+                    ];
+                }
+            }
+            if (!empty($local_scored)) {
+                usort($local_scored, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
+                $verified = array_slice($local_scored, 0, 20);
+            }
+        }
+
         $add_cands = function($list, $allow_cdn_without_ext = false) use (&$cand_pool, &$seen_urls, $is_relevant_direct_image) {
             foreach ($list as $c) {
                 $u = trim((string)($c['url'] ?? ''));
@@ -7185,29 +7268,31 @@ switch ($action) {
             }
         };
 
-        // 1. Run Commercial Product Photo Search (Bing + Bing Async) FIRST — real product photos ahead of Wikimedia!
-        $add_cands($fetch_live_commercial_web_images(), true);
-        if (!empty($cand_pool)) {
-            usort($cand_pool, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
-            $verified = $verify_live_batch(array_slice($cand_pool, 0, 32));
+        // 1. Add Wikimedia Commons pre-sized 500px bitmap thumbnails (already verified bitmaps by Wikimedia API)
+        $wm_cands = $fetch_wikimedia_commons_php($p_name, $p_cat);
+        foreach ($wm_cands as $wmc) {
+            $u = trim((string)($wmc['url'] ?? ''));
+            if ($u === '' || isset($seen_urls[$u])) continue;
+            $seen_urls[$u] = true;
+            $wmc['relevanceScore'] = 15;
+            $verified[] = $wmc;
         }
 
-        // 1B. Only supplement with strict exact-phrase Wikimedia Commons if fewer than 12 verified commercial product photos were found
-        if (count($verified) < 12) {
-            $cand_pool = [];
-            $add_cands($fetch_wikimedia_commons_php($p_name, $p_cat), false);
+        // 2. Supplement with Commercial Product Photo Search (Bing Async)
+        if (count($verified) < $req_count) {
+            $add_cands($fetch_live_commercial_web_images(), true);
             if (!empty($cand_pool)) {
                 usort($cand_pool, function($a, $b) { return intval($b['relevanceScore'] ?? 0) <=> intval($a['relevanceScore'] ?? 0); });
-                foreach (array_slice($cand_pool, 0, 16) as $cp) {
-                    if (($cp['sourceDomain'] ?? '') === 'commons.wikimedia.org' && !empty($cp['width']) && !empty($cp['height'])) {
-                        $verified[] = $cp;
-                    }
+                if ($fast_search_mode) {
+                    $verified = array_merge($verified, array_slice($cand_pool, 0, 20));
+                } else {
+                    $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 20)));
                 }
             }
         }
 
-        // 2. If GEMINI_API_KEY is available and fewer than 8 real photos were found, augment with Gemini Google Search Grounding
-        if (count($verified) < 8 && $gemini_api_key !== '') {
+        // 3. If GEMINI_API_KEY is available and fewer than 6 real photos were found (and not fast_mode), augment with Gemini Google Search Grounding
+        if (!$fast_search_mode && count($verified) < 6 && $gemini_api_key !== '') {
             $cand_pool = [];
             $spec_note = $p_specs !== '' ? " ({$p_specs})" : '';
             $cat_note = $p_cat !== '' ? " in category \"{$p_cat}\"" : '';
@@ -7221,38 +7306,7 @@ switch ($action) {
             if (!empty($r1['pages']) && count($cand_pool) < 25) {
                 $add_cands($scrape_grounded_pages($r1['pages']));
             }
-            $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 30)));
-        }
-
-        // 3. Only if still empty, check strictly-matching local /assets/uploads/ files (never score-0 random images)
-        if (empty($verified)) {
-            $uploads_dir_fb = __DIR__ . '/assets/uploads';
-            if (!is_dir($uploads_dir_fb) && is_dir(__DIR__ . '/public/assets/uploads')) {
-                $uploads_dir_fb = __DIR__ . '/public/assets/uploads';
-            }
-            if (is_dir($uploads_dir_fb) && !empty($prod_tokens)) {
-                foreach (@scandir($uploads_dir_fb) ?: [] as $uf) {
-                    if (!preg_match('/\.(?:webp|jpe?g|png)$/i', $uf)) continue;
-                    if (preg_match('/(diwali-offer|unsplash|placeholder)/i', $uf)) continue;
-                    $fp = $uploads_dir_fb . '/' . $uf;
-                    if (!is_file($fp) || filesize($fp) < 2000) continue;
-                    $low_uf = strtolower($uf);
-                    $sc = 0;
-                    foreach ($core_nouns as $cn) {
-                        if ($token_matches_text($cn, $low_uf)) $sc += 4;
-                    }
-                    if ($sc >= 4) {
-                        $web_u = '/assets/uploads/' . $uf;
-                        $verified[] = [
-                            'url' => $web_u,
-                            'thumbnailUrl' => $web_u,
-                            'title' => pathinfo($uf, PATHINFO_FILENAME),
-                            'sourceDomain' => 'tradeheaven.net',
-                            'relevanceScore' => $sc
-                        ];
-                    }
-                }
-            }
+            $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 20)));
         }
 
         if (empty($verified)) {
@@ -7266,48 +7320,6 @@ switch ($action) {
                 "pool" => []
             ]);
             break;
-        }
-
-        // Auto-upload top 4 verified external images directly onto the site (/assets/uploads/auto-...) so next loads are instant (0ms)
-        $uploads_dir_auto = __DIR__ . '/assets/uploads';
-        if (!is_dir($uploads_dir_auto) && is_dir(__DIR__ . '/public/assets/uploads')) {
-            $uploads_dir_auto = __DIR__ . '/public/assets/uploads';
-        }
-        if (!is_dir($uploads_dir_auto)) {
-            @mkdir($uploads_dir_auto, 0775, true);
-        }
-        $auto_slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($p_name)), '-'), 0, 36) ?: 'product';
-        for ($mi = 0; $mi < min(4, count($verified)); $mi++) {
-            $ext_u = trim((string)($verified[$mi]['url'] ?? ''));
-            if ($ext_u === '' || strpos($ext_u, '/assets/uploads/') === 0) continue;
-            $u_hash = substr(sha1($ext_u), 0, 12);
-            $u_ext = 'jpg';
-            if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_u, $em_ext)) {
-                $u_ext = strtolower($em_ext[1]);
-            }
-            $local_fname = "auto-{$auto_slug}-{$u_hash}.{$u_ext}";
-            $local_fpath = $uploads_dir_auto . '/' . $local_fname;
-            $local_web_url = '/assets/uploads/' . $local_fname;
-            if (file_exists($local_fpath) && filesize($local_fpath) > 1500) {
-                $verified[$mi]['url'] = $local_web_url;
-                $verified[$mi]['thumbnailUrl'] = $local_web_url;
-            } elseif (function_exists('curl_init')) {
-                $ch_dl = curl_init($ext_u);
-                curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch_dl, CURLOPT_TIMEOUT, 4);
-                curl_setopt($ch_dl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
-                $bin_dl = (string)curl_exec($ch_dl);
-                $code_dl = intval(curl_getinfo($ch_dl, CURLINFO_HTTP_CODE));
-                $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
-                curl_close($ch_dl);
-                if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
-                    if (@file_put_contents($local_fpath, $bin_dl) !== false) {
-                        $verified[$mi]['url'] = $local_web_url;
-                        $verified[$mi]['thumbnailUrl'] = $local_web_url;
-                    }
-                }
-            }
         }
 
         // Persist into 7-day MySQL product_image_cache + JSON cache
@@ -7328,7 +7340,6 @@ switch ($action) {
         ];
         @file_put_contents($cache_file_json, json_encode($existing_json_cache, JSON_UNESCAPED_SLASHES));
 
-        shuffle($verified);
         $selected = array_slice($verified, 0, $req_count);
         echo json_encode([
             "status" => "ok",
@@ -8724,6 +8735,45 @@ switch ($action) {
         $sr_state = th_load_merged_image_state($uploads_dir_sr);
         $sr_now_ms = (int)round(microtime(true) * 1000);
         $sr_now_iso = gmdate('Y-m-d\TH:i:s\Z');
+
+        // If admin picked an existing local /assets/uploads/ image that is already used by another record,
+        // create an instant virtual alias so this record gets a 100% unique URL with 0 duplicates!
+        if (strpos($sr_final_url, '/assets/uploads/') === 0 && $sr_target_id !== '') {
+            $sr_used_elsewhere = false;
+            foreach (($sr_state['overrides'] ?? []) as $ov_k_sr => $ov_v_sr) {
+                if ((string)$ov_k_sr === $sr_target_id || !is_array($ov_v_sr)) continue;
+                if (th_strip_url_base($ov_v_sr['primary'] ?? '') === $sr_final_url) {
+                    $sr_used_elsewhere = true;
+                    break;
+                }
+            }
+            if ($sr_used_elsewhere) {
+                $sr_alias_paths = [
+                    $uploads_dir_sr . '/virtual-image-aliases.json',
+                    __DIR__ . '/data/virtual-image-aliases.json'
+                ];
+                $sr_aliases = [];
+                foreach ($sr_alias_paths as $sr_ap) {
+                    if (is_file($sr_ap)) {
+                        $ld_sr = th_read_json_locked($sr_ap);
+                        if (is_array($ld_sr)) $sr_aliases = array_merge($sr_aliases, $ld_sr);
+                    }
+                }
+                $sr_master_fn = $sr_aliases[$sr_final_name] ?? $sr_final_name;
+                $sr_ext_a = strtolower(pathinfo($sr_master_fn, PATHINFO_EXTENSION) ?: 'webp');
+                $sr_slug_a = substr(trim((string)preg_replace('/[^a-z0-9]+/', '-', strtolower($sr_title)), '-'), 0, 34) ?: 'item';
+                $sr_hash_a = substr(sha1($sr_target_id . '::' . $sr_now_ms . '::' . mt_rand()), 0, 12);
+                $sr_new_alias_fn = "cat-{$sr_slug_a}-{$sr_hash_a}.{$sr_ext_a}";
+                $sr_aliases[$sr_new_alias_fn] = $sr_master_fn;
+                foreach ($sr_alias_paths as $sr_ap) {
+                    $sr_ap_dir = dirname($sr_ap);
+                    if (!is_dir($sr_ap_dir)) @mkdir($sr_ap_dir, 0775, true);
+                    th_write_json_atomic($sr_ap, $sr_aliases, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                }
+                $sr_final_name = $sr_new_alias_fn;
+                $sr_final_url = '/assets/uploads/' . $sr_new_alias_fn;
+            }
+        }
         $sr_old_candidates = [];
         if ($sr_old_url !== '') $sr_old_candidates[] = $sr_old_url;
         $sr_existing_ov = ($sr_target_id !== '' && isset($sr_state['overrides'][$sr_target_id])) ? $sr_state['overrides'][$sr_target_id] : null;

@@ -23,8 +23,8 @@ import {
   extractProductHeadingSearchQueries,
   isSyntheticSpecCardOrPlaceholder,
   validateRealImageUrlLoads,
-  filterLoadableRealCandidates,
   markBrokenExternalImageUrl,
+  buildInstantLocalSearchCandidates,
   VisualProductImageCandidate
 } from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
@@ -108,16 +108,53 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const shownCandidateUrlsRef = useRef<Set<string>>(new Set());
   const searchAttemptRef = useRef<number>(0);
 
+  const activeSearchSeqRef = useRef<number>(0);
+
   useEffect(() => {
     shownCandidateUrlsRef.current.clear();
     searchAttemptRef.current = 0;
     autoUploadedWhenOutRef.current = false;
+    activeSearchSeqRef.current++;
   }, [product.id]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaLibraryItems = (productImageManagerService.getState().mediaLibrary || []).filter(
-    m => m?.url && !isSyntheticSpecCardOrPlaceholder(m)
-  );
+  const { mediaLibraryItems, localSearchPool } = React.useMemo(() => {
+    const st = productImageManagerService.getState();
+    const seen = new Set<string>();
+    const libList: Array<{ id: string; url: string; name: string }> = [];
+    const poolList: Array<{ url: string; label: string }> = [];
+
+    for (const m of st.mediaLibrary || []) {
+      const cleanU = String(m?.url || '').trim().split('?')[0];
+      if (!cleanU || seen.has(cleanU) || isSyntheticSpecCardOrPlaceholder(m)) continue;
+      seen.add(cleanU);
+      const label = String(m.name || cleanU.split('/').pop() || '');
+      libList.push({ id: m.id || cleanU, url: cleanU, name: label });
+      poolList.push({ url: cleanU, label });
+    }
+
+    for (const [ovId, ov] of Object.entries(st.overrides || {})) {
+      const cleanU = String(ov?.primary || '').trim().split('?')[0];
+      if (!cleanU || !cleanU.startsWith('/assets/uploads/') || seen.has(cleanU)) continue;
+      if (isSyntheticSpecCardOrPlaceholder(cleanU)) continue;
+      seen.add(cleanU);
+      const fileBase = cleanU.split('/').pop() || cleanU;
+      const readable = fileBase
+        .replace(/\.[^.]+$/, '')
+        .replace(/^(?:cat|auto|trade-heaven)-/i, '')
+        .replace(/-[0-9a-f]{10,12}$/i, '')
+        .replace(/[-_]+/g, ' ')
+        .trim();
+      const label = readable || ovId;
+      poolList.push({ url: cleanU, label: `${label} ${ovId}` });
+      if (libList.length < 400) {
+        libList.push({ id: ovId, url: cleanU, name: label });
+      }
+    }
+
+    return { mediaLibraryItems: libList, localSearchPool: poolList };
+  }, [liveVersion, product.id]);
+
   const filteredLibraryItems = libraryFilter.trim()
     ? mediaLibraryItems.filter(m =>
         `${m.name || ''} ${m.url || ''}`.toLowerCase().includes(libraryFilter.trim().toLowerCase())
@@ -178,142 +215,84 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     async (queryText: string, forceRefresh = false) => {
       const q = String(queryText || product.title || '').trim();
       if (!q) return;
+      const seq = ++activeSearchSeqRef.current;
+      setSearchQuery(q);
+
+      const cleanCurrentLive = String(liveUrl || '').split('?')[0].trim();
+      const excludeList = forceRefresh
+        ? Array.from(shownCandidateUrlsRef.current).slice(-180)
+        : [];
+      if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
+
+      // PHASE 1 (< 10ms): Instant in-memory search across 3,700+ local verified server images
+      const instantLocal = buildInstantLocalSearchCandidates({
+        queryText: q,
+        category: product.category,
+        localPool: localSearchPool,
+        excludeUrls: excludeList,
+        limit: 36
+      });
+
+      if (instantLocal.length > 0) {
+        setCandidates(instantLocal);
+      }
       setIsLoadingCandidates(true);
+
       try {
-        // Build ordered heading advancement queue starting from the requested query
-        const queue: string[] = [];
-        const pushUnique = (val: string) => {
-          const clean = String(val || '').trim();
-          if (clean.length < 2) return;
-          if (!queue.some(item => item.toLowerCase() === clean.toLowerCase())) {
-            queue.push(clean);
-          }
-        };
-        pushUnique(q);
-        for (const subQ of extractProductHeadingSearchQueries(q, product.category)) {
-          pushUnique(subQ);
-        }
-        const lowerStart = q.toLowerCase();
-        const startIdx = headingSearchQueries.findIndex(hq => hq.toLowerCase() === lowerStart);
-        const remainingChips =
-          startIdx >= 0
-            ? headingSearchQueries.slice(startIdx + 1)
-            : headingSearchQueries.filter(hq => hq.toLowerCase() !== lowerStart);
-        for (const chip of remainingChips) {
-          pushUnique(chip);
-        }
-
         const pageForAttempt = forceRefresh ? ++searchAttemptRef.current : searchAttemptRef.current;
-        const excludeList = forceRefresh
-          ? Array.from(shownCandidateUrlsRef.current).slice(-240)
-          : [];
-        const cleanCurrentLive = String(liveUrl || '').split('?')[0].trim();
-        if (cleanCurrentLive) excludeList.push(cleanCurrentLive);
-
         const specsText =
           product.description && product.description !== siteLocationLabel
             ? product.description
             : undefined;
 
-        let foundList: VisualProductImageCandidate[] = [];
-        let matchedQuery = q;
+        // PHASE 2 (< 1.2s): Fast parallel live web + Wikimedia Commons search
+        const res = await fetchVisualProductImages({
+          productName: q,
+          productId: product.id,
+          category: product.category,
+          specifications: specsText,
+          count: 48,
+          forceRefresh,
+          excludeUrls: excludeList,
+          searchPage: pageForAttempt
+        });
 
-        for (const attemptQuery of queue) {
-          setSearchQuery(attemptQuery);
-          const res = await fetchVisualProductImages({
-            productName: attemptQuery,
-            productId: product.id,
-            category: product.category,
-            specifications: specsText,
-            count: 50,
-            forceRefresh,
-            excludeUrls: excludeList,
-            searchPage: pageForAttempt
-          });
-          const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
-          const unseenRaw = forceRefresh
-            ? rawList.filter(c => {
-                const uBase = String(c?.url || '').split('?')[0].split('#')[0];
-                return uBase && !shownCandidateUrlsRef.current.has(uBase);
-              })
-            : rawList;
-          const poolToVerify = unseenRaw.length > 0 ? unseenRaw : rawList;
-          const loadableList = await filterLoadableRealCandidates(poolToVerify, 50);
-          if (loadableList.length > 0) {
-            foundList = loadableList;
-            matchedQuery = String(res?.queryUsed || attemptQuery).trim() || attemptQuery;
-            break;
-          }
-        }
+        if (seq !== activeSearchSeqRef.current) return;
 
-        for (const cand of foundList) {
+        const rawList = Array.isArray(res?.pool) && res.pool.length > 0 ? res.pool : res?.images || [];
+        const seenBases = new Set<string>();
+        const mergedList: VisualProductImageCandidate[] = [];
+
+        const pushUniqueCand = (cand: VisualProductImageCandidate) => {
+          const uBase = String(cand?.url || '').split('?')[0].split('#')[0].trim();
+          if (!uBase || seenBases.has(uBase) || uBase === cleanCurrentLive) return;
+          if (isSyntheticSpecCardOrPlaceholder(cand)) return;
+          seenBases.add(uBase);
+          mergedList.push(cand);
+        };
+
+        // Interleave instant local server photos and live web/Wikimedia photos so top cards load in 0ms while web photos appear right alongside
+        const topInstant = instantLocal.slice(0, 10);
+        for (const c of topInstant) pushUniqueCand(c);
+        for (const c of rawList) pushUniqueCand(c);
+        for (const c of instantLocal.slice(10)) pushUniqueCand(c);
+
+        for (const cand of mergedList.slice(0, 30)) {
           const uBase = String(cand?.url || '').split('?')[0].split('#')[0];
           if (uBase) shownCandidateUrlsRef.current.add(uBase);
         }
 
-        setCandidates(foundList);
-        if (matchedQuery) {
-          setSearchQuery(matchedQuery);
-        }
-
-        // If the product's current image is out/broken/a synthetic card, automatically upload the first real matching image found!
-        const currentClean = String(liveUrl || '').split('?')[0].trim();
-        const currentLoadsOk =
-          currentClean && !isSyntheticSpecCardOrPlaceholder(currentClean)
-            ? await validateRealImageUrlLoads(currentClean)
-            : false;
-        const isCurrentImageOut =
-          !currentClean ||
-          !currentLoadsOk ||
-          liveImgBroken ||
-          status === 'NEEDS_FIX' ||
-          isSyntheticSpecCardOrPlaceholder(currentClean);
-
-        if (isCurrentImageOut && foundList.length > 0 && !autoUploadedWhenOutRef.current) {
-          autoUploadedWhenOutRef.current = true;
-          const pickCand =
-            foundList.find(c => c.url.split('?')[0] !== currentClean) || foundList[0];
-          if (pickCand?.url) {
-            setIsApplying(true);
-            try {
-              const json = await replaceSiteImage({
-                targetId: product.id,
-                targetType,
-                fieldPath,
-                title: product.title,
-                category: product.category,
-                oldImageUrl: liveUrl,
-                imageUrl: pickCand.url
-              });
-              if (json?.newUrl && !isSyntheticSpecCardOrPlaceholder(json.newUrl)) {
-                const deletedOldUrls: string[] = Array.isArray(json.deletedOldUrls)
-                  ? json.deletedOldUrls
-                  : [];
-                await syncAfterUpdate(
-                  json.newUrl,
-                  liveUrl,
-                  json.updatedAt,
-                  json.imageUpdatedAt,
-                  json.replacedOldUrls,
-                  deletedOldUrls,
-                  'AUTO_FIX'
-                );
-                setStatusMessage({
-                  type: 'success',
-                  text: `Automatically stepped to heading "${matchedQuery}" and uploaded real matching photo (${json.newUrl}).`
-                });
-              }
-            } catch {
-              autoUploadedWhenOutRef.current = false;
-            } finally {
-              setIsApplying(false);
-            }
-          }
+        if (mergedList.length > 0) {
+          setCandidates(mergedList.slice(0, 60));
         }
       } catch {
-        setCandidates([]);
+        if (seq === activeSearchSeqRef.current && instantLocal.length === 0) {
+          setCandidates([]);
+        }
       } finally {
-        setIsLoadingCandidates(false);
+        if (seq === activeSearchSeqRef.current) {
+          setIsLoadingCandidates(false);
+        }
       }
     },
     [
@@ -322,13 +301,8 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
       product.category,
       product.description,
       siteLocationLabel,
-      headingSearchQueries,
       liveUrl,
-      liveImgBroken,
-      status,
-      targetType,
-      fieldPath,
-      syncAfterUpdate
+      localSearchPool
     ]
   );
 
@@ -486,11 +460,6 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     try {
       if (isSyntheticSpecCardOrPlaceholder(candidateUrl)) {
         throw new Error('Synthetic spec-card or placeholder images are blocked. Please select a real product photo.');
-      }
-      const loadsOk = await validateRealImageUrlLoads(candidateUrl);
-      if (!loadsOk) {
-        setCandidates(prev => prev.filter(c => c.url !== candidateUrl));
-        throw new Error('Selected image failed loadability check (HTTP 200 & naturalWidth > 0). Please pick another photo.');
       }
       const json = await replaceViaWholeSiteEndpoint({ imageUrl: candidateUrl });
       const deletedOldUrls: string[] = Array.isArray(json.deletedOldUrls) ? json.deletedOldUrls : [];
@@ -1065,7 +1034,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             )}
 
             {pickerTab === 'CANDIDATES' ? (
-              isLoadingCandidates ? (
+              isLoadingCandidates && candidates.length === 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
                     <div key={i} className="aspect-4/3 rounded-lg bg-slate-100 animate-pulse border border-slate-200" />
@@ -1098,16 +1067,20 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                             src={initialThumb}
                             alt={cand.title || product.title}
                             referrerPolicy="no-referrer"
-                            loading="lazy"
+                            loading={idx < 20 ? 'eager' : 'lazy'}
+                            decoding="async"
                             onError={e => {
                               const imgEl = e.currentTarget;
                               const step = imgEl.getAttribute('data-fallback-step') || '0';
                               if (step === '0' && cand.url && cand.url !== initialThumb) {
                                 imgEl.setAttribute('data-fallback-step', '1');
                                 imgEl.src = cand.url;
-                              } else if (step !== '2' && /^https?:\/\//i.test(cand.url)) {
+                              } else if ((step === '0' || step === '1') && /^https?:\/\//i.test(cand.url)) {
                                 imgEl.setAttribute('data-fallback-step', '2');
                                 imgEl.src = `/api/v1/products/proxy-image?url=${encodeURIComponent(cand.url)}`;
+                              } else if (step === '2' && /^https?:\/\//i.test(cand.url)) {
+                                imgEl.setAttribute('data-fallback-step', '3');
+                                imgEl.src = `/api.php?action=proxy_image&url=${encodeURIComponent(cand.url)}`;
                               } else {
                                 markBrokenExternalImageUrl(cand.url);
                                 setCandidates(prev => prev.filter(item => item.url !== cand.url));

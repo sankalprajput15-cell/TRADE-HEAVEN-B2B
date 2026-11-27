@@ -15313,9 +15313,11 @@ interface GlobalAttachedImageRegistry {
 
 function buildGlobalAttachedImageRegistry(
   excludeRecordId?: string,
-  extraUsedUrls?: Iterable<string>
+  extraUsedUrls?: Iterable<string>,
+  options?: { skipContentHashing?: boolean }
 ): GlobalAttachedImageRegistry {
   const excludeId = String(excludeRecordId || '').trim();
+  const skipContentHashing = Boolean(options?.skipContentHashing);
   const usedLocalUrls = new Set<string>(inFlightCatalogFixReservedUrls);
   const usedSourceUrls = new Set<string>(inFlightCatalogFixReservedSourceUrls);
   const usedUrlHashes = new Set<string>(inFlightCatalogFixReservedUrlHashes);
@@ -15360,7 +15362,7 @@ function buildGlobalAttachedImageRegistry(
       if (meta?.rawSha256) usedContentHashes.add(meta.rawSha256);
       if (meta?.fileSha256) usedContentHashes.add(meta.fileSha256);
 
-      if (clean.startsWith('/assets/uploads/')) {
+      if (!skipContentHashing && clean.startsWith('/assets/uploads/')) {
         const fHash = getLocalUploadFileSha256(clean);
         if (fHash) usedContentHashes.add(fHash);
       }
@@ -23366,7 +23368,8 @@ async function extractProductImagesFromGroundedPages(
 }
 
 async function verifyLiveProductImageUrl(
-  cand: VisualImageCandidate
+  cand: VisualImageCandidate,
+  fastMode: boolean = false
 ): Promise<VisualImageCandidate | null> {
   const url = String(cand.url || '').trim();
   if (!url || !isSafePublicHttpUrl(url)) return null;
@@ -23431,6 +23434,10 @@ async function verifyLiveProductImageUrl(
     (/tse\d+\.mm\.bing\.net\/th/i.test(String(cand.thumbnailUrl)) ||
       /encrypted-tbn0\.gstatic\.com\/images/i.test(String(cand.thumbnailUrl)));
 
+  if (fastMode) {
+    return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
+  }
+
   try {
     const headResp = await fetch(url, {
       method: 'HEAD',
@@ -23440,17 +23447,23 @@ async function verifyLiveProductImageUrl(
         ...(isAlibabaCdn ? { Referer: 'https://www.alibaba.com/' } : {})
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(1700)
+      signal: AbortSignal.timeout(fastMode ? 1000 : 1700)
     });
     const checked = inspectResponse(headResp);
     if (checked) return checked;
-    if (headResp.status !== 405 && headResp.status !== 403 && headResp.status !== 501 && headResp.status !== 400) {
+    if (fastMode || (headResp.status !== 405 && headResp.status !== 403 && headResp.status !== 501 && headResp.status !== 400)) {
       if (hasVerifiedSearchThumb && DIRECT_IMAGE_EXT_REGEX.test(url)) {
         return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
       }
       return null;
     }
   } catch {
+    if (fastMode) {
+      if (hasVerifiedSearchThumb && DIRECT_IMAGE_EXT_REGEX.test(url)) {
+        return { ...cand, url, thumbnailUrl: String(cand.thumbnailUrl || url) };
+      }
+      return null;
+    }
     // Retry via partial GET below
   }
 
@@ -23750,12 +23763,12 @@ async function fetchWikimediaCommonsProductImages(
         const searchExpr = wordCnt <= 3 ? qStr : `"${qStr}"`;
         const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
           `${searchExpr} filetype:bitmap`
-        )}&gsrnamespace=6&gsrlimit=${fastMode ? 12 : 22}&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
+        )}&gsrnamespace=6&gsrlimit=${fastMode ? 16 : 22}&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=500&format=json`;
         const resp = await fetch(apiUrl, {
           headers: {
             'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
           },
-          signal: AbortSignal.timeout(fastMode ? 2400 : 3500)
+          signal: AbortSignal.timeout(fastMode ? 1400 : 3500)
         });
         if (!resp.ok) return;
         const data: any = await resp.json();
@@ -23862,7 +23875,7 @@ async function fetchAlibabaProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(fastMode ? 2400 : 3600)
+          signal: AbortSignal.timeout(fastMode ? 1400 : 3600)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -24010,7 +24023,7 @@ async function fetchLiveCommercialWebProductImages(
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
           },
-          signal: AbortSignal.timeout(fastMode ? 2400 : 3800)
+          signal: AbortSignal.timeout(fastMode ? 1400 : 3800)
         });
         if (!resp.ok) return;
         const html = await resp.text();
@@ -24339,7 +24352,12 @@ async function handleVisualProductImageSearch(params: {
     for (const [k] of batch) candidateMap.delete(k);
 
     const checks = await Promise.allSettled(
-      batch.map(async ([, cand]) => verifyLiveProductImageUrl(cand))
+      batch.map(async ([, cand]) => {
+        if (isFastMode && String(cand.url || '').includes('upload.wikimedia.org/')) {
+          return cand;
+        }
+        return verifyLiveProductImageUrl(cand, isFastMode);
+      })
     );
     for (const chk of checks) {
       if (chk.status === 'fulfilled' && chk.value) {
@@ -24355,24 +24373,27 @@ async function handleVisualProductImageSearch(params: {
   const directWebDiscoveryPromise = Promise.all([
     fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
     fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
-    fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+    isFastMode ? Promise.resolve([]) : fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
     fetchWikimediaCommonsProductImages(cleanName, cleanCategory, isFastMode)
   ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
     collectAndFilter(alibabaCandidates, true);
     collectAndFilter(webCandidates, true);
     collectAndFilter(googleCandidates, true);
-    await verifyPendingBatch(isFastMode ? 8 : 52);
-    if (verifiedMap.size < (isFastMode ? 3 : 36)) {
+    if (isFastMode) {
       collectAndFilter(wikiCandidates, false);
-      await verifyPendingBatch(isFastMode ? 6 : 30);
     }
-    if (verifiedMap.size < (isFastMode ? 2 : 32) && relaxedCandidateMap.size > 0) {
+    await verifyPendingBatch(isFastMode ? 24 : 52);
+    if (!isFastMode && verifiedMap.size < 36) {
+      collectAndFilter(wikiCandidates, false);
+      await verifyPendingBatch(30);
+    }
+    if (verifiedMap.size < (isFastMode ? 6 : 32) && relaxedCandidateMap.size > 0) {
       for (const [k, v] of relaxedCandidateMap.entries()) {
         if (!verifiedMap.has(k) && !candidateMap.has(k)) {
           candidateMap.set(k, v);
         }
       }
-      await verifyPendingBatch(isFastMode ? 6 : 36);
+      await verifyPendingBatch(isFastMode ? 12 : 36);
     }
   });
 
@@ -24512,24 +24533,26 @@ Return ONLY valid JSON in this format:
         }
       }
 
-      // Live Alibaba + Commercial Web + Google Images + Wikimedia search for nextHeading
-      try {
-        const [subAli, subWeb, subGoogle, subWiki] = await Promise.all([
-          fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
-          fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
-          isFastMode ? Promise.resolve([]) : fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, true),
-          fetchWikimediaCommonsProductImages(nextHeading, cleanCategory, isFastMode)
-        ]);
-        collectAndFilter(subAli, true);
-        collectAndFilter(subWeb, true);
-        collectAndFilter(subGoogle, true);
-        collectAndFilter(subWiki, false);
-        await verifyPendingBatch(isFastMode ? 8 : 40);
-        if (verifiedMap.size >= Math.min(isFastMode ? 3 : 24, requestedCount)) {
-          matchedHeadingQuery = nextHeading;
-          break;
-        }
-      } catch {}
+      // Live Alibaba + Commercial Web + Google Images + Wikimedia search for nextHeading (skip secondary network round-trip in fastMode)
+      if (!isFastMode) {
+        try {
+          const [subAli, subWeb, subGoogle, subWiki] = await Promise.all([
+            fetchAlibabaProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+            fetchLiveCommercialWebProductImages(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+            fetchGoogleImagesProductPhotos(nextHeading, cleanCategory, framedRfqHint, effectivePageOffset, true),
+            fetchWikimediaCommonsProductImages(nextHeading, cleanCategory, isFastMode)
+          ]);
+          collectAndFilter(subAli, true);
+          collectAndFilter(subWeb, true);
+          collectAndFilter(subGoogle, true);
+          collectAndFilter(subWiki, false);
+          await verifyPendingBatch(40);
+          if (verifiedMap.size >= Math.min(24, requestedCount)) {
+            matchedHeadingQuery = nextHeading;
+            break;
+          }
+        } catch {}
+      }
     }
 
     // Also include real verified local photos from disk matching any heading in the sequence
@@ -25255,21 +25278,23 @@ app.get('/api/v1/products/proxy-image', async (req, res) => {
       return res.status(400).end();
     }
     const isAlibabaUrl = /alicdn\.com|alibaba\.com/i.test(targetUrl);
+    const isWikimediaUrl = /wikimedia\.org/i.test(targetUrl);
     let refererOrigin = isAlibabaUrl ? 'https://www.alibaba.com/' : '';
-    if (!refererOrigin) {
+    if (!refererOrigin && !isWikimediaUrl) {
       try {
         refererOrigin = `${new URL(targetUrl).origin}/`;
       } catch {}
     }
     const upstream = await fetch(targetUrl, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'User-Agent': isWikimediaUrl
+          ? 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net; admin@tradeheaven.net)'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
         ...(refererOrigin ? { Referer: refererOrigin } : {})
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(5000)
     });
     if (!upstream.ok) {
       return res.status(upstream.status).end();
@@ -25355,12 +25380,16 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
     const specifications = String(body.specifications || body.specs || body.description || '');
     const requestedCount = Math.max(20, Math.min(60, Number(body.count || 48) || 48));
     const forceRefresh = Boolean(body.force_refresh || body.forceRefresh || body.shuffle);
+    const fastMode = body.fast_mode !== undefined ? Boolean(body.fast_mode) : Boolean(body.fastMode ?? true);
     const searchPage = Math.max(0, Number(body.search_page ?? body.searchPage ?? 0) || 0);
     const extraExcludeUrls: string[] = Array.isArray(body.exclude_urls || body.excludeUrls)
       ? (body.exclude_urls || body.excludeUrls).map((u: any) => String(u || '').trim()).filter(Boolean)
       : [];
 
-    const registry = buildGlobalAttachedImageRegistry(productId || undefined, extraExcludeUrls);
+    const registry = buildGlobalAttachedImageRegistry(productId || undefined, extraExcludeUrls, {
+      skipContentHashing: fastMode
+    });
+    const preindexedFiles = buildPreindexedLocalUploadFiles();
 
     let result = await handleVisualProductImageSearch({
       productName,
@@ -25369,7 +25398,9 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
       count: requestedCount,
       forceRefresh,
       excludeUrls: extraExcludeUrls,
-      searchPage
+      searchPage,
+      fastMode,
+      preindexedFiles
     });
 
     const filterUnusedPool = (list: VisualImageCandidate[] | undefined) => {
@@ -25381,7 +25412,7 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
         const base = normalizeAuditImageUrl(u);
         const token = extractUploadUrlHashToken(u);
         if (seenInResponse.has(base) || (token && seenInResponse.has(`hash:${token}`))) return false;
-        if (registry.isCandidateUsed(u, img?.sourcePageUrl)) return false;
+        if (!u.startsWith('/assets/uploads/') && registry.isCandidateUsed(u, img?.sourcePageUrl)) return false;
         seenInResponse.add(base);
         if (token) seenInResponse.add(`hash:${token}`);
         return true;
@@ -25390,8 +25421,54 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     let unusedPool = filterUnusedPool(result.pool?.length ? result.pool : result.images);
 
-    // If cached pool has fewer than 18 unused candidates, run a fresh live search for brand-new unique photos
-    if (result.success && result.fromCache && unusedPool.length < Math.min(18, requestedCount) && !forceRefresh) {
+    // Prepend matching local /assets/uploads/ photos from disk so Inspector search always includes instant local server matches
+    const queryToks = extractMeaningfulAuditTokens(`${productName} ${category}`);
+    if (queryToks.length > 0 && preindexedFiles.length > 0) {
+      const seenBase = new Set(unusedPool.map(c => normalizeAuditImageUrl(c.url)));
+      const localMatches: Array<{ cand: VisualImageCandidate; score: number }> = [];
+      for (const entry of preindexedFiles) {
+        if (seenBase.has(normalizeAuditImageUrl(entry.webUrl))) continue;
+        let score = 0;
+        let hits = 0;
+        for (const qt of queryToks) {
+          if (entry.tokens.includes(qt)) {
+            score += 8;
+            hits++;
+          } else if (qt.length >= 4 && entry.tokens.some(et => et.length >= 4 && (et.includes(qt) || qt.includes(et)))) {
+            score += 4;
+            hits++;
+          }
+        }
+        if (hits === 0) continue;
+        localMatches.push({
+          score,
+          cand: {
+            url: entry.webUrl,
+            thumbnailUrl: entry.webUrl,
+            title: entry.fname.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            sourceDomain: 'tradeheaven.net',
+            width: 800,
+            height: 600,
+            relevanceScore: 30 + score
+          }
+        });
+      }
+      localMatches.sort((a, b) => b.score - a.score);
+      const topLocal = localMatches.slice(0, 18).map(m => m.cand);
+      if (topLocal.length > 0) {
+        unusedPool = [...topLocal, ...unusedPool];
+        if (!result.success) {
+          result = {
+            ...result,
+            success: true,
+            status: 'ok'
+          };
+        }
+      }
+    }
+
+    // If cached pool has fewer than 18 unused candidates (and not in fastMode), run a fresh live search
+    if (!fastMode && result.success && result.fromCache && unusedPool.length < Math.min(18, requestedCount) && !forceRefresh) {
       const freshResult = await handleVisualProductImageSearch({
         productName,
         category,
@@ -25399,7 +25476,9 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
         count: Math.max(requestedCount, 48),
         forceRefresh: true,
         excludeUrls: extraExcludeUrls,
-        searchPage: searchPage + 1
+        searchPage: searchPage + 1,
+        fastMode: false,
+        preindexedFiles
       });
       if (freshResult.success) {
         const freshUnused = filterUnusedPool(freshResult.pool?.length ? freshResult.pool : freshResult.images);
@@ -26061,22 +26140,25 @@ type IndexedUploadFileEntry = {
 const POISONED_MASTER_TEMPLATE_PATTERN =
   /diwali-offer|unsplash|placeholder|vecteezy|automotive-electric-vehicles|abc-dry-chemical|oem-specification-accounting|bulk-commercial-custom-private-label|industrial-ball-bearings-frozen-shri/i;
 
+let cachedPreindexedUploadFiles: IndexedUploadFileEntry[] | null = null;
+let cachedPreindexedUploadFilesAt = 0;
+
 function buildPreindexedLocalUploadFiles(): IndexedUploadFileEntry[] {
+  const now = Date.now();
+  if (cachedPreindexedUploadFiles && now - cachedPreindexedUploadFilesAt < 60000) {
+    return cachedPreindexedUploadFiles;
+  }
   ensureUploadsDir();
   const indexed: IndexedUploadFileEntry[] = [];
   try {
-    const files = fs.readdirSync(UPLOADS_DIR).filter(f => /\.(webp|jpe?g|png)$/i.test(f));
-    for (const fname of files) {
+    const entries = fs.readdirSync(UPLOADS_DIR, { withFileTypes: true });
+    for (const dirent of entries) {
+      if (!dirent.isFile()) continue;
+      const fname = dirent.name;
+      if (!/\.(webp|jpe?g|png)$/i.test(fname)) continue;
       if (fname.startsWith('cat-')) continue; // Never use derived category copies as master templates
       if (POISONED_MASTER_TEMPLATE_PATTERN.test(fname)) continue;
       const fullPath = path.join(UPLOADS_DIR, fname);
-      try {
-        const st = fs.statSync(fullPath);
-        if (!st.isFile() || st.size <= 2000) continue;
-        if (fname.startsWith('auto-') && st.size < 3500 && !/bricks/i.test(fname)) continue;
-      } catch {
-        continue;
-      }
       indexed.push({
         fname,
         fullPath,
@@ -26085,6 +26167,8 @@ function buildPreindexedLocalUploadFiles(): IndexedUploadFileEntry[] {
       });
     }
   } catch {}
+  cachedPreindexedUploadFiles = indexed;
+  cachedPreindexedUploadFilesAt = now;
   return indexed;
 }
 
@@ -28886,6 +28970,34 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
         finalUrl = stripUrlQueryBase(mirrored);
       } else {
         finalUrl = stripUrlQueryBase(rawU);
+        // When an admin picks an existing local /assets/uploads/ image that is already used by another record,
+        // automatically mint a unique virtual alias so picking from Verified Photo Search or Server Media Library never creates a duplicate override
+        if (finalUrl.startsWith('/assets/uploads/') && cleanTargetId) {
+          const isUsedElsewhere = Object.entries(serverProductImageState.overrides || {}).some(
+            ([oid, ov]) => oid !== cleanTargetId && stripUrlQueryBase(String((ov as any)?.primary || '')) === finalUrl
+          );
+          if (isUsedElsewhere) {
+            const rawBase = path.basename(finalUrl);
+            const masterName = virtualImageAliasesMap[rawBase] ? path.basename(String(virtualImageAliasesMap[rawBase])) : rawBase;
+            const ext = (path.extname(masterName).replace('.', '') || 'webp').toLowerCase();
+            const slug =
+              String(title || cleanTargetId || 'catalog-item')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 36) || 'catalog-item';
+            const shortHash = crypto
+              .createHash('sha1')
+              .update(`${cleanTargetId}::${masterName}::${Date.now()}`)
+              .digest('hex')
+              .slice(0, 12);
+            const aliasFileName = `cat-${slug}-${shortHash}.${ext}`;
+            virtualImageAliasesMap[aliasFileName] = masterName;
+            virtualImageAliasesDirty = true;
+            saveVirtualImageAliasesToDiskSync();
+            finalUrl = `/assets/uploads/${aliasFileName}`;
+          }
+        }
       }
       finalFileName = path.basename(finalUrl);
       finalFormat = (path.extname(finalFileName).replace('.', '') || 'WEBP').toUpperCase();
