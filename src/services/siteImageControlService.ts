@@ -46,6 +46,8 @@ export interface SiteImageAutoFixItemInput {
   fieldPath?: string;
 }
 
+export type ImageAutoPatchSourceMode = 'alibaba_first' | 'alibaba_only' | 'google_only';
+
 export interface SiteImageAutoFixRowResult {
   id: string;
   type: UnifiedSiteImageTargetType;
@@ -55,6 +57,8 @@ export interface SiteImageAutoFixRowResult {
   deletedOldUrls?: string[];
   updatedAt?: string;
   imageUpdatedAt?: number;
+  imageSource?: 'alibaba' | 'google' | 'local';
+  leftForGoogle?: boolean;
   error?: string;
 }
 
@@ -341,12 +345,18 @@ export async function replaceSiteImage(
  */
 export async function autoFixSiteImages(
   items: SiteImageAutoFixItemInput[],
-  opts?: { fastBatchMode?: boolean }
+  opts?: {
+    fastBatchMode?: boolean;
+    sourceMode?: ImageAutoPatchSourceMode;
+    forceRepatch?: boolean;
+  }
 ): Promise<{ results: SiteImageAutoFixRowResult[] }> {
   if (items.length === 0) return { results: [] };
 
   const fastBatchMode = Boolean(opts?.fastBatchMode || items.length > 1);
-  const timeoutMs = items.length > 1 ? 35000 : 20000;
+  const sourceMode: ImageAutoPatchSourceMode = opts?.sourceMode || 'alibaba_first';
+  const forceRepatch = Boolean(opts?.forceRepatch);
+  const timeoutMs = items.length > 1 ? 45000 : 25000;
   const serverResultsById = new Map<string, SiteImageAutoFixRowResult>();
   for (const endpoint of ['/api/v1/admin/site-images/auto-fix', '/api.php?action=site_images_auto_fix']) {
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -356,7 +366,7 @@ export async function autoFixSiteImages(
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ items, fastBatchMode }),
+        body: JSON.stringify({ items, fastBatchMode, sourceMode, forceRepatch }),
         ...(ctrl ? { signal: ctrl.signal } : {})
       });
       const json = await res.json().catch(() => null);
@@ -374,7 +384,11 @@ export async function autoFixSiteImages(
             const isServerLocalUpload = cleanNewUrl.startsWith('/assets/uploads/');
             const loadsOk = isServerLocalUpload ? true : await validateRealImageUrlLoads(cleanNewUrl);
             if (loadsOk) {
-              serverResultsById.set(cleanId, { ...r, newUrl: cleanNewUrl });
+              serverResultsById.set(cleanId, {
+                ...r,
+                newUrl: cleanNewUrl,
+                imageSource: r.imageSource
+              });
               if (!fastBatchMode) {
                 void productImageManagerService.logAndVerifyUploadPropagation({
                   targetId: cleanId,
@@ -393,6 +407,7 @@ export async function autoFixSiteImages(
             type: r.type || 'PRODUCT',
             success: false,
             oldUrl: r.oldUrl,
+            leftForGoogle: Boolean(r.leftForGoogle),
             error: r.error || r.message || 'No verified unused matching photo found automatically.'
           });
         }

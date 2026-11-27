@@ -31,7 +31,8 @@ import { productImageManagerService } from '../../services/productImageManagerSe
 import {
   replaceSiteImage,
   autoFixSiteImages,
-  deleteSiteImageFile
+  deleteSiteImageFile,
+  ImageAutoPatchSourceMode
 } from '../../services/siteImageControlService';
 import { SafeImage } from '../common/SafeImage';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
@@ -107,6 +108,7 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
   const [isApplying, setIsApplying] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isCropping, setIsCropping] = useState<boolean>(false);
+  const [autoFixSourceMode, setAutoFixSourceMode] = useState<ImageAutoPatchSourceMode>('alibaba_first');
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -514,7 +516,8 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
     });
   };
 
-  const handleAutoFix = async () => {
+  const handleAutoFix = async (overrideMode?: ImageAutoPatchSourceMode) => {
+    const activeMode = overrideMode || autoFixSourceMode;
     setIsApplying(true);
     setStatusMessage(null);
     try {
@@ -523,19 +526,22 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         product.description && product.description !== siteLocationLabel
           ? product.description
           : undefined;
-      // 1. Try server autoFixSiteImages first, but strictly reject synthetic cards and validate loadability
+      // 1. Try server autoFixSiteImages first (honors Alibaba First / Alibaba Only / Google Only)
       try {
-        const json = await autoFixSiteImages([
-          {
-            id: product.id,
-            type: targetType,
-            title: product.title,
-            category: product.category,
-            specifications: specsText,
-            currentUrl: liveUrl,
-            fieldPath
-          }
-        ]);
+        const json = await autoFixSiteImages(
+          [
+            {
+              id: product.id,
+              type: targetType,
+              title: product.title,
+              category: product.category,
+              specifications: specsText,
+              currentUrl: liveUrl,
+              fieldPath
+            }
+          ],
+          { sourceMode: activeMode, forceRepatch: true }
+        );
         const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
         if (
           rowRes?.success &&
@@ -554,9 +560,15 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
             deletedOldUrls,
             'AUTO_FIX'
           );
+          const srcLabel =
+            rowRes.imageSource === 'alibaba'
+              ? 'Alibaba'
+              : rowRes.imageSource === 'google'
+                ? 'Google / Web'
+                : 'Verified Catalog';
           setStatusMessage({
             type: 'success',
-            text: `Auto-fixed with real verified photo (${rowRes.newUrl})${
+            text: `Auto-fixed from ${srcLabel} (${rowRes.newUrl})${
               deletedOldUrls.length > 0 ? ` — ${deletedOldUrls.length} old file permanently deleted from server.` : '.'
             }`
           });
@@ -566,74 +578,88 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
         // Proceed to sequential heading advancement fallback
       }
 
-      // 2. Sequential Heading Advancement:
-      // Step through Full Heading -> Sub-headings -> Core 1-2 word product noun until a real photo is validated and uploaded
+      // 2. Sequential Heading Advancement obeying source priority:
+      // alibaba_first -> Alibaba FIRST, then Google; alibaba_only -> Alibaba ONLY; google_only -> Google ONLY
       const orderedQueries =
         headingSearchQueries.length > 0 ? headingSearchQueries : [String(product.title || '').trim()];
+      const filterSequence: Array<'alibaba' | 'google'> =
+        activeMode === 'alibaba_only'
+          ? ['alibaba']
+          : activeMode === 'google_only'
+            ? ['google']
+            : ['alibaba', 'google'];
 
-      for (const queryChip of orderedQueries) {
-        if (!queryChip) continue;
-        setSearchQuery(queryChip);
-        const searchRes = await fetchVisualProductImages({
-          productName: queryChip,
-          productId: product.id,
-          category: product.category,
-          specifications: specsText,
-          count: 48,
-          forceRefresh: true,
-          excludeUrls: Array.from(shownCandidateUrlsRef.current).slice(-200),
-          searchPage: ++searchAttemptRef.current
-        });
-        const rawPool =
-          Array.isArray(searchRes?.pool) && searchRes.pool.length > 0
-            ? searchRes.pool
-            : searchRes?.images || [];
-        const validPool = rawPool.filter(
-          c =>
-            c?.url &&
-            !isSyntheticSpecCardOrPlaceholder(c) &&
-            c.url.split('?')[0] !== cleanLive
-        );
-        if (validPool.length > 0) {
-          setCandidates(validPool);
-        }
+      for (const sourceFilter of filterSequence) {
+        for (const queryChip of orderedQueries) {
+          if (!queryChip) continue;
+          setSearchQuery(queryChip);
+          const searchRes = await fetchVisualProductImages({
+            productName: queryChip,
+            productId: product.id,
+            category: product.category,
+            specifications: specsText,
+            count: 48,
+            forceRefresh: true,
+            excludeUrls: Array.from(shownCandidateUrlsRef.current).slice(-200),
+            searchPage: ++searchAttemptRef.current,
+            sourceFilter
+          });
+          const rawPool =
+            Array.isArray(searchRes?.pool) && searchRes.pool.length > 0
+              ? searchRes.pool
+              : searchRes?.images || [];
+          const validPool = rawPool.filter(
+            c =>
+              c?.url &&
+              !isSyntheticSpecCardOrPlaceholder(c) &&
+              c.url.split('?')[0] !== cleanLive
+          );
+          if (validPool.length > 0) {
+            if (sourceFilter === 'alibaba') setAlibabaCandidates(validPool);
+            else setCandidates(validPool);
+          }
 
-        for (const cand of validPool) {
-          const loadsOk = await validateRealImageUrlLoads(cand.url);
-          if (!loadsOk) continue;
+          for (const cand of validPool) {
+            const loadsOk = await validateRealImageUrlLoads(cand.url);
+            if (!loadsOk) continue;
 
-          const replaced = await replaceViaWholeSiteEndpoint({ imageUrl: cand.url });
-          if (
-            replaced?.newUrl &&
-            !isSyntheticSpecCardOrPlaceholder(replaced.newUrl) &&
-            (await validateRealImageUrlLoads(replaced.newUrl))
-          ) {
-            const deletedOldUrls: string[] = Array.isArray(replaced.deletedOldUrls)
-              ? replaced.deletedOldUrls
-              : [];
-            await syncAfterUpdate(
-              replaced.newUrl,
-              liveUrl,
-              replaced.updatedAt,
-              replaced.imageUpdatedAt,
-              replaced.replacedOldUrls,
-              deletedOldUrls,
-              'AUTO_FIX'
-            );
-            setStatusMessage({
-              type: 'success',
-              text: `Auto-fixed via heading "${queryChip}" (${replaced.newUrl})${
-                deletedOldUrls.length > 0
-                  ? ` — ${deletedOldUrls.length} old file permanently deleted from server.`
-                  : '.'
-              }`
-            });
-            return;
+            const replaced = await replaceViaWholeSiteEndpoint({ imageUrl: cand.url });
+            if (
+              replaced?.newUrl &&
+              !isSyntheticSpecCardOrPlaceholder(replaced.newUrl) &&
+              (await validateRealImageUrlLoads(replaced.newUrl))
+            ) {
+              const deletedOldUrls: string[] = Array.isArray(replaced.deletedOldUrls)
+                ? replaced.deletedOldUrls
+                : [];
+              await syncAfterUpdate(
+                replaced.newUrl,
+                liveUrl,
+                replaced.updatedAt,
+                replaced.imageUpdatedAt,
+                replaced.replacedOldUrls,
+                deletedOldUrls,
+                'AUTO_FIX'
+              );
+              setStatusMessage({
+                type: 'success',
+                text: `Auto-fixed from ${sourceFilter === 'alibaba' ? 'Alibaba' : 'Google / Web'} via "${queryChip}" (${replaced.newUrl})${
+                  deletedOldUrls.length > 0
+                    ? ` — ${deletedOldUrls.length} old file permanently deleted from server.`
+                    : '.'
+                }`
+              });
+              return;
+            }
           }
         }
       }
 
-      throw new Error('Could not auto-fetch a real loadable product photo across any heading queries.');
+      throw new Error(
+        activeMode === 'alibaba_only'
+          ? 'No Alibaba photo matched this item — switch source to Google Only or Alibaba First → Google to patch from Google.'
+          : 'Could not auto-fetch a real loadable product photo across any heading queries.'
+      );
     } catch (err: any) {
       setStatusMessage({
         type: 'error',
@@ -994,15 +1020,32 @@ export const AdminQuickImageInspectorModal: React.FC<AdminQuickImageInspectorMod
                 <span>{isUploading ? 'Uploading...' : 'Manual Upload'}</span>
               </button>
 
-              <button
-                type="button"
-                disabled={isApplying || isUploading}
-                onClick={() => void handleAutoFix()}
-                className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Wand2 className={`w-3.5 h-3.5 ${isApplying ? 'animate-spin' : ''}`} />
-                <span>{isApplying ? 'Fixing...' : 'Auto-Fix Now'}</span>
-              </button>
+              <div className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50/70 p-0.5">
+                <select
+                  value={autoFixSourceMode}
+                  disabled={isApplying || isUploading}
+                  onChange={e => setAutoFixSourceMode(e.target.value as ImageAutoPatchSourceMode)}
+                  aria-label="Auto-Fix source priority"
+                  className="bg-transparent text-xs font-bold text-orange-900 px-2 py-1.5 focus:outline-none cursor-pointer"
+                >
+                  <option value="alibaba_first">Alibaba First → Google</option>
+                  <option value="alibaba_only">Alibaba Only</option>
+                  <option value="google_only">Google Only</option>
+                </select>
+                <button
+                  type="button"
+                  disabled={isApplying || isUploading}
+                  onClick={() => void handleAutoFix()}
+                  className={`px-3 py-1.5 rounded-md text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                    autoFixSourceMode === 'google_only'
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-orange-600 hover:bg-orange-700'
+                  }`}
+                >
+                  <Wand2 className={`w-3.5 h-3.5 ${isApplying ? 'animate-spin' : ''}`} />
+                  <span>{isApplying ? 'Patching...' : 'Auto-Fix Now'}</span>
+                </button>
+              </div>
 
               <button
                 type="button"

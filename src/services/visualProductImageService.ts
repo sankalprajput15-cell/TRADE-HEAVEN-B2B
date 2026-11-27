@@ -1154,7 +1154,7 @@ export async function fetchVisualProductImages(params: {
   shuffleOnly?: boolean;
   excludeUrls?: string[];
   searchPage?: number;
-  sourceFilter?: 'all' | 'alibaba';
+  sourceFilter?: 'all' | 'alibaba' | 'google';
 }): Promise<VisualProductSearchResponse> {
   hydrateSessionCacheFromLocalStorage();
 
@@ -1164,7 +1164,12 @@ export async function fetchVisualProductImages(params: {
   const productId = String(params.productId || '').trim();
   const category = String(params.category || '').trim();
   const specifications = String(params.specifications || '').trim();
-  const sourceFilter: 'all' | 'alibaba' = params.sourceFilter === 'alibaba' ? 'alibaba' : 'all';
+  const sourceFilter: 'all' | 'alibaba' | 'google' =
+    params.sourceFilter === 'alibaba'
+      ? 'alibaba'
+      : params.sourceFilter === 'google'
+        ? 'google'
+        : 'all';
   const count = Math.max(20, Math.min(80, Number(params.count) || 48));
   const searchPage = Math.max(0, Number(params.searchPage) || 0);
 
@@ -1191,7 +1196,12 @@ export async function fetchVisualProductImages(params: {
   }
 
   const baseKey = normalizeVisualQueryKey(productName, category);
-  const key = sourceFilter === 'alibaba' ? `alibaba::${baseKey}` : baseKey;
+  const key =
+    sourceFilter === 'alibaba'
+      ? `alibaba::${baseKey}`
+      : sourceFilter === 'google'
+        ? `google::${baseKey}`
+        : baseKey;
   const attachedRegistry = buildClientAttachedRegistry(productId);
   const filterUnused = (list: VisualProductImageCandidate[]): VisualProductImageCandidate[] => {
     const seen = new Set<string>();
@@ -1362,6 +1372,12 @@ export async function fetchVisualProductImages(params: {
             const dom = String(c?.sourceDomain || '').toLowerCase();
             const low = u.toLowerCase();
             if (!dom.includes('alibaba') && !low.includes('alicdn.com') && !low.includes('alibaba.com') && !low.includes('aliexpress.com')) {
+              return false;
+            }
+          } else if (sourceFilter === 'google') {
+            const dom = String(c?.sourceDomain || '').toLowerCase();
+            const low = u.toLowerCase();
+            if (dom.includes('alibaba') || low.includes('alicdn.com') || low.includes('alibaba.com') || low.includes('aliexpress.com')) {
               return false;
             }
           }
@@ -1635,15 +1651,17 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
       params.productName || 'Wholesale Commodity',
       params.category
     );
-    const pickFromSearch = async (forceRefresh: boolean) => {
+    // PRIORITY 1: Try Alibaba product images FIRST, then fall back to Google/Web if no Alibaba match exists
+    const pickFromSearch = async (sourceFilter: 'alibaba' | 'google' | 'all', forceRefresh: boolean) => {
       for (const queryChip of headingQueries) {
         const searchRes = await fetchVisualProductImages({
           productName: queryChip,
           productId: params.productId,
           category: params.category,
           specifications: params.specifications,
-          count: 15,
-          forceRefresh
+          count: 20,
+          forceRefresh,
+          sourceFilter
         });
 
         const pool =
@@ -1690,11 +1708,17 @@ export async function ensureUniqueVerifiedProductImageForUpload(params: {
       return null;
     };
 
-    const firstAttempt = await pickFromSearch(false);
-    if (firstAttempt) return firstAttempt;
+    const alibabaAttempt = await pickFromSearch('alibaba', false);
+    if (alibabaAttempt) return alibabaAttempt;
 
-    const freshAttempt = await pickFromSearch(true);
-    if (freshAttempt) return freshAttempt;
+    const googleAttempt = await pickFromSearch('google', false);
+    if (googleAttempt) return googleAttempt;
+
+    const freshAlibabaAttempt = await pickFromSearch('alibaba', true);
+    if (freshAlibabaAttempt) return freshAlibabaAttempt;
+
+    const freshFallbackAttempt = await pickFromSearch('all', true);
+    if (freshFallbackAttempt) return freshFallbackAttempt;
   } catch {
     // Backend submit_rfq / submit_listing / POST /api/v1/products will also enforce server-side visual resolution
   }

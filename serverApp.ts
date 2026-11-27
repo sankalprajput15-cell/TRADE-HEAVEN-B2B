@@ -24370,7 +24370,7 @@ async function fetchAlibabaProductImages(
               url: murl,
               thumbnailUrl: String(meta?.turl || murl).trim(),
               sourcePageUrl: purl || 'https://www.alibaba.com',
-              title: (titleStr || `${alibabaQuery} Alibaba Product`)
+              title: (titleStr || 'Alibaba Product Photo')
                 .replace(/&gt;/g, '>')
                 .replace(/&amp;/g, '&')
                 .replace(/[\uE000-\uF8FF]/g, '')
@@ -24396,7 +24396,7 @@ async function fetchAlibabaProductImages(
         });
         if (!resp.ok) return;
         const html = await resp.text();
-        if (/sorry\/index|recaptcha/i.test(html)) return;
+        if (/sorry\/index|recaptcha|did not match any|no results found/i.test(html)) return;
         const alicdnMatches = html.matchAll(
           /(?:https?:)?\/\/(?:sc0\d|ae0\d|cbu0\d|s|img)\.alicdn\.com\/kf\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)(?:_[0-9]+x[0-9]+q?\d*\.(?:jpg|jpeg|webp))?/gi
         );
@@ -24409,7 +24409,7 @@ async function fetchAlibabaProductImages(
             url: imgUrl,
             thumbnailUrl: imgUrl,
             sourcePageUrl: 'https://www.alibaba.com',
-            title: `${alibabaQuery} Alibaba Product Photo`,
+            title: 'Alibaba Product Photo',
             sourceDomain: 'alibaba.com',
             relevanceScore: 24
           });
@@ -24610,7 +24610,7 @@ async function handleVisualProductImageSearch(params: {
   excludeUrls?: string[];
   searchPage?: number;
   fastMode?: boolean;
-  sourceFilter?: 'all' | 'alibaba';
+  sourceFilter?: 'all' | 'alibaba' | 'google';
   preindexedFiles?: IndexedUploadFileEntry[];
 }) {
   const rawInputName = String(params.productName || '').trim();
@@ -24619,8 +24619,14 @@ async function handleVisualProductImageSearch(params: {
   const cleanCategory = String(params.category || '').trim();
   const cleanSpecs = String(params.specifications || '').trim();
   const framedRfqHint = extractRfqProductFramingHint(cleanSpecs);
-  const sourceFilter: 'all' | 'alibaba' = params.sourceFilter === 'alibaba' ? 'alibaba' : 'all';
+  const sourceFilter: 'all' | 'alibaba' | 'google' =
+    params.sourceFilter === 'alibaba'
+      ? 'alibaba'
+      : params.sourceFilter === 'google'
+        ? 'google'
+        : 'all';
   const isAlibabaOnly = sourceFilter === 'alibaba';
+  const isGoogleOnly = sourceFilter === 'google';
   const isFastMode = Boolean(params.fastMode);
   const requestedCount = Math.max(20, Math.min(80, Number(params.count) || 48));
   const searchPage = Math.max(0, Number(params.searchPage) || 0);
@@ -24656,15 +24662,21 @@ async function handleVisualProductImageSearch(params: {
     };
   }
 
-  const normalizedKey = normalizeVisualSearchKeyword(fullHeading || cleanName, cleanCategory);
+  const baseNormalizedKey = normalizeVisualSearchKeyword(fullHeading || cleanName, cleanCategory);
+  const normalizedKey =
+    sourceFilter === 'alibaba'
+      ? `alibaba::${baseNormalizedKey}`
+      : sourceFilter === 'google'
+        ? `google::${baseNormalizedKey}`
+        : baseNormalizedKey;
   const queryUsed = buildCommercialProductImageQuery(fullHeading || cleanName, cleanCategory, cleanSpecs);
 
-  // 1. Check 7-day persistent cache first (skip when forceRefresh, paginated searchPage > 0, or dedicated Alibaba-only search)
+  // 1. Check 7-day persistent cache first (skip when forceRefresh or paginated searchPage > 0)
   if (!serverProductImageCacheMap.has(normalizedKey)) {
     loadProductImageCacheFromDisk();
   }
   const cached = serverProductImageCacheMap.get(normalizedKey);
-  if (cached && !params.forceRefresh && searchPage === 0 && !isAlibabaOnly) {
+  if (cached && !params.forceRefresh && searchPage === 0) {
     const ageMs = Date.now() - Date.parse(cached.updatedAt || '');
     if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && Array.isArray(cached.images)) {
       cached.images = cached.images.filter(img => {
@@ -24779,12 +24791,13 @@ async function handleVisualProductImageSearch(params: {
         lowerDomain === 'alibaba.com' ||
         lowerDomain.endsWith('.alibaba.com') ||
         lowerUrl.includes('alicdn.com') ||
-        lowerUrl.includes('alibaba.com');
+        lowerUrl.includes('alibaba.com') ||
+        lowerUrl.includes('aliexpress-media.com');
       const normalizedCand: VisualImageCandidate = isAlibabaSource
         ? { ...c, sourceDomain: 'alibaba.com' }
         : c;
       const isGoogleThumb = lowerUrl.includes('encrypted-tbn0.gstatic.com/images');
-      const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads|media-amazon\.com|susercontent\.com|walmartimages\.com|ebayimg\.com|bhg\.com|thespruce\.com|health\.com|bigcommerce\.com|squarespace-cdn\.com|wixstatic\.com)\b/i.test(cleanUrl);
+      const isCommercialCdn = /\b(imimg\.com|tiimg\.com|made-in-china\.com|alicdn\.com|aliexpress-media\.com|shopify\.com|cloudinary\.com|cloudfront\.net|wp-content\/uploads|media-amazon\.com|susercontent\.com|walmartimages\.com|ebayimg\.com|bhg\.com|thespruce\.com|health\.com|bigcommerce\.com|squarespace-cdn\.com|wixstatic\.com)\b/i.test(cleanUrl);
       const sourceBoost =
         normalizedCand.sourceDomain === 'commons.wikimedia.org'
           ? 1
@@ -24805,7 +24818,7 @@ async function handleVisualProductImageSearch(params: {
           !BLOCKED_IMAGE_DOMAINS.some(d => lowerUrl.includes(d)) &&
           !EXCLUDED_IMAGE_TERMS_REGEX.test(`${cleanUrl} ${normalizedCand.title || ''}`)
         ) {
-          relaxedCandidateMap.set(dedupKey, { ...normalizedCand, relevanceScore: Math.max(4, sourceBoost) });
+          relaxedCandidateMap.set(dedupKey, { ...normalizedCand, relevanceScore: 4 });
         }
         continue;
       }
@@ -24850,15 +24863,18 @@ async function handleVisualProductImageSearch(params: {
   };
 
   // Multi-source discovery: Alibaba + Commercial Web + Google Images + Wikimedia Commons
-  // When sourceFilter === 'alibaba', dedicate full parallel capacity to Alibaba CDN images for instant high-volume endless scrolling!
+  // When sourceFilter === 'alibaba', dedicate full parallel capacity to Alibaba CDN images.
+  // When sourceFilter === 'google', dedicate parallel capacity strictly to Google Images / Commercial Web / Wikimedia (excluding Alibaba).
   const directWebDiscoveryPromise = isAlibabaOnly
     ? fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, false, true).then(
         async alibabaCandidates => {
           collectAndFilter(alibabaCandidates, true);
-          // Promote all remaining valid Alibaba results from relaxed map so the dedicated Alibaba tab never runs sparse
-          for (const [k, v] of relaxedCandidateMap.entries()) {
-            if (!candidateMap.has(k)) {
-              candidateMap.set(k, v);
+          // Only promote relaxed Alibaba candidates if at least 1 strict match proved Alibaba had real results (not a zero-result "recommended products" ad page)
+          if (candidateMap.size > 0) {
+            for (const [k, v] of relaxedCandidateMap.entries()) {
+              if (!candidateMap.has(k)) {
+                candidateMap.set(k, v);
+              }
             }
           }
           await verifyPendingBatch(isFastMode ? 60 : 72);
@@ -24867,6 +24883,7 @@ async function handleVisualProductImageSearch(params: {
             const focusedAlis = buildFocusedVisualSearchQueries(cleanName, cleanCategory);
             const shortFallback = focusedAlis[focusedAlis.length - 1];
             if (shortFallback && shortFallback.toLowerCase() !== cleanName.toLowerCase()) {
+              const prevStrictCount = candidateMap.size + verifiedMap.size;
               const moreAli = await fetchAlibabaProductImages(
                 shortFallback,
                 cleanCategory,
@@ -24876,9 +24893,11 @@ async function handleVisualProductImageSearch(params: {
                 true
               );
               collectAndFilter(moreAli, true);
-              for (const [k, v] of relaxedCandidateMap.entries()) {
-                if (!verifiedMap.has(k) && !candidateMap.has(k)) {
-                  candidateMap.set(k, v);
+              if (candidateMap.size + verifiedMap.size > prevStrictCount) {
+                for (const [k, v] of relaxedCandidateMap.entries()) {
+                  if (!verifiedMap.has(k) && !candidateMap.has(k)) {
+                    candidateMap.set(k, v);
+                  }
                 }
               }
               await verifyPendingBatch(48);
@@ -24886,32 +24905,58 @@ async function handleVisualProductImageSearch(params: {
           }
         }
       )
-    : Promise.all([
-        fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode, false),
-        fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
-        isFastMode ? Promise.resolve([]) : fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
-        fetchWikimediaCommonsProductImages(cleanName, cleanCategory, isFastMode)
-      ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
-        collectAndFilter(alibabaCandidates, true);
-        collectAndFilter(webCandidates, true);
-        collectAndFilter(googleCandidates, true);
-        if (isFastMode) {
-          collectAndFilter(wikiCandidates, false);
-        }
-        await verifyPendingBatch(isFastMode ? 48 : 64);
-        if (!isFastMode && verifiedMap.size < 36) {
-          collectAndFilter(wikiCandidates, false);
-          await verifyPendingBatch(30);
-        }
-        if (verifiedMap.size < (isFastMode ? 18 : 36) && relaxedCandidateMap.size > 0) {
-          for (const [k, v] of relaxedCandidateMap.entries()) {
-            if (!verifiedMap.has(k) && !candidateMap.has(k)) {
-              candidateMap.set(k, v);
+    : isGoogleOnly
+      ? Promise.all([
+          fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          fetchWikimediaCommonsProductImages(cleanName, cleanCategory, isFastMode)
+        ]).then(async ([googleCandidates, webCandidates, wikiCandidates]) => {
+          const stripAlibaba = (list: VisualImageCandidate[]) =>
+            list.filter(c => {
+              const u = String(c?.url || '').toLowerCase();
+              const d = String(c?.sourceDomain || '').toLowerCase();
+              return !u.includes('alicdn.com') && !u.includes('alibaba.com') && !d.includes('alibaba');
+            });
+          collectAndFilter(stripAlibaba(googleCandidates), true);
+          collectAndFilter(stripAlibaba(webCandidates), true);
+          collectAndFilter(stripAlibaba(wikiCandidates), false);
+          await verifyPendingBatch(isFastMode ? 48 : 64);
+          if (verifiedMap.size < 16 && relaxedCandidateMap.size > 0) {
+            for (const [k, v] of relaxedCandidateMap.entries()) {
+              const u = String(v?.url || '').toLowerCase();
+              if (!verifiedMap.has(k) && !candidateMap.has(k) && !u.includes('alicdn.com') && !u.includes('alibaba.com')) {
+                candidateMap.set(k, v);
+              }
             }
+            await verifyPendingBatch(isFastMode ? 24 : 36);
           }
-          await verifyPendingBatch(isFastMode ? 24 : 36);
-        }
-      });
+        })
+      : Promise.all([
+          fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode, false),
+          fetchLiveCommercialWebProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          isFastMode ? Promise.resolve([]) : fetchGoogleImagesProductPhotos(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode),
+          fetchWikimediaCommonsProductImages(cleanName, cleanCategory, isFastMode)
+        ]).then(async ([alibabaCandidates, webCandidates, googleCandidates, wikiCandidates]) => {
+          collectAndFilter(alibabaCandidates, true);
+          collectAndFilter(webCandidates, true);
+          collectAndFilter(googleCandidates, true);
+          if (isFastMode) {
+            collectAndFilter(wikiCandidates, false);
+          }
+          await verifyPendingBatch(isFastMode ? 48 : 64);
+          if (!isFastMode && verifiedMap.size < 36) {
+            collectAndFilter(wikiCandidates, false);
+            await verifyPendingBatch(30);
+          }
+          if (verifiedMap.size < (isFastMode ? 18 : 36) && relaxedCandidateMap.size > 0) {
+            for (const [k, v] of relaxedCandidateMap.entries()) {
+              if (!verifiedMap.has(k) && !candidateMap.has(k)) {
+                candidateMap.set(k, v);
+              }
+            }
+            await verifyPendingBatch(isFastMode ? 24 : 36);
+          }
+        });
 
   const geminiDiscoveryPromise = (async () => {
     if (!geminiKey || isFastMode || isAlibabaOnly) return;
@@ -25917,7 +25962,12 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
     const forceRefresh = Boolean(body.force_refresh || body.forceRefresh || body.shuffle);
     const fastMode = body.fast_mode !== undefined ? Boolean(body.fast_mode) : Boolean(body.fastMode ?? true);
     const rawSourceFilter = String(body.source_filter || body.sourceFilter || 'all').toLowerCase();
-    const sourceFilter: 'all' | 'alibaba' = rawSourceFilter === 'alibaba' ? 'alibaba' : 'all';
+    const sourceFilter: 'all' | 'alibaba' | 'google' =
+      rawSourceFilter === 'alibaba'
+        ? 'alibaba'
+        : rawSourceFilter === 'google'
+          ? 'google'
+          : 'all';
     const searchPage = Math.max(0, Number(body.search_page ?? body.searchPage ?? 0) || 0);
     const extraExcludeUrls: string[] = Array.isArray(body.exclude_urls || body.excludeUrls)
       ? (body.exclude_urls || body.excludeUrls).map((u: any) => String(u || '').trim()).filter(Boolean)
@@ -25947,13 +25997,16 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
       return list.filter(img => {
         const u = String(img?.url || '').trim();
         if (!u) return false;
-        if (sourceFilter === 'alibaba') {
-          const dom = String(img?.sourceDomain || '').toLowerCase();
-          const low = u.toLowerCase();
-          if (!dom.includes('alibaba') && !low.includes('alicdn.com') && !low.includes('alibaba.com') && !low.includes('aliexpress.com')) {
-            return false;
-          }
-        }
+        const dom = String(img?.sourceDomain || '').toLowerCase();
+        const low = u.toLowerCase();
+        const isAli =
+          dom.includes('alibaba') ||
+          low.includes('alicdn.com') ||
+          low.includes('alibaba.com') ||
+          low.includes('aliexpress.com') ||
+          low.includes('aliexpress-media.com');
+        if (sourceFilter === 'alibaba' && !isAli) return false;
+        if (sourceFilter === 'google' && isAli) return false;
         const base = normalizeAuditImageUrl(u);
         const token = extractUploadUrlHashToken(u);
         if (seenInResponse.has(base) || (token && seenInResponse.has(`hash:${token}`))) return false;
@@ -25966,10 +26019,10 @@ app.post('/api/v1/products/fetch-images', async (req, res) => {
 
     let unusedPool = filterUnusedPool(result.pool?.length ? result.pool : result.images);
 
-    // Include strictly-matched local /assets/uploads/ photos from disk (skip in Alibaba-only mode or endless pagination pages > 0)
+    // Include strictly-matched local /assets/uploads/ photos from disk (skip in Alibaba-only/Google-only mode or endless pagination pages > 0)
     const queryToks = extractMeaningfulAuditTokens(cleanProductSearchSubject(productName));
     const targetSubjectLower = `${productName} ${category}`.toLowerCase();
-    if (sourceFilter !== 'alibaba' && searchPage === 0 && queryToks.length > 0 && preindexedFiles.length > 0) {
+    if (sourceFilter === 'all' && searchPage === 0 && queryToks.length > 0 && preindexedFiles.length > 0) {
       const seenBase = new Set(unusedPool.map(c => normalizeAuditImageUrl(c.url)));
       const minLocalHits = queryToks.length >= 2 ? 2 : 1;
       const localMatches: Array<{ cand: VisualImageCandidate; score: number }> = [];
@@ -27309,6 +27362,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   usedUrls: Set<string>;
   allowLiveGeminiNetwork?: boolean;
   skipPerItemLiveSearch?: boolean;
+  sourceMode?: 'alibaba_first' | 'alibaba_only' | 'google_only';
+  forceLiveRepatch?: boolean;
   geminiTimeoutMs?: number;
   wallDeadlineMs?: number;
   maxMirrorAttempts?: number;
@@ -27318,6 +27373,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   newImageUrl: string;
   queryUsed: string;
   source: string;
+  imageSource?: 'alibaba' | 'google' | 'local';
   sourceUrl?: string;
   imageContentHash?: string;
 }> {
@@ -27326,19 +27382,44 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const framedRfqHint = extractRfqProductFramingHint(params.specifications);
   const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, framedRfqHint);
   const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
-  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 5500);
+  const sourceMode: 'alibaba_first' | 'alibaba_only' | 'google_only' =
+    params.sourceMode === 'alibaba_only'
+      ? 'alibaba_only'
+      : params.sourceMode === 'google_only'
+        ? 'google_only'
+        : 'alibaba_first';
+  const effectiveWallDeadline = params.wallDeadlineMs || (Date.now() + 9500);
   const timeoutMs =
     typeof params.geminiTimeoutMs === 'number' && params.geminiTimeoutMs > 0
-      ? Math.min(params.geminiTimeoutMs, 4200)
-      : 3200;
-  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 2;
+      ? Math.min(params.geminiTimeoutMs, 5500)
+      : 4200;
+  const maxMirrors = typeof params.maxMirrorAttempts === 'number' ? params.maxMirrorAttempts : 3;
   const withinNetworkDeadline = () => Date.now() < effectiveWallDeadline;
+
+  const isAlibabaCand = (c: VisualImageCandidate): boolean => {
+    const dom = String(c?.sourceDomain || '').toLowerCase();
+    const u = String(c?.url || '').toLowerCase();
+    const sp = String(c?.sourcePageUrl || '').toLowerCase();
+    return (
+      dom.includes('alibaba') ||
+      u.includes('alicdn.com') ||
+      u.includes('alibaba.com') ||
+      u.includes('aliexpress-media.com') ||
+      sp.includes('alibaba.com') ||
+      sp.includes('aliexpress.com')
+    );
+  };
 
   // Build or reuse global 1-to-1 attached-image registry (URL + external sourceUrl + 12-char URL hash + SHA-256 content hash)
   const globalRegistry = params.sharedRegistry || buildGlobalAttachedImageRegistry(params.recordId, params.usedUrls);
   const sharedPreindexedFiles = params.preindexedFiles || buildPreindexedLocalUploadFiles();
 
-  const runLiveSearchBounded = async (searchName: string, searchSpecs: string | undefined, forceRefresh: boolean): Promise<VisualImageCandidate[]> => {
+  const runLiveSearchBounded = async (
+    searchName: string,
+    searchSpecs: string | undefined,
+    forceRefresh: boolean,
+    targetFilter: 'alibaba' | 'google' | 'all' = 'all'
+  ): Promise<VisualImageCandidate[]> => {
     const remainingMs = Math.min(timeoutMs, effectiveWallDeadline - Date.now());
     if (remainingMs <= 350) return [];
     try {
@@ -27346,9 +27427,10 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         productName: searchName,
         category: cleanCategory,
         specifications: searchSpecs,
-        count: 24,
+        count: 30,
         forceRefresh,
         fastMode: true,
+        sourceFilter: targetFilter,
         preindexedFiles: sharedPreindexedFiles
       });
       const timeoutSentinel = Symbol('gemini_timeout');
@@ -27357,11 +27439,14 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         new Promise<typeof timeoutSentinel>(resolve => setTimeout(() => resolve(timeoutSentinel), remainingMs))
       ]);
       if (searchResult !== timeoutSentinel && searchResult.success && Array.isArray(searchResult.pool) && searchResult.pool.length > 0) {
-        const isAli = (c: VisualImageCandidate) =>
-          String(c?.sourceDomain || '').toLowerCase().includes('alibaba') ||
-          String(c?.url || '').toLowerCase().includes('alicdn.com');
-        const aliTier = fisherYatesShuffle(searchResult.pool.filter(isAli));
-        const otherTier = fisherYatesShuffle(searchResult.pool.filter(c => !isAli(c)));
+        if (targetFilter === 'alibaba') {
+          return fisherYatesShuffle(searchResult.pool.filter(isAlibabaCand));
+        }
+        if (targetFilter === 'google') {
+          return fisherYatesShuffle(searchResult.pool.filter(c => !isAlibabaCand(c)));
+        }
+        const aliTier = fisherYatesShuffle(searchResult.pool.filter(isAlibabaCand));
+        const otherTier = fisherYatesShuffle(searchResult.pool.filter(c => !isAlibabaCand(c)));
         return [...aliTier, ...otherTier];
       } else if (searchResult === timeoutSentinel) {
         searchPromise.catch(() => {});
@@ -27375,7 +27460,6 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   }
 
   // Build ordered heading advancement sequence: Full Heading -> Framed Heading (with clean RFQ product nouns) -> Sub-headings -> Core 2-word noun -> Core 1-word noun -> Category noun
-  // NEVER push raw RFQ details/quantity/port strings as standalone headings!
   const headingQueue: string[] = [];
   const seenHeadings = new Set<string>();
   const pushHeading = (raw: string) => {
@@ -27430,11 +27514,15 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   const tryPickAndMirrorFromPool = async (
     candidatesList: VisualImageCandidate[],
     matchedQueryLabel: string,
-    allowExternalMirror: boolean = true
+    allowExternalMirror: boolean = true,
+    forcedImageSource?: 'alibaba' | 'google'
   ) => {
     for (const cand of candidatesList) {
       const rawCandUrl = String(cand?.url || '').trim();
       if (!rawCandUrl || isGenericOrPlaceholderServerUrl(rawCandUrl)) continue;
+      const candIsAli = isAlibabaCand(cand);
+      if (forcedImageSource === 'alibaba' && !candIsAli) continue;
+      if (forcedImageSource === 'google' && candIsAli) continue;
       if (globalRegistry.isCandidateUsed(rawCandUrl, cand?.sourcePageUrl)) continue;
 
       let resolvedLocal = normalizeAuditImageUrl(
@@ -27447,7 +27535,7 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         if (!allowExternalMirror || params.allowLiveGeminiNetwork === false) {
           continue;
         }
-        const mirrorBudgetMs = Math.min(2400, effectiveWallDeadline - Date.now());
+        const mirrorBudgetMs = Math.min(2800, effectiveWallDeadline - Date.now());
         if (totalMirrorAttempts >= maxMirrors || mirrorBudgetMs <= 400) {
           continue;
         }
@@ -27484,6 +27572,13 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         const meta = mirroredAssetMetaByLocalUrl.get(resolvedLocal);
         const contentHash = meta?.rawSha256 || getLocalUploadFileSha256(resolvedLocal) || undefined;
         const sourceUrl = /^https?:\/\//i.test(rawCandUrl) ? rawCandUrl : meta?.sourceUrl;
+        const resolvedImgSource: 'alibaba' | 'google' | 'local' =
+          forcedImageSource ||
+          (candIsAli || /alicdn\.com|alibaba\.com/i.test(String(sourceUrl || ''))
+            ? 'alibaba'
+            : /^https?:\/\//i.test(String(sourceUrl || rawCandUrl))
+              ? 'google'
+              : 'local');
 
         params.usedUrls.add(resolvedLocal);
         inFlightCatalogFixReservedUrls.add(resolvedLocal);
@@ -27501,7 +27596,13 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         return {
           newImageUrl: resolvedLocal,
           queryUsed: matchedQueryLabel || queryUsed,
-          source: 'gemini_google_search_grounding',
+          source:
+            resolvedImgSource === 'alibaba'
+              ? 'alibaba_live_photo'
+              : resolvedImgSource === 'google'
+                ? 'google_web_live_photo'
+                : 'gemini_google_search_grounding',
+          imageSource: resolvedImgSource,
           sourceUrl,
           imageContentHash: contentHash
         };
@@ -27510,7 +27611,122 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     return null;
   };
 
-  // PASS 1A: Instant zero-network sequential check across headingQueue against local master photos on disk & already-mirrored cache entries
+  // Helper: Check cached external candidates for a specific source namespace ('alibaba' or 'google')
+  const tryCachedSourcePass = async (target: 'alibaba' | 'google') => {
+    const prefix = target === 'alibaba' ? 'alibaba::' : 'google::';
+    for (const headingChip of headingQueue.slice(0, 4)) {
+      if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
+      const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
+      const chipKeyPlain = normalizeVisualSearchKeyword(headingChip, '');
+      const keysToCheck = [
+        `${prefix}${chipKeyWithCat}`,
+        `${prefix}${chipKeyPlain}`,
+        chipKeyWithCat,
+        chipKeyPlain
+      ];
+      for (const keyCandidate of keysToCheck) {
+        const chipCached = serverProductImageCacheMap.get(keyCandidate);
+        if (chipCached && Array.isArray(chipCached.images) && chipCached.images.length > 0) {
+          const unusedCached = fisherYatesShuffle(
+            chipCached.images.filter(c => {
+              const u = String(c?.url || '').trim();
+              if (!u) return false;
+              const isAli = isAlibabaCand(c);
+              if (target === 'alibaba' && !isAli) return false;
+              if (target === 'google' && (isAli || u.startsWith('/assets/uploads/'))) return false;
+              return !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+            })
+          );
+          if (unusedCached.length > 0) {
+            const picked = await tryPickAndMirrorFromPool(unusedCached, headingChip, true, target);
+            if (picked) return picked;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  // Helper: Run live search + upload for a specific source ('alibaba' or 'google')
+  const tryLiveSourcePass = async (target: 'alibaba' | 'google', maxHeadings: number = 2) => {
+    if (params.allowLiveGeminiNetwork === false || params.skipPerItemLiveSearch || !withinNetworkDeadline()) {
+      return null;
+    }
+    for (let hIdx = 0; hIdx < Math.min(headingQueue.length, maxHeadings); hIdx++) {
+      if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
+      const headingChip = headingQueue[hIdx];
+      const freshPool = await runLiveSearchBounded(
+        headingChip,
+        hIdx === 0 ? params.specifications : undefined,
+        Boolean(params.forceLiveRepatch && hIdx === 0),
+        target
+      );
+      const unusedFresh = freshPool.filter(c => {
+        const u = String(c?.url || '').trim();
+        return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+      });
+      if (unusedFresh.length > 0) {
+        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip, true, target);
+        if (picked) return picked;
+      }
+    }
+    return null;
+  };
+
+  // PRIORITY PASS 1 (ALIBABA FIRST): Whenever sourceMode is 'alibaba_first' (DEFAULT) or 'alibaba_only',
+  // ALWAYS try Alibaba cached + live Alibaba product photos FIRST before Google/Web or local disk!
+  if (sourceMode === 'alibaba_first' || sourceMode === 'alibaba_only') {
+    const aliCachedPicked = await tryCachedSourcePass('alibaba');
+    if (aliCachedPicked) return aliCachedPicked;
+
+    const aliLivePicked = await tryLiveSourcePass('alibaba', sourceMode === 'alibaba_only' ? 3 : 2);
+    if (aliLivePicked) return aliLivePicked;
+
+    // Strict Alibaba-Only mode: NEVER fall back to Google/Web or local non-Alibaba assets!
+    // Leave item cleanly marked so user can patch remaining items from Google with one click.
+    if (sourceMode === 'alibaba_only') {
+      return {
+        newImageUrl: '',
+        queryUsed,
+        source: 'alibaba_no_match',
+        imageSource: undefined
+      };
+    }
+  }
+
+  // PRIORITY PASS 2 (GOOGLE / WEB): Runs for 'google_only', OR as automatic fallback when 'alibaba_first' found no Alibaba photo!
+  if (sourceMode === 'google_only' || sourceMode === 'alibaba_first') {
+    const googleCachedPicked = await tryCachedSourcePass('google');
+    if (googleCachedPicked) return googleCachedPicked;
+
+    const googleLivePicked = await tryLiveSourcePass('google', sourceMode === 'google_only' ? 3 : 2);
+    if (googleLivePicked) return googleLivePicked;
+
+    if (sourceMode === 'google_only' && params.forceLiveRepatch) {
+      // In explicit Google-Only re-patch, try one broader category Google search before giving up
+      const categoryProfile = getCategoryVisualSearchProfile(params.title || cleanName, cleanCategory);
+      const catQ = categoryProfile.searchQueries[0] || cleanCategory;
+      if (catQ && withinNetworkDeadline() && totalMirrorAttempts < maxMirrors) {
+        const catGooglePool = await runLiveSearchBounded(catQ, undefined, false, 'google');
+        const unusedCatGoogle = catGooglePool.filter(c => {
+          const u = String(c?.url || '').trim();
+          return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+        });
+        if (unusedCatGoogle.length > 0) {
+          const picked = await tryPickAndMirrorFromPool(unusedCatGoogle, catQ, true, 'google');
+          if (picked) return picked;
+        }
+      }
+      return {
+        newImageUrl: '',
+        queryUsed,
+        source: 'google_no_match',
+        imageSource: undefined
+      };
+    }
+  }
+
+  // PASS 1A (Local Fallback — only reached if neither Alibaba nor Google live search resolved a photo)
   for (let hIdx = 0; hIdx < headingQueue.length; hIdx++) {
     const headingChip = headingQueue[hIdx];
     if (hIdx < 4) {
@@ -27545,80 +27761,13 @@ async function resolveUniqueVerifiedCatalogImage(params: {
           newImageUrl: localMatch.exactUnusedUrl,
           queryUsed: headingChip,
           source: 'verified_local_catalog_pool',
+          imageSource: 'local',
           imageContentHash: contentHash
         };
       }
     }
-
-    const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
-    const chipKeyPlain = normalizeVisualSearchKeyword(headingChip, '');
-    for (const keyCandidate of [chipKeyWithCat, chipKeyPlain]) {
-      const chipCached = serverProductImageCacheMap.get(keyCandidate);
-      if (chipCached && Array.isArray(chipCached.images) && chipCached.images.length > 0) {
-        const unusedCached = fisherYatesShuffle(
-          chipCached.images.filter(c => {
-            const u = String(c?.url || '').trim();
-            return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-          })
-        );
-        if (unusedCached.length > 0) {
-          const localCachedPicked = await tryPickAndMirrorFromPool(unusedCached, headingChip, false);
-          if (localCachedPicked) return localCachedPicked;
-        }
-      }
-    }
   }
   await new Promise<void>(resolve => setImmediate(resolve));
-
-  // PASS 1B: Check cached external candidates across headingQueue (bounded by totalMirrorAttempts & wallDeadline)
-  for (const headingChip of headingQueue) {
-    if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
-    const chipKeyWithCat = normalizeVisualSearchKeyword(headingChip, cleanCategory);
-    const chipKeyPlain = normalizeVisualSearchKeyword(headingChip, '');
-    for (const keyCandidate of [chipKeyWithCat, chipKeyPlain]) {
-      const chipCached = serverProductImageCacheMap.get(keyCandidate);
-      if (chipCached && Array.isArray(chipCached.images) && chipCached.images.length > 0) {
-        const unusedCached = fisherYatesShuffle(
-          chipCached.images.filter(c => {
-            const u = String(c?.url || '').trim();
-            return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-          })
-        );
-        if (unusedCached.length > 0) {
-          const cachedPicked = await tryPickAndMirrorFromPool(unusedCached, headingChip, true);
-          if (cachedPicked) return cachedPicked;
-        }
-      }
-    }
-  }
-
-  // PASS 2: Automatic Sequential Heading Live Network Advancement (Full Heading -> Sub-headings -> Core 1-2 word nouns)
-  if (params.allowLiveGeminiNetwork !== false && !params.skipPerItemLiveSearch && withinNetworkDeadline()) {
-    const cached = serverProductImageCacheMap.get(normalizedKey);
-    const hadExhaustedCache = Boolean(cached && Array.isArray(cached.images) && cached.images.length > 0);
-    const angleVariants = ['bulk packaging', 'wholesale lot', 'industrial warehouse', 'export quality closeup', 'factory direct'];
-    const variantIdx = parseInt(crypto.createHash('sha1').update(params.recordId).digest('hex').slice(0, 2), 16) % angleVariants.length;
-
-    for (let hIdx = 0; hIdx < Math.min(headingQueue.length, 2); hIdx++) {
-      if (!withinNetworkDeadline()) break;
-      const headingChip = headingQueue[hIdx];
-      const diversifiedSpecs =
-        hIdx === 0 && hadExhaustedCache
-          ? `${params.specifications || ''} ${angleVariants[variantIdx]}`.trim()
-          : hIdx === 0
-            ? params.specifications
-            : undefined;
-      const freshPool = await runLiveSearchBounded(headingChip, diversifiedSpecs, hIdx === 0 && hadExhaustedCache);
-      const unusedFresh = freshPool.filter(c => {
-        const u = String(c?.url || '').trim();
-        return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-      });
-      if (unusedFresh.length > 0) {
-        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip, true);
-        if (picked) return picked;
-      }
-    }
-  }
 
   // PASS 3: Similar Category Resolution — NEVER skip an item when a relevant category/similar-category photo can be assigned!
   const categoryProfile = getCategoryVisualSearchProfile(params.title || cleanName, cleanCategory);
@@ -28657,6 +28806,8 @@ async function fixSingleCatalogImageRecord(params: {
   revert?: boolean;
   batchMode?: boolean;
   fastBatchMode?: boolean;
+  sourceMode?: 'alibaba_first' | 'alibaba_only' | 'google_only';
+  forceRepatch?: boolean;
   preindexedFiles?: IndexedUploadFileEntry[];
   sharedRegistry?: GlobalAttachedImageRegistry;
 }) {
@@ -28746,6 +28897,7 @@ async function fixSingleCatalogImageRecord(params: {
 
   let finalImageUrl = '';
   let source = 'admin_manual_selection';
+  let resolvedImageSource: 'alibaba' | 'google' | 'local' | undefined;
   let queryUsed = '';
   let resolvedSourceUrl: string | undefined;
   let resolvedContentHash: string | undefined;
@@ -28857,6 +29009,12 @@ async function fixSingleCatalogImageRecord(params: {
         .filter(Boolean)
         .join(' | ');
 
+      const resolvedSourceMode: 'alibaba_first' | 'alibaba_only' | 'google_only' =
+        params.sourceMode === 'alibaba_only'
+          ? 'alibaba_only'
+          : params.sourceMode === 'google_only'
+            ? 'google_only'
+            : 'alibaba_first';
       const resolved = await resolveUniqueVerifiedCatalogImage({
         recordId: cleanId,
         recordType: resolvedType,
@@ -28866,18 +29024,32 @@ async function fixSingleCatalogImageRecord(params: {
         usedUrls: usedUrlsSet,
         sharedRegistry: globalRegistry,
         preindexedFiles: params.preindexedFiles,
-        allowLiveGeminiNetwork: !params.fastBatchMode,
-        skipPerItemLiveSearch: Boolean(params.fastBatchMode),
+        sourceMode: resolvedSourceMode,
+        forceLiveRepatch: Boolean(params.forceRepatch),
+        allowLiveGeminiNetwork: true,
+        skipPerItemLiveSearch: false,
         ...(params.batchMode
-          ? { wallDeadlineMs: Date.now() + (params.fastBatchMode ? 800 : 4500), geminiTimeoutMs: params.fastBatchMode ? 800 : 2800, maxMirrorAttempts: params.fastBatchMode ? 0 : 2 }
-          : {})
+          ? {
+              wallDeadlineMs: Date.now() + (resolvedSourceMode === 'alibaba_first' ? 9500 : 7500),
+              geminiTimeoutMs: 4200,
+              maxMirrorAttempts: 3
+            }
+          : {
+              wallDeadlineMs: Date.now() + 12000,
+              geminiTimeoutMs: 5000,
+              maxMirrorAttempts: 4
+            })
       });
       finalImageUrl = resolved.newImageUrl;
       source = resolved.source;
+      resolvedImageSource = resolved.imageSource;
       queryUsed = resolved.queryUsed;
       resolvedSourceUrl = resolved.sourceUrl;
       resolvedContentHash = resolved.imageContentHash || (finalImageUrl ? getLocalUploadFileSha256(finalImageUrl) || undefined : undefined);
       if (!finalImageUrl) {
+        if (resolvedSourceMode === 'alibaba_only') {
+          throw new Error(`No Alibaba photo found for "${resolvedTitle}" — left for Google.`);
+        }
         throw new Error(`No real matching product photo found automatically for "${resolvedTitle}".`);
       }
     }
@@ -28944,6 +29116,7 @@ async function fixSingleCatalogImageRecord(params: {
         serverVerified: true,
         verifiedAt: nowIso,
         replacedOldUrls: updatedReplacedOldUrls,
+        ...(resolvedImageSource ? { imageSource: resolvedImageSource } : {}),
         ...(resolvedSourceUrl ? { sourceUrl: resolvedSourceUrl } : {}),
         ...(resolvedContentHash ? { imageContentHash: resolvedContentHash } : {})
       };
@@ -29077,6 +29250,7 @@ async function fixSingleCatalogImageRecord(params: {
       new_image_url: finalImageUrl,
       query_used: queryUsed,
       source,
+      imageSource: resolvedImageSource,
       is_fallback_card: source === 'gemini_grounded_unique_webp',
       status: params.revert ? ('FLAGGED' as const) : ('FIXED' as const),
       updatedAt: nowIso,
@@ -29763,6 +29937,15 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
   }
 });
 
+type ImageAutoPatchSourceMode = 'alibaba_first' | 'alibaba_only' | 'google_only';
+
+function normalizeImageAutoPatchSourceMode(raw: unknown): ImageAutoPatchSourceMode {
+  const s = String(raw || '').trim().toLowerCase();
+  if (s === 'alibaba_only' || s === 'alibaba-only' || s === 'alibaba') return 'alibaba_only';
+  if (s === 'google_only' || s === 'google-only' || s === 'google') return 'google_only';
+  return 'alibaba_first';
+}
+
 interface SiteImageAutoFixResultRow {
   id: string;
   type: string;
@@ -29772,6 +29955,8 @@ interface SiteImageAutoFixResultRow {
   deletedOldUrls?: string[];
   updatedAt?: string;
   imageUpdatedAt?: number;
+  imageSource?: 'alibaba' | 'google' | 'local';
+  leftForGoogle?: boolean;
   error?: string;
 }
 
@@ -29791,11 +29976,17 @@ interface BackgroundAutoFixJobState {
   cancelRequested: boolean;
   startedAt: string;
   finishedAt?: string;
+  sourceMode: ImageAutoPatchSourceMode;
+  forceRepatch: boolean;
   total: number;
   completed: number;
   fixed: number;
   failed: number;
   deletedOld: number;
+  alibabaFixed: number;
+  googleFixed: number;
+  localFixed: number;
+  leftForGoogleIds: string[];
   currentLabel: string;
   currentItemId: string;
   queue: SiteImageAutoFixInputItem[];
@@ -30008,7 +30199,8 @@ async function assignZeroSkipCategoryFallback(
       oldUrl: currentUrl,
       deletedOldUrls,
       updatedAt: nowIso,
-      imageUpdatedAt: activityMs
+      imageUpdatedAt: activityMs,
+      imageSource: 'local'
     };
   } catch (fallbackErr: any) {
     console.warn(`[assignZeroSkipCategoryFallback] failed for ${id}:`, fallbackErr?.message || fallbackErr);
@@ -30021,11 +30213,15 @@ async function processSingleSiteImageAutoFix(
   opts?: {
     batchMode?: boolean;
     fastBatchMode?: boolean;
+    sourceMode?: ImageAutoPatchSourceMode;
+    forceRepatch?: boolean;
     preindexedFiles?: IndexedUploadFileEntry[];
     sharedRegistry?: GlobalAttachedImageRegistry;
   }
 ): Promise<SiteImageAutoFixResultRow> {
   const { id, type, title, category, specifications, currentUrl, fieldPath } = item;
+  const sourceMode: ImageAutoPatchSourceMode = normalizeImageAutoPatchSourceMode(opts?.sourceMode);
+  const forceRepatch = Boolean(opts?.forceRepatch);
   if (id === 'site-brand-logo') {
     return {
       id,
@@ -30053,6 +30249,8 @@ async function processSingleSiteImageAutoFix(
       previousImageUrl: currentUrl || undefined,
       batchMode: opts?.batchMode,
       fastBatchMode: opts?.fastBatchMode,
+      sourceMode,
+      forceRepatch,
       preindexedFiles: opts?.preindexedFiles,
       sharedRegistry: opts?.sharedRegistry
     });
@@ -30099,10 +30297,22 @@ async function processSingleSiteImageAutoFix(
       oldUrl: fixed.old_image_url,
       deletedOldUrls: itemDeleted,
       updatedAt: fixed.updatedAt,
-      imageUpdatedAt: fixed.imageUpdatedAt
+      imageUpdatedAt: fixed.imageUpdatedAt,
+      imageSource: fixed.imageSource
     };
   } catch (err: any) {
-    // Never skip a non-protected item: immediately fall back to same/similar-category real photo
+    // When user explicitly chose Alibaba-Only mode, DO NOT assign generic local category fallback — mark Left for Google so Step 2 patches it!
+    if (sourceMode === 'alibaba_only') {
+      return {
+        id,
+        type,
+        success: false,
+        oldUrl: currentUrl,
+        leftForGoogle: true,
+        error: 'No Alibaba photo matched — queued as Left for Google.'
+      };
+    }
+    // Never skip a non-protected item in alibaba_first / google_only modes: fall back to same/similar-category real photo
     const categoryFallbackRow = await assignZeroSkipCategoryFallback(item, opts);
     if (categoryFallbackRow) {
       return categoryFallbackRow;
@@ -30124,11 +30334,17 @@ function serializeBackgroundAutoFixJob(job: BackgroundAutoFixJobState) {
     cancelRequested: job.cancelRequested,
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
+    sourceMode: job.sourceMode,
+    forceRepatch: job.forceRepatch,
     total: job.total,
     completed: job.completed,
     fixed: job.fixed,
     failed: job.failed,
     deletedOld: job.deletedOld,
+    alibabaFixed: job.alibabaFixed,
+    googleFixed: job.googleFixed,
+    localFixed: job.localFixed,
+    leftForGoogleIds: job.leftForGoogleIds.slice(0, 10000),
     currentLabel: job.currentLabel,
     currentItemId: job.currentItemId,
     queuedIds: job.queue.slice(0, 100).map(q => q.id),
@@ -30153,8 +30369,8 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     }
   }
   backgroundAutoFixWorkerRunning = true;
-  const CONCURRENCY = 2;
-  const PER_ITEM_TIMEOUT_MS = 10000;
+  const CONCURRENCY = 3;
+  const PER_ITEM_TIMEOUT_MS = 16000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
   let fixedSinceLastFlush = 0;
@@ -30288,7 +30504,14 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
 
         const fastBatchMode = job.total > 15;
         const raceOut = await Promise.race([
-          processSingleSiteImageAutoFix(nextItem, { batchMode: true, fastBatchMode, preindexedFiles, sharedRegistry }),
+          processSingleSiteImageAutoFix(nextItem, {
+            batchMode: true,
+            fastBatchMode,
+            sourceMode: job.sourceMode,
+            forceRepatch: job.forceRepatch,
+            preindexedFiles,
+            sharedRegistry
+          }),
           timeoutPromise
         ]);
         if (timeoutHandle) {
@@ -30296,8 +30519,21 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
           timeoutHandle = null;
         }
 
-        if ((raceOut as any)?.__timedOut || (!raceOut || (!(raceOut as SiteImageAutoFixResultRow).success && nextItem.id !== 'site-brand-logo'))) {
-          // Zero-Skip Guarantee: assign an instant same/similar-category real photo instead of ever skipping!
+        const isTimedOut = Boolean((raceOut as any)?.__timedOut);
+        if (isTimedOut && job.sourceMode === 'alibaba_only') {
+          resRow = {
+            id: nextItem.id,
+            type: nextItem.type,
+            success: false,
+            oldUrl: nextItem.currentUrl,
+            leftForGoogle: true,
+            error: 'Alibaba lookup timed out — queued as Left for Google.'
+          };
+        } else if (
+          job.sourceMode !== 'alibaba_only' &&
+          (isTimedOut || !raceOut || (!(raceOut as SiteImageAutoFixResultRow).success && nextItem.id !== 'site-brand-logo'))
+        ) {
+          // Zero-Skip Guarantee (for alibaba_first & google_only): assign an instant same/similar-category real photo instead of skipping
           const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
             batchMode: true,
             preindexedFiles,
@@ -30311,25 +30547,43 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
             error: 'Could not resolve category fallback photo.'
           };
         } else {
-          resRow = raceOut as SiteImageAutoFixResultRow;
+          resRow = (raceOut as SiteImageAutoFixResultRow) || {
+            id: nextItem.id,
+            type: nextItem.type,
+            success: false,
+            oldUrl: nextItem.currentUrl,
+            leftForGoogle: job.sourceMode === 'alibaba_only',
+            error: 'Auto-fix did not return a matching photo.'
+          };
         }
       } catch (slotErr: any) {
         if (timeoutHandle) {
           clearTimeout(timeoutHandle);
           timeoutHandle = null;
         }
-        const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
-          batchMode: true,
-          preindexedFiles,
-          sharedRegistry
-        }).catch(() => null);
-        resRow = fallbackRow || {
-          id: nextItem.id,
-          type: nextItem.type,
-          success: false,
-          oldUrl: nextItem.currentUrl,
-          error: slotErr?.message || 'Auto-fix slot recovered from unexpected error.'
-        };
+        if (job.sourceMode === 'alibaba_only') {
+          resRow = {
+            id: nextItem.id,
+            type: nextItem.type,
+            success: false,
+            oldUrl: nextItem.currentUrl,
+            leftForGoogle: true,
+            error: slotErr?.message || 'No Alibaba photo matched — queued as Left for Google.'
+          };
+        } else {
+          const fallbackRow = await assignZeroSkipCategoryFallback(nextItem, {
+            batchMode: true,
+            preindexedFiles,
+            sharedRegistry
+          }).catch(() => null);
+          resRow = fallbackRow || {
+            id: nextItem.id,
+            type: nextItem.type,
+            success: false,
+            oldUrl: nextItem.currentUrl,
+            error: slotErr?.message || 'Auto-fix slot recovered from unexpected error.'
+          };
+        }
       }
 
       activeSlotItems.delete(slotIdx);
@@ -30338,11 +30592,17 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
       job.completed += 1;
       if (resRow.success && resRow.newUrl) {
         job.fixed += 1;
+        if (resRow.imageSource === 'alibaba') job.alibabaFixed += 1;
+        else if (resRow.imageSource === 'google') job.googleFixed += 1;
+        else job.localFixed += 1;
         job.deletedOld += Array.isArray(resRow.deletedOldUrls) ? resRow.deletedOldUrls.length : 0;
         pendingSnapshotUpdates.push({ id: nextItem.id, imageUrl: resRow.newUrl, gallery: [resRow.newUrl] });
         fixedSinceLastFlush += 1;
       } else {
         job.failed += 1;
+        if (resRow.leftForGoogle && !job.leftForGoogleIds.includes(nextItem.id)) {
+          job.leftForGoogleIds.push(nextItem.id);
+        }
       }
 
       job.results.push(resRow);
@@ -30409,6 +30669,8 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
 
     const replaceExisting = Boolean(req.body?.replaceExisting);
     const deferStart = Boolean(req.body?.deferStart);
+    const sourceMode = normalizeImageAutoPatchSourceMode(req.body?.sourceMode);
+    const forceRepatch = Boolean(req.body?.forceRepatch);
 
     if (replaceExisting && activeBackgroundAutoFixJob && activeBackgroundAutoFixJob.active) {
       activeBackgroundAutoFixJob.cancelRequested = true;
@@ -30436,6 +30698,12 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
           activeBackgroundAutoFixJob.total += 1;
           addedCount += 1;
         }
+      }
+      if (req.body?.sourceMode) {
+        activeBackgroundAutoFixJob.sourceMode = sourceMode;
+      }
+      if (req.body?.forceRepatch !== undefined) {
+        activeBackgroundAutoFixJob.forceRepatch = forceRepatch;
       }
       activeBackgroundAutoFixJob.updatedAtMs = Date.now();
       if (!deferStart) {
@@ -30471,11 +30739,17 @@ app.post('/api/v1/admin/site-images/auto-fix-jobs', (req, res) => {
       active: true,
       cancelRequested: false,
       startedAt: new Date().toISOString(),
+      sourceMode,
+      forceRepatch,
       total: normalizedItems.length,
       completed: 0,
       fixed: 0,
       failed: 0,
       deletedOld: 0,
+      alibabaFixed: 0,
+      googleFixed: 0,
+      localFixed: 0,
+      leftForGoogleIds: [],
       currentLabel: normalizedItems[0].title || normalizedItems[0].id,
       currentItemId: normalizedItems[0].id,
       queue: [...normalizedItems],
@@ -30576,20 +30850,27 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
       .map(normalizeSiteImageAutoFixInputItem)
       .filter((x): x is SiteImageAutoFixInputItem => Boolean(x));
     const fastBatchMode = Boolean(req.body?.fastBatchMode || batchItems.length > 1);
+    const sourceMode = normalizeImageAutoPatchSourceMode(req.body?.sourceMode);
+    const forceRepatch = Boolean(req.body?.forceRepatch);
     const preindexedFiles = fastBatchMode ? buildPreindexedLocalUploadFiles() : undefined;
     const sharedRegistry = fastBatchMode ? buildGlobalAttachedImageRegistry() : undefined;
     const results: SiteImageAutoFixResultRow[] = [];
     const allDeletedOldUrls: string[] = [];
     let fixedCount = 0;
     let failedCount = 0;
+    let alibabaFixedCount = 0;
+    let googleFixedCount = 0;
+    let leftForGoogleCount = 0;
 
     for (const item of batchItems) {
       let rowRes = await processSingleSiteImageAutoFix(item, {
         fastBatchMode,
+        sourceMode,
+        forceRepatch,
         preindexedFiles,
         sharedRegistry
       });
-      if (!rowRes.success && item.id !== 'site-brand-logo') {
+      if (!rowRes.success && sourceMode !== 'alibaba_only' && item.id !== 'site-brand-logo') {
         const fb = await assignZeroSkipCategoryFallback(item, {
           preindexedFiles,
           sharedRegistry
@@ -30598,19 +30879,26 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
       }
       if (rowRes.success) {
         fixedCount++;
+        if (rowRes.imageSource === 'alibaba') alibabaFixedCount++;
+        else if (rowRes.imageSource === 'google') googleFixedCount++;
         if (Array.isArray(rowRes.deletedOldUrls)) {
           allDeletedOldUrls.push(...rowRes.deletedOldUrls);
         }
       } else {
         failedCount++;
+        if (rowRes.leftForGoogle) leftForGoogleCount++;
       }
       results.push(rowRes);
     }
 
     return res.json({
       success: fixedCount > 0 || failedCount === 0,
+      sourceMode,
       fixedCount,
       failedCount,
+      alibabaFixedCount,
+      googleFixedCount,
+      leftForGoogleCount,
       deletedOldUrls: Array.from(new Set(allDeletedOldUrls)),
       results
     });

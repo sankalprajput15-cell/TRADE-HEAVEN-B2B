@@ -1,5 +1,6 @@
 import {
   autoFixSiteImages,
+  ImageAutoPatchSourceMode,
   SiteImageAutoFixItemInput,
   SiteImageAutoFixRowResult,
   UnifiedSiteImageTargetType
@@ -17,6 +18,7 @@ export interface BackgroundAutoFixSessionChange {
   changedAt: number;
   action: 'UPLOAD' | 'AUTO_FIX' | 'URL';
   deletedOldCount: number;
+  imageSource?: 'alibaba' | 'google' | 'local';
 }
 
 export interface BackgroundAutoFixSnapshot {
@@ -24,11 +26,17 @@ export interface BackgroundAutoFixSnapshot {
   stopping: boolean;
   mode: 'idle' | 'server-job' | 'local-background';
   jobId: string;
+  sourceMode: ImageAutoPatchSourceMode;
+  forceRepatch: boolean;
   total: number;
   completed: number;
   fixed: number;
   failed: number;
   deletedOld: number;
+  alibabaFixed: number;
+  googleFixed: number;
+  localFixed: number;
+  leftForGoogleIds: string[];
   currentLabel: string;
   currentItemId: string;
   queuedIds: string[];
@@ -42,6 +50,10 @@ export interface BackgroundAutoFixSnapshot {
     failed: number;
     total: number;
     deletedOld: number;
+    alibabaFixed?: number;
+    googleFixed?: number;
+    leftForGoogleCount?: number;
+    sourceMode?: ImageAutoPatchSourceMode;
     at: number;
   } | null;
 }
@@ -50,11 +62,17 @@ interface ServerJobPayload {
   jobId: string;
   active: boolean;
   cancelRequested: boolean;
+  sourceMode?: ImageAutoPatchSourceMode;
+  forceRepatch?: boolean;
   total: number;
   completed: number;
   fixed: number;
   failed: number;
   deletedOld: number;
+  alibabaFixed?: number;
+  googleFixed?: number;
+  localFixed?: number;
+  leftForGoogleIds?: string[];
   currentLabel: string;
   currentItemId: string;
   queuedIds: string[];
@@ -85,11 +103,17 @@ class BackgroundAutoFixService {
     stopping: false,
     mode: 'idle',
     jobId: '',
+    sourceMode: 'alibaba_first',
+    forceRepatch: false,
     total: 0,
     completed: 0,
     fixed: 0,
     failed: 0,
     deletedOld: 0,
+    alibabaFixed: 0,
+    googleFixed: 0,
+    localFixed: 0,
+    leftForGoogleIds: [],
     currentLabel: '',
     currentItemId: '',
     queuedIds: [],
@@ -124,9 +148,17 @@ class BackgroundAutoFixService {
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
+        const parsedMode: ImageAutoPatchSourceMode =
+          parsed.sourceMode === 'alibaba_only' || parsed.sourceMode === 'google_only'
+            ? parsed.sourceMode
+            : 'alibaba_first';
         this.state = {
           ...this.state,
           jobId: typeof parsed.jobId === 'string' ? parsed.jobId : '',
+          sourceMode: parsedMode,
+          leftForGoogleIds: Array.isArray(parsed.leftForGoogleIds)
+            ? parsed.leftForGoogleIds.filter((x: unknown): x is string => typeof x === 'string' && Boolean(x)).slice(0, 5000)
+            : [],
           sessionChanges:
             parsed.sessionChanges && typeof parsed.sessionChanges === 'object' ? parsed.sessionChanges : {},
           skippedItems:
@@ -153,6 +185,8 @@ class BackgroundAutoFixService {
         STORAGE_KEY,
         JSON.stringify({
           jobId: this.state.jobId,
+          sourceMode: this.state.sourceMode,
+          leftForGoogleIds: this.state.leftForGoogleIds.slice(0, 5000),
           sessionChanges: trimMap(this.state.sessionChanges),
           skippedItems: trimMap(this.state.skippedItems),
           totalDeletedFilesSession: this.state.totalDeletedFilesSession,
@@ -182,6 +216,7 @@ class BackgroundAutoFixService {
   public getSnapshot(): BackgroundAutoFixSnapshot {
     return {
       ...this.state,
+      leftForGoogleIds: [...this.state.leftForGoogleIds],
       queuedIds: [...this.state.queuedIds],
       sessionChanges: { ...this.state.sessionChanges },
       skippedItems: { ...this.state.skippedItems }
@@ -207,11 +242,19 @@ class BackgroundAutoFixService {
   }
 
   public clearSkippedItem(id: string) {
-    if (!id || !this.state.skippedItems[id]) return;
-    const next = { ...this.state.skippedItems };
-    delete next[id];
-    this.state.skippedItems = next;
-    this.emit();
+    if (!id) return;
+    let changed = false;
+    if (this.state.skippedItems[id]) {
+      const next = { ...this.state.skippedItems };
+      delete next[id];
+      this.state.skippedItems = next;
+      changed = true;
+    }
+    if (this.state.leftForGoogleIds.includes(id)) {
+      this.state.leftForGoogleIds = this.state.leftForGoogleIds.filter(x => x !== id);
+      changed = true;
+    }
+    if (changed) this.emit();
   }
 
   public clearAllSkipped() {
@@ -220,17 +263,41 @@ class BackgroundAutoFixService {
     this.emit();
   }
 
+  public clearLeftForGoogleIds() {
+    if (this.state.leftForGoogleIds.length === 0) return;
+    this.state.leftForGoogleIds = [];
+    this.emit();
+  }
+
+  public markLeftForGoogle(ids: string[]) {
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    const set = new Set(this.state.leftForGoogleIds);
+    let added = false;
+    for (const id of ids) {
+      if (id && !set.has(id)) {
+        set.add(id);
+        added = true;
+      }
+    }
+    if (added) {
+      this.state.leftForGoogleIds = Array.from(set);
+      this.emit();
+    }
+  }
+
   public recordManualSessionChange(
     entries: Array<{
       id: string;
       deletedOldCount?: number;
       action: 'UPLOAD' | 'AUTO_FIX' | 'URL';
+      imageSource?: 'alibaba' | 'google' | 'local';
     }>
   ) {
     if (entries.length === 0) return;
     const now = Date.now();
     const nextChanges = { ...this.state.sessionChanges };
     const nextSkipped = { ...this.state.skippedItems };
+    const patchedSet = new Set<string>();
     let deletedDelta = 0;
 
     for (const e of entries) {
@@ -239,13 +306,18 @@ class BackgroundAutoFixService {
       nextChanges[e.id] = {
         changedAt: now,
         action: e.action,
-        deletedOldCount: del
+        deletedOldCount: del,
+        ...(e.imageSource ? { imageSource: e.imageSource } : {})
       };
       delete nextSkipped[e.id];
+      patchedSet.add(e.id);
     }
 
     this.state.sessionChanges = nextChanges;
     this.state.skippedItems = nextSkipped;
+    if (this.state.leftForGoogleIds.length > 0) {
+      this.state.leftForGoogleIds = this.state.leftForGoogleIds.filter(id => !patchedSet.has(id));
+    }
     this.state.totalDeletedFilesSession += deletedDelta;
     this.emit();
   }
@@ -277,9 +349,13 @@ class BackgroundAutoFixService {
         this.state.sessionChanges[r.id] = {
           changedAt: now,
           action: 'AUTO_FIX',
-          deletedOldCount: delList.length
+          deletedOldCount: delList.length,
+          ...(r.imageSource ? { imageSource: r.imageSource } : {})
         };
         delete this.state.skippedItems[r.id];
+        if (this.state.leftForGoogleIds.includes(r.id)) {
+          this.state.leftForGoogleIds = this.state.leftForGoogleIds.filter(x => x !== r.id);
+        }
 
         const upperType = String(r.type || '').toUpperCase();
         if (upperType === 'CATEGORY' || upperType === 'HERO_SLIDE' || upperType === 'SITE_ASSET') {
@@ -290,16 +366,19 @@ class BackgroundAutoFixService {
           id: r.id,
           url: r.newUrl,
           updatedAt: r.updatedAt || new Date(now).toISOString(),
-          updatedBy: 'admin-manual',
+          updatedBy: 'catalog-image-auditor',
           locked: true,
           serverVerified: true,
           deletedOldUrls: delList
         });
       } else {
         this.state.skippedItems[r.id] = {
-          reason: r.error || 'Auto-fix skipped item (open inspector to pick from ~20 Alibaba/Google/Web photos).',
+          reason: r.error || 'Auto-fix skipped item (open inspector to pick from Alibaba/Google/Web photos).',
           at: now
         };
+        if (r.leftForGoogle && !this.state.leftForGoogleIds.includes(r.id)) {
+          this.state.leftForGoogleIds = [...this.state.leftForGoogleIds, r.id];
+        }
       }
     }
 
@@ -319,6 +398,38 @@ class BackgroundAutoFixService {
     }
   }
 
+  private formatModeLabel(mode: ImageAutoPatchSourceMode): string {
+    if (mode === 'alibaba_only') return 'Alibaba Only';
+    if (mode === 'google_only') return 'Google / Web Only';
+    return 'Alibaba First → Google';
+  }
+
+  private buildCompletionNoticeText(params: {
+    stopped: boolean;
+    sourceMode: ImageAutoPatchSourceMode;
+    fixed: number;
+    failed: number;
+    total: number;
+    deletedOld: number;
+    alibabaFixed: number;
+    googleFixed: number;
+    leftForGoogleCount: number;
+  }): string {
+    const modeLabel = this.formatModeLabel(params.sourceMode);
+    const parts: string[] = [];
+    if (params.alibabaFixed > 0) parts.push(`Alibaba: ${params.alibabaFixed}`);
+    if (params.googleFixed > 0) parts.push(`Google: ${params.googleFixed}`);
+    if (params.leftForGoogleCount > 0) parts.push(`Left for Google: ${params.leftForGoogleCount}`);
+    const breakdown = parts.length > 0 ? ` [${parts.join(' · ')}]` : '';
+    if (params.stopped) {
+      return `Image Patch (${modeLabel}) stopped: patched ${params.fixed} of ${params.total}${breakdown} (${params.deletedOld} old files deleted).`;
+    }
+    if (params.sourceMode === 'alibaba_only' && params.leftForGoogleCount > 0) {
+      return `Alibaba Pass finished: ${params.alibabaFixed} patched from Alibaba · ${params.leftForGoogleCount} left without Alibaba match — click "Patch Left from Google (${params.leftForGoogleCount})" to finish them from Google.`;
+    }
+    return `Image Patch (${modeLabel}) finished: ${params.fixed} patched${breakdown}, ${params.failed} skipped, ${params.deletedOld} old files permanently deleted.`;
+  }
+
   private applyServerJobPayload(job: ServerJobPayload | null, opts?: { emitNoticeOnFinish?: boolean }) {
     if (!job) return;
     const wasActive = this.state.active && this.state.jobId === job.jobId;
@@ -333,7 +444,14 @@ class BackgroundAutoFixService {
       this.lastServerCompletedCount = Number(job.completed || 0);
     }
 
+    const jobSourceMode: ImageAutoPatchSourceMode =
+      job.sourceMode === 'alibaba_only' || job.sourceMode === 'google_only'
+        ? job.sourceMode
+        : 'alibaba_first';
+
     this.state.jobId = job.jobId;
+    this.state.sourceMode = jobSourceMode;
+    this.state.forceRepatch = Boolean(job.forceRepatch);
     this.state.mode = job.active ? 'server-job' : 'idle';
     this.state.active = Boolean(job.active);
     this.state.stopping = Boolean(job.active && job.cancelRequested);
@@ -342,6 +460,9 @@ class BackgroundAutoFixService {
     this.state.fixed = Number(job.fixed || 0);
     this.state.failed = Number(job.failed || 0);
     this.state.deletedOld = Number(job.deletedOld || 0);
+    this.state.alibabaFixed = Number(job.alibabaFixed || 0);
+    this.state.googleFixed = Number(job.googleFixed || 0);
+    this.state.localFixed = Number(job.localFixed || 0);
     this.state.currentLabel = String(job.currentLabel || '');
     this.state.currentItemId = String(job.currentItemId || '');
     this.state.queuedIds = Array.isArray(job.queuedIds)
@@ -349,6 +470,14 @@ class BackgroundAutoFixService {
         ? Array.from(new Set([job.currentItemId, ...job.queuedIds]))
         : [...job.queuedIds]
       : [];
+
+    if (Array.isArray(job.leftForGoogleIds)) {
+      if (jobSourceMode === 'alibaba_only') {
+        // Merge server leftForGoogleIds from this Alibaba-only run
+        const merged = new Set<string>([...this.state.leftForGoogleIds, ...job.leftForGoogleIds]);
+        this.state.leftForGoogleIds = Array.from(merged);
+      }
+    }
 
     if (Array.isArray(job.results)) {
       this.applyProcessedResultRows(job.results);
@@ -374,26 +503,56 @@ class BackgroundAutoFixService {
         .catch(() => {});
     }
 
+    const leftForGoogleCount = Array.isArray(job.leftForGoogleIds)
+      ? job.leftForGoogleIds.length
+      : this.state.leftForGoogleIds.length;
+
     if (jobJustFinished) {
       this.state.lastCompletedNotice = {
-        type: job.fixed > 0 ? 'success' : job.failed > 0 ? 'error' : 'info',
-        text: job.cancelRequested
-          ? `Background Auto-Fix stopped: fixed ${job.fixed} of ${job.total} items (${job.deletedOld} old server files permanently deleted).`
-          : `Background Auto-Fix finished: ${job.fixed} fixed, ${job.failed} skipped/failed, ${job.deletedOld} old server files permanently deleted.`,
+        type: job.fixed > 0 ? 'success' : leftForGoogleCount > 0 ? 'info' : job.failed > 0 ? 'error' : 'info',
+        text: this.buildCompletionNoticeText({
+          stopped: Boolean(job.cancelRequested),
+          sourceMode: jobSourceMode,
+          fixed: job.fixed,
+          failed: job.failed,
+          total: job.total,
+          deletedOld: job.deletedOld,
+          alibabaFixed: Number(job.alibabaFixed || 0),
+          googleFixed: Number(job.googleFixed || 0),
+          leftForGoogleCount
+        }),
         fixed: job.fixed,
         failed: job.failed,
         total: job.total,
         deletedOld: job.deletedOld,
+        alibabaFixed: Number(job.alibabaFixed || 0),
+        googleFixed: Number(job.googleFixed || 0),
+        leftForGoogleCount,
+        sourceMode: jobSourceMode,
         at: Date.now()
       };
     } else if (opts?.emitNoticeOnFinish && !job.active && job.completed > 0 && !this.state.lastCompletedNotice) {
       this.state.lastCompletedNotice = {
-        type: job.fixed > 0 ? 'success' : 'error',
-        text: `Background Auto-Fix finished: ${job.fixed} fixed, ${job.failed} skipped/failed, ${job.deletedOld} old server files permanently deleted.`,
+        type: job.fixed > 0 ? 'success' : leftForGoogleCount > 0 ? 'info' : 'error',
+        text: this.buildCompletionNoticeText({
+          stopped: false,
+          sourceMode: jobSourceMode,
+          fixed: job.fixed,
+          failed: job.failed,
+          total: job.total,
+          deletedOld: job.deletedOld,
+          alibabaFixed: Number(job.alibabaFixed || 0),
+          googleFixed: Number(job.googleFixed || 0),
+          leftForGoogleCount
+        }),
         fixed: job.fixed,
         failed: job.failed,
         total: job.total,
         deletedOld: job.deletedOld,
+        alibabaFixed: Number(job.alibabaFixed || 0),
+        googleFixed: Number(job.googleFixed || 0),
+        leftForGoogleCount,
+        sourceMode: jobSourceMode,
         at: Date.now()
       };
     }
@@ -466,8 +625,14 @@ class BackgroundAutoFixService {
     await this.pollServerJobOnce();
   }
 
-  public async enqueue(rawItems: BackgroundAutoFixItem[]): Promise<void> {
+  public async enqueue(
+    rawItems: BackgroundAutoFixItem[],
+    opts?: { sourceMode?: ImageAutoPatchSourceMode; forceRepatch?: boolean }
+  ): Promise<void> {
     if (!Array.isArray(rawItems) || rawItems.length === 0) return;
+
+    const sourceMode: ImageAutoPatchSourceMode = opts?.sourceMode || 'alibaba_first';
+    const forceRepatch = Boolean(opts?.forceRepatch);
 
     // Compact specifications & prioritize catalog items over site assets so large 3,400+ item queues transfer and start fast
     const items: BackgroundAutoFixItem[] = rawItems
@@ -479,6 +644,8 @@ class BackgroundAutoFixService {
     if (items.length === 0) return;
 
     this.state.lastCompletedNotice = null;
+    this.state.sourceMode = sourceMode;
+    this.state.forceRepatch = forceRepatch;
     // Clear stale skipped status for any items being re-queued so fresh retries display cleanly
     const nextSkipped = { ...this.state.skippedItems };
     let skippedChanged = false;
@@ -490,8 +657,8 @@ class BackgroundAutoFixService {
     }
     if (skippedChanged) {
       this.state.skippedItems = nextSkipped;
-      this.emit();
     }
+    this.emit();
 
     // 1. Try submitting to the persistent server-side background job queue first (in 600-item chunks so large batches never hit body-size or proxy timeouts)
     let latestServerJob: ServerJobPayload | null = null;
@@ -504,7 +671,11 @@ class BackgroundAutoFixService {
         this.state.mode === 'server-job' &&
         Date.now() - (this.lastServerProgressAtMs || 0) > 10000;
       const isIdleFreshStart =
-        !this.state.active || this.state.mode !== 'server-job' || isStalledJob || items.length >= 25;
+        !this.state.active ||
+        this.state.mode !== 'server-job' ||
+        isStalledJob ||
+        forceRepatch ||
+        items.length >= 25;
 
       for (let i = 0; i < items.length; i += CHUNK_SIZE) {
         const chunk = items.slice(i, i + CHUNK_SIZE);
@@ -520,7 +691,7 @@ class BackgroundAutoFixService {
               method: 'POST',
               cache: 'no-store',
               headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify({ items: chunk, replaceExisting, deferStart }),
+              body: JSON.stringify({ items: chunk, replaceExisting, deferStart, sourceMode, forceRepatch }),
               ...(ctrl ? { signal: ctrl.signal } : {})
             });
             const json = await res.json().catch(() => null);
@@ -558,7 +729,7 @@ class BackgroundAutoFixService {
             method: 'POST',
             cache: 'no-store',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ items: [items[0]], replaceExisting: false, deferStart: false })
+            body: JSON.stringify({ items: [items[0]], replaceExisting: false, deferStart: false, sourceMode, forceRepatch })
           });
           const json = await res.json().catch(() => null);
           if (res.ok && json?.success && json.job) {
@@ -590,6 +761,8 @@ class BackgroundAutoFixService {
       this.localStopRequested = false;
       this.localQueue = [...items];
       this.state.jobId = `local-bg-${Date.now()}`;
+      this.state.sourceMode = sourceMode;
+      this.state.forceRepatch = forceRepatch;
       this.state.mode = 'local-background';
       this.state.active = true;
       this.state.stopping = false;
@@ -598,6 +771,9 @@ class BackgroundAutoFixService {
       this.state.fixed = 0;
       this.state.failed = 0;
       this.state.deletedOld = 0;
+      this.state.alibabaFixed = 0;
+      this.state.googleFixed = 0;
+      this.state.localFixed = 0;
       this.state.currentItemId = this.localQueue[0].id;
       this.state.currentLabel = this.localQueue[0].title;
       this.state.queuedIds = this.localQueue.slice(0, 100).map(q => q.id);
@@ -620,7 +796,7 @@ class BackgroundAutoFixService {
     if (this.localWorkerRunning) return;
     this.localWorkerRunning = true;
     const BATCH_SIZE = 10;
-    const BATCH_TIMEOUT_MS = 38000;
+    const BATCH_TIMEOUT_MS = 45000;
 
     try {
       while (!this.localStopRequested && this.localQueue.length > 0) {
@@ -638,12 +814,18 @@ class BackgroundAutoFixService {
 
         let timeoutHandle: number | null = null;
         let resList: SiteImageAutoFixRowResult[] = [];
+        const activeSourceMode = this.state.sourceMode;
+        const activeForceRepatch = this.state.forceRepatch;
         try {
           const timeoutPromise = new Promise<{ __timedOut: true }>(resolve => {
             timeoutHandle = window.setTimeout(() => resolve({ __timedOut: true }), BATCH_TIMEOUT_MS);
           });
           const raceOut = await Promise.race([
-            autoFixSiteImages(batch, { fastBatchMode: true }),
+            autoFixSiteImages(batch, {
+              fastBatchMode: true,
+              sourceMode: activeSourceMode,
+              forceRepatch: activeForceRepatch
+            }),
             timeoutPromise
           ]);
           if (timeoutHandle !== null) {
@@ -655,7 +837,11 @@ class BackgroundAutoFixService {
             for (let si = 0; si < batch.length && !this.localStopRequested; si += 3) {
               const sub = batch.slice(si, si + 3);
               try {
-                const subOut = await autoFixSiteImages(sub, { fastBatchMode: true });
+                const subOut = await autoFixSiteImages(sub, {
+                  fastBatchMode: true,
+                  sourceMode: activeSourceMode,
+                  forceRepatch: activeForceRepatch
+                });
                 if (Array.isArray(subOut?.results)) resList.push(...subOut.results);
               } catch {
                 for (const s of sub) {
@@ -663,6 +849,7 @@ class BackgroundAutoFixService {
                     id: s.id,
                     type: s.type,
                     success: false,
+                    leftForGoogle: activeSourceMode === 'alibaba_only',
                     error: 'Server timed out while processing batch item.'
                   });
                 }
@@ -680,6 +867,7 @@ class BackgroundAutoFixService {
             id: t.id,
             type: t.type,
             success: false,
+            leftForGoogle: activeSourceMode === 'alibaba_only',
             error: err?.message || 'Background auto-fix batch request failed.'
           }));
         }
@@ -695,6 +883,9 @@ class BackgroundAutoFixService {
           this.state.completed += 1;
           if (match?.success && match?.newUrl) {
             this.state.fixed += 1;
+            if (match.imageSource === 'alibaba') this.state.alibabaFixed += 1;
+            else if (match.imageSource === 'google') this.state.googleFixed += 1;
+            else this.state.localFixed += 1;
             const delCount = Array.isArray(match.deletedOldUrls) ? match.deletedOldUrls.length : 0;
             this.state.deletedOld += delCount;
             normalizedRows.push(match);
@@ -704,6 +895,7 @@ class BackgroundAutoFixService {
               id: target.id,
               type: target.type,
               success: false,
+              leftForGoogle: Boolean(match?.leftForGoogle || activeSourceMode === 'alibaba_only'),
               error: match?.error || 'Auto-fix skipped item (open inspector to pick a photo).'
             });
           }
@@ -729,14 +921,26 @@ class BackgroundAutoFixService {
       this.state.currentLabel = '';
       this.state.queuedIds = [];
       this.state.lastCompletedNotice = {
-        type: this.state.fixed > 0 ? 'success' : 'error',
-        text: wasStopped
-          ? `Background Auto-Fix stopped: fixed ${this.state.fixed} of ${this.state.total} items (${this.state.deletedOld} old server files permanently deleted).`
-          : `Background Auto-Fix finished: ${this.state.fixed} fixed, ${this.state.failed} skipped/failed, ${this.state.deletedOld} old server files permanently deleted.`,
+        type: this.state.fixed > 0 ? 'success' : this.state.leftForGoogleIds.length > 0 ? 'info' : 'error',
+        text: this.buildCompletionNoticeText({
+          stopped: wasStopped,
+          sourceMode: this.state.sourceMode,
+          fixed: this.state.fixed,
+          failed: this.state.failed,
+          total: this.state.total,
+          deletedOld: this.state.deletedOld,
+          alibabaFixed: this.state.alibabaFixed,
+          googleFixed: this.state.googleFixed,
+          leftForGoogleCount: this.state.leftForGoogleIds.length
+        }),
         fixed: this.state.fixed,
         failed: this.state.failed,
         total: this.state.total,
         deletedOld: this.state.deletedOld,
+        alibabaFixed: this.state.alibabaFixed,
+        googleFixed: this.state.googleFixed,
+        leftForGoogleCount: this.state.leftForGoogleIds.length,
+        sourceMode: this.state.sourceMode,
         at: Date.now()
       };
       this.emit();

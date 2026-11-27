@@ -21,7 +21,9 @@ import {
   Eye,
   Crop,
   LayoutGrid,
-  List
+  List,
+  RotateCcw,
+  Globe
 } from 'lucide-react';
 import { ActiveView, Product, RfqRequirement } from '../../types';
 import { AdminQuickImageInspectorModal } from './AdminQuickImageInspectorModal';
@@ -52,7 +54,8 @@ import {
   replaceSiteImage,
   autoFixSiteImages,
   deleteSiteImageFile,
-  deleteSiteListingsPermanently
+  deleteSiteListingsPermanently,
+  ImageAutoPatchSourceMode
 } from '../../services/siteImageControlService';
 import {
   backgroundAutoFixService,
@@ -76,6 +79,7 @@ interface UnifiedSiteImageItem {
   updatedAt?: string;
   changedAtMs: number;
   isChangedLive: boolean;
+  isManualUpload?: boolean;
   sessionAction?: 'UPLOAD' | 'AUTO_FIX' | 'URL';
   siteLocationLabel: string;
   liveRouteView: ActiveView;
@@ -203,6 +207,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
   const [inspectingItem, setInspectingItem] = useState<UnifiedSiteImageItem | null>(null);
   const [croppingItem, setCroppingItem] = useState<UnifiedSiteImageItem | null>(null);
+  const [autoPatchSourceMode, setAutoPatchSourceMode] = useState<ImageAutoPatchSourceMode>('alibaba_first');
+  const [showRepatchPanel, setShowRepatchPanel] = useState<boolean>(false);
+  const [repatchScope, setRepatchScope] = useState<'ALL' | 'FILTERED'>('ALL');
+  const [repatchSkipManual, setRepatchSkipManual] = useState<boolean>(true);
   const [bannerNotice, setBannerNotice] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
@@ -242,18 +250,28 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         active: true,
         isBackgroundAutoFix: true,
         stopping: bgSnapshot.stopping,
+        sourceMode: bgSnapshot.sourceMode,
+        forceRepatch: bgSnapshot.forceRepatch,
         total: bgSnapshot.total,
         completed: bgSnapshot.completed,
         fixed: bgSnapshot.fixed,
         failed: bgSnapshot.failed,
         deletedOld: bgSnapshot.deletedOld,
+        alibabaFixed: bgSnapshot.alibabaFixed,
+        googleFixed: bgSnapshot.googleFixed,
+        leftForGoogleCount: bgSnapshot.leftForGoogleIds.length,
         currentLabel: bgSnapshot.currentLabel
       }
     : localUploadProgress
       ? {
           ...localUploadProgress,
           isBackgroundAutoFix: false,
-          stopping: false
+          stopping: false,
+          sourceMode: 'alibaba_first' as ImageAutoPatchSourceMode,
+          forceRepatch: false,
+          alibabaFixed: 0,
+          googleFixed: 0,
+          leftForGoogleCount: 0
         }
       : null;
 
@@ -708,6 +726,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     return rawList.map(item => {
       const u = item.currentUrl;
       const ov = overrides[item.id];
+      const isManualUpload = Boolean(ov && u && ov.updatedBy === 'admin-manual');
       const isManualOrLocked = Boolean(
         ov &&
         u &&
@@ -731,6 +750,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       ) {
         return {
           ...item,
+          isManualUpload,
           status: 'NEEDS_FIX' as const,
           statusDetail: !u
             ? 'Missing image'
@@ -751,6 +771,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       ) {
         return {
           ...item,
+          isManualUpload,
           status: 'DUPLICATE' as const,
           statusDetail: `Shared across ${urlUsageCount.get(u)} records`
         };
@@ -758,6 +779,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
       return {
         ...item,
+        isManualUpload,
         status: 'VERIFIED' as const,
         statusDetail: item.sessionAction
           ? `Changed live (${item.sessionAction === 'AUTO_FIX' ? 'Auto-Fix' : item.sessionAction === 'URL' ? 'URL' : 'Upload'})`
@@ -1260,24 +1282,37 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
-  // Single-row Auto-Fix
-  const handleAutoFixSingle = async (item: UnifiedSiteImageItem) => {
-    setBusyRowIds(prev => ({ ...prev, [item.id]: 'Auto-fixing...' }));
+  // Single-row Auto-Fix (honors selected Source Priority: Alibaba First / Alibaba Only / Google Only)
+  const handleAutoFixSingle = async (
+    item: UnifiedSiteImageItem,
+    overrideSourceMode?: ImageAutoPatchSourceMode
+  ) => {
+    const activeMode = overrideSourceMode || autoPatchSourceMode;
+    setBusyRowIds(prev => ({
+      ...prev,
+      [item.id]: activeMode === 'alibaba_only' ? 'Alibaba...' : activeMode === 'google_only' ? 'Google...' : 'Auto-fixing...'
+    }));
     setBannerNotice(null);
     try {
-      const json = await autoFixSiteImages([
-        {
-          id: item.id,
-          type: item.type,
-          title: item.title,
-          category: item.category,
-          specifications: item.specifications,
-          currentUrl: item.currentUrl,
-          fieldPath: item.fieldPath
-        }
-      ]);
+      const json = await autoFixSiteImages(
+        [
+          {
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            category: item.category,
+            specifications: item.specifications,
+            currentUrl: item.currentUrl,
+            fieldPath: item.fieldPath
+          }
+        ],
+        { sourceMode: activeMode, forceRepatch: true }
+      );
       const rowRes = Array.isArray(json?.results) ? json.results[0] : null;
       if (!rowRes?.success || !rowRes?.newUrl) {
+        if (rowRes?.leftForGoogle) {
+          backgroundAutoFixService.markLeftForGoogle([item.id]);
+        }
         throw new Error(rowRes?.error || 'Auto-fix could not find a unique replacement photo.');
       }
 
@@ -1294,9 +1329,16 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         }
       ]);
 
+      const srcLabel =
+        rowRes.imageSource === 'alibaba'
+          ? 'Alibaba'
+          : rowRes.imageSource === 'google'
+            ? 'Google / Web'
+            : 'Verified Catalog';
+
       setBannerNotice({
         type: 'success',
-        text: `Auto-fixed "${item.title}" — Located at ${item.siteLocationLabel}${
+        text: `Patched "${item.title}" from ${srcLabel} — Located at ${item.siteLocationLabel}${
           deletedOld.length > 0 ? ` (${deletedOld.length} old file(s) permanently deleted from server).` : '.'
         }`,
         changedItem: item,
@@ -1310,7 +1352,7 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       }));
       setBannerNotice({
         type: 'error',
-        text: `Auto-Fix skipped "${item.title}": ${errReason} Click the item to pick from up to 50 Alibaba, Google & Web photos or upload manually.`,
+        text: `Auto-Fix skipped "${item.title}": ${errReason} Click the item to pick from Alibaba/Google photos or upload manually.`,
         changedItem: item
       });
     } finally {
@@ -1322,10 +1364,16 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     }
   };
 
-  // Persistent Background Batch Auto-Fix (keeps running across Admin tab switches, page navigation, and reloads)
-  const runBatchAutoFix = async (targets: UnifiedSiteImageItem[]) => {
+  // Persistent Background Batch Auto-Fix / Re-Patch (keeps running across Admin tab switches, page navigation, and reloads)
+  const runBatchAutoFix = async (
+    targets: UnifiedSiteImageItem[],
+    opts?: { sourceMode?: ImageAutoPatchSourceMode; forceRepatch?: boolean }
+  ) => {
     if (targets.length === 0 || localUploadProgress?.active) return;
+    const effectiveSourceMode = opts?.sourceMode ?? autoPatchSourceMode;
+    const effectiveForceRepatch = Boolean(opts?.forceRepatch);
     setBannerNotice(null);
+    setShowRepatchPanel(false);
     backgroundAutoFixService.dismissNotice();
     setLocalSkippedItems(prev => {
       const next = { ...prev };
@@ -1342,7 +1390,10 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       fieldPath: c.fieldPath
     }));
     setSelectedIds({});
-    await backgroundAutoFixService.enqueue(queueItems);
+    await backgroundAutoFixService.enqueue(queueItems, {
+      sourceMode: effectiveSourceMode,
+      forceRepatch: effectiveForceRepatch
+    });
   };
 
   // Multi-file Bulk Uploader handlers
@@ -1529,6 +1580,37 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     [allItems]
   );
 
+  // Items that had no Alibaba photo during an Alibaba-only pass — ready for one-click "Patch Left from Google"
+  const leftForGoogleItems = useMemo(() => {
+    if (!Array.isArray(bgSnapshot.leftForGoogleIds) || bgSnapshot.leftForGoogleIds.length === 0) {
+      return [];
+    }
+    const idSet = new Set(bgSnapshot.leftForGoogleIds);
+    return allItems.filter(it => idSet.has(it.id) && it.id !== 'site-brand-logo');
+  }, [allItems, bgSnapshot.leftForGoogleIds]);
+
+  // Candidates for the Re-Patch All Images tool (respects Scope + Skip Manually Uploaded toggle)
+  const repatchCandidates = useMemo(() => {
+    const baseList = repatchScope === 'FILTERED' ? filteredItems : allItems;
+    return baseList
+      .filter(it => {
+        if (it.id === 'site-brand-logo') return false;
+        if (repatchSkipManual && it.isManualUpload) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const rank = (t: SiteImageTargetType) =>
+          t === 'PRODUCT' ? 0 : t === 'CATEGORY' ? 1 : t === 'RFQ' ? 2 : 3;
+        return rank(a.type) - rank(b.type);
+      });
+  }, [allItems, filteredItems, repatchScope, repatchSkipManual]);
+
+  const sourceModeShortLabel = (mode: ImageAutoPatchSourceMode): string => {
+    if (mode === 'alibaba_only') return 'Alibaba Only';
+    if (mode === 'google_only') return 'Google Only';
+    return 'Alibaba First → Google';
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden" data-testid="whole-site-image-studio">
       {/* Hidden File Pickers */}
@@ -1564,8 +1646,8 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
 
       {/* UNIFIED ALL-IN-ONE COMMAND DECK (Zero-Glide Control Header for PC & Mobile) */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
-        {/* Top Row: Title + Quick Metric Filters + Primary Actions */}
-        <div className="px-3.5 sm:px-5 py-3 border-b border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+        {/* Top Row: Title + Source Priority Selector + Primary Actions */}
+        <div className="px-3.5 sm:px-5 py-3 border-b border-slate-200/80 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
               Whole-Site Image Control Studio
@@ -1576,10 +1658,40 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            {/* Auto-Fetch Source Priority Selector (Alibaba First default) */}
+            <div
+              className="inline-flex items-center rounded-md border border-orange-200 bg-orange-50/70 p-0.5"
+              title="Choose which image source auto-fetch & re-patch uses"
+            >
+              {(
+                [
+                  { id: 'alibaba_first', label: 'Alibaba First → Google' },
+                  { id: 'alibaba_only', label: 'Alibaba Only' },
+                  { id: 'google_only', label: 'Google Only' }
+                ] as Array<{ id: ImageAutoPatchSourceMode; label: string }>
+              ).map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={Boolean(batchProgress?.active)}
+                  onClick={() => setAutoPatchSourceMode(opt.id)}
+                  className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 ${
+                    autoPatchSourceMode === opt.id
+                      ? opt.id === 'google_only'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'bg-orange-600 text-white shadow-2xs'
+                      : 'text-slate-700 hover:bg-white/80'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               disabled={flaggedItems.length === 0 || Boolean(batchProgress?.active)}
-              onClick={() => void runBatchAutoFix(flaggedItems)}
+              onClick={() => void runBatchAutoFix(flaggedItems, { sourceMode: autoPatchSourceMode, forceRepatch: false })}
               className="px-3 py-1.5 rounded-md bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
             >
               <Wand2 className="w-3.5 h-3.5" />
@@ -1589,6 +1701,39 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                   : 'All Verified'}
               </span>
             </button>
+
+            <button
+              type="button"
+              disabled={Boolean(batchProgress?.active)}
+              onClick={() => setShowRepatchPanel(prev => !prev)}
+              className={`px-3 py-1.5 rounded-md border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 ${
+                showRepatchPanel
+                  ? 'bg-orange-600 text-white border-orange-600'
+                  : 'bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-300'
+              }`}
+              title="Re-patch all images across the site with full Alibaba / Google control"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{showRepatchPanel ? 'Hide Re-Patch' : 'Re-Patch All'}</span>
+            </button>
+
+            {leftForGoogleItems.length > 0 && (
+              <button
+                type="button"
+                disabled={Boolean(batchProgress?.active)}
+                onClick={() =>
+                  void runBatchAutoFix(leftForGoogleItems, {
+                    sourceMode: 'google_only',
+                    forceRepatch: true
+                  })
+                }
+                className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
+                title="Patch remaining items that had no Alibaba match using Google / Web photos"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Patch Left from Google ({leftForGoogleItems.length})</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -1644,6 +1789,152 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             </div>
           </div>
         </div>
+
+        {/* Inline Re-Patch All Images Control Panel (User Controls Alibaba vs Google Strategy) */}
+        {showRepatchPanel && (
+          <div className="px-3.5 sm:px-5 py-3 border-b border-orange-200 bg-orange-50/70 space-y-2.5 text-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              <div className="space-y-0.5">
+                <div className="font-bold text-slate-900 flex flex-wrap items-center gap-2">
+                  <span>Re-Patch All Site Images</span>
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-white border border-orange-200 text-orange-800">
+                    {repatchCandidates.length.toLocaleString()} item(s) queued
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Freshly re-fetch &amp; replace images using Alibaba first. Choose <strong>Step 1: Alibaba Only</strong> to patch from Alibaba first and collect any unmatched items for one-click <strong>Patch Left from Google</strong>.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  disabled={repatchCandidates.length === 0 || Boolean(batchProgress?.active)}
+                  onClick={() =>
+                    void runBatchAutoFix(repatchCandidates, {
+                      sourceMode: autoPatchSourceMode,
+                      forceRepatch: true
+                    })
+                  }
+                  className={`px-3.5 py-1.5 rounded-md text-white font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
+                    autoPatchSourceMode === 'google_only'
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-orange-600 hover:bg-orange-700'
+                  }`}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>
+                    Start Re-Patch ({repatchCandidates.length.toLocaleString()}) · {sourceModeShortLabel(autoPatchSourceMode)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRepatchPanel(false)}
+                  className="px-2.5 py-1.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:text-slate-900 font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-orange-200/70">
+              {/* Scope selector */}
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700">Scope:</span>
+                <div className="inline-flex rounded-md border border-slate-300 bg-white p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setRepatchScope('ALL')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer ${
+                      repatchScope === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All Site Images ({allItems.filter(it => it.id !== 'site-brand-logo').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRepatchScope('FILTERED')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer ${
+                      repatchScope === 'FILTERED' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Current Tab / Filter ({filteredItems.filter(it => it.id !== 'site-brand-logo').length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Source strategy selector */}
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700">Source:</span>
+                <div className="inline-flex flex-wrap rounded-md border border-orange-300 bg-white p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setAutoPatchSourceMode('alibaba_first')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer ${
+                      autoPatchSourceMode === 'alibaba_first' ? 'bg-orange-600 text-white' : 'text-slate-700 hover:bg-orange-50'
+                    }`}
+                  >
+                    Alibaba First → Google Auto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAutoPatchSourceMode('alibaba_only')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer ${
+                      autoPatchSourceMode === 'alibaba_only' ? 'bg-orange-600 text-white' : 'text-slate-700 hover:bg-orange-50'
+                    }`}
+                  >
+                    Step 1: Alibaba Only (Leave Rest for Google)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAutoPatchSourceMode('google_only')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer ${
+                      autoPatchSourceMode === 'google_only' ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-blue-50'
+                    }`}
+                  >
+                    Google / Web Only
+                  </button>
+                </div>
+              </div>
+
+              {/* Skip manual uploads checkbox */}
+              <label className="inline-flex items-center gap-1.5 text-slate-700 font-medium cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={repatchSkipManual}
+                  onChange={e => setRepatchSkipManual(e.target.checked)}
+                  className="rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                />
+                <span>Skip manually uploaded images</span>
+              </label>
+
+              {leftForGoogleItems.length > 0 && (
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <button
+                    type="button"
+                    disabled={Boolean(batchProgress?.active)}
+                    onClick={() =>
+                      void runBatchAutoFix(leftForGoogleItems, {
+                        sourceMode: 'google_only',
+                        forceRepatch: true
+                      })
+                    }
+                    className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  >
+                    <Globe className="w-3 h-3" />
+                    <span>Step 2: Patch Left from Google ({leftForGoogleItems.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => backgroundAutoFixService.clearLeftForGoogleIds()}
+                    className="px-2 py-1 rounded-md bg-white border border-slate-300 text-slate-600 hover:text-slate-900 text-[11px] font-medium cursor-pointer"
+                  >
+                    Clear Queue
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Second Row: All Status & Category Filters in One Wrapping Bar */}
         <div className="px-3.5 sm:px-5 py-2 border-b border-slate-200/80 bg-slate-50/80 flex flex-wrap items-center gap-1">
@@ -1782,15 +2073,15 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                   onClick={() => {
                     const idSet = new Set(selectedIdList);
                     const targets = allItems.filter(it => idSet.has(it.id));
-                    void runBatchAutoFix(targets);
+                    void runBatchAutoFix(targets, { sourceMode: autoPatchSourceMode, forceRepatch: true });
                   }}
                   className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
                 >
                   <Wand2 className="w-3.5 h-3.5" />
                   <span>
                     {bgSnapshot.active
-                      ? `Queue Auto-Fix (${selectedIdList.length})`
-                      : `Auto-Fix Selected (${selectedIdList.length})`}
+                      ? `Queue Patch (${selectedIdList.length})`
+                      : `Auto-Patch Selected (${selectedIdList.length})`}
                   </span>
                 </button>
                 <button
@@ -1934,6 +2225,21 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 </a>
               </>
             )}
+            {leftForGoogleItems.length > 0 && !batchProgress?.active && (
+              <button
+                type="button"
+                onClick={() =>
+                  void runBatchAutoFix(leftForGoogleItems, {
+                    sourceMode: 'google_only',
+                    forceRepatch: true
+                  })
+                }
+                className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              >
+                <Globe className="w-3 h-3" />
+                <span>Patch Left from Google ({leftForGoogleItems.length})</span>
+              </button>
+            )}
             {bannerNotice.showChangedTabShortcut && scopeFilter !== 'CHANGED' && (
               <button
                 type="button"
@@ -1959,16 +2265,29 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
         </div>
       )}
 
-      {/* Active Batch Auto-Fix Progress Strip */}
+      {/* Active Batch Auto-Fix / Re-Patch Progress Strip */}
       {batchProgress?.active && (
         <div className="px-4 sm:px-5 py-3 border-b border-blue-200 bg-blue-50/70 space-y-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="font-semibold text-slate-900">
-              {batchProgress.isBackgroundAutoFix
-                ? `Auto-Fixing in background (${batchProgress.completed} / ${batchProgress.total})`
-                : `Auto-Fixing images (${batchProgress.completed} / ${batchProgress.total})`}
-              <span className="text-slate-500 font-normal ml-2">
-                {batchProgress.fixed} fixed · {batchProgress.failed} skipped · {batchProgress.deletedOld} old files deleted
+            <div className="font-semibold text-slate-900 flex flex-wrap items-center gap-1.5">
+              <span>
+                {batchProgress.isBackgroundAutoFix
+                  ? `${batchProgress.forceRepatch ? 'Re-Patching' : 'Auto-Fixing'} (${batchProgress.completed} / ${batchProgress.total})`
+                  : `Uploading images (${batchProgress.completed} / ${batchProgress.total})`}
+              </span>
+              {batchProgress.isBackgroundAutoFix && (
+                <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-200 text-[10px] font-bold">
+                  {sourceModeShortLabel(batchProgress.sourceMode)}
+                </span>
+              )}
+              <span className="text-slate-600 font-normal">
+                {batchProgress.fixed} patched
+                {batchProgress.isBackgroundAutoFix && (batchProgress.alibabaFixed > 0 || batchProgress.googleFixed > 0)
+                  ? ` (Alibaba: ${batchProgress.alibabaFixed} · Google: ${batchProgress.googleFixed})`
+                  : ''}
+                {batchProgress.leftForGoogleCount > 0 ? ` · Left for Google: ${batchProgress.leftForGoogleCount}` : ''}
+                {batchProgress.failed > 0 && batchProgress.leftForGoogleCount === 0 ? ` · ${batchProgress.failed} skipped` : ''}
+                {` · ${batchProgress.deletedOld} old files deleted`}
                 {batchProgress.isBackgroundAutoFix ? ' · Keeps running if you switch pages' : ''}
               </span>
             </div>
