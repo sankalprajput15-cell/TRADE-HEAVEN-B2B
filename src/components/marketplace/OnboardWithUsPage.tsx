@@ -685,7 +685,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
                 </p>
               </div>
               <div className="text-[11px] px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-bold">
-                🔒 Encrypted Enterprise Verification
+                Encrypted Enterprise Verification
               </div>
             </div>
 

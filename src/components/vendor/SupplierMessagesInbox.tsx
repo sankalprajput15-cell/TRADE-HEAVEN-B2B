@@ -493,9 +493,9 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-          <Lock className="h-6 w-6" />
+          <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-extrabold text-slate-900">Sign in to access secure inquiry</h2>
+        <h2 className="text-base font-extrabold text-slate-900">Sign in to access buyer inquiries</h2>
         <p className="mx-auto mt-1.5 max-w-md text-xs text-slate-600">
           Please sign in to your registered supplier account to view buyer contact details, respond to inquiries, and manage live trade conversations.
         </p>
@@ -504,7 +504,6 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
           onClick={() => window.dispatchEvent(new CustomEvent('tradeheaven_open_login'))}
           className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 cursor-pointer"
         >
-          <Lock className="h-3.5 w-3.5" />
           <span>Login to Reply &amp; View Contact Details</span>
         </button>
       </div>
@@ -691,7 +690,6 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                           </p>
                         ) : (
                           <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 font-mono">
-                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
                             <span className="truncate">{activeConv.identity?.phone || '+1 (•••) •••-••••'}</span>
                           </p>
                         )}
@@ -708,7 +706,6 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                           </p>
                         ) : (
                           <p className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-slate-700">
-                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
                             <span className="truncate">{activeConv.identity?.email || 'b••••@••••.com'}</span>
                           </p>
                         )}
@@ -732,7 +729,6 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                           </div>
                         ) : (
                           <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700">
-                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
                             <span className="truncate">
                               {activeConv.identity?.companyName || `Verified Importer • ${activeConv.identity?.country || 'Global'}`}
                             </span>
@@ -828,7 +824,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                 >
                   <div className="flex items-start gap-2 min-w-0">
                     {isMessageLimitReached ? (
-                      <Lock className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
                     ) : (
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                     )}

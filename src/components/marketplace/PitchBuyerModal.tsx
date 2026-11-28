@@ -163,18 +163,18 @@ export const PitchBuyerModal: React.FC<Props> = ({
         <div className="p-5 sm:p-6 space-y-5">
           {!currentUser ? (
             <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-xl">
-              <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto">
-                <Lock className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-400/25 text-blue-300 flex items-center justify-center mx-auto">
+                <UserPlus className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                  Buyer Contact Channels Protected
+                <div className="text-[10px] font-black uppercase tracking-wider text-blue-300">
+                  Direct Buyer Trade Desk
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-white">
-                  Account Registration or Login Required
+                  Sign In to Send Your Direct Quotation
                 </h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Direct buyer telephone and corporate email details are protected. Please register a free account or log in to claim free daily credits and pitch buyers directly.
+                  Create a free business account or sign in to send direct quotations, attach spec sheets, and connect with verified buyers.
                 </p>
               </div>
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -201,17 +201,17 @@ export const PitchBuyerModal: React.FC<Props> = ({
           ) : isPaidLead && !isCallerPaid ? (
             <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-xl">
               <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto">
-                <Lock className="w-6 h-6" />
+                <Crown className="w-6 h-6" />
               </div>
               <div className="space-y-1">
                 <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                  Protected Paid Member Data
+                  Verified Trade Partner Desk
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-white">
-                  Direct Contact Restricted to Paid Plans
+                  Direct Priority Sourcing Channel
                 </h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                  <strong>{rfq.buyerCompany}</strong> is a verified paid member. By platform policy, unpaid members cannot access contact channels or dispatch pitches to paid members using free daily credits.
+                  <strong>{rfq.buyerCompany}</strong> is a verified priority trade partner. Upgrade your supplier plan to connect directly and submit priority quotations.
                 </p>
               </div>
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -319,7 +319,7 @@ export const PitchBuyerModal: React.FC<Props> = ({
               ) : isDailyMessageRestricted ? (
                 <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-3">
                   <div className="flex items-start gap-2.5">
-                    <Lock className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <h4 className="text-sm font-black text-rose-950">
                         Daily Buyer Message Limit Reached ({dailyQuota.sentToday}/{dailyQuota.dailyLimit || 1} used today)

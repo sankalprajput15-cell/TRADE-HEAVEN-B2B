@@ -297,13 +297,13 @@ export const SearchRegistrationGate: React.FC<SearchRegistrationGateProps> = ({
         id="search-results-registration-gate"
         className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-10 text-center space-y-5 shadow-xs max-w-2xl mx-auto my-2"
       >
-        <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
-          <Lock className="w-6 h-6" />
+        <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
+          <ShieldCheck className="w-6 h-6" />
         </div>
 
         <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-3 py-1 rounded-full inline-block border border-amber-200/80">
-            Registration Required · Protected B2B Search Index
+          <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 bg-blue-50 px-3 py-1 rounded-full inline-block border border-blue-200/80">
+            Free Business Account · B2B Search Directory
           </div>
           <h3 className="text-lg sm:text-xl font-black text-slate-900">
             {cleanQuery
@@ -366,9 +366,9 @@ export const SearchRegistrationGate: React.FC<SearchRegistrationGateProps> = ({
     >
       <div className="flex items-center justify-between gap-2 bg-amber-100/80 border border-amber-300 rounded-xl px-3 py-1.5 max-w-md mx-auto">
         <div className="flex items-center gap-1.5 min-w-0">
-          <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-          <span className="text-[10px] sm:text-[11px] font-black text-amber-950 uppercase tracking-wide truncate">
-            Verified Member Directory Protection
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+          <span className="text-[10px] sm:text-[11px] font-black text-slate-900 uppercase tracking-wide truncate">
+            Verified Member Directory
           </span>
         </div>
         <span className="text-[9px] sm:text-[10px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full shrink-0">
@@ -789,9 +789,9 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
       >
         <div className="px-3.5 py-2 bg-slate-900 text-white flex items-center justify-between gap-2 text-[11px]">
           <div className="flex items-center gap-1.5 min-w-0 truncate">
-            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <span className="text-slate-200 truncate">
-              Protected Search for <strong className="text-white font-bold">"{trimmed}"</strong>
+              B2B Directory Search for <strong className="text-white font-bold">"{trimmed}"</strong>
             </span>
           </div>
           <span className="text-amber-400 font-mono text-[10px] font-bold shrink-0">

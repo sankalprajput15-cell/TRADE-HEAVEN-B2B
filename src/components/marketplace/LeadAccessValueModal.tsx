@@ -99,8 +99,8 @@ export const LeadAccessValueModal: React.FC<Props> = ({
                   Target Tender Context • #{rfq.id}
                 </span>
                 <span className="text-[10px] font-black text-amber-950 bg-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" />
-                  <span>Direct Contact Locked for Free Members</span>
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  <span>Verified Procurement Tender</span>
                 </span>
               </div>
 
@@ -208,7 +208,7 @@ export const LeadAccessValueModal: React.FC<Props> = ({
               </div>
               <div className="flex items-center justify-between gap-3 text-[11px]">
                 <span className="text-slate-400">Golden Advance Tenders</span>
-                <span className="text-rose-400 font-bold">Restricted</span>
+                <span className="text-slate-400">Standard Queue</span>
                 <span className="text-amber-300 font-bold">VIP Priority Allocation</span>
               </div>
               <div className="flex items-center justify-between gap-3 text-[11px]">

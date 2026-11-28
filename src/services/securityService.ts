@@ -395,11 +395,11 @@ class SecurityService {
 
     return {
       ...company,
-      contactPerson: '🔒 Protected Representative (Paid Members Only)',
+      contactPerson: 'Export Trade Desk Representative',
       contactPhone: this.maskPhoneNumber(company.contactPhone),
       contactEmail: this.maskEmailAddress(company.contactEmail),
       whatsapp: undefined,
-      address: `${company.country || 'Verified Industrial Hub'} [🔒 Full Street Address Gated - Paid Members Only]`,
+      address: `${company.country || 'Verified Industrial Hub'}`,
       description: redactSensitiveContactText(company.description, false),
       isContactMasked: true
     };
@@ -424,21 +424,21 @@ class SecurityService {
 
     return {
       ...profile,
-      legalRegistrationNumber: '🔒 Verified Registry (Paid Only)',
-      taxVatNumber: '🔒 Protected',
-      dunsNumber: '🔒 Protected',
+      legalRegistrationNumber: 'Verified Business Registry',
+      taxVatNumber: 'Verified on File',
+      dunsNumber: 'Verified on File',
       city: profile.country || 'Verified Export Hub',
-      address: `${profile.country || 'Global Hub'} [🔒 Full Street Address Gated - Paid Members Only]`,
+      address: `${profile.country || 'Global Hub'}`,
       description: redactSensitiveContactText(profile.description, false),
       tagline: redactSensitiveContactText(profile.tagline, false),
-      contactPerson: '🔒 Protected Representative (Paid Members Only)',
+      contactPerson: 'Export Trade Desk Representative',
       contactPhone: this.maskPhoneNumber(profile.contactPhone),
       contactEmail: this.maskEmailAddress(profile.contactEmail),
       whatsapp: undefined,
       contactPersonDetails: profile.contactPersonDetails
         ? {
             ...profile.contactPersonDetails,
-            name: '🔒 Protected Representative',
+            name: 'Export Trade Desk Representative',
             email: this.maskEmailAddress(profile.contactPersonDetails.email),
             phone: this.maskPhoneNumber(profile.contactPersonDetails.phone),
             whatsapp: undefined
@@ -476,11 +476,11 @@ class SecurityService {
 
     return {
       ...rfq,
-      buyerName: isPaid ? '🔒 Paid Member Buyer Representative' : rfq.buyerName,
-      buyerCompany: isPaid ? `Verified Paid Importer (${rfq.buyerCountry || 'Global'})` : rfq.buyerCompany,
+      buyerName: isPaid ? 'Verified Buyer Representative' : rfq.buyerName,
+      buyerCompany: isPaid ? `Verified Importer (${rfq.buyerCountry || 'Global'})` : rfq.buyerCompany,
       buyerEmail: rfq.buyerEmail ? this.maskEmailAddress(rfq.buyerEmail) : undefined,
       buyerPhone: rfq.buyerPhone ? this.maskPhoneNumber(rfq.buyerPhone) : undefined,
-      buyerAddress: rfq.buyerAddress ? `${rfq.buyerCountry || 'Verified Hub'} [Protected Address]` : undefined,
+      buyerAddress: rfq.buyerAddress ? `${rfq.buyerCountry || 'Verified Hub'}` : undefined,
       detailedDescription: redactSensitiveContactText(rfq.detailedDescription, false),
       detailedRequirements: redactSensitiveContactText(rfq.detailedRequirements, false),
       isContactMasked: true
@@ -503,14 +503,14 @@ class SecurityService {
 
     return {
       ...buyer,
-      legalRegistrationNumber: '🔒 Verified Registry (Paid Only)',
-      dunsNumber: '🔒 Protected',
-      taxVatNumber: '🔒 Protected',
-      contactPerson: '🔒 Protected Procurement Officer',
+      legalRegistrationNumber: 'Verified Business Registry',
+      dunsNumber: 'Verified on File',
+      taxVatNumber: 'Verified on File',
+      contactPerson: 'Corporate Procurement Officer',
       contactPhone: this.maskPhoneNumber(buyer.contactPhone),
       contactEmail: this.maskEmailAddress(buyer.contactEmail),
       whatsapp: undefined,
-      address: `${buyer.country || 'Verified Trade Center'} [🔒 Full Corporate Address Gated - Paid Members Only]`,
+      address: `${buyer.country || 'Verified Trade Center'}`,
       description: redactSensitiveContactText(buyer.description, false),
       isContactMasked: true
     };

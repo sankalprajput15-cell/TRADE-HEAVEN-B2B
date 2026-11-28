@@ -789,6 +789,18 @@ app.get([
     }
   }
 
+  // Serve or hydrate verified Alibaba override images from fast runtime cache (/tmp/th-alibaba-cache)
+  if (!targetPath && req.path.startsWith('/assets/uploads/')) {
+    try {
+      const cachedAliPath = await healMissingUploadFromAlibabaSourceUrl(safeFilename);
+      if (cachedAliPath && fs.existsSync(cachedAliPath)) {
+        targetPath = cachedAliPath;
+      }
+    } catch {
+      // Fall through to live upstream fallback
+    }
+  }
+
   // Auto-heal missing /assets/uploads/:filename from live upstream (tradeheaven.net) and persist to public + dist
   if (
     !targetPath &&
@@ -1141,18 +1153,46 @@ app.get('/robots.txt', (req, res) => {
   res.status(404).type('text/plain').send('User-agent: *\nDisallow: /admin\nAllow: /');
 });
 
-// Explicit sitemap.xml endpoint for search engine crawlers
-app.get('/sitemap.xml', (req, res) => {
-  const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
-  if (fs.existsSync(sitemapPath)) {
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.sendFile(sitemapPath);
-  }
-  res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+// Instant Search Engine Indexing & Google Image Sitemap Sync Engine
+const INDEXNOW_VERIFICATION_KEY = 'tradeheaven2026indexnowkey9a7f3c1e';
+const CANONICAL_SITE_ORIGIN = 'https://tradeheaven.net';
+
+interface GoogleInstantSyncStatus {
+  lastSyncedAt: string | null;
+  lastReason: string;
+  imageSitemapEntries: number;
+  mainSitemapEntries: number;
+  lastChangedUrlsCount: number;
+  indexNowStatus: string;
+  googleWebSubStatus: string;
+  googleIndexingApiStatus: string;
+  totalSyncs: number;
+}
+
+const googleInstantSyncState: GoogleInstantSyncStatus = {
+  lastSyncedAt: null,
+  lastReason: 'startup',
+  imageSitemapEntries: 0,
+  mainSitemapEntries: 0,
+  lastChangedUrlsCount: 0,
+  indexNowStatus: 'ready',
+  googleWebSubStatus: 'ready',
+  googleIndexingApiStatus: process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON ? 'configured' : 'sitemap_websub_active',
+  totalSyncs: 0
+};
+
+app.get(`/${INDEXNOW_VERIFICATION_KEY}.txt`, (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  return res.status(200).send(INDEXNOW_VERIFICATION_KEY);
 });
 
-// Dynamic Google Image Sitemap with Trade Heaven brand attribution in every <image:title> and <image:caption>
+app.get('/tradeheaven-indexnow-key.txt', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  return res.status(200).send(INDEXNOW_VERIFICATION_KEY);
+});
+
 const escapeXmlText = (val: string): string =>
   String(val || '')
     .replace(/&/g, '&amp;')
@@ -1161,123 +1201,479 @@ const escapeXmlText = (val: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-app.get('/image-sitemap.xml', (req, res) => {
+interface DynamicImageSitemapEntry {
+  id: string;
+  loc: string;
+  lastmod: string;
+  title: string;
+  category: string;
+  imageUrl: string;
+}
+
+function collectDynamicImageSitemapEntries(): DynamicImageSitemapEntry[] {
+  const baseUrl = CANONICAL_SITE_ORIGIN;
+  const seenIds = new Set<string>();
+  const entries: DynamicImageSitemapEntry[] = [];
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const toLastmod = (ov: any, fallbackMs?: number): string => {
+    const rawIso = String(ov?.updatedAt || '').trim();
+    if (rawIso && /^\d{4}-\d{2}-\d{2}/.test(rawIso)) return rawIso.slice(0, 10);
+    const ts = Number(ov?.imageUpdatedAt || fallbackMs || 0);
+    if (ts > 0) {
+      try {
+        return new Date(ts).toISOString().slice(0, 10);
+      } catch {}
+    }
+    return todayIso;
+  };
+
+  const pushEntry = (
+    rawId: string,
+    rawTitle: string,
+    rawCategory: string,
+    rawImage: string,
+    customLoc?: string,
+    fallbackMs?: number
+  ) => {
+    const id = String(rawId || '').trim();
+    if (!id || seenIds.has(id) || serverDeletedProductIds.has(id)) return;
+    const ov = serverProductImageState?.overrides?.[id];
+    const chosenImg = String(ov?.primary || rawImage || '').trim().split('?')[0];
+    if (!chosenImg || chosenImg.startsWith('data:')) return;
+    const absImageUrl = /^https?:\/\//i.test(chosenImg)
+      ? chosenImg
+      : `${baseUrl}${chosenImg.startsWith('/') ? '' : '/'}${chosenImg}`;
+    const cleanTitle = String(rawTitle || 'B2B Wholesale Product').trim();
+    const cleanCat = String(rawCategory || 'Global Wholesale').trim();
+    const loc =
+      customLoc ||
+      (id.startsWith('rfq-') || id.startsWith('RFQ-')
+        ? `${baseUrl}/?view=BUY_LEADS&rfq=${encodeURIComponent(id)}`
+        : id.startsWith('cat-')
+          ? `${baseUrl}/?view=PRODUCT_DIRECTORY&category=${encodeURIComponent(cleanTitle)}`
+          : `${baseUrl}/?view=PRODUCT_DETAIL&id=${encodeURIComponent(id)}`);
+    seenIds.add(id);
+    entries.push({
+      id,
+      loc,
+      lastmod: toLastmod(ov, fallbackMs),
+      title: cleanTitle,
+      category: cleanCat,
+      imageUrl: absImageUrl
+    });
+  };
+
+  // 1. Live server products store
+  for (const p of serverProductsStore || []) {
+    pushEntry(
+      String(p.id || ''),
+      String(p.title || p.name || ''),
+      String(p.category || 'Global Wholesale'),
+      String(p.images?.[0] || p.image || p.image_url || ''),
+      undefined,
+      Number(p.imageUpdatedAt || p.updatedAt || 0)
+    );
+  }
+
+  // 2. Live listings store
+  for (const l of serverListingsStore || []) {
+    pushEntry(
+      `prod-db-${l.id}`,
+      String(l.title || ''),
+      String(l.category || 'Global Wholesale'),
+      String(l.image_url || l.images?.[0] || ''),
+      undefined,
+      Number(l.imageUpdatedAt || l.updatedAt || 0)
+    );
+  }
+
+  // 3. Full catalog snapshot (all catalog products)
   try {
-    const baseUrl = 'https://tradeheaven.net';
-    const seenIds = new Set<string>();
-    const entries: Array<{ id: string; title: string; category: string; imageUrl: string }> = [];
-
-    const pushEntry = (rawId: string, rawTitle: string, rawCategory: string, rawImage: string) => {
-      const id = String(rawId || '').trim();
-      if (!id || seenIds.has(id) || serverDeletedProductIds.has(id)) return;
-      const ov = serverProductImageState?.overrides?.[id];
-      const chosenImg = String(ov?.primary || rawImage || '').trim().split('?')[0];
-      if (!chosenImg || chosenImg.startsWith('data:')) return;
-      const absImageUrl = /^https?:\/\//i.test(chosenImg)
-        ? chosenImg
-        : `${baseUrl}${chosenImg.startsWith('/') ? '' : '/'}${chosenImg}`;
-      const cleanTitle = String(rawTitle || 'B2B Wholesale Product').trim();
-      const cleanCat = String(rawCategory || 'Global Wholesale').trim();
-      seenIds.add(id);
-      entries.push({ id, title: cleanTitle, category: cleanCat, imageUrl: absImageUrl });
-    };
-
-    // 1. Live server products store
-    for (const p of serverProductsStore || []) {
-      pushEntry(
-        String(p.id || ''),
-        String(p.title || p.name || ''),
-        String(p.category || 'Global Wholesale'),
-        String(p.images?.[0] || p.image || p.image_url || '')
-      );
-    }
-
-    // 2. Live listings store
-    for (const l of serverListingsStore || []) {
-      pushEntry(
-        `prod-db-${l.id}`,
-        String(l.title || ''),
-        String(l.category || 'Global Wholesale'),
-        String(l.image_url || l.images?.[0] || '')
-      );
-    }
-
-    // 3. Full catalog snapshot (if present on disk)
-    try {
-      if (fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) {
-        const snapRaw = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_PATH, 'utf8'));
-        const snapItems = Array.isArray(snapRaw)
-          ? snapRaw
-          : Array.isArray(snapRaw?.products)
-            ? snapRaw.products
-            : Array.isArray(snapRaw?.items)
-              ? snapRaw.items
-              : [];
-        for (const item of snapItems) {
-          pushEntry(
-            String(item?.id || ''),
-            String(item?.title || item?.name || ''),
-            String(item?.category || 'Global Wholesale'),
-            String(item?.images?.[0] || item?.image || item?.image_url || '')
-          );
-        }
+    if (fs.existsSync(FULL_CATALOG_SNAPSHOT_PATH)) {
+      const snapRaw = JSON.parse(fs.readFileSync(FULL_CATALOG_SNAPSHOT_PATH, 'utf8'));
+      const snapItems = Array.isArray(snapRaw)
+        ? snapRaw
+        : Array.isArray(snapRaw?.products)
+          ? snapRaw.products
+          : Array.isArray(snapRaw?.items)
+            ? snapRaw.items
+            : [];
+      for (const item of snapItems) {
+        pushEntry(
+          String(item?.id || ''),
+          String(item?.title || item?.name || ''),
+          String(item?.category || 'Global Wholesale'),
+          String(item?.images?.[0] || item?.image || item?.image_url || ''),
+          undefined,
+          Number(item?.imageUpdatedAt || item?.updatedAt || 0)
+        );
       }
-    } catch {
-      // ignore snapshot parse issues
     }
+  } catch {}
 
-    // 4. Any standalone local uploaded images bound via overrides not yet emitted
-    for (const [ovId, ovVal] of Object.entries(serverProductImageState?.overrides || {})) {
-      if (!ovVal?.primary || seenIds.has(ovId) || serverDeletedProductIds.has(ovId)) continue;
-      if (!String(ovVal.primary).startsWith('/assets/uploads/')) continue;
-      const baseSlug = path
-        .basename(String(ovVal.primary).split('?')[0])
-        .replace(/^(?:trade-heaven|auto|verified)-/i, '')
-        .replace(/-[a-f0-9]{6,16}\.[a-z0-9]+$/i, '')
-        .replace(/-\d{10,14}\.[a-z0-9]+$/i, '')
-        .replace(/[-_]+/g, ' ')
-        .trim();
-      const titleFromFile = baseSlug
-        ? baseSlug.replace(/\b\w/g, ch => ch.toUpperCase())
-        : `Verified B2B Product ${ovId}`;
-      pushEntry(ovId, titleFromFile, 'Global B2B Wholesale', ovVal.primary);
+  // 4. Categories & Hero Slides from SiteContent
+  try {
+    const cats = Array.isArray(serverSiteContent?.homepage?.categoriesList)
+      ? serverSiteContent.homepage.categoriesList
+      : [];
+    for (const cat of cats) {
+      if (cat?.id) {
+        pushEntry(
+          String(cat.id),
+          String(cat.name || cat.id),
+          'Procurement Sector',
+          String(cat.image || ''),
+          `${baseUrl}/?view=PRODUCT_DIRECTORY&category=${encodeURIComponent(String(cat.name || cat.id))}`
+        );
+      }
     }
+    const slides = Array.isArray(serverSiteContent?.homepage?.heroSlides)
+      ? serverSiteContent.homepage.heroSlides
+      : [];
+    for (const sl of slides) {
+      if (sl?.id) {
+        pushEntry(
+          String(sl.id),
+          String(sl.title || 'Trade Heaven B2B Marketplace'),
+          'Global B2B Marketplace',
+          String(sl.image || ''),
+          `${baseUrl}/`
+        );
+      }
+    }
+  } catch {}
 
-    const xmlRows = entries.slice(0, 5000).map(item => {
-      const pageUrl = `${baseUrl}/?view=PRODUCT_DETAIL&id=${encodeURIComponent(item.id)}`;
-      const brandedTitle = /trade\s*heaven/i.test(item.title)
-        ? item.title
-        : `${item.title} | Trade Heaven`;
-      const brandedCaption = `${item.title} — Wholesale ${item.category} Export Supplier on Trade Heaven (tradeheaven.net)`;
-      return [
+  // 5. Live RFQs store
+  for (const r of serverRfqsStore || []) {
+    const rid = String(r?.id || '').trim();
+    if (!rid) continue;
+    pushEntry(
+      rid,
+      String(r.productName || r.product_name || r.title || rid),
+      String(r.category || 'Buy Leads & RFQs'),
+      String(r.image_url || r.image || r.images?.[0] || ''),
+      `${baseUrl}/?view=BUY_LEADS&rfq=${encodeURIComponent(rid)}`,
+      Number(r.imageUpdatedAt || r.updatedAt || 0)
+    );
+  }
+
+  // 6. Any standalone local uploaded images bound via overrides not yet emitted
+  for (const [ovId, ovVal] of Object.entries(serverProductImageState?.overrides || {})) {
+    if (!ovVal?.primary || seenIds.has(ovId) || serverDeletedProductIds.has(ovId)) continue;
+    if (!String(ovVal.primary).startsWith('/assets/uploads/')) continue;
+    const baseSlug = path
+      .basename(String(ovVal.primary).split('?')[0])
+      .replace(/^(?:trade-heaven|auto|verified)-/i, '')
+      .replace(/-[a-f0-9]{6,16}\.[a-z0-9]+$/i, '')
+      .replace(/-\d{10,14}\.[a-z0-9]+$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+    const titleFromFile = baseSlug
+      ? baseSlug.replace(/\b\w/g, ch => ch.toUpperCase())
+      : `Verified B2B Product ${ovId}`;
+    pushEntry(ovId, titleFromFile, 'Global B2B Wholesale', ovVal.primary);
+  }
+
+  return entries;
+}
+
+function buildDynamicImageSitemapXml(): { xml: string; count: number; entries: DynamicImageSitemapEntry[] } {
+  const entries = collectDynamicImageSitemapEntries().slice(0, 10000);
+  const xmlRows = entries.map(item => {
+    const brandedTitle = /trade\s*heaven/i.test(item.title)
+      ? item.title
+      : `${item.title} | Trade Heaven`;
+    const brandedCaption = `${item.title} — Wholesale ${item.category} Export Supplier on Trade Heaven (tradeheaven.net)`;
+    return [
+      '  <url>',
+      `    <loc>${escapeXmlText(item.loc)}</loc>`,
+      `    <lastmod>${escapeXmlText(item.lastmod)}</lastmod>`,
+      '    <image:image>',
+      `      <image:loc>${escapeXmlText(item.imageUrl)}</image:loc>`,
+      `      <image:title>${escapeXmlText(brandedTitle)}</image:title>`,
+      `      <image:caption>${escapeXmlText(brandedCaption)}</image:caption>`,
+      '      <image:license>https://tradeheaven.net/?view=TERMS_OF_USE</image:license>',
+      '    </image:image>',
+      '  </url>'
+    ].join('\n');
+  });
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    ...xmlRows,
+    '</urlset>'
+  ].join('\n');
+
+  return { xml, count: entries.length, entries };
+}
+
+function buildDynamicMainSitemapXml(imageEntries?: DynamicImageSitemapEntry[]): { xml: string; count: number } {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const baseUrl = CANONICAL_SITE_ORIGIN;
+  const corePages: Array<{ loc: string; changefreq: string; priority: string }> = [
+    { loc: `${baseUrl}/`, changefreq: 'daily', priority: '1.0' },
+    { loc: `${baseUrl}/?view=PRODUCT_DIRECTORY`, changefreq: 'daily', priority: '0.95' },
+    { loc: `${baseUrl}/?view=SUPPLIERS_DIRECTORY`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/?view=BUYERS_DIRECTORY`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/?view=BUY_LEADS`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/?view=RFQ_HUB`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${baseUrl}/?view=POST_SELL_OFFER`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=PREMIUM_MEMBERSHIP`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=PREMIUM_SERVICES`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=ONBOARD_WITH_US`, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=INCOTERMS_CALCULATOR`, changefreq: 'weekly', priority: '0.7' },
+    { loc: `${baseUrl}/?view=ABOUT_US`, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=TRUST_SAFETY`, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${baseUrl}/?view=TERMS_OF_USE`, changefreq: 'monthly', priority: '0.6' },
+    { loc: `${baseUrl}/?view=PRIVACY_POLICY`, changefreq: 'monthly', priority: '0.6' },
+    { loc: `${baseUrl}/?view=PRODUCT_LISTING_POLICY`, changefreq: 'monthly', priority: '0.6' },
+    { loc: `${baseUrl}/?view=REFUND_POLICY`, changefreq: 'monthly', priority: '0.6' },
+    { loc: `${baseUrl}/?view=LANDING_PAGE`, changefreq: 'weekly', priority: '0.7' }
+  ];
+
+  const rows: string[] = corePages.map(p =>
+    [
+      '  <url>',
+      `    <loc>${escapeXmlText(p.loc)}</loc>`,
+      `    <lastmod>${todayIso}</lastmod>`,
+      `    <changefreq>${p.changefreq}</changefreq>`,
+      `    <priority>${p.priority}</priority>`,
+      '  </url>'
+    ].join('\n')
+  );
+
+  const productEntries = (imageEntries || collectDynamicImageSitemapEntries())
+    .filter(e => e.loc.includes('PRODUCT_DETAIL') || e.loc.includes('category='))
+    .slice(0, 2000);
+
+  for (const item of productEntries) {
+    rows.push(
+      [
         '  <url>',
-        `    <loc>${escapeXmlText(pageUrl)}</loc>`,
+        `    <loc>${escapeXmlText(item.loc)}</loc>`,
+        `    <lastmod>${escapeXmlText(item.lastmod)}</lastmod>`,
+        '    <changefreq>daily</changefreq>',
+        '    <priority>0.85</priority>',
         '    <image:image>',
         `      <image:loc>${escapeXmlText(item.imageUrl)}</image:loc>`,
-        `      <image:title>${escapeXmlText(brandedTitle)}</image:title>`,
-        `      <image:caption>${escapeXmlText(brandedCaption)}</image:caption>`,
-        '      <image:license>https://tradeheaven.net/?view=TERMS_OF_USE</image:license>',
+        `      <image:title>${escapeXmlText(item.title)} | Trade Heaven</image:title>`,
         '    </image:image>',
         '  </url>'
-      ].join('\n');
+      ].join('\n')
+    );
+  }
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    ...rows,
+    '</urlset>'
+  ].join('\n');
+
+  return { xml, count: rows.length };
+}
+
+async function notifyGoogleIndexingApiIfConfigured(urls: string[]): Promise<string> {
+  const rawCreds = String(
+    process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON || ''
+  ).trim();
+  if (!rawCreds) return 'sitemap_websub_active';
+  try {
+    const creds = JSON.parse(rawCreds);
+    const clientEmail = String(creds?.client_email || '').trim();
+    const privateKey = String(creds?.private_key || '').trim();
+    if (!clientEmail || !privateKey) return 'credentials_incomplete';
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+    const claim = Buffer.from(
+      JSON.stringify({
+        iss: clientEmail,
+        scope: 'https://www.googleapis.com/auth/indexing',
+        aud: 'https://oauth2.googleapis.com/token',
+        iat: nowSec,
+        exp: nowSec + 3600
+      })
+    ).toString('base64url');
+    const signer = crypto.createSign('RSA-SHA256');
+    signer.update(`${header}.${claim}`);
+    const sig = signer.sign(privateKey, 'base64url');
+    const assertion = `${header}.${claim}.${sig}`;
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=${encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')}&assertion=${encodeURIComponent(assertion)}`,
+      signal: AbortSignal.timeout(5000)
     });
+    const tokenJson: any = await tokenRes.json().catch(() => ({}));
+    const accessToken = String(tokenJson?.access_token || '');
+    if (!accessToken) return `token_http_${tokenRes.status}`;
 
-    const xml = [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
-      ...xmlRows,
-      '</urlset>'
-    ].join('\n');
-
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.status(200).send(xml);
+    let okCount = 0;
+    for (const u of urls.slice(0, 25)) {
+      try {
+        const pubRes = await fetch('https://indexing.googleapis.com/v3/urlNotifications:publish', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: u, type: 'URL_UPDATED' }),
+          signal: AbortSignal.timeout(4000)
+        });
+        if (pubRes.ok) okCount++;
+      } catch {}
+    }
+    return `published_${okCount}_urls`;
   } catch (err: any) {
+    return `error_${String(err?.message || 'failed').slice(0, 40)}`;
+  }
+}
+
+let googleInstantSyncInFlight: Promise<GoogleInstantSyncStatus> | null = null;
+
+async function syncGoogleImageSitemapsAndNotify(opts?: {
+  changedIds?: string[];
+  reason?: string;
+  skipNetworkPing?: boolean;
+}): Promise<GoogleInstantSyncStatus> {
+  if (googleInstantSyncInFlight) return googleInstantSyncInFlight;
+  googleInstantSyncInFlight = (async () => {
+    const reason = String(opts?.reason || 'image_update');
+    const changedIds = Array.isArray(opts?.changedIds) ? opts.changedIds.filter(Boolean) : [];
+    try {
+      const { xml: imgXml, count: imgCount, entries } = buildDynamicImageSitemapXml();
+      const { xml: mainXml, count: mainCount } = buildDynamicMainSitemapXml(entries);
+
+      const pubImgSitemap = path.join(process.cwd(), 'public', 'image-sitemap.xml');
+      const pubMainSitemap = path.join(process.cwd(), 'public', 'sitemap.xml');
+      await fs.promises.writeFile(pubImgSitemap, imgXml, 'utf8');
+      await fs.promises.writeFile(pubMainSitemap, mainXml, 'utf8');
+
+      const distDir = path.join(process.cwd(), 'dist');
+      if (fs.existsSync(distDir)) {
+        try {
+          await fs.promises.writeFile(path.join(distDir, 'image-sitemap.xml'), imgXml, 'utf8');
+          await fs.promises.writeFile(path.join(distDir, 'sitemap.xml'), mainXml, 'utf8');
+        } catch {}
+      }
+
+      // Bust cached SSR HTML so Googlebot immediately receives updated og:image & JSON-LD
+      servedDistHtmlCache = null;
+
+      const changedUrls: string[] = [
+        `${CANONICAL_SITE_ORIGIN}/`,
+        `${CANONICAL_SITE_ORIGIN}/?view=PRODUCT_DIRECTORY`,
+        `${CANONICAL_SITE_ORIGIN}/image-sitemap.xml`,
+        `${CANONICAL_SITE_ORIGIN}/sitemap.xml`
+      ];
+      for (const cid of changedIds.slice(0, 100)) {
+        if (cid.startsWith('rfq-') || cid.startsWith('RFQ-')) {
+          changedUrls.push(`${CANONICAL_SITE_ORIGIN}/?view=BUY_LEADS&rfq=${encodeURIComponent(cid)}`);
+        } else if (!cid.startsWith('site-') && !cid.startsWith('hero-')) {
+          changedUrls.push(`${CANONICAL_SITE_ORIGIN}/?view=PRODUCT_DETAIL&id=${encodeURIComponent(cid)}`);
+        }
+      }
+      const uniqueUrls = Array.from(new Set(changedUrls));
+
+      let indexNowStatus = 'skipped';
+      let googleWebSubStatus = 'skipped';
+      let googleIndexingApiStatus = googleInstantSyncState.googleIndexingApiStatus;
+
+      if (!opts?.skipNetworkPing) {
+        const [inRes, wsRes, gApiRes] = await Promise.allSettled([
+          fetch('https://api.indexnow.org/indexnow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({
+              host: 'tradeheaven.net',
+              key: INDEXNOW_VERIFICATION_KEY,
+              keyLocation: `${CANONICAL_SITE_ORIGIN}/${INDEXNOW_VERIFICATION_KEY}.txt`,
+              urlList: uniqueUrls.slice(0, 200)
+            }),
+            signal: AbortSignal.timeout(4500)
+          }).then(r => `http_${r.status}`),
+          fetch('https://pubsubhubbub.appspot.com/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `hub.mode=publish&hub.url=${encodeURIComponent(`${CANONICAL_SITE_ORIGIN}/image-sitemap.xml`)}&hub.url=${encodeURIComponent(`${CANONICAL_SITE_ORIGIN}/sitemap.xml`)}`,
+            signal: AbortSignal.timeout(4500)
+          }).then(r => `http_${r.status}`),
+          notifyGoogleIndexingApiIfConfigured(uniqueUrls)
+        ]);
+        indexNowStatus = inRes.status === 'fulfilled' ? inRes.value : 'network_timeout';
+        googleWebSubStatus = wsRes.status === 'fulfilled' ? wsRes.value : 'network_timeout';
+        googleIndexingApiStatus = gApiRes.status === 'fulfilled' ? gApiRes.value : 'sitemap_websub_active';
+      }
+
+      googleInstantSyncState.lastSyncedAt = new Date().toISOString();
+      googleInstantSyncState.lastReason = reason;
+      googleInstantSyncState.imageSitemapEntries = imgCount;
+      googleInstantSyncState.mainSitemapEntries = mainCount;
+      googleInstantSyncState.lastChangedUrlsCount = uniqueUrls.length;
+      googleInstantSyncState.indexNowStatus = indexNowStatus;
+      googleInstantSyncState.googleWebSubStatus = googleWebSubStatus;
+      googleInstantSyncState.googleIndexingApiStatus = googleIndexingApiStatus;
+      googleInstantSyncState.totalSyncs += 1;
+    } catch (err: any) {
+      console.warn('[GoogleInstantSync] warning:', err?.message || err);
+    } finally {
+      googleInstantSyncInFlight = null;
+    }
+    return { ...googleInstantSyncState };
+  })();
+  return googleInstantSyncInFlight;
+}
+
+// Explicit sitemap.xml endpoint for search engine crawlers (always fresh)
+app.get('/sitemap.xml', (_req, res) => {
+  try {
+    const { xml } = buildDynamicMainSitemapXml();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60, must-revalidate');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    return res.status(200).send(xml);
+  } catch {
+    const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
+    if (fs.existsSync(sitemapPath)) {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=60, must-revalidate');
+      return res.sendFile(sitemapPath);
+    }
+    return res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+  }
+});
+
+// Dynamic Google Image Sitemap with Trade Heaven brand attribution in every <image:title> and <image:caption>
+app.get('/image-sitemap.xml', (_req, res) => {
+  try {
+    const { xml } = buildDynamicImageSitemapXml();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60, must-revalidate');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    return res.status(200).send(xml);
+  } catch {
     return res
       .status(500)
       .type('application/xml')
       .send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
   }
+});
+
+app.get('/api/v1/admin/google-instant-sync/status', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ success: true, status: { ...googleInstantSyncState } });
+});
+
+app.post('/api/v1/admin/google-instant-sync', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const changedIds = Array.isArray(req.body?.changedIds) ? req.body.changedIds.map(String) : [];
+  const reason = String(req.body?.reason || 'manual_google_instant_sync');
+  const status = await syncGoogleImageSitemapsAndNotify({ changedIds, reason, skipNetworkPing: false });
+  return res.json({ success: true, status });
 });
 
 // Server environment credentials (Static admin password & legacy JWT secret revoked due to key exposure)
@@ -16604,6 +17000,15 @@ let publicBootstrapJsonCache: PrecompressedJsonCacheEntry | null = null;
 let publicBootHtmlScriptCache: { sig: string; scriptTag: string; bootPayload: any } | null = null;
 let servedDistHtmlCache: { sig: string; etag: string; raw: Buffer; gzipped: Buffer; brotli: Buffer } | null = null;
 
+let siteContentResponseCache: PrecompressedJsonCacheEntry | null = null;
+let siteContentCacheEpoch = 1;
+
+function invalidateSiteContentResponseCache() {
+  siteContentCacheEpoch += 1;
+  siteContentResponseCache = null;
+  invalidatePublicBootstrapCache();
+}
+
 function invalidatePublicBootstrapCache() {
   publicBootstrapEpoch += 1;
   publicBootstrapJsonCache = null;
@@ -16638,7 +17043,108 @@ function getCachedUploadsDirFileSet(forceRefresh = false): Set<string> {
   return next;
 }
 
-function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
+const ALIBABA_RUNTIME_CACHE_DIR = '/tmp/th-alibaba-cache';
+try {
+  fs.mkdirSync(ALIBABA_RUNTIME_CACHE_DIR, { recursive: true });
+} catch {}
+
+let cachedUploadSourceUrlMapSig = '';
+let cachedUploadSourceUrlMap = new Map<string, string>();
+const inFlightAlibabaUploadHeals = new Map<string, Promise<string | null>>();
+
+function getUploadFilenameSourceUrlMap(): Map<string, string> {
+  const overrides = serverProductImageState?.overrides || {};
+  const sig = `${lastLoadedProductImageDiskSig}:${Object.keys(overrides).length}`;
+  if (cachedUploadSourceUrlMapSig === sig && cachedUploadSourceUrlMap.size > 0) {
+    return cachedUploadSourceUrlMap;
+  }
+  const next = new Map<string, string>();
+  for (const ov of Object.values(overrides)) {
+    const srcUrl = String((ov as any)?.sourceUrl || '').trim();
+    const primary = String((ov as any)?.primary || '').trim().split('?')[0];
+    if (!srcUrl || !/^https?:\/\//i.test(srcUrl) || !primary.startsWith('/assets/uploads/')) continue;
+    const fn = path.basename(primary);
+    if (fn && !next.has(fn)) {
+      next.set(fn, srcUrl);
+    }
+  }
+  cachedUploadSourceUrlMap = next;
+  cachedUploadSourceUrlMapSig = sig;
+  return next;
+}
+
+async function healMissingUploadFromAlibabaSourceUrl(safeFilename: string): Promise<string | null> {
+  const cleanFn = path.basename(String(safeFilename || '').trim());
+  if (!cleanFn || cleanFn.includes('..')) return null;
+
+  const cachePath = path.join(ALIBABA_RUNTIME_CACHE_DIR, cleanFn);
+  if (fs.existsSync(cachePath)) {
+    try {
+      if (fs.statSync(cachePath).size > 512) return cachePath;
+    } catch {}
+  }
+
+  const existingPromise = inFlightAlibabaUploadHeals.get(cleanFn);
+  if (existingPromise) return existingPromise;
+
+  const srcUrl = getUploadFilenameSourceUrlMap().get(cleanFn);
+  if (!srcUrl) return null;
+
+  const task = (async (): Promise<string | null> => {
+    try {
+      const resp = await fetch(srcUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8',
+          Referer: 'https://www.alibaba.com/'
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(7000)
+      });
+      if (!resp.ok) return null;
+      const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
+      if (ctype.includes('text/html') || ctype.includes('application/json')) return null;
+      const rawBuf = Buffer.from(await resp.arrayBuffer());
+      if (rawBuf.length < 512) return null;
+
+      let outBuf: Buffer = rawBuf;
+      try {
+        outBuf = await sharp(rawBuf, { failOn: 'none' })
+          .rotate()
+          .resize({ width: 1000, height: 1000, fit: 'inside', withoutEnlargement: true })
+          .withMetadata({
+            exif: {
+              IFD0: {
+                Artist: 'Trade Heaven (https://tradeheaven.net)',
+                Copyright: 'Trade Heaven Global B2B Trade Portal',
+                Software: 'Trade Heaven Alibaba Verified Catalog'
+              }
+            }
+          })
+          .webp({ quality: 82 })
+          .toBuffer();
+      } catch {
+        outBuf = rawBuf;
+      }
+
+      fs.mkdirSync(ALIBABA_RUNTIME_CACHE_DIR, { recursive: true });
+      const tmpPath = `${cachePath}.${Date.now()}.tmp`;
+      await fs.promises.writeFile(tmpPath, outBuf);
+      await fs.promises.rename(tmpPath, cachePath);
+      return cachePath;
+    } catch {
+      return null;
+    } finally {
+      inFlightAlibabaUploadHeals.delete(cleanFn);
+    }
+  })();
+
+  inFlightAlibabaUploadHeals.set(cleanFn, task);
+  return task;
+}
+
+function resolvePublicPhysicalUploadUrl(rawUrl: unknown, sourceUrl?: unknown): string {
   const s = String(rawUrl || '').trim();
   if (!s) return '';
   const qIdx = s.indexOf('?');
@@ -16651,6 +17157,18 @@ function resolvePublicPhysicalUploadUrl(rawUrl: unknown): string {
   const directPath = path.join(uploadsStaticDir, fn);
   if (fs.existsSync(directPath)) {
     dirSet.add(fn);
+    return `/assets/uploads/${fn}`;
+  }
+  const runtimeCachePath = path.join(ALIBABA_RUNTIME_CACHE_DIR, fn);
+  if (fs.existsSync(runtimeCachePath)) {
+    return `/assets/uploads/${fn}`;
+  }
+  // If backed by a verified Alibaba/HTTP sourceUrl, serve via on-demand /assets/uploads self-healing cache
+  const cleanSource = String(sourceUrl || '').trim();
+  if (cleanSource && /^https?:\/\//i.test(cleanSource)) {
+    return `/assets/uploads/${fn}`;
+  }
+  if (getUploadFilenameSourceUrlMap().has(fn)) {
     return `/assets/uploads/${fn}`;
   }
   let cur = fn;
@@ -16674,7 +17192,8 @@ function buildSlimPublicProductImageState(state: ProductImageSystemState) {
   for (const [k, ov] of Object.entries(rawOverrides)) {
     if (!ov || typeof ov !== 'object') continue;
     if (isServerRecordDeletedOrCleared(k, clearedSet)) continue;
-    const resolvedPrimary = resolvePublicPhysicalUploadUrl((ov as any).primary);
+    const ovSourceUrl = (ov as any).sourceUrl;
+    const resolvedPrimary = resolvePublicPhysicalUploadUrl((ov as any).primary, ovSourceUrl);
     if (!resolvedPrimary) continue;
     const entry: Record<string, any> = {
       primary: resolvedPrimary
@@ -16682,7 +17201,7 @@ function buildSlimPublicProductImageState(state: ProductImageSystemState) {
     if (Array.isArray((ov as any).gallery) && (ov as any).gallery.length > 1) {
       const resolvedGal = (ov as any).gallery
         .slice(0, 4)
-        .map(resolvePublicPhysicalUploadUrl)
+        .map((g: unknown) => resolvePublicPhysicalUploadUrl(g, ovSourceUrl))
         .filter(Boolean);
       if (resolvedGal.length > 1) {
         entry.gallery = resolvedGal;
@@ -16690,6 +17209,7 @@ function buildSlimPublicProductImageState(state: ProductImageSystemState) {
     }
     if ((ov as any).locked) entry.locked = true;
     if ((ov as any).serverVerified) entry.serverVerified = true;
+    if ((ov as any).imageSource) entry.imageSource = (ov as any).imageSource;
     if ((ov as any).updatedBy) entry.updatedBy = (ov as any).updatedBy;
     if ((ov as any).updatedAt) entry.updatedAt = (ov as any).updatedAt;
     if ((ov as any).imageUpdatedAt) entry.imageUpdatedAt = (ov as any).imageUpdatedAt;
@@ -18911,15 +19431,6 @@ let serverAccessRequests = [
     status: 'PENDING'
   }
 ];
-
-let siteContentResponseCache: PrecompressedJsonCacheEntry | null = null;
-let siteContentCacheEpoch = 1;
-
-function invalidateSiteContentResponseCache() {
-  siteContentCacheEpoch += 1;
-  siteContentResponseCache = null;
-  invalidatePublicBootstrapCache();
-}
 
 function getOrBuildSiteContentResponseCache(): PrecompressedJsonCacheEntry {
   const sig = `${siteContentCacheEpoch}:${Number((serverSiteContent as any)?.siteContentUpdatedAt || 0)}`;
@@ -24866,38 +25377,35 @@ async function handleVisualProductImageSearch(params: {
   // When sourceFilter === 'alibaba', dedicate full parallel capacity to Alibaba CDN images.
   // When sourceFilter === 'google', dedicate parallel capacity strictly to Google Images / Commercial Web / Wikimedia (excluding Alibaba).
   const directWebDiscoveryPromise = isAlibabaOnly
-    ? fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, false, true).then(
+    ? fetchAlibabaProductImages(cleanName, cleanCategory, framedRfqHint, effectivePageOffset, isFastMode, true).then(
         async alibabaCandidates => {
           collectAndFilter(alibabaCandidates, true);
-          // Only promote relaxed Alibaba candidates if at least 1 strict match proved Alibaba had real results (not a zero-result "recommended products" ad page)
-          if (candidateMap.size > 0) {
+          // Always promote relaxed Alibaba candidates in Alibaba-only mode when strict pool is small so zero items get skipped
+          if (candidateMap.size > 0 || relaxedCandidateMap.size > 0) {
             for (const [k, v] of relaxedCandidateMap.entries()) {
               if (!candidateMap.has(k)) {
                 candidateMap.set(k, v);
               }
             }
           }
-          await verifyPendingBatch(isFastMode ? 60 : 72);
+          await verifyPendingBatch(isFastMode ? 64 : 72);
           // If the full heading was too verbose and returned < 12 Alibaba photos, automatically widen to core product noun
           if (verifiedMap.size < 12) {
             const focusedAlis = buildFocusedVisualSearchQueries(cleanName, cleanCategory);
             const shortFallback = focusedAlis[focusedAlis.length - 1];
             if (shortFallback && shortFallback.toLowerCase() !== cleanName.toLowerCase()) {
-              const prevStrictCount = candidateMap.size + verifiedMap.size;
               const moreAli = await fetchAlibabaProductImages(
                 shortFallback,
                 cleanCategory,
                 '',
                 effectivePageOffset,
-                false,
+                isFastMode,
                 true
               );
               collectAndFilter(moreAli, true);
-              if (candidateMap.size + verifiedMap.size > prevStrictCount) {
-                for (const [k, v] of relaxedCandidateMap.entries()) {
-                  if (!verifiedMap.has(k) && !candidateMap.has(k)) {
-                    candidateMap.set(k, v);
-                  }
+              for (const [k, v] of relaxedCandidateMap.entries()) {
+                if (!verifiedMap.has(k) && !candidateMap.has(k)) {
+                  candidateMap.set(k, v);
                 }
               }
               await verifyPendingBatch(48);
@@ -27353,6 +27861,8 @@ async function generateUniqueLocalVerifiedProductWebp(_params: {
   return '';
 }
 
+const alibabaBatchPageCursorMap = new Map<string, number>();
+
 async function resolveUniqueVerifiedCatalogImage(params: {
   recordId: string;
   recordType: 'PRODUCT' | 'RFQ' | 'CATEGORY' | 'OVERRIDE';
@@ -27418,7 +27928,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     searchName: string,
     searchSpecs: string | undefined,
     forceRefresh: boolean,
-    targetFilter: 'alibaba' | 'google' | 'all' = 'all'
+    targetFilter: 'alibaba' | 'google' | 'all' = 'all',
+    searchPageNum: number = 0
   ): Promise<VisualImageCandidate[]> => {
     const remainingMs = Math.min(timeoutMs, effectiveWallDeadline - Date.now());
     if (remainingMs <= 350) return [];
@@ -27427,7 +27938,8 @@ async function resolveUniqueVerifiedCatalogImage(params: {
         productName: searchName,
         category: cleanCategory,
         specifications: searchSpecs,
-        count: 30,
+        count: 48,
+        searchPage: searchPageNum,
         forceRefresh,
         fastMode: true,
         sourceFilter: targetFilter,
@@ -27503,10 +28015,11 @@ async function resolveUniqueVerifiedCatalogImage(params: {
   for (let i = 0; i < Math.min(coreNouns.length, 6); i++) {
     pushHeading(coreNouns[i]);
   }
-  if (params.recordType === 'CATEGORY' || params.recordId.startsWith('cat-')) {
-    const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
-    if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
-    else if (catNouns.length === 1) pushHeading(catNouns[0]);
+  const catNouns = extractMeaningfulAuditTokens(cleanCategory).filter(t => t.length >= 3 && !nounStop.has(t));
+  if (catNouns.length >= 2) pushHeading(catNouns.slice(0, 2).join(' '));
+  else if (catNouns.length === 1) pushHeading(catNouns[0]);
+  if (cleanCategory && cleanCategory.toLowerCase() !== 'general wholesale' && cleanCategory.toLowerCase() !== 'general') {
+    pushHeading(`${cleanCategory} wholesale`);
   }
 
   let totalMirrorAttempts = 0;
@@ -27647,27 +28160,43 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     return null;
   };
 
-  // Helper: Run live search + upload for a specific source ('alibaba' or 'google')
-  const tryLiveSourcePass = async (target: 'alibaba' | 'google', maxHeadings: number = 2) => {
+  // Helper: Run live search + upload for a specific source ('alibaba' or 'google') with multi-page cursor rotation
+  const tryLiveSourcePass = async (target: 'alibaba' | 'google', maxHeadings: number = 3) => {
     if (params.allowLiveGeminiNetwork === false || params.skipPerItemLiveSearch || !withinNetworkDeadline()) {
       return null;
     }
     for (let hIdx = 0; hIdx < Math.min(headingQueue.length, maxHeadings); hIdx++) {
       if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
       const headingChip = headingQueue[hIdx];
-      const freshPool = await runLiveSearchBounded(
-        headingChip,
-        hIdx === 0 ? params.specifications : undefined,
-        Boolean(params.forceLiveRepatch && hIdx === 0),
-        target
-      );
-      const unusedFresh = freshPool.filter(c => {
-        const u = String(c?.url || '').trim();
-        return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
-      });
-      if (unusedFresh.length > 0) {
-        const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip, true, target);
-        if (picked) return picked;
+      const cursorKey = `${target}::${headingChip.toLowerCase()}`;
+      const startPage = target === 'alibaba' ? (alibabaBatchPageCursorMap.get(cursorKey) || 0) : 0;
+      const maxPagesForHeading = target === 'alibaba' && sourceMode === 'alibaba_only' ? 3 : 2;
+      for (let pStep = 0; pStep < maxPagesForHeading; pStep++) {
+        if (!withinNetworkDeadline() || totalMirrorAttempts >= maxMirrors) break;
+        const pageNum = (startPage + pStep) % 18;
+        const freshPool = await runLiveSearchBounded(
+          headingChip,
+          hIdx === 0 && pStep === 0 ? params.specifications : undefined,
+          Boolean((params.forceLiveRepatch && hIdx === 0) || pageNum > 0),
+          target,
+          pageNum
+        );
+        const unusedFresh = freshPool.filter(c => {
+          const u = String(c?.url || '').trim();
+          return Boolean(u) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+        });
+        if (unusedFresh.length > 0) {
+          const picked = await tryPickAndMirrorFromPool(unusedFresh, headingChip, true, target);
+          if (picked) {
+            if (target === 'alibaba' && unusedFresh.length <= 4) {
+              alibabaBatchPageCursorMap.set(cursorKey, (pageNum + 1) % 18);
+            }
+            return picked;
+          }
+        }
+        if (target === 'alibaba') {
+          alibabaBatchPageCursorMap.set(cursorKey, (pageNum + 1) % 18);
+        }
       }
     }
     return null;
@@ -27679,12 +28208,39 @@ async function resolveUniqueVerifiedCatalogImage(params: {
     const aliCachedPicked = await tryCachedSourcePass('alibaba');
     if (aliCachedPicked) return aliCachedPicked;
 
-    const aliLivePicked = await tryLiveSourcePass('alibaba', sourceMode === 'alibaba_only' ? 3 : 2);
+    const aliLivePicked = await tryLiveSourcePass('alibaba', sourceMode === 'alibaba_only' ? 6 : 3);
     if (aliLivePicked) return aliLivePicked;
 
-    // Strict Alibaba-Only mode: NEVER fall back to Google/Web or local non-Alibaba assets!
-    // Leave item cleanly marked so user can patch remaining items from Google with one click.
-    if (sourceMode === 'alibaba_only') {
+    // Zero-Skip Alibaba Category Sweep: never skip an item in Alibaba-Only mode — advance across category & broad B2B Alibaba pages
+    if (sourceMode === 'alibaba_only' && withinNetworkDeadline()) {
+      const fallbackAlibabaQueries = Array.from(
+        new Set(
+          [
+            cleanCategory && cleanCategory !== 'General' ? cleanCategory : '',
+            `${cleanCategory || 'industrial'} wholesale product`,
+            'industrial machinery factory equipment',
+            'wholesale commercial goods export'
+          ].filter(Boolean)
+        )
+      );
+      for (const fbQ of fallbackAlibabaQueries) {
+        if (!withinNetworkDeadline()) break;
+        const fbKey = `alibaba::fb::${fbQ.toLowerCase()}`;
+        const fbPage = (alibabaBatchPageCursorMap.get(fbKey) || 0) % 24;
+        alibabaBatchPageCursorMap.set(fbKey, (fbPage + 1) % 24);
+        const rawFb = await fetchAlibabaProductImages(fbQ, cleanCategory, '', fbPage, true, true);
+        const unusedFb = fisherYatesShuffle(
+          rawFb.filter(c => {
+            const u = String(c?.url || '').trim();
+            return Boolean(u) && isAlibabaCand(c) && !globalRegistry.isCandidateUsed(u, c?.sourcePageUrl);
+          })
+        );
+        if (unusedFb.length > 0) {
+          totalMirrorAttempts = Math.min(totalMirrorAttempts, Math.max(0, maxMirrors - 4));
+          const pickedFb = await tryPickAndMirrorFromPool(unusedFb, fbQ, true, 'alibaba');
+          if (pickedFb) return pickedFb;
+        }
+      }
       return {
         newImageUrl: '',
         queryUsed,
@@ -29030,14 +29586,14 @@ async function fixSingleCatalogImageRecord(params: {
         skipPerItemLiveSearch: false,
         ...(params.batchMode
           ? {
-              wallDeadlineMs: Date.now() + (resolvedSourceMode === 'alibaba_first' ? 9500 : 7500),
-              geminiTimeoutMs: 4200,
-              maxMirrorAttempts: 3
+              wallDeadlineMs: Date.now() + (resolvedSourceMode === 'alibaba_only' ? 18000 : 12000),
+              geminiTimeoutMs: 4500,
+              maxMirrorAttempts: resolvedSourceMode === 'alibaba_only' ? 12 : 6
             }
           : {
-              wallDeadlineMs: Date.now() + 12000,
+              wallDeadlineMs: Date.now() + 18000,
               geminiTimeoutMs: 5000,
-              maxMirrorAttempts: 4
+              maxMirrorAttempts: 10
             })
       });
       finalImageUrl = resolved.newImageUrl;
@@ -29230,6 +29786,10 @@ async function fixSingleCatalogImageRecord(params: {
           2500
         );
         liveSynced = syncRes.synced;
+        void syncGoogleImageSitemapsAndNotify({
+          changedIds: [cleanId],
+          reason: `single_image_fix_${resolvedImageSource || 'auto'}`
+        }).catch(() => {});
       }
     }
 
@@ -29915,6 +30475,11 @@ app.post('/api/v1/admin/site-images/replace', async (req, res) => {
       }
     }
 
+    void syncGoogleImageSitemapsAndNotify({
+      changedIds: cleanTargetId ? [cleanTargetId] : [],
+      reason: 'site_image_replace'
+    }).catch(() => {});
+
     return res.json({
       success: true,
       targetId: cleanTargetId || cleanFieldPath,
@@ -30369,8 +30934,8 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
     }
   }
   backgroundAutoFixWorkerRunning = true;
-  const CONCURRENCY = 3;
-  const PER_ITEM_TIMEOUT_MS = 16000;
+  const CONCURRENCY = 6;
+  const PER_ITEM_TIMEOUT_MS = 26000;
   const pendingSnapshotUpdates: Array<{ id: string; imageUrl: string; gallery?: string[] }> = [];
   const activeSlotItems = new Map<number, SiteImageAutoFixInputItem>();
   let fixedSinceLastFlush = 0;
@@ -30628,6 +31193,11 @@ async function runBackgroundAutoFixJobWorker(job: BackgroundAutoFixJobState) {
   } finally {
     if (fixedSinceLastFlush > 0 || pendingSnapshotUpdates.length > 0 || job.fixed > 0) {
       await flushBatchStoresToDiskAsync(true);
+      const changedIds = job.results.filter(r => r.success && r.id).map(r => r.id);
+      void syncGoogleImageSitemapsAndNotify({
+        changedIds,
+        reason: `batch_autofix_${job.sourceMode}_${job.fixed}_fixed`
+      }).catch(() => {});
     }
     void saveProductImageCacheToDiskAsync();
     invalidatePublicProductImagesCache();
@@ -30889,6 +31459,14 @@ app.post('/api/v1/admin/site-images/auto-fix', async (req, res) => {
         if (rowRes.leftForGoogle) leftForGoogleCount++;
       }
       results.push(rowRes);
+    }
+
+    if (fixedCount > 0) {
+      const changedIds = results.filter(r => r.success && r.id).map(r => r.id);
+      void syncGoogleImageSitemapsAndNotify({
+        changedIds,
+        reason: `direct_autofix_${sourceMode}_${fixedCount}`
+      }).catch(() => {});
     }
 
     return res.json({
@@ -31565,6 +32143,46 @@ async function startServer() {
           });
           servedDistHtmlCache = { sig: combinedSig, etag, raw, gzipped, brotli };
         }
+
+        // Dynamic Googlebot & Social Crawler SEO injection for Product Detail pages so updated Alibaba images appear in Google immediately
+        const reqView = String(req.query?.view || '').trim().toUpperCase();
+        const reqProdId = String(req.query?.id || '').trim();
+        if (reqView === 'PRODUCT_DETAIL' && reqProdId) {
+          const ov = serverProductImageState?.overrides?.[reqProdId];
+          const prodMatch =
+            (serverProductsStore || []).find((p: any) => String(p?.id || '') === reqProdId) ||
+            (serverListingsStore || []).find((l: any) => `prod-db-${l?.id}` === reqProdId || String(l?.id || '') === reqProdId);
+          const rawImg = String(ov?.primary || prodMatch?.images?.[0] || prodMatch?.image || prodMatch?.image_url || '').trim().split('?')[0];
+          if (rawImg && !rawImg.startsWith('data:')) {
+            const absImg = /^https?:\/\//i.test(rawImg)
+              ? rawImg
+              : `${CANONICAL_SITE_ORIGIN}${rawImg.startsWith('/') ? '' : '/'}${rawImg}`;
+            const pTitle = String(prodMatch?.title || prodMatch?.name || reqProdId).trim();
+            const pCat = String(prodMatch?.category || 'Global B2B Wholesale').trim();
+            const pUrl = `${CANONICAL_SITE_ORIGIN}/?view=PRODUCT_DETAIL&id=${encodeURIComponent(reqProdId)}`;
+            const jsonLd = JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Product',
+              name: pTitle,
+              category: pCat,
+              image: [absImg],
+              url: pUrl,
+              brand: { '@type': 'Brand', name: 'Trade Heaven' }
+            }).replace(/</g, '\\u003c');
+            const seoMetaBlock = [
+              `<meta property="og:image" content="${escapeXmlText(absImg)}" />`,
+              `<meta property="og:image:secure_url" content="${escapeXmlText(absImg)}" />`,
+              `<meta name="twitter:image" content="${escapeXmlText(absImg)}" />`,
+              `<meta property="og:title" content="${escapeXmlText(pTitle)} | Trade Heaven" />`,
+              `<link rel="canonical" href="${escapeXmlText(pUrl)}" />`,
+              `<script type="application/ld+json">${jsonLd}</script>`
+            ].join('\n');
+            const customHtml = servedDistHtmlCache.raw.toString('utf-8').replace('</head>', `${seoMetaBlock}\n</head>`);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+            return res.status(200).send(customHtml);
+          }
+        }
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Vary', 'Accept-Encoding');
@@ -31607,7 +32225,7 @@ async function startServer() {
         vitePromise = import('vite')
           .then(({ createServer: createViteServer }) =>
             createViteServer({
-              server: { middlewareMode: true, hmr: false, allowedHosts: true, watch: null },
+              server: { middlewareMode: true, hmr: false, ws: false, allowedHosts: true, watch: null },
               appType: 'spa',
             })
           )

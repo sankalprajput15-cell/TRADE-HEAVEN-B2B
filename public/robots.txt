@@ -109,6 +109,8 @@ Allow: /*.webp
 Allow: /*.ico
 Allow: /*.webmanifest
 Allow: /sitemap.xml
+Allow: /image-sitemap.xml
+Allow: /tradeheaven-indexnow-key.txt
 Allow: /robots.txt
 
 # ==============================================================================
@@ -148,3 +150,4 @@ Disallow: /account/
 # Sitemaps Reference
 # ==============================================================================
 Sitemap: https://tradeheaven.net/sitemap.xml
+Sitemap: https://tradeheaven.net/image-sitemap.xml

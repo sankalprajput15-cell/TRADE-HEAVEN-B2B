@@ -1,7 +1,7 @@
 import React from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
-import { MessageCircle, Lock } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 
 interface Props {
   products: Product[];
@@ -51,10 +51,6 @@ export const AstraProductGrid: React.FC<Props> = ({
               <div className="text-sm font-black text-slate-800 font-mono">
                 Inquire for Price / {product.moqUnit}
               </div>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                <Lock className="w-2.5 h-2.5 text-amber-600" />
-                <span>Inquire</span>
-              </span>
             </div>
             <p className="text-xs text-slate-600 line-clamp-2">{product.description}</p>
           </div>

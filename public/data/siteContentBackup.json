@@ -19,7 +19,7 @@
     "heroHeadlineGradient": "Verified Global Buyers & Bulk RFQs",
     "heroSubheadline": "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     "heroTrustEyebrow": "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    "heroBgImage": "/assets/uploads/trade-heaven-homepage-main-hero-background-902548d-1795615031839.webp",
+    "heroBgImage": "/assets/uploads/trade-heaven-global-cargo-shipping-port-logistics-f05e0ba6460a.webp",
     "searchPlaceholder": "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     "tradeSpecialist": {
       "name": "Elena Rostova",
@@ -84,7 +84,7 @@
         "name": "Machinery & Industrial Equipment",
         "description": "CNC milling machines, packaging lines, hydraulic presses, automation.",
         "iconName": "Cpu",
-        "image": "/assets/uploads/auto-industrial-machinery-plants-prod-b3d465824321.webp",
+        "image": "/assets/uploads/trade-heaven-industrial-machinery-plants-prod-89f1d944250f.webp",
         "badge": "Top Sourced",
         "productCount": "48,200+ Products"
       },
@@ -93,7 +93,7 @@
         "name": "Automotive & Electric Vehicles",
         "description": "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         "iconName": "Car",
-        "image": "/assets/uploads/auto-automotive-motorcycle-parts-prod-e9ae437ff5a6.webp",
+        "image": "/assets/uploads/trade-heaven-automotive-motorcycle-parts-prod-c17d27bca58f.webp",
         "badge": "High Growth",
         "productCount": "32,900+ Products"
       },
@@ -102,7 +102,7 @@
         "name": "Electronics & Semiconductors",
         "description": "SMD microcontrollers, OLED display panels, power transformers, sensors.",
         "iconName": "Radio",
-        "image": "/assets/uploads/trade-heaven-electronics-semiconductors-dcb366f68549.webp",
+        "image": "/assets/uploads/trade-heaven-electronics-semiconductors-6eba064d5152.webp",
         "badge": "Verified OEM",
         "productCount": "64,100+ Products"
       },
@@ -111,7 +111,7 @@
         "name": "Chemicals & Raw Polymers",
         "description": "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         "iconName": "FlaskConical",
-        "image": "/assets/uploads/trade-heaven-chemicals-raw-polymers-14cb8a747a34.webp",
+        "image": "/assets/uploads/trade-heaven-chemicals-raw-polymers-6e7c8ad16122.webp",
         "badge": "REACH Compliant",
         "productCount": "28,500+ Products"
       },
@@ -120,7 +120,7 @@
         "name": "Textiles, Garments & Fabrics",
         "description": "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
         "iconName": "Scissors",
-        "image": "/assets/uploads/trade-heaven-textiles-garments-fabrics-4aefd21ac2b4.webp",
+        "image": "/assets/uploads/trade-heaven-textiles-garments-fabrics-41372df3900f.webp",
         "badge": "OEKO-TEX",
         "productCount": "52,400+ Products"
       },
@@ -129,7 +129,7 @@
         "name": "Renewable Energy & Solar",
         "description": "Tier-1 N-Type TOPCon solar panels, commercial hybrid inverters, BESS.",
         "iconName": "Sun",
-        "image": "/assets/uploads/trade-heaven-renewable-energy-solar-8224f5db58f2.webp",
+        "image": "/assets/uploads/trade-heaven-renewable-energy-solar-fd59a2026d7d.webp",
         "badge": "CE / TÜV Certified",
         "productCount": "19,800+ Products"
       },
@@ -138,7 +138,7 @@
         "name": "Agriculture & Agro Commodities",
         "description": "Refined ICUMSA 45 sugar, Non-GMO soy, Robusta coffee, cashew nuts.",
         "iconName": "Wheat",
-        "image": "/assets/uploads/auto-agriculture-agro-commodities-1beccb643abd.webp",
+        "image": "/assets/uploads/trade-heaven-agriculture-agro-commodities-60a50fd48077.webp",
         "badge": "Phytosanitary Cert",
         "productCount": "41,300+ Products"
       },
@@ -147,7 +147,7 @@
         "name": "Medical & Diagnostic Supplies",
         "description": "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         "iconName": "Stethoscope",
-        "image": "/assets/uploads/auto-medical-aesthetic-equipment-03273497b178.webp",
+        "image": "/assets/uploads/trade-heaven-medical-aesthetic-equipment-03f71b3beacd.webp",
         "badge": "FDA 510(k) / CE",
         "productCount": "15,700+ Products"
       },
@@ -156,7 +156,7 @@
         "name": "Building & Construction Materials",
         "description": "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         "iconName": "Box",
-        "image": "/assets/uploads/trade-heaven-building-construction-materials-5f84ada760d3.webp",
+        "image": "/assets/uploads/trade-heaven-building-construction-materials-b30d202f9b46.webp",
         "badge": "ASTM / ISO",
         "productCount": "37,000+ Products"
       }
@@ -206,7 +206,7 @@
         "category": "Agro Commodities"
       }
     ],
-    "onboardingBannerImage": "/assets/uploads/trade-heaven-homepage-partner-onboarding-banner-s-72ac574fd31a.webp"
+    "onboardingBannerImage": "/assets/uploads/trade-heaven-factory-manufacturing-warehouse-expo-f780b8e4a35c.webp"
   },
   "productsPage": {
     "title": "Global Wholesale Product Catalog",
@@ -355,26 +355,26 @@
     "pinnedCategoryIds": [],
     "sectionLayouts": {}
   },
-  "siteContentUpdatedAt": 1795793611187,
+  "siteContentUpdatedAt": 1795873998188,
   "escrow": {
-    "bannerImage": "/assets/uploads/trade-heaven-products-directory-header-banner-2e54-1795601900097.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-secure-global-trade-logistics-freigh-1722dc45f044.webp"
   },
   "productsDirectory": {
-    "bannerImage": "/assets/uploads/trade-heaven-products-directory-header-banner-b315-1795610420871.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-wholesale-industrial-products-wareho-cdd16057e505.webp"
   },
   "buyLeads": {
-    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-91e9b8a1-1795683655010.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-global-container-freight-trade-port-5e3199acaf2c.webp"
   },
   "suppliersDirectory": {
-    "bannerImage": "/assets/uploads/trade-heaven-verified-suppliers-header-banner-173c-1795615114431.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-verified-factory-exporter-production-5009c8e65833.webp"
   },
   "postBuyingRequest": {
-    "bannerImage": "/assets/uploads/auto-products-directory-header-banner-d4078821d44b.jpg"
+    "bannerImage": "/assets/uploads/trade-heaven-international-procurement-trade-supp-3c0e1beb0088.webp"
   },
   "postSellOffer": {
-    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-a2b6dbd9-1795615334879.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-export-wholesale-packaging-cargo-66473b13619e.webp"
   },
   "membership": {
-    "bannerImage": "/assets/uploads/trade-heaven-buy-leads-rfqs-header-banner-090105f2-1795615118047.webp"
+    "bannerImage": "/assets/uploads/trade-heaven-commercial-shipping-port-trade-c8d49481b6e8.webp"
   }
 }

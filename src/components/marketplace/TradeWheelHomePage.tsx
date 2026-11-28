@@ -608,7 +608,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-slate-500">{rfq.preferredIncoterm}:</span>
                           <span className="font-semibold text-slate-700 inline-flex items-center gap-1 shrink-0">
-                            <Lock className="w-2.5 h-2.5 text-amber-600" />
                             <span>Target Open</span>
                           </span>
                         </div>

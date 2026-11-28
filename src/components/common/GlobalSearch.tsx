@@ -441,7 +441,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     if (!finalQuery) return;
     saveRecentSearch(finalQuery);
     setIsOpen(false);
-    if (onNavigateToSearch) {
+    if (activeFilterTab === 'SUPPLIERS') {
+      onNavigate('SUPPLIERS_DIRECTORY', { search: finalQuery });
+    } else if (activeFilterTab === 'RFQS') {
+      onNavigate('BUY_LEADS', { search: finalQuery });
+    } else if (onNavigateToSearch) {
       onNavigateToSearch(finalQuery);
     } else {
       onNavigate('PRODUCT_DIRECTORY', { search: finalQuery });

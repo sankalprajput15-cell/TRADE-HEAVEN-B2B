@@ -402,15 +402,7 @@ export const ProductCatalog: React.FC<Props> = ({
     return cachedProducts.filter(p => {
       let matchesSearch = true;
       if (term !== '' && !isGenericPortalTerm) {
-        const belongsToMatchedSupplier =
-          (p.supplierId && matchedSupplierIds.has(p.supplierId)) ||
-          (p.supplierName && matchedSupplierCompanyNames.has(p.supplierName.toLowerCase()));
-
-        if (belongsToMatchedSupplier) {
-          matchesSearch = true;
-        } else {
-          matchesSearch = matchesProductKeywordClient(p, searchTerm);
-        }
+        matchesSearch = matchesProductKeywordClient(p, searchTerm);
       }
       if (!matchesSearch) return false;
 
@@ -445,8 +437,6 @@ export const ProductCatalog: React.FC<Props> = ({
   }, [
     cachedProducts,
     searchTerm,
-    matchedSupplierIds,
-    matchedSupplierCompanyNames,
     activeCategory,
     activeSupplierTiers,
     activeCountries,
@@ -574,12 +564,12 @@ export const ProductCatalog: React.FC<Props> = ({
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(
-    () => productsDirectoryLayout.itemCount || 12
+    () => Math.max(50, productsDirectoryLayout.itemCount || 50)
   );
 
-  // Sync itemsPerPage whenever admin updates Products Catalog layout in Whole Site Page Manager
+  // Sync itemsPerPage whenever admin updates Products Catalog layout (minimum 50 products per page)
   useEffect(() => {
-    const configured = productsDirectoryLayout.itemCount || 12;
+    const configured = Math.max(50, productsDirectoryLayout.itemCount || 50);
     setItemsPerPage(configured);
     setCurrentPage(1);
   }, [productsDirectoryLayout.itemCount]);
@@ -590,8 +580,8 @@ export const ProductCatalog: React.FC<Props> = ({
   }, [searchTerm, activeCategory, activeSupplierTiers, activeCountries, selectedIncoterm, maxMoq, ownershipFilter]);
 
   const productItemsPerPageOptions = React.useMemo(() => {
-    const base = [12, 24, 48, productsDirectoryLayout.itemCount || 12];
-    return Array.from(new Set(base.filter(n => n > 0))).sort((a, b) => a - b);
+    const base = [50, 75, 100, Math.max(50, productsDirectoryLayout.itemCount || 50)];
+    return Array.from(new Set(base.filter(n => n >= 50))).sort((a, b) => a - b);
   }, [productsDirectoryLayout.itemCount]);
 
   // Paginated subset
@@ -959,13 +949,13 @@ export const ProductCatalog: React.FC<Props> = ({
                     search: cleanSearch || undefined,
                     category: activeCategory !== 'ALL' ? activeCategory : undefined,
                     title: cleanSearch
-                      ? `"${cleanSearch}" Wholesale Suppliers, Products & RFQs | Trade Heaven`
+                      ? `"${cleanSearch}" Wholesale Products | Trade Heaven`
                       : activeCategory !== 'ALL'
-                        ? `${activeCategory} Wholesale Suppliers & Products | Trade Heaven`
+                        ? `${activeCategory} Wholesale Products | Trade Heaven`
                         : 'Global Product Catalog & Wholesale Directory | Trade Heaven',
                     subtitle: cleanSearch
-                      ? `Explore verified wholesale suppliers, catalog products, and live buyer RFQs for "${cleanSearch}" on Trade Heaven.`
-                      : 'Browse verified factory-direct wholesale products and international export suppliers.'
+                      ? `Explore verified wholesale catalog products for "${cleanSearch}" on Trade Heaven.`
+                      : 'Browse verified factory-direct wholesale products across global industrial sectors.'
                   }
                 })
               );
@@ -995,56 +985,7 @@ export const ProductCatalog: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Matched Suppliers & Companies Banner when searching by Supplier Name or Company Name */}
-      {matchedSuppliers.length > 0 && (
-        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-              <Building className="w-4 h-4 text-amber-600" />
-              <span>Matched Suppliers &amp; Companies ({matchedSuppliers.length})</span>
-            </h4>
-            <span className="text-[11px] text-amber-800 font-medium">
-              Click any supplier to open their storefront profile
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {matchedSuppliers.map(supp => (
-              <div
-                key={supp.id}
-                onClick={() => onOpenStorefront(supp.id)}
-                className="bg-white border border-amber-200/90 hover:border-blue-500 rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer shadow-2xs hover:shadow-md transition-all group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <SafeImage
-                    src={supp.logoUrl}
-                    alt={supp.companyName}
-                    type="logo"
-                    className="w-11 h-11 rounded-lg object-cover border border-slate-200 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate">
-                      {supp.companyName}
-                    </div>
-                    {isUserPaidMember && supp.contactPerson ? (
-                      <div className="text-[11px] font-semibold text-blue-700 truncate">
-                        Supplier: {supp.contactPerson}
-                      </div>
-                    ) : (
-                      <div className="text-[10px] font-semibold text-amber-700 truncate">
-                        🔒 Contact Protected (Paid Members Only)
-                      </div>
-                    )}
-                    <div className="text-[10px] text-slate-500 truncate">
-                      {supp.country} • {supp.tier || 'VERIFIED'} Exporter
-                    </div>
-                  </div>
-                </div>
-                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Products catalog strictly displays Product results only */}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0 w-full">
         {/* Desktop Faceted Filter Sidebar */}
@@ -1157,79 +1098,6 @@ export const ProductCatalog: React.FC<Props> = ({
             </div>
           ) : filtered.length === 0 ? (
             <>
-            {(showMatchedRfqs || Boolean(onSelectRfq)) && searchTerm.trim().length >= 2 && (isScanningCatalogRfqs || matchedCatalogRfqs.length > 0) ? (
-              <div className="space-y-4">
-                {isScanningCatalogRfqs && matchedCatalogRfqs.length === 0 ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3 shadow-xs">
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
-                    <div className="text-xs sm:text-sm font-bold text-slate-800">
-                      Discovering live buyer RFQs & global market demand for "{searchTerm.trim()}"...
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {catalogMarketInsight && (
-                      <LiveMarketDemandBanner insight={catalogMarketInsight} searchedProduct={searchTerm.trim()} />
-                    )}
-                    {matchedCatalogRfqs.length > 0 && (
-                      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                            <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
-                            <span>Live Buyer RFQs for "{searchTerm.trim()}" ({matchedCatalogRfqs.length})</span>
-                          </h3>
-                          {onNavigateToBuyLeads && (
-                            <button
-                              type="button"
-                              onClick={() => onNavigateToBuyLeads(searchTerm.trim())}
-                              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
-                            >
-                              <span>Open Buy Leads Hub</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {matchedCatalogRfqs.map(rfq => (
-                            <div
-                              key={rfq.id}
-                              onClick={() => onSelectRfq ? onSelectRfq(rfq) : onNavigateToBuyLeads?.(searchTerm.trim())}
-                              className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 bg-slate-50/70 hover:bg-white transition-all cursor-pointer space-y-2"
-                            >
-                              <div className="flex items-center justify-between gap-2 text-[10px]">
-                                <span className="font-mono font-bold text-slate-600">{rfq.id}</span>
-                                {isAutoGeneratedRfq(rfq) && (
-                                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
-                                    Auto-RFQ Demand
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2">
-                                {rfq.productName}
-                              </div>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
-                                  {rfq.buyerCountry}
-                                </span>
-                                <span>
-                                  Qty: <strong>{Number(rfq.targetQuantity || 0).toLocaleString()} {rfq.quantityUnit}</strong>
-                                </span>
-                                {rfq.targetPriceUsd > 0 && (
-                                  <span className="font-mono text-emerald-700 font-bold">
-                                    ~${rfq.targetPriceUsd.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : (
             <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center space-y-3 shadow-2xs flex flex-col items-center">
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Search className="w-8 h-8" />
@@ -1255,7 +1123,6 @@ export const ProductCatalog: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-            )}
             
             {/* Recommendations when empty */}
             <div className="mt-8">
@@ -1411,80 +1278,6 @@ export const ProductCatalog: React.FC<Props> = ({
               />
                 </>
               )}
-
-              {/* Live Buyer RFQs & Auto-Generated Demand for Search Results */}
-              {(showMatchedRfqs || Boolean(onSelectRfq)) &&
-                searchTerm.trim().length >= 2 &&
-                (isScanningCatalogRfqs || matchedCatalogRfqs.length > 0) && (
-                  <div className="pt-4 space-y-4">
-                    {isScanningCatalogRfqs ? (
-                      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3 shadow-xs">
-                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-                        <div className="text-xs sm:text-sm font-bold text-slate-800">
-                          Loading...
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {matchedCatalogRfqs.length > 0 && (
-                          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                                <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
-                                <span>Live Buyer RFQs for "{searchTerm.trim()}" ({matchedCatalogRfqs.length})</span>
-                              </h3>
-                              {onNavigateToBuyLeads && (
-                                <button
-                                  type="button"
-                                  onClick={() => onNavigateToBuyLeads(searchTerm.trim())}
-                                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span>View All Buy Leads</span>
-                                  <ArrowRight className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {matchedCatalogRfqs.map(rfq => (
-                                <div
-                                  key={rfq.id}
-                                  onClick={() => onSelectRfq ? onSelectRfq(rfq) : onNavigateToBuyLeads?.(searchTerm.trim())}
-                                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 bg-slate-50/70 hover:bg-white transition-all cursor-pointer space-y-2"
-                                >
-                                  <div className="flex items-center justify-between gap-2 text-[10px]">
-                                    <span className="font-mono font-bold text-slate-600">{rfq.id}</span>
-                                    {isAutoGeneratedRfq(rfq) && (
-                                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
-                                        Auto-RFQ Demand
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2">
-                                    {rfq.productName}
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                                    <span className="flex items-center gap-1">
-                                      <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
-                                      {rfq.buyerCountry}
-                                    </span>
-                                    <span>
-                                      Qty: <strong>{Number(rfq.targetQuantity || 0).toLocaleString()} {rfq.quantityUnit}</strong>
-                                    </span>
-                                    {rfq.targetPriceUsd > 0 && (
-                                      <span className="font-mono text-emerald-700 font-bold">
-                                        ~${rfq.targetPriceUsd.toLocaleString()}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
             </div>
           )}
         </div>

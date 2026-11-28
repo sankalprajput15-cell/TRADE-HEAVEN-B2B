@@ -129,7 +129,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-bold border border-slate-300">
-                <Lock className="w-3 h-3 text-slate-600" />
+                <Clock className="w-3 h-3 text-slate-600" />
                 <span>Credit Used Today ({status.claimedRfqId})</span>
               </span>
             )}
@@ -137,11 +137,11 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
 
         </div>
 
-        {/* Free Leads Disclaimer / Community Note */}
+        {/* Community Buy Orders Note */}
         <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
           <p className="font-semibold leading-relaxed">
-            (Note: Free buy orders are accessible to anyone whether registered or unregistered on the portal. Inquiries are unvetted community requests—deals &amp; buyer legitimacy are not guaranteed. Information of paid suppliers, buyers, and users is strictly protected and cannot be accessed by unpaid users).
+            Browse live community buy orders freely across all sectors. Verify trade terms and specifications directly with buyers before shipment.
           </p>
         </div>
 
@@ -176,10 +176,10 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
                   type="button"
                   onClick={() => onUpgradeToPlans?.()}
                   className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                  title="This lead is from a verified paid member. Upgrade to unlock paid member data."
+                  title="Connect with this priority buyer order"
                 >
-                  <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Paid Member Order: Upgrade to Unlock (#{featuredRfq.id})</span>
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Priority Buyer Order (#{featuredRfq.id})</span>
                 </button>
               ) : (
                 <button

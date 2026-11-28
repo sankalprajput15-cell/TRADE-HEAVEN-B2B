@@ -128,23 +128,23 @@ export const DEFAULT_SITE_SECTION_LAYOUTS: SiteSectionLayouts = {
   productsDirectory: {
     layoutMode: 'GRID',
     columns: 4,
-    rows: 3,
-    itemCount: 12,
-    autoSyncCount: true
+    rows: 13,
+    itemCount: 50,
+    autoSyncCount: false
   },
   buyLeadsDirectory: {
     layoutMode: 'GRID',
     columns: 3,
-    rows: 6,
-    itemCount: 18,
-    autoSyncCount: true
+    rows: 17,
+    itemCount: 50,
+    autoSyncCount: false
   },
   suppliersDirectory: {
     layoutMode: 'GRID',
     columns: 3,
-    rows: 4,
-    itemCount: 12,
-    autoSyncCount: true
+    rows: 17,
+    itemCount: 50,
+    autoSyncCount: false
   }
 };
 

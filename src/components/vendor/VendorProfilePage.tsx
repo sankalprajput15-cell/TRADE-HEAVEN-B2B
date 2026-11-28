@@ -1142,14 +1142,14 @@ export const VendorProfilePage: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Direct Contact Clearance Box — Strictly Gated for Paid Members Only */}
+            {/* Supplier Direct Trade Desk */}
             <div className="pt-2 border-t border-slate-100">
               <PremiumContactGate
                 currentUser={currentUser}
                 onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                 isMasked={Boolean(profile.isContactMasked)}
                 paidMembersOnly={true}
-                resourceTitle="Paid Members Only — Supplier Details"
+                resourceTitle="Supplier Direct Trade Desk"
               >
                 <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div className="flex items-start gap-2">

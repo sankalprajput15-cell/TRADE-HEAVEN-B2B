@@ -1229,9 +1229,8 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                   }
                 }}
                 className="text-[10px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200 transition-colors"
-                title={(!isVipOrEnterprise || isBasicUser) ? "Withdrawals restricted: VIP plan member are eligible to do it" : "Withdraw funds to saved bank account"}
+                title={(!isVipOrEnterprise || isBasicUser) ? "Available with VIP plan" : "Withdraw funds to saved bank account"}
               >
-                {(!isVipOrEnterprise || isBasicUser) && <Lock className="w-2.5 h-2.5 text-amber-600" />}
                 Withdraw
               </button>
             </div>
@@ -1244,7 +1243,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               <span>Secure Trade Funds</span>
               {userBalance.hasLocked && (
                 <span className="text-amber-700 font-bold flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" />
+                  <ShieldCheck className="w-2.5 h-2.5" />
                   {userBalance.locked} Escrowed
                 </span>
               )}
@@ -1863,8 +1862,8 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                             </span>
                             {isPaidLead && (
                               <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-400/40 flex items-center gap-1 shadow-2xs shrink-0">
-                                <Lock className="w-2.5 h-2.5 text-amber-400" />
-                                <span>Paid VIP Lead</span>
+                                <Crown className="w-2.5 h-2.5 text-amber-400" />
+                                <span>Verified VIP Lead</span>
                               </span>
                             )}
                           </div>
@@ -2340,11 +2339,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-100 pb-5">
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-300 mb-2">
-                    <Lock className="w-3 h-3" />
-                    Basic Plan Status — Feature Restricted
+                    <Crown className="w-3 h-3" />
+                    VIP Plan Feature
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Direct-to-Site Funds Receiving Disabled
+                    Direct-to-Site Funds Receiving
                   </h3>
                   <p className="text-sm text-slate-600 mt-1">
                     Your account (<strong>{currentUser?.companyName || currentUser?.name || 'Basic Plan Holder'}</strong>) is currently registered under a <strong>Basic Plan</strong>.

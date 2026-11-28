@@ -1428,9 +1428,10 @@ class AutoSeoEngineService {
       );
 
       if (matchScore > 0) {
-        const seoBoost = isUploadedBoosted ? (seoRec?.searchPriorityBoost || 1500) : (seoRec ? 300 : 0);
+        // Keep search relevance dominant over generic upload/SEO boosts so exact product matches always appear first
+        const seoBoost = isUploadedBoosted ? 85 : (seoRec ? 35 : 0);
         const recencyBoost = seoRec?.updatedAt
-          ? Math.max(0, 200 - Math.floor((Date.now() - new Date(seoRec.updatedAt).getTime()) / (1000 * 60 * 60)))
+          ? Math.max(0, 25 - Math.floor((Date.now() - new Date(seoRec.updatedAt).getTime()) / (1000 * 60 * 60 * 6)))
           : 0;
 
         scored.push({

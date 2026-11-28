@@ -709,8 +709,8 @@ export const RfqComparisonView: React.FC<Props> = ({
                               Unlocked (Paid Plan)
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                              Members Only
+                            <span className="text-[10px] font-bold text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full">
+                              Verified Trade Desk
                             </span>
                           )}
                         </div>
@@ -760,16 +760,13 @@ export const RfqComparisonView: React.FC<Props> = ({
 
                         {!canViewDirectContact && (
                           <div className="absolute inset-0 bg-white/55 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center gap-2">
-                            <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center shadow-md">
-                              <Lock className="w-4 h-4" />
-                            </div>
                             <button
                               type="button"
                               onClick={() => onOpenUpgradeModal?.(activeRfq)}
                               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
                             >
                               <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                              <span>Unlock Buyer Contact</span>
+                              <span>View Direct Buyer Contact</span>
                             </button>
                           </div>
                         )}

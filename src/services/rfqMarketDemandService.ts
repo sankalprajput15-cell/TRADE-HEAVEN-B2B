@@ -213,15 +213,28 @@ export function matchesMetadataSubstring(
   const rawJoined = parts.join(' ').toLowerCase();
   const normalizedHaystack = normalizeSearchableText(rawJoined);
   const compactHaystack = normalizedHaystack.replace(/\s+/g, '');
+  const paddedHaystack = ` ${normalizedHaystack} `;
 
   return tokens.every(token => {
     const variants = getSearchTokenVariants(token);
-    return variants.some(
-      variant =>
+    return variants.some(variant => {
+      if (variant.length <= 3) {
+        // Short keywords (e.g., "oil", "tea", "led", "gas", "pvc", "car"): match whole word or simple plural only
+        // so "oil" matches "oil", "oils", "olive oil", "sunflower oil" and NEVER "foil", "boil", "soil", "coil", "toilet"
+        const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const shortWordRegex = new RegExp(`(?:^|\\s)${escaped}(?:s|es)?(?=$|\\s)`);
+        return shortWordRegex.test(normalizedHaystack);
+      }
+      if (variant.length === 4) {
+        // 4-letter keywords (e.g., "gold", "iron", "rice", "wood", "pipe", "wire"): require word-start boundary
+        return paddedHaystack.includes(` ${variant}`);
+      }
+      return (
         normalizedHaystack.includes(variant) ||
         rawJoined.includes(variant) ||
-        (variant.length >= 4 && compactHaystack.includes(variant))
-    );
+        compactHaystack.includes(variant)
+      );
+    });
   });
 }
 

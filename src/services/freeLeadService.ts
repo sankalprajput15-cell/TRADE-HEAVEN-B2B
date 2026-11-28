@@ -242,18 +242,18 @@ export const redactSensitiveContactText = (text?: string, canView: boolean = fal
   // Remove parenthesized contact/address blocks like (216 N Main St, ... | email | phone)
   cleaned = cleaned.replace(/\([^)]*(?:@|\+\d|NSW\s*\d{4}|street|Main\s*St|Ste\s*\d+)[^)]*\)/gi, '');
   // Redact email addresses
-  cleaned = cleaned.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[🔒 Protected Email]');
+  cleaned = cleaned.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[Available via Trade Desk]');
   // Redact websites
-  cleaned = cleaned.replace(/(?:https?:\/\/|www\.)[^\s,)|]+/gi, '[🔒 Protected Website]');
+  cleaned = cleaned.replace(/(?:https?:\/\/|www\.)[^\s,)|]+/gi, '[Company Website on File]');
   // Redact phone numbers
-  cleaned = cleaned.replace(/(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}/g, '[🔒 Protected Phone]');
+  cleaned = cleaned.replace(/(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}/g, '[Direct Line via Trade Desk]');
   // Redact P.O. Boxes and explicit mailing address sentences
   cleaned = cleaned.replace(/Corporate Mailing Address:[^.]*\./gi, '');
   cleaned = cleaned.replace(/Farm address where the bamboo will be picked up[^.]*\./gi, '');
   cleaned = cleaned.replace(/Managed by [^.]*\./gi, '');
   cleaned = cleaned.replace(/Authorized Representative:[^.]*\./gi, '');
   cleaned = cleaned.replace(/Note:\s*Direct on-site fund transfers are not active[^.]*\./gi, '');
-  cleaned = cleaned.replace(/P\.?O\.?\s*Box\s*\d+[^,.]*/gi, '[🔒 Protected Address]');
+  cleaned = cleaned.replace(/P\.?O\.?\s*Box\s*\d+[^,.]*/gi, '[Verified Trade Address]');
   cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
 
   return cleaned;

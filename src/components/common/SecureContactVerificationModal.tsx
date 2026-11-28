@@ -79,13 +79,13 @@ export const SecureContactVerificationModal: React.FC<Props> = ({
         {!currentUser ? (
           /* Authentication Gate Screen */
           <div className="text-center space-y-5 py-4">
-            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto border border-amber-100 shadow-xs">
-              <Lock className="w-6 h-6 animate-bounce" />
+            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto border border-blue-100 shadow-xs">
+              <ShieldCheck className="w-6 h-6" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Login Required for Access</h3>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Sign In to Connect Directly</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Direct supply-chain contact channels and unmasked phone lines are secured under TradeHeaven security regulations. Please sign in to verify your buyer identity.
+                Sign in to your business account to view verified supplier &amp; buyer contact channels and send direct trade inquiries.
               </p>
             </div>
 

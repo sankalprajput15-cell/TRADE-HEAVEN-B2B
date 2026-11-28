@@ -196,7 +196,7 @@ export const HeroSection: React.FC<Props> = ({
   // Downward dropdown states
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isSearchPopoverOpen, setIsSearchPopoverOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<SearchFilterType>('ALL');
+  const [activeFilter, setActiveFilter] = useState<SearchFilterType>('PRODUCTS');
 
   // TradeWheel 3-column portal states (carousel, category flyout, quick RFQ mini-form)
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
@@ -507,13 +507,8 @@ export const HeroSection: React.FC<Props> = ({
     e.preventDefault();
     setIsSearchPopoverOpen(false);
     setIsCategoryMenuOpen(false);
-    const trimmed = searchQuery.trim();
-    const effectiveMode =
-      searchTargetMode === 'SUPPLIERS' || (trimmed && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
-        ? 'SUPPLIERS'
-        : trimmed && searchResults.products.length === 0 && searchResults.suppliers.length === 0
-          ? 'RFQS'
-          : searchTargetMode;
+    // Strictly respect the user's selected search target (Products -> Products, Suppliers -> Suppliers, RFQs -> Buy Leads)
+    const effectiveMode = searchTargetMode;
     onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, effectiveMode);
     if (onNavigate) {
       if (effectiveMode === 'RFQS') {
@@ -543,11 +538,7 @@ export const HeroSection: React.FC<Props> = ({
     }
   };
 
-  const handleSupplierClick = (companyId: string, isPaidMember?: boolean) => {
-    if (isPaidMember && !isRegistered) {
-      triggerRegistrationModal();
-      return;
-    }
+  const handleSupplierClick = (companyId: string) => {
     setIsSearchPopoverOpen(false);
     if (onOpenStorefront) {
       onOpenStorefront(companyId);
@@ -557,11 +548,6 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   const handleRfqClick = (rfq: RfqRequirement) => {
-    const isVipLead = isPaidEntity(rfq);
-    if (isVipLead && !isRegistered) {
-      triggerRegistrationModal();
-      return;
-    }
     setIsSearchPopoverOpen(false);
     if (onSelectRfq) {
       onSelectRfq(rfq);
@@ -1287,8 +1273,8 @@ export const HeroSection: React.FC<Props> = ({
                                     <strong className="text-slate-800 truncate">{rfq.buyerCompany}</strong>
                                     <span className="text-slate-400 shrink-0">({rfq.buyerCountry})</span>
                                   </div>
-                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 font-semibold text-[10px] border border-amber-200/80 shrink-0">
-                                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-[10px] border border-emerald-200/80 shrink-0">
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
                                     <span>Verified Buyer</span>
                                   </div>
                                 </div>
@@ -1558,7 +1544,7 @@ export const HeroSection: React.FC<Props> = ({
                             return (
                               <div
                                 key={supp.id}
-                                onClick={() => handleSupplierClick(supp.id, isPaidMember)}
+                                onClick={() => handleSupplierClick(supp.id)}
                                 className="p-3 rounded-2xl border border-slate-200/90 hover:border-amber-500 hover:bg-amber-50/30 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                               >
                                 <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
@@ -1569,19 +1555,13 @@ export const HeroSection: React.FC<Props> = ({
                                     <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
                                       <HighlightedMatch text={supp.companyName} query={searchQuery} />
                                     </div>
-                                    {hidePaidData ? (
-                                      <div className="text-[11px] font-bold text-amber-700 flex items-center gap-1">
-                                        <Lock className="w-3 h-3 text-amber-600 shrink-0" />
-                                        <span>Paid Member Data (Click to Unlock)</span>
-                                      </div>
-                                    ) : supp.contactPerson ? (
+                                    {supp.contactPerson ? (
                                       <div className="text-[11px] font-semibold text-blue-600 truncate flex items-center gap-1.5">
                                         <span>Supplier: <HighlightedMatch text={supp.contactPerson} query={searchQuery} /></span>
-                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">Open Data</span>
                                       </div>
                                     ) : (
                                       <div className="text-[10px] text-emerald-600 font-semibold">
-                                        ✓ Mock Data &amp; Free Member Directory
+                                        Verified Export Supplier
                                       </div>
                                     )}
                                     <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
@@ -1599,7 +1579,7 @@ export const HeroSection: React.FC<Props> = ({
                                     ? 'bg-amber-100 text-amber-900 border-amber-300'
                                     : 'bg-emerald-50 text-emerald-900 border-emerald-200'
                                 }`}>
-                                  {isPaidMember ? (hidePaidData ? '🔒 VIP Paid Member' : supp.tier) : (supp.tier || 'Free Member')}
+                                  {supp.tier || 'Verified'}
                                 </span>
                               </div>
                             );

@@ -127,18 +127,18 @@ export const BuyLeadsView: React.FC<Props> = ({
         ?.buyLeadsDirectory || DEFAULT_SITE_SECTION_LAYOUTS.buyLeadsDirectory,
     [siteContent?.homepageDisplayConfig]
   );
-  const [itemsPerPage, setItemsPerPage] = useState(() => buyLeadsLayout.itemCount || 18);
+  const [itemsPerPage, setItemsPerPage] = useState(() => Math.max(50, buyLeadsLayout.itemCount || 50));
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const configured = buyLeadsLayout.itemCount || 18;
+    const configured = Math.max(50, buyLeadsLayout.itemCount || 50);
     setItemsPerPage(configured);
     setCurrentPage(1);
   }, [buyLeadsLayout.itemCount]);
 
   const rfqItemsPerPageOptions = useMemo(() => {
-    const base = [12, 18, 24, 36, 54, buyLeadsLayout.itemCount || 18];
-    return Array.from(new Set(base.filter(n => n > 0))).sort((a, b) => a - b);
+    const base = [50, 75, 100, Math.max(50, buyLeadsLayout.itemCount || 50)];
+    return Array.from(new Set(base.filter(n => n >= 50))).sort((a, b) => a - b);
   }, [buyLeadsLayout.itemCount]);
   const [searchTerm, setSearchTerm] = useState(() => {
     if (initialSearch) return sanitizeSearchKeyword(initialSearch);
@@ -801,12 +801,12 @@ export const BuyLeadsView: React.FC<Props> = ({
 
 
 
-      {/* Security & Access Clearance Notice */}
+      {/* Live Global Buy Leads Notice */}
       <div className="p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap bg-blue-50/80 border-blue-200 text-blue-950">
         <div className="flex items-center gap-2.5">
           <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
           <span className="font-semibold">
-            Protected Business Verification Active: Direct buyer corporate email and telephone contacts are secured against automated scraping. Free one-click business verification available.
+            Live Global Buy Leads Directory: Browse verified international buyer tenders, target quantities, and destination ports to submit quotes directly.
           </span>
         </div>
       </div>

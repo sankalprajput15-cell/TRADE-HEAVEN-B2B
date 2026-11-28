@@ -1026,7 +1026,7 @@ export const PremiumServicesView: React.FC<Props> = ({
 
               {/* Secure Checkout Note */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
-                <strong>🔒 Treasury Payment Link Safeguard:</strong> Payment links are issued directly by Trade Heaven Treasury with 256-bit SSL encryption and trade protection guarantees.
+                <strong>Treasury Payment Link Safeguard:</strong> Payment links are issued directly by Trade Heaven Treasury with 256-bit SSL encryption and trade protection guarantees.
               </div>
             </div>
           </div>

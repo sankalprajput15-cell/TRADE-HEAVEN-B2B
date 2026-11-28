@@ -60,6 +60,8 @@ const ALLOWED_MARKETPLACE_ROUTES = [
   '/*.ico',
   '/*.webmanifest',
   '/sitemap.xml',
+  '/image-sitemap.xml',
+  '/tradeheaven-indexnow-key.txt',
   '/robots.txt'
 ];
 
@@ -185,6 +187,7 @@ Disallow: /account/
 # Sitemaps Reference
 # ==============================================================================
 Sitemap: ${BASE_URL}/sitemap.xml
+Sitemap: ${BASE_URL}/image-sitemap.xml
 `;
 
   return content;

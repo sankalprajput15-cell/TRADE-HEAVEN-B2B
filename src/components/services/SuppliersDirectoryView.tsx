@@ -101,17 +101,17 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   const [companies, setCompanies] = useState<CompanyProfile[]>(() => MOCK_COMPANIES || []);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(() => suppliersDirLayout.itemCount || 12);
+  const [itemsPerPage, setItemsPerPage] = useState(() => Math.max(50, suppliersDirLayout.itemCount || 50));
 
   useEffect(() => {
-    const configured = suppliersDirLayout.itemCount || 12;
+    const configured = Math.max(50, suppliersDirLayout.itemCount || 50);
     setItemsPerPage(configured);
     setCurrentPage(1);
   }, [suppliersDirLayout.itemCount]);
 
   const supplierItemsPerPageOptions = React.useMemo(() => {
-    const base = [12, 24, 48, suppliersDirLayout.itemCount || 12];
-    return Array.from(new Set(base.filter(n => n > 0))).sort((a, b) => a - b);
+    const base = [50, 75, 100, Math.max(50, suppliersDirLayout.itemCount || 50)];
+    return Array.from(new Set(base.filter(n => n >= 50))).sort((a, b) => a - b);
   }, [suppliersDirLayout.itemCount]);
   const [savedSupplierIds, setSavedSupplierIds] = useState<string[]>(() => {
     try {
@@ -159,16 +159,31 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   };
 
   const filtered = companies.filter(c => {
-    const q = searchTerm.toLowerCase();
-    const matchesSearch = searchTerm === '' ||
-      (c.companyName || '').toLowerCase().includes(q) ||
-      (c.country || '').toLowerCase().includes(q) ||
-      (c.city || '').toLowerCase().includes(q) ||
-      (c.address || '').toLowerCase().includes(q) ||
-      (c.businessType || '').toLowerCase().includes(q) ||
-      (c.description || '').toLowerCase().includes(q) ||
-      (c.contactPerson || '').toLowerCase().includes(q) ||
-      (c.contactEmail || '').toLowerCase().includes(q);
+    const q = searchTerm.trim().toLowerCase();
+    let matchesSearch = q === '';
+    if (!matchesSearch) {
+      const haystack = [
+        c.companyName,
+        c.country,
+        c.city,
+        c.address,
+        c.businessType,
+        c.description,
+        c.contactPerson,
+        c.contactEmail
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const tokens = q.split(/\s+/).filter(Boolean);
+      matchesSearch = tokens.every(tok => {
+        if (tok.length <= 3) {
+          const escaped = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return new RegExp(`(?:^|\\b)${escaped}(?:s|es)?(?:$|\\b)`).test(haystack);
+        }
+        return haystack.includes(tok);
+      });
+    }
     const matchesTier = selectedTier === 'ALL' || c.tier === selectedTier;
     return matchesSearch && matchesTier;
   });

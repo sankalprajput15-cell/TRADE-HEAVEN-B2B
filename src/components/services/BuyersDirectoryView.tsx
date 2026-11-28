@@ -60,7 +60,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
   const [buyers, setBuyers] = useState<DetailedBuyerProfile[]>(() => MOCK_BUYER_PROFILES || []);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -150,34 +150,14 @@ export const BuyersDirectoryView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Access Clearance Banner */}
-      <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap ${
-        isUserPremium 
-          ? 'bg-amber-50/80 border-amber-200 text-amber-950' 
-          : 'bg-indigo-50/80 border-indigo-200 text-indigo-950'
-      }`}>
+      {/* Verified Buyers Directory Notice */}
+      <div className="p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap bg-blue-50/80 border-blue-200 text-blue-950">
         <div className="flex items-center gap-2.5">
-          {isUserPremium ? (
-            <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-          ) : (
-            <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
-          )}
+          <BadgeCheck className="w-4 h-4 text-blue-600 shrink-0" />
           <span className="font-semibold">
-            {isUserPremium 
-              ? 'Verified Supplier Clearance: Buyer direct procurement officer emails, WhatsApp lines, and phones are unmasked.'
-              : 'Standard Guest Access: Direct corporate buyer procurement contact details are masked. Upgrade to access direct buyer contacts.'}
+            Verified Global Buyers Directory: Explore corporate importers, purchasing capacities, and active trade requirements worldwide.
           </span>
         </div>
-
-        {!isUserPremium && onOpenUpgradeModal && (
-          <button
-            onClick={onOpenUpgradeModal}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 transition-all shadow-xs cursor-pointer"
-          >
-            <Crown className="w-3.5 h-3.5" />
-            <span>Unlock Direct Buyer Lines</span>
-          </button>
-        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -373,7 +353,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                       onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                       isMasked={Boolean(buyer.isContactMasked)}
                       paidMembersOnly={isPaidEntity(buyer)}
-                      resourceTitle={isPaidEntity(buyer) ? "Paid Member Protected Desk Contact" : "Buyer Procurement Desk Contact"}
+                      resourceTitle="Buyer Procurement Desk Contact"
                     >
                       <div className="space-y-1 text-xs text-slate-700">
                         <div><strong>Lead:</strong> {buyer.contactPerson} ({buyer.contactDesignation})</div>
@@ -427,7 +407,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
           itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
-          itemsPerPageOptions={[12, 24, 48]}
+          itemsPerPageOptions={[50, 75, 100]}
           itemLabel="buyers"
           scrollTargetId="buyers-directory-root"
         />

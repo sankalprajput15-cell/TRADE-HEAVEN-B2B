@@ -475,18 +475,18 @@ export const RfqDetailModal: React.FC<Props> = ({
                   {/* Gated Contacts / Unmasked Free Lead Contacts */}
                   <div>
                     {!currentUser ? (
-                      <div className="p-4 rounded-2xl bg-slate-900 border border-amber-400/50 text-white space-y-3 shadow-md text-xs">
+                      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-white space-y-3 shadow-md text-xs">
                         <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
                           <span className="flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Buyer Contact Channels Protected</span>
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Direct Buyer Contact Desk</span>
                           </span>
                           <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-black border border-amber-400/30">
-                            Login Required
+                            Free Account
                           </span>
                         </div>
                         <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                          Direct buyer phone and corporate email details are protected. Please register a free account or log in to claim this buy order and unmask contact details.
+                          Sign in or create a free business account to connect directly with this buyer and send your quotation.
                         </p>
                         <button
                           type="button"
@@ -497,22 +497,22 @@ export const RfqDetailModal: React.FC<Props> = ({
                           className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
                         >
                           <UserPlus className="w-3.5 h-3.5 text-slate-950" />
-                          <span>Register / Log In Free to View Contact</span>
+                          <span>Register / Log In Free to Connect</span>
                         </button>
                       </div>
                     ) : isPaidLead && !isCallerPaid ? (
-                      <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-400/50 space-y-3 shadow-md text-xs">
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 space-y-3 shadow-md text-xs">
                         <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
                           <span className="flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Paid Member Information Protected</span>
+                            <Crown className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Verified Priority Buyer Desk</span>
                           </span>
                           <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-black border border-amber-400/30">
-                            Paid Plans Only
+                            Priority Access
                           </span>
                         </div>
                         <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                          This buyer is a verified paid member. By platform policy, unpaid members cannot access contact details of paid suppliers, buyers, or users using free daily credits. Upgrade to a paid plan to unlock direct contact and export channels.
+                          Connect directly with this verified enterprise buyer via Trade Heaven priority membership channels.
                         </p>
                         <button
                           type="button"
@@ -520,7 +520,7 @@ export const RfqDetailModal: React.FC<Props> = ({
                           className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
                         >
                           <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                          <span>Upgrade to Paid Plan to View Paid Buyer</span>
+                          <span>Connect with Priority Buyer</span>
                         </button>
                       </div>
                     ) : isClaimed ? (
@@ -736,18 +736,18 @@ export const RfqDetailModal: React.FC<Props> = ({
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
-                    <Lock className={`w-4 h-4 shrink-0 mt-0.5 ${isDailyMessageRestricted ? 'text-rose-600' : 'text-amber-700'}`} />
+                    <ShieldCheck className={`w-4 h-4 shrink-0 mt-0.5 ${isDailyMessageRestricted ? 'text-rose-600' : 'text-amber-700'}`} />
                     <div>
                       <strong>
                         {isDailyMessageRestricted
-                          ? `Daily Buyer Message Limit Reached (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today):`
-                          : `Free Tier Limit (${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} buyer message left today):`}
+                          ? `Daily Buyer Message Quota (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today):`
+                          : `Daily Quote Allowance (${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} remaining today):`}
                       </strong>{' '}
                       {isDailyMessageRestricted
-                        ? `Free members can only send 1 message or quote to buyers daily.${
-                            dailyQuota.resetInFormatted ? ` Resets in ${dailyQuota.resetInFormatted}.` : ''
-                          } Upgrade or clear your Basic Plan balance to submit additional quotes.`
-                        : 'Submitting a factory quotation counts toward your 1 daily buyer message limit.'}
+                        ? `Your daily free quote allowance resets${
+                            dailyQuota.resetInFormatted ? ` in ${dailyQuota.resetInFormatted}` : ' soon'
+                          }. Upgrade for unlimited buyer quotes.`
+                        : 'Submit your best FOB/CIF factory quotation directly to this buyer.'}
                     </div>
                   </div>
                   {onOpenUpgradeModal && (
@@ -768,7 +768,7 @@ export const RfqDetailModal: React.FC<Props> = ({
 
               {quoteQuotaError && (
                 <div className="bg-rose-600 text-white p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
-                  <Lock className="w-4 h-4 shrink-0" />
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
                   <span>{quoteQuotaError}</span>
                 </div>
               )}
@@ -955,10 +955,10 @@ export const RfqDetailModal: React.FC<Props> = ({
                 type="button"
                 onClick={onOpenUpgradeModal}
                 className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-400 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                title="This lead belongs to a verified paid member. Upgrade to unlock."
+                title="Connect with this verified priority buyer"
               >
-                <Lock className="w-4 h-4 text-amber-400" />
-                <span>🔒 Paid Member Order (Upgrade to Unlock)</span>
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span>Connect with Priority Buyer</span>
               </button>
             ) : isClaimed ? (
               <button

@@ -23,7 +23,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
-  itemsPerPageOptions = [12, 24, 48],
+  itemsPerPageOptions = [50, 75, 100],
   itemLabel = 'results',
   scrollTargetId,
   className = '',

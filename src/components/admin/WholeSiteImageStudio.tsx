@@ -207,10 +207,11 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
   const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
   const [inspectingItem, setInspectingItem] = useState<UnifiedSiteImageItem | null>(null);
   const [croppingItem, setCroppingItem] = useState<UnifiedSiteImageItem | null>(null);
-  const [autoPatchSourceMode, setAutoPatchSourceMode] = useState<ImageAutoPatchSourceMode>('alibaba_first');
+  const [autoPatchSourceMode, setAutoPatchSourceMode] = useState<ImageAutoPatchSourceMode>('alibaba_only');
   const [showRepatchPanel, setShowRepatchPanel] = useState<boolean>(false);
   const [repatchScope, setRepatchScope] = useState<'ALL' | 'FILTERED'>('ALL');
-  const [repatchSkipManual, setRepatchSkipManual] = useState<boolean>(true);
+  const [repatchSkipManual, setRepatchSkipManual] = useState<boolean>(false);
+  const [isSyncingGoogle, setIsSyncingGoogle] = useState<boolean>(false);
   const [bannerNotice, setBannerNotice] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
@@ -1529,7 +1530,41 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
     });
   };
 
+  const filteredPatchableItems = useMemo(
+    () => filteredItems.filter(it => it.id !== 'site-brand-logo'),
+    [filteredItems]
+  );
+
+  const activeFilterLabel = useMemo(() => {
+    if (searchQuery.trim()) return 'Filtered';
+    switch (scopeFilter) {
+      case 'DUPLICATE':
+        return 'Duplicates';
+      case 'NEEDS_FIX':
+        return 'Needs Fix';
+      case 'SKIPPED':
+        return 'Skipped';
+      case 'VERIFIED':
+        return 'Verified';
+      case 'CHANGED':
+        return 'Changed Live';
+      case 'PRODUCT':
+        return 'Products';
+      case 'CATEGORY':
+        return 'Categories';
+      case 'RFQ':
+        return 'Buy Leads';
+      case 'BANNERS':
+        return 'Banners & Assets';
+      default:
+        return 'All Items';
+    }
+  }, [scopeFilter, searchQuery]);
+
   const allOnPageSelected = pageItems.length > 0 && pageItems.every(it => Boolean(selectedIds[it.id]));
+  const allFilteredSelected =
+    filteredPatchableItems.length > 0 &&
+    filteredPatchableItems.every(it => Boolean(selectedIds[it.id]));
 
   const toggleSelectPage = () => {
     setSelectedIds(prev => {
@@ -1542,6 +1577,36 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
       return next;
     });
   };
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds(prev => {
+      const next = { ...prev };
+      if (allFilteredSelected) {
+        for (const it of filteredPatchableItems) delete next[it.id];
+      } else {
+        for (const it of filteredPatchableItems) next[it.id] = true;
+      }
+      return next;
+    });
+  };
+
+  const selectedPatchTargets = useMemo(() => {
+    if (selectedIdList.length === 0) return [];
+    const idSet = new Set(selectedIdList);
+    return allItems.filter(it => idSet.has(it.id) && it.id !== 'site-brand-logo');
+  }, [allItems, selectedIdList]);
+
+  const selectedBreakdown = useMemo(() => {
+    let duplicates = 0;
+    let needsFix = 0;
+    let verified = 0;
+    for (const it of selectedPatchTargets) {
+      if (it.status === 'DUPLICATE') duplicates++;
+      else if (it.status === 'NEEDS_FIX') needsFix++;
+      else verified++;
+    }
+    return { duplicates, needsFix, verified };
+  }, [selectedPatchTargets]);
 
   const unusedOrFlaggedList = useMemo(
     () =>
@@ -1708,13 +1773,30 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               onClick={() => setShowRepatchPanel(prev => !prev)}
               className={`px-3 py-1.5 rounded-md border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 showRepatchPanel
-                  ? 'bg-orange-600 text-white border-orange-600'
+                  ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-300'
               }`}
-              title="Re-patch all images across the site with full Alibaba / Google control"
+              title="Open Re-Patch All options (choose Scope, Alibaba First vs Alibaba Only vs Google Only, and Skip Manual Uploads)"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>{showRepatchPanel ? 'Hide Re-Patch' : 'Re-Patch All'}</span>
+              <span>{showRepatchPanel ? 'Hide Re-Patch Options' : 'Re-Patch All'}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={repatchCandidates.length === 0 || Boolean(batchProgress?.active)}
+              onClick={() => {
+                setAutoPatchSourceMode('alibaba_only');
+                void runBatchAutoFix(repatchCandidates, {
+                  sourceMode: 'alibaba_only',
+                  forceRepatch: true
+                });
+              }}
+              className="px-3 py-1.5 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
+              title={`Re-patch ${repatchCandidates.length.toLocaleString()} site images from Alibaba first; any items without an Alibaba match stay queued for Patch Left from Google`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Re-Patch from Alibaba ({repatchCandidates.length})</span>
             </button>
 
             {leftForGoogleItems.length > 0 && (
@@ -1746,6 +1828,39 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             >
               <FolderUp className="w-3.5 h-3.5" />
               <span>{showBulkUploader ? 'Hide Bulk Upload' : 'Bulk Upload'}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isSyncingGoogle || Boolean(batchProgress?.active)}
+              onClick={async () => {
+                setIsSyncingGoogle(true);
+                try {
+                  const res = await fetch('/api/v1/admin/google-instant-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'studio_manual_google_sync' })
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (data?.success && data?.status) {
+                    setBannerNotice({
+                      type: 'success',
+                      text: `Google Instant Sync complete: ${Number(data.status.imageSitemapEntries || 0).toLocaleString()} images published to image-sitemap.xml & sitemap.xml (IndexNow: ${data.status.indexNowStatus}, Google WebSub: ${data.status.googleWebSubStatus}).`
+                    });
+                  } else {
+                    setBannerNotice({ type: 'error', text: 'Google Instant Sync returned an unexpected response.' });
+                  }
+                } catch (err: any) {
+                  setBannerNotice({ type: 'error', text: err?.message || 'Google Instant Sync request failed.' });
+                } finally {
+                  setIsSyncingGoogle(false);
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
+              title="Regenerate image-sitemap.xml & sitemap.xml and immediately notify Google WebSub & IndexNow"
+            >
+              <Globe className={`w-3.5 h-3.5 ${isSyncingGoogle ? 'animate-spin' : ''}`} />
+              <span>{isSyncingGoogle ? 'Syncing Google...' : 'Sync to Google Now'}</span>
             </button>
 
             <button
@@ -1991,7 +2106,87 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
           )}
         </div>
 
-        {/* Third Row: Search + Select Page + Batch Selection Actions + Top Pagination in One Place */}
+        {/* Contextual Quick-Patch Bar for Active Filter Tab (Duplicates, Needs Fix, Skipped, Categories, Products, Search, etc.) */}
+        {(scopeFilter !== 'ALL' || searchQuery.trim().length > 0) && filteredPatchableItems.length > 0 && (
+          <div className="px-3.5 sm:px-5 py-2 border-b border-orange-200/80 bg-orange-50/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-slate-800">
+              <span className="font-bold text-slate-900">
+                {activeFilterLabel} ({filteredPatchableItems.length.toLocaleString()})
+              </span>
+              <span className="text-[11px] text-slate-600">
+                Quick-patch this group directly from Alibaba or Google, or select specific items below.
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={toggleSelectAllFiltered}
+                className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              >
+                {allFilteredSelected ? (
+                  <CheckSquare className="w-3 h-3 text-[#0F294D]" />
+                ) : (
+                  <Square className="w-3 h-3 text-slate-400" />
+                )}
+                <span>
+                  {allFilteredSelected
+                    ? `Deselect ${activeFilterLabel}`
+                    : `Select All ${activeFilterLabel} (${filteredPatchableItems.length})`}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('alibaba_only');
+                  void runBatchAutoFix(filteredPatchableItems, {
+                    sourceMode: 'alibaba_only',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                title={`Patch all ${filteredPatchableItems.length} ${activeFilterLabel} items from Alibaba only (unmatched items queue for Patch Left from Google)`}
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Patch {activeFilterLabel} from Alibaba ({filteredPatchableItems.length})</span>
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('google_only');
+                  void runBatchAutoFix(filteredPatchableItems, {
+                    sourceMode: 'google_only',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                title={`Patch all ${filteredPatchableItems.length} ${activeFilterLabel} items directly from Google / Web`}
+              >
+                <Globe className="w-3 h-3" />
+                <span>Patch {activeFilterLabel} from Google ({filteredPatchableItems.length})</span>
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('alibaba_first');
+                  void runBatchAutoFix(filteredPatchableItems, {
+                    sourceMode: 'alibaba_first',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1 rounded-md bg-[#0F294D] hover:bg-blue-900 text-white text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                title={`Try Alibaba first, then fall back to Google for all ${filteredPatchableItems.length} ${activeFilterLabel} items`}
+              >
+                <Wand2 className="w-3 h-3" />
+                <span>Alibaba → Google</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Third Row: Search + Select Page / Select Filtered + Top Pagination in One Place */}
         <div className="px-3.5 sm:px-5 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 bg-white">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <button
@@ -2007,6 +2202,22 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
               )}
               <span>Page ({pageItems.length})</span>
             </button>
+
+            {filteredPatchableItems.length > pageItems.length && (
+              <button
+                type="button"
+                onClick={toggleSelectAllFiltered}
+                className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                title={`Select all ${filteredPatchableItems.length} items across all pages in ${activeFilterLabel}`}
+              >
+                {allFilteredSelected ? (
+                  <CheckSquare className="w-3.5 h-3.5 text-[#0F294D]" />
+                ) : (
+                  <Square className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span>All {activeFilterLabel} ({filteredPatchableItems.length})</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -2054,58 +2265,6 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                 </button>
               )}
             </div>
-
-            {selectedIdList.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={Boolean(batchProgress?.active)}
-                  onClick={() => selectedRowsUploadInputRef.current?.click()}
-                  className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-                  title="Upload one image and apply it to every checked item"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload to Selected ({selectedIdList.length})</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={Boolean(localUploadProgress?.active)}
-                  onClick={() => {
-                    const idSet = new Set(selectedIdList);
-                    const targets = allItems.filter(it => idSet.has(it.id));
-                    void runBatchAutoFix(targets, { sourceMode: autoPatchSourceMode, forceRepatch: true });
-                  }}
-                  className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  <span>
-                    {bgSnapshot.active
-                      ? `Queue Patch (${selectedIdList.length})`
-                      : `Auto-Patch Selected (${selectedIdList.length})`}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isBulkDeleting || Boolean(localUploadProgress?.active)}
-                  onClick={() => setBulkDeleteConfirm(prev => !prev)}
-                  className="px-2.5 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-                  title="Permanently delete selected listings & images from the entire website"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Selected ({selectedIdList.length})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedIds({});
-                    setBulkDeleteConfirm(false);
-                  }}
-                  className="px-2 py-1.5 rounded-md bg-white border border-slate-300 text-slate-600 hover:text-slate-900 text-xs font-medium cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Inline Top Pagination & Density Selector (No need to scroll to bottom to change page) */}
@@ -2150,6 +2309,116 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
             </div>
           </div>
         </div>
+
+        {/* Dedicated Selected Images Patch Bar (Direct Alibaba, Google, Alibaba → Google, Upload & Delete for Selected Items) */}
+        {selectedIdList.length > 0 && (
+          <div className="px-3.5 sm:px-5 py-2.5 border-t border-blue-200 bg-blue-50/75 flex flex-col lg:flex-row lg:items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-slate-900">
+              <span className="font-bold text-[#0F294D]">
+                {selectedIdList.length.toLocaleString()} Selected
+              </span>
+              {(selectedBreakdown.duplicates > 0 || selectedBreakdown.needsFix > 0 || selectedBreakdown.verified > 0) && (
+                <span className="text-[11px] text-slate-600 font-mono tabular-nums">
+                  {[
+                    selectedBreakdown.duplicates > 0 ? `${selectedBreakdown.duplicates} duplicate` : '',
+                    selectedBreakdown.needsFix > 0 ? `${selectedBreakdown.needsFix} needs fix` : '',
+                    selectedBreakdown.verified > 0 ? `${selectedBreakdown.verified} verified` : ''
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                disabled={selectedPatchTargets.length === 0 || Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('alibaba_only');
+                  void runBatchAutoFix(selectedPatchTargets, {
+                    sourceMode: 'alibaba_only',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1.5 rounded-md bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Patch all selected images from Alibaba only; any items without an Alibaba match are queued for Patch Left from Google"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>
+                  {bgSnapshot.active
+                    ? `Queue Alibaba (${selectedPatchTargets.length})`
+                    : `Patch Selected from Alibaba (${selectedPatchTargets.length})`}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={selectedPatchTargets.length === 0 || Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('google_only');
+                  void runBatchAutoFix(selectedPatchTargets, {
+                    sourceMode: 'google_only',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Patch all selected images directly from Google / Web photos"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>
+                  {bgSnapshot.active
+                    ? `Queue Google (${selectedPatchTargets.length})`
+                    : `Patch Selected from Google (${selectedPatchTargets.length})`}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={selectedPatchTargets.length === 0 || Boolean(localUploadProgress?.active)}
+                onClick={() => {
+                  setAutoPatchSourceMode('alibaba_first');
+                  void runBatchAutoFix(selectedPatchTargets, {
+                    sourceMode: 'alibaba_first',
+                    forceRepatch: true
+                  });
+                }}
+                className="px-2.5 py-1.5 rounded-md bg-[#0F294D] hover:bg-blue-900 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Patch all selected images using Alibaba first and automatically fall back to Google if unmatched"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span>Alibaba → Google ({selectedPatchTargets.length})</span>
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(batchProgress?.active)}
+                onClick={() => selectedRowsUploadInputRef.current?.click()}
+                className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Upload one image and apply it to every checked item"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload ({selectedIdList.length})</span>
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting || Boolean(localUploadProgress?.active)}
+                onClick={() => setBulkDeleteConfirm(prev => !prev)}
+                className="px-2.5 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Permanently delete selected listings & images from the entire website"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete ({selectedIdList.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedIds({});
+                  setBulkDeleteConfirm(false);
+                }}
+                className="px-2 py-1.5 rounded-md bg-white border border-slate-300 text-slate-600 hover:text-slate-900 text-xs font-medium cursor-pointer whitespace-nowrap shrink-0"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Inline Bulk Permanent Delete Confirmation Bar */}
         {bulkDeleteConfirm && selectedIdList.length > 0 && (
@@ -2746,9 +3015,31 @@ export const WholeSiteImageStudio: React.FC<WholeSiteImageStudioProps> = ({ onVi
                       <button
                         type="button"
                         disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
-                        onClick={() => void handleAutoFixSingle(item)}
+                        onClick={() => void handleAutoFixSingle(item, 'alibaba_only')}
+                        className="px-2.5 py-1.5 rounded-md bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 text-xs font-semibold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
+                        title="1-click patch this image from Alibaba only (queues for Google if unmatched)"
+                      >
+                        <RotateCcw className={`w-3 h-3 ${rowBusyLabel === 'Alibaba...' ? 'animate-spin' : ''}`} />
+                        <span>{rowBusyLabel === 'Alibaba...' ? 'Alibaba...' : 'Alibaba'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
+                        onClick={() => void handleAutoFixSingle(item, 'google_only')}
                         className="px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-[#0F294D] border border-blue-200 text-xs font-semibold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
-                        title="1-click Auto-Fix unique photo & delete old server file"
+                        title="1-click patch this image directly from Google / Web photos"
+                      >
+                        <Globe className={`w-3 h-3 ${rowBusyLabel === 'Google...' ? 'animate-spin' : ''}`} />
+                        <span>{rowBusyLabel === 'Google...' ? 'Google...' : 'Google'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={Boolean(rowBusyLabel) || Boolean(batchProgress?.active)}
+                        onClick={() => void handleAutoFixSingle(item, 'alibaba_first')}
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-semibold inline-flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
+                        title="1-click Auto-Fix (Alibaba first, then Google fallback) & delete old server file"
                       >
                         <Wand2 className={`w-3 h-3 ${rowBusyLabel === 'Auto-fixing...' ? 'animate-spin' : ''}`} />
                         <span>{rowBusyLabel === 'Auto-fixing...' ? 'Fixing...' : 'Auto-Fix'}</span>
